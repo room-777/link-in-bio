@@ -72,7 +72,10 @@ export function PublicControls({ model }: { model: PublicHandleModel }) {
           ) : null}
         </div>
         {!model.isCurrentUserPage ? (
-          <MyPageLink enabled imageBaseUrl={env.NEXT_PUBLIC_R2_PUBLIC_URL} />
+          <MyPageLink
+            enabled={model.isSignedIn && !model.isCurrentUserPage}
+            imageBaseUrl={env.NEXT_PUBLIC_R2_PUBLIC_URL}
+          />
         ) : null}
       </div>
     </aside>
