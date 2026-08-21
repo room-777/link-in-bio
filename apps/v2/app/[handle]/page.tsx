@@ -43,6 +43,7 @@ export async function generateMetadata({
   const description = getPublicPageDescription(page);
   const path = `/${encodeURIComponent(page.handle)}`;
   const image = getPublicImageUrl(page.image, page.updatedAt);
+  const openGraphImage = `${path}/opengraph-image`;
 
   return {
     ...createMetadata({
@@ -50,7 +51,7 @@ export async function generateMetadata({
       description,
       canonicalPath: path,
       includeSiteName: false,
-      image: image ?? DEFAULT_SOCIAL_IMAGE,
+      image: openGraphImage,
     }),
     icons: {
       icon: [
