@@ -4,8 +4,6 @@ export function createPublicImageUrl(
   publicBaseUrl: string | null | undefined,
 ) {
   if (!image) return null;
-  if (/^data:image\//.test(image)) return image;
-
   const baseUrl = publicBaseUrl?.trim();
   if (!baseUrl) return null;
 

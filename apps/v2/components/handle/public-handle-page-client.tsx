@@ -70,13 +70,15 @@ export function PublicHandlePageClient({
         />
       }
       controls={
-        <PublicControls
-          model={currentModel}
-          apiBaseUrl={apiBaseUrl}
-          imageBaseUrl={imageBaseUrl}
-          siteOrigin={siteOrigin}
-          onPageChange={setPage}
-        />
+        model.isDemo ? null : (
+          <PublicControls
+            model={currentModel}
+            apiBaseUrl={apiBaseUrl}
+            imageBaseUrl={imageBaseUrl}
+            siteOrigin={siteOrigin}
+            onPageChange={setPage}
+          />
+        )
       }
       toolbar={null}
     />

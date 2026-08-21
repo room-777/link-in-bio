@@ -39,6 +39,7 @@ export function PublicProfile({
       <>
         <ProfileEditor
           initialPage={model.page}
+          isDemo={model.isDemo}
           imageUrl={image}
           imageBaseUrl={imageBaseUrl}
           breakpoint={breakpoint}

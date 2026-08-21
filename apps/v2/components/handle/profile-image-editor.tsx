@@ -49,6 +49,7 @@ const SUPPORTED_TYPES = new Set([
 
 type ProfileImageEditorProps = {
   page: PageResponse;
+  localOnly?: boolean;
   imageUrl: string | null;
   imageBaseUrl: string | null;
   acceptPage: (page: PageResponse) => void;
@@ -77,6 +78,7 @@ function revealRadius(crop: ProfileImageCrop, size: number) {
 
 export function ProfileImageEditor({
   page,
+  localOnly = false,
   imageUrl: initialImageUrl,
   imageBaseUrl,
   acceptPage,
@@ -94,6 +96,7 @@ export function ProfileImageEditor({
     imageSource: page.imageSource,
     imageCrop: page.imageCrop,
   });
+  const committedImageUrlRef = useRef(initialImageUrl);
   const dragRef = useRef<{
     pointerId: number;
     startX: number;
@@ -157,7 +160,12 @@ export function ProfileImageEditor({
   }, [syncSourceSize, cropSourceUrl, imageUrl]);
 
   function clearSourcePreview() {
-    if (sourcePreviewRef.current) URL.revokeObjectURL(sourcePreviewRef.current);
+    if (
+      sourcePreviewRef.current &&
+      sourcePreviewRef.current !== committedImageUrlRef.current
+    ) {
+      URL.revokeObjectURL(sourcePreviewRef.current);
+    }
     sourcePreviewRef.current = null;
     setCropSourceUrl(null);
     setCropFile(null);
@@ -172,6 +180,33 @@ export function ProfileImageEditor({
     onErrorChange(null);
     setImageUrl(preview);
     setImageCrop(nextCrop);
+
+    if (localOnly) {
+      if (
+        committedImageUrlRef.current?.startsWith("blob:") &&
+        committedImageUrlRef.current !== preview
+      ) {
+        URL.revokeObjectURL(committedImageUrlRef.current);
+      }
+      committedRef.current = {
+        image: preview,
+        imageSource: preview,
+        imageCrop: nextCrop,
+      };
+      committedImageUrlRef.current = preview;
+      acceptPage({
+        ...page,
+        image: preview,
+        imageSource: preview,
+        imageCrop: nextCrop,
+      });
+      setCropOpen(false);
+      setCropSourceUrl(null);
+      setCropFile(null);
+      setSaving(null);
+      return;
+    }
+
     try {
       const result = await uploadPageImage(page.handle, file, nextCrop);
       committedRef.current = {
@@ -181,17 +216,17 @@ export function ProfileImageEditor({
       };
       acceptPage(result.page);
       setImageCrop(result.page.imageCrop);
-      setImageUrl(
-        getClientImageUrl(
-          result.page.image,
-          result.page.updatedAt,
-          imageBaseUrl,
-        ),
+      const nextImageUrl = getClientImageUrl(
+        result.page.image,
+        result.page.updatedAt,
+        imageBaseUrl,
       );
+      committedImageUrlRef.current = nextImageUrl;
+      setImageUrl(nextImageUrl);
       setCropOpen(false);
       clearSourcePreview();
     } catch (caught) {
-      setImageUrl(initialImageUrl);
+      setImageUrl(committedImageUrlRef.current);
       setImageCrop(committedRef.current.imageCrop);
       onErrorChange(
         caught instanceof Error ? caught.message : "Image upload failed.",
@@ -282,6 +317,7 @@ export function ProfileImageEditor({
         imageSource: null,
         imageCrop: null,
       };
+      committedImageUrlRef.current = null;
       setImageUrl(null);
       setImageCrop(null);
     } catch (caught) {
@@ -407,7 +443,7 @@ export function ProfileImageEditor({
                 >
                   <Image
                     ref={sourceImageRef}
-                    className="size-full rounded-lg"
+                    className="size-full rounded-lg object-cover"
                     src={renderedUrl}
                     alt={page.name ?? page.handle}
                     width={150}
@@ -501,7 +537,7 @@ export function ProfileImageEditor({
             onOpenChange={(open) => {
               setCropOpen(open);
               if (!open && cropFile) {
-                setImageUrl(initialImageUrl);
+                setImageUrl(committedImageUrlRef.current);
                 setImageCrop(committedRef.current.imageCrop);
                 clearSourcePreview();
               }

@@ -50,7 +50,10 @@ function changedFields(
   return changes;
 }
 
-export function usePageAutoSave(page: PageResponse) {
+export function usePageAutoSave(
+  page: PageResponse,
+  { persist = true }: { persist?: boolean } = {},
+) {
   const queryClient = useQueryClient();
   const [draft, setDraft] = useState(() => editableFields(page));
   const [error, setError] = useState<string | null>(null);
@@ -125,6 +128,12 @@ export function usePageAutoSave(page: PageResponse) {
       updateCache({ ...previous, ...changes });
       setError(null);
 
+      if (!persist) {
+        const nextPage = { ...previous, ...changes };
+        if (request === requestRef.current) acceptPage(nextPage);
+        return nextPage;
+      }
+
       try {
         const result = await mutation.mutateAsync(changes);
         if (request === requestRef.current) acceptPage(result.page);
@@ -141,7 +150,7 @@ export function usePageAutoSave(page: PageResponse) {
         return null;
       }
     },
-    [acceptPage, mutation, page, queryClient, updateCache],
+    [acceptPage, mutation, page, persist, queryClient, updateCache],
   );
 
   const savePending = useCallback(async () => {

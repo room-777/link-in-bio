@@ -49,6 +49,7 @@ export function PublicHandleGridClient({
     handle: model.page.handle,
     breakpoint: previewBreakpoint,
     enabled: model.mode === "edit",
+    persistItems: !model.isDemo,
   });
 
   useEffect(() => setIsMounted(true), []);
@@ -82,6 +83,7 @@ export function PublicHandleGridClient({
                   URL.revokeObjectURL(previewUrl);
                   return;
                 }
+                if (model.isDemo) return;
                 try {
                   const uploaded = await uploadPageItemMedia(
                     model.page.handle,

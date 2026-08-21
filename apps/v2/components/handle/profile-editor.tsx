@@ -11,6 +11,7 @@ import { ProfileImageEditor } from "./profile-image-editor";
 
 type ProfileEditorProps = {
   initialPage: PageResponse;
+  isDemo: boolean;
   imageUrl: string | null;
   imageBaseUrl: string | null;
   breakpoint: Breakpoint;
@@ -19,6 +20,7 @@ type ProfileEditorProps = {
 
 export function ProfileEditor({
   initialPage,
+  isDemo,
   imageUrl,
   imageBaseUrl,
   breakpoint,
@@ -32,7 +34,7 @@ export function ProfileEditor({
     isSaving,
     save,
     updateField,
-  } = usePageAutoSave(initialPage);
+  } = usePageAutoSave(initialPage, { persist: !isDemo });
   const page = { ...initialPage, ...draft };
   const layoutClasses = getPageLayoutClasses(breakpoint);
 
@@ -44,6 +46,7 @@ export function ProfileEditor({
     <>
       <ProfileImageEditor
         page={page}
+        localOnly={isDemo}
         imageUrl={imageUrl}
         imageBaseUrl={imageBaseUrl}
         acceptPage={acceptPage}

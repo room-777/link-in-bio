@@ -20,6 +20,7 @@ export type PublicHandleModel = {
   entitlements: NonNullable<SessionResponse>["entitlements"];
   readOnly: boolean;
   mode: "view" | "edit";
+  isDemo: boolean;
 };
 
 export const getPublicHandleModel = cache(
@@ -74,6 +75,7 @@ export const getPublicHandleModel = cache(
       entitlements,
       readOnly,
       mode: isCurrentUserPage && !readOnly ? "edit" : "view",
+      isDemo: false,
     };
   },
 );
