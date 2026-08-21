@@ -1,7 +1,8 @@
 "use client";
 
 import dynamic from "next/dynamic";
-import { useState } from "react";
+import { useEffect, useState } from "react";
+import { createPortal } from "react-dom";
 import { toast } from "sonner";
 import { uploadPageItemMedia } from "@/lib/client/item-media-api";
 import { useGridEditorStore } from "@/lib/grid/editor-store";
@@ -42,12 +43,15 @@ export function PublicHandleGridClient({
 }: PublicHandleGridClientProps) {
   const [previewBreakpoint, setPreviewBreakpoint] =
     useState<Breakpoint>("wide");
+  const [isMounted, setIsMounted] = useState(false);
   const grid = useGridEditorStore({
     initialItems: model.items,
     handle: model.page.handle,
     breakpoint: previewBreakpoint,
     enabled: model.mode === "edit",
   });
+
+  useEffect(() => setIsMounted(true), []);
 
   return (
     <>
@@ -60,50 +64,55 @@ export function PublicHandleGridClient({
         onAutoFocus={grid.clearAutoFocusItem}
         onCommand={grid.dispatchCommand}
       />
-      {model.mode === "edit" ? (
-        <GridToolbar
-          breakpoint={previewBreakpoint}
-          imageUrl={imageUrl}
-          isSaving={isProfileSaving || grid.status === "saving"}
-          page={model.page}
-          siteOrigin={siteOrigin}
-          onMediaSelect={async (file) => {
-            const previewUrl = URL.createObjectURL(file);
-            const itemId = grid.addPendingMedia({
-              mimeType: file.type,
-              previewUrl,
-            });
-            if (!itemId) {
-              URL.revokeObjectURL(previewUrl);
-              return;
-            }
-            try {
-              const uploaded = await uploadPageItemMedia(
-                model.page.handle,
-                file,
-              );
-              grid.updateMediaUpload({
-                itemId,
-                objectKey: uploaded.objectKey,
-                mimeType: uploaded.mimeType,
-              });
-            } catch (error) {
-              grid.removeMediaItem(itemId);
-              URL.revokeObjectURL(previewUrl);
-              toast.error(
-                error instanceof Error ? error.message : "Media upload failed.",
-              );
-            }
-          }}
-          onItemAdd={(itemType, url) =>
-            grid.dispatchCommand({ type: "add-item", itemType, url })
-          }
-          onBreakpointChange={(breakpoint) => {
-            setPreviewBreakpoint(breakpoint);
-            onBreakpointChange(breakpoint);
-          }}
-        />
-      ) : null}
+      {isMounted && model.mode === "edit"
+        ? createPortal(
+            <GridToolbar
+              breakpoint={previewBreakpoint}
+              imageUrl={imageUrl}
+              isSaving={isProfileSaving || grid.status === "saving"}
+              page={model.page}
+              siteOrigin={siteOrigin}
+              onMediaSelect={async (file) => {
+                const previewUrl = URL.createObjectURL(file);
+                const itemId = grid.addPendingMedia({
+                  mimeType: file.type,
+                  previewUrl,
+                });
+                if (!itemId) {
+                  URL.revokeObjectURL(previewUrl);
+                  return;
+                }
+                try {
+                  const uploaded = await uploadPageItemMedia(
+                    model.page.handle,
+                    file,
+                  );
+                  grid.updateMediaUpload({
+                    itemId,
+                    objectKey: uploaded.objectKey,
+                    mimeType: uploaded.mimeType,
+                  });
+                } catch (error) {
+                  grid.removeMediaItem(itemId);
+                  URL.revokeObjectURL(previewUrl);
+                  toast.error(
+                    error instanceof Error
+                      ? error.message
+                      : "Media upload failed.",
+                  );
+                }
+              }}
+              onItemAdd={(itemType, url) =>
+                grid.dispatchCommand({ type: "add-item", itemType, url })
+              }
+              onBreakpointChange={(breakpoint) => {
+                setPreviewBreakpoint(breakpoint);
+                onBreakpointChange(breakpoint);
+              }}
+            />,
+            document.body,
+          )
+        : null}
     </>
   );
 }

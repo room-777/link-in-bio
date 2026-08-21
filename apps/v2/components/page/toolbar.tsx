@@ -110,7 +110,7 @@ export default function Toolbar({
   return (
     <div
       id="page-toolbar"
-      className="fixed bottom-8 flex w-full items-center justify-center"
+      className="pointer-events-none fixed bottom-8 z-[100001] flex w-full items-center justify-center"
     >
       <input
         ref={mediaInputRef}
@@ -123,7 +123,7 @@ export default function Toolbar({
         layout
         layoutDependency={layoutDependency}
         transition={{ layout: viewTransition }}
-        className="t-toolbar-surface flex flex-col overflow-hidden rounded-xl bg-background p-1.5 smooth-shadow-ring shadow-black smooth-ring-neutral-300/30 will-change-transform"
+        className="t-toolbar-surface pointer-events-auto flex flex-col overflow-hidden rounded-xl bg-background p-1.5 smooth-shadow-ring shadow-black smooth-ring-neutral-300/30 will-change-transform"
       >
         <AnimatePresence initial={false} mode="popLayout">
           {view === "link" ? (
