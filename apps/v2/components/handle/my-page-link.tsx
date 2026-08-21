@@ -5,7 +5,7 @@ import Link from "next/link";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
-import { getMyPage } from "@/lib/client/page-api";
+import { getMyPage, myPageQueryKey } from "@/lib/client/page-api";
 import { createPublicImageUrl } from "@/lib/image/public-image-url";
 
 export function MyPageLink({
@@ -16,7 +16,7 @@ export function MyPageLink({
   imageBaseUrl?: string | null;
 }) {
   const { data, isPending } = useQuery({
-    queryKey: ["pages", "me"],
+    queryKey: myPageQueryKey,
     queryFn: getMyPage,
     enabled,
     refetchOnMount: true,

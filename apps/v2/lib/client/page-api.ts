@@ -14,6 +14,10 @@ import {
 } from "@grabbin/api";
 import * as v from "valibot";
 
+export const pageQueryKey = (handle: string) => ["pages", handle] as const;
+export const myPageQueryKey = ["pages", "me"] as const;
+export const ownedPagesQueryKey = ["pages", "owned"] as const;
+
 async function requestJson(path: string, init?: RequestInit) {
   const response = await fetch(path, {
     credentials: "include",
