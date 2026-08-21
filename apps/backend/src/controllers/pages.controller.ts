@@ -32,6 +32,7 @@ import {
 } from "../mappers/page.mapper";
 import {
 	assertPageCreationAllowed,
+	canCreatePage,
 	changePrimaryPage,
 	createPage,
 	deleteOwnedPage,
@@ -132,6 +133,13 @@ export const pagesController =
 					ownedPageListResponseSchema,
 					{
 						hasAccess: access.hasAccess,
+						canCreatePage:
+							canCreatePage({
+								primaryPageId,
+								hasAccess:
+									access.hasAccess,
+								pageCount: pages.length,
+							}),
 						pages: pages.map((page) =>
 							mapOwnedPageSummary(
 								page,

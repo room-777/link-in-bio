@@ -184,6 +184,7 @@ export type OwnedPageSummary = v.InferOutput<typeof ownedPageSummarySchema>;
 
 export const ownedPageListResponseSchema = v.object({
 	hasAccess: v.boolean(),
+	canCreatePage: v.boolean(),
 	pages: v.array(ownedPageSummarySchema),
 });
 

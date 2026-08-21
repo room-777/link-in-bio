@@ -133,7 +133,8 @@ export const getOwnedPages = createServerFn({ method: "GET" }).handler(
 			method: "GET",
 			headers: createCookieHeaders(),
 		});
-		if (response.status === 401) return { hasAccess: false, pages: [] };
+		if (response.status === 401)
+			return { hasAccess: false, canCreatePage: false, pages: [] };
 		if (!response.ok)
 			throw new Error(
 				`Owned pages request failed with status ${response.status}.`,

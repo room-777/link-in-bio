@@ -6,7 +6,10 @@ import {
 import { pagesController } from "@controllers/pages.controller";
 import type { AppEnv } from "@core/app-factory";
 import { errorHandler } from "@middlewares/error-handler.middleware";
-import { PRO_MONTHLY_PRODUCT_ID } from "@grabbin/plan";
+import {
+	PRO_MONTHLY_PRODUCT_ID,
+	PRO_PAGE_LIMIT,
+} from "@grabbin/plan";
 import { Hono } from "hono";
 
 type TestUser = {
@@ -407,6 +410,57 @@ describe("pagesController", () => {
 		);
 
 		expect(response.status).toBe(401);
+	});
+
+	it("reports when the user has reached the page creation limit", async () => {
+		const user = {
+			id: "user_1",
+			name: "Kim",
+			email: "kim@example.com",
+			primaryPageId: "page_1",
+		};
+		const page = {
+			id: "page_1",
+			userId: "user_1",
+			handle: "kim",
+			name: "Kim",
+			bio: null,
+			image: null,
+			role: null,
+			createdAt: now,
+			updatedAt: now,
+		};
+		const { db } = createFakeDb({
+			currentUser: user,
+			existingPages: Array.from(
+				{ length: PRO_PAGE_LIMIT },
+				(_, index) => ({
+					...page,
+					id: `page_${index + 1}`,
+					handle:
+						index === 0
+							? "kim"
+							: `page-${index + 1}`,
+				}),
+			),
+			subscriptions: [
+				{
+					status: "active",
+					productId: PRO_MONTHLY_PRODUCT_ID,
+					periodStart: now,
+					periodEnd: new Date("2026-08-26T00:00:00.000Z"),
+					cancelAtPeriodEnd: false,
+				},
+			],
+		});
+		const app = createTestApp({ db, user });
+
+		const response = await app.request("/pages");
+
+		expect(response.status).toBe(200);
+		expect(await response.json()).toMatchObject({
+			canCreatePage: false,
+		});
 	});
 
 	it("reports reserved handles as unavailable at /pages/check", async () => {

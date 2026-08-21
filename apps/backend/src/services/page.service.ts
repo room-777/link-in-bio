@@ -201,6 +201,18 @@ export const assertEligibleUser =
 		return currentUser;
 	};
 
+export const canCreatePage = ({
+	primaryPageId,
+	hasAccess,
+	pageCount,
+}: {
+	primaryPageId: string | null;
+	hasAccess: boolean;
+	pageCount: number;
+}) =>
+	!primaryPageId ||
+	(hasAccess && pageCount < PRO_PAGE_LIMIT);
+
 export const assertPageCreationAllowed =
 	async ({
 		db,
@@ -247,8 +259,12 @@ export const assertPageCreationAllowed =
 			userId,
 		});
 		if (
-			access.hasAccess &&
-			ownedPages.length < PRO_PAGE_LIMIT
+			canCreatePage({
+				primaryPageId:
+					currentUser.primaryPageId,
+				hasAccess: access.hasAccess,
+				pageCount: ownedPages.length,
+			})
 		)
 			return currentUser;
 		throw new ForbiddenError(
