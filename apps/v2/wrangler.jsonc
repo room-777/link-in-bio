@@ -10,7 +10,7 @@
   },
   "routes": [
     {
-      "pattern": "v2.grabbin.me",
+      "pattern": "grabbin.me",
       "custom_domain": true
     }
   ],

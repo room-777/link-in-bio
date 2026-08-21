@@ -1,7 +1,6 @@
 const STATIC_ALLOWED_ORIGINS = [
 	"http://localhost:3000",
 	"https://grabbin.me",
-	"https://v2.grabbin.me",
 ] as const;
 
 export function getAllowedOrigins(
