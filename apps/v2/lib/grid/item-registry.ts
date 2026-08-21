@@ -1,7 +1,7 @@
-import type { ReactNode } from "react";
+import dynamic from "next/dynamic";
+import { createElement, type ReactNode } from "react";
 import { ItemControls } from "@/components/handle/grid/item-controls";
 import { LinkItemRenderer } from "@/components/handle/grid/renderers/link";
-import { MapItemRenderer } from "@/components/handle/grid/renderers/map";
 import { MediaItemRenderer } from "@/components/handle/grid/renderers/media";
 import { SectionItemRenderer } from "@/components/handle/grid/renderers/section";
 import { TextItemRenderer } from "@/components/handle/grid/renderers/text";
@@ -16,6 +16,17 @@ import type {
   PresetName,
 } from "@/lib/grid/types";
 import type { PageMode } from "@/lib/page/page-mode";
+
+const LazyMapItemRenderer = dynamic(
+  () =>
+    import("@/components/handle/grid/renderers/map").then(
+      ({ MapItemRenderer }) => MapItemRenderer,
+    ),
+  { ssr: false },
+);
+
+const MapItemRenderer: ItemRendererView<GridItemByType<"map">> = (props) =>
+  createElement(LazyMapItemRenderer, props);
 
 export type GridItemControlCommand =
   | "manage-link"
