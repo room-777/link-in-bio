@@ -21,9 +21,9 @@ export default function HeroSection() {
               <span>Bring everything.</span>
               <span>Be yourself.</span>
             </h1>
-            <p className="text-lg font-medium text-center text-balance md:text-xl">
+            <p className="text-lg font-medium text-center text-balance md:text-xl leading-tight">
               A cleaner, more beautiful link in bio.
-              <span className="block text-gray-bright">
+              <span className="block text-gray-bright leading-tight">
                 Your links, content, and favorite places — all in one link in
                 bio.
               </span>

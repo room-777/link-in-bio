@@ -10,7 +10,7 @@ export default function CTASection() {
             <span>Turn one link</span>
             <span>into your world.</span>
           </h2>
-          <p className="text-lg font-medium text-center text-balance md:text-xl">
+          <p className="text-lg font-medium text-center text-balance md:text-xl leading-tight">
             Share your links, media, and favorite places in one beautiful page.
           </p>
         </header>

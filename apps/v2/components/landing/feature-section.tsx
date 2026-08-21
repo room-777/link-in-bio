@@ -57,10 +57,10 @@ export default function FeatureSection({
           <span>In one place.</span>
         </h2>
         <div>
-          <p className="text-lg font-medium text-balance md:text-xl">
+          <p className="text-lg font-medium text-balance md:text-xl leading-tight">
             Bring your links, content, and favorite places together.
           </p>
-          <p className="text-lg font-medium text-balance text-gray-bright md:text-xl">
+          <p className="text-lg font-medium text-balance text-gray-bright md:text-xl leading-tight">
             Share a page that feels like you.
           </p>
         </div>
@@ -82,7 +82,7 @@ export default function FeatureSection({
           >
             <header className="flex flex-col gap-1 p-6">
               <h3 className="text-2xl font-medium tracking-tight">{title}</h3>
-              <p className="text-base leading-relaxed text-gray-bright">
+              <p className="text-base text-gray-bright leading-tight">
                 {description}
               </p>
             </header>

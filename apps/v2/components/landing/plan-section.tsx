@@ -71,7 +71,7 @@ export default function PlanSection() {
         >
           Start free. Grow with Pro.
         </h2>
-        <p className="text-lg font-medium text-center text-balance md:text-xl">
+        <p className="text-lg font-medium text-center text-balance md:text-xl leading-tight">
           Every account includes one free page with core widgets. Upgrade to Pro
           for more pages and extra features as you grow.
         </p>
@@ -113,7 +113,7 @@ export default function PlanSection() {
               <h3 className="text-2xl font-medium tracking-tight">
                 {feature.title}
               </h3>
-              <p className="text-base leading-relaxed text-gray-bright">
+              <p className="text-base leading-relaxed text-gray-bright leading-tight">
                 {feature.subtitle}
               </p>
             </div>
@@ -454,6 +454,7 @@ function PlanCard({
             {features.map((feature) => (
               <li key={feature.label} className="flex items-center gap-2">
                 <Verified
+                  weight="Filled"
                   className="size-5 shrink-0 text-brand"
                   aria-hidden="true"
                 />
