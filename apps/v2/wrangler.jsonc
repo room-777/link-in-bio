@@ -26,6 +26,7 @@
     "NEXT_PUBLIC_API_BASE_URL": "https://api.grabbin.me",
     "NEXT_PUBLIC_APP_DOMAIN": "grabbin.me",
     "NEXT_PUBLIC_R2_PUBLIC_URL": "https://cdn.grabbin.me",
+    "NEXT_PUBLIC_MAPBOX_ACCESS_TOKEN": "",
     "NEXT_PUBLIC_ENABLE_ANNOUNCEMENT": "false"
   },
   "env": {
@@ -37,6 +38,7 @@
         "NEXT_PUBLIC_API_BASE_URL": "http://localhost:8787",
         "NEXT_PUBLIC_APP_DOMAIN": "grabbin.me",
         "NEXT_PUBLIC_R2_PUBLIC_URL": "https://cdn.grabbin.me",
+        "NEXT_PUBLIC_MAPBOX_ACCESS_TOKEN": "",
         "NEXT_PUBLIC_ENABLE_ANNOUNCEMENT": "false"
       },
       "services": [

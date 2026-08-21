@@ -1,13 +1,10 @@
 import type { Metadata } from "next";
-import { PublicControls } from "@/components/handle/public-controls";
-import { PublicHandleShell } from "@/components/handle/public-handle-shell";
+import { PublicHandlePageClient } from "@/components/handle/public-handle-page-client";
+import { env } from "@/lib/env";
 import {
   getPublicPageDescription,
   getPublicPageTitle,
-  PublicProfile,
-} from "@/components/handle/public-profile";
-import Toolbar from "@/components/page/toolbar";
-import { env } from "@/lib/env";
+} from "@/lib/handle/public-page-copy";
 import { createProfilePageJsonLd } from "@/lib/seo/json-ld";
 import { createMetadata, DEFAULT_SOCIAL_IMAGE } from "@/lib/seo/metadata";
 import { getPublicImageUrl } from "@/lib/seo-responses";
@@ -76,6 +73,9 @@ export default async function PublicHandlePage({ params }: RouteProps) {
   const description = getPublicPageDescription(model.page);
   const path = `/${encodeURIComponent(model.page.handle)}`;
   const siteOrigin = env.NEXT_PUBLIC_APP_URL;
+  const imageBaseUrl = env.NEXT_PUBLIC_R2_PUBLIC_URL?.trim() || null;
+  const mapboxAccessToken =
+    env.NEXT_PUBLIC_MAPBOX_ACCESS_TOKEN?.trim() || undefined;
 
   return (
     <>
@@ -91,22 +91,13 @@ export default async function PublicHandlePage({ params }: RouteProps) {
           }),
         )}
       </script>
-      <PublicHandleShell
-        profile={<PublicProfile model={model} />}
-        grid={null}
-        controls={<PublicControls model={model} />}
-        toolbar={
-          model.mode === "edit" ? (
-            <Toolbar
-              imageUrl={getPublicImageUrl(
-                model.page.image,
-                model.page.updatedAt,
-              )}
-              page={model.page}
-              siteOrigin={siteOrigin}
-            />
-          ) : null
-        }
+      <PublicHandlePageClient
+        apiBaseUrl={env.NEXT_PUBLIC_API_BASE_URL}
+        model={model}
+        imageUrl={getPublicImageUrl(model.page.image, model.page.updatedAt)}
+        imageBaseUrl={imageBaseUrl}
+        mapboxAccessToken={mapboxAccessToken}
+        siteOrigin={siteOrigin}
       />
     </>
   );

@@ -1,52 +1,79 @@
-import type { PageResponse } from "@grabbin/api";
-import { env } from "@/lib/env";
-import { getPublicImageUrl } from "@/lib/seo-responses";
+"use client";
+
+import {
+  type Breakpoint,
+  getPageLayoutClasses,
+} from "@/lib/handle/page-layout";
+import { getPublicPageTitle } from "@/lib/handle/public-page-copy";
+import { createPublicImageUrl } from "@/lib/image/public-image-url";
 import type { PublicHandleModel } from "@/lib/server/public-handle-model";
 import { PrimaryPageAction } from "./primary-page-action";
 import { ProfileEditor } from "./profile-editor";
 import { ProfileImage } from "./profile-image";
 
-export function getPublicPageTitle(page: PageResponse) {
-  return page.name?.trim() || `@${page.handle}`;
-}
-
-export function getPublicPageDescription(page: PageResponse) {
-  return (
-    page.bio?.trim() ||
-    `${getPublicPageTitle(page)} on Grabbin: links, media, and more.`
-  );
-}
-
-export function PublicProfile({ model }: { model: PublicHandleModel }) {
+export function PublicProfile({
+  model,
+  breakpoint,
+  imageBaseUrl,
+  onSavingChange,
+}: {
+  model: PublicHandleModel;
+  breakpoint: Breakpoint;
+  imageBaseUrl: string | null;
+  onSavingChange?: (isSaving: boolean) => void;
+}) {
   const title = getPublicPageTitle(model.page);
-  const image = getPublicImageUrl(model.page.image, model.page.updatedAt);
+  const image = createPublicImageUrl(
+    model.page.image,
+    model.page.updatedAt,
+    imageBaseUrl,
+  );
+  const layoutClasses = getPageLayoutClasses(breakpoint);
+  const showPrimaryPageAction =
+    model.isCurrentUserPage &&
+    model.entitlements.hasAccess &&
+    !model.isPrimaryPage;
 
   if (model.mode === "edit") {
     return (
-      <ProfileEditor
-        initialPage={model.page}
-        imageUrl={image}
-        imageBaseUrl={env.NEXT_PUBLIC_R2_PUBLIC_URL?.trim() ?? null}
-      />
+      <>
+        <ProfileEditor
+          initialPage={model.page}
+          imageUrl={image}
+          imageBaseUrl={imageBaseUrl}
+          breakpoint={breakpoint}
+          onSavingChange={onSavingChange}
+        />
+        {showPrimaryPageAction ? (
+          <PrimaryPageAction handle={model.page.handle} />
+        ) : null}
+      </>
     );
   }
 
   return (
     <>
-      <div className="t-stagger-line t-stagger-line--1">
+      <div>
         <ProfileImage
           imageUrl={image}
           title={title}
           crop={model.page.imageCrop}
+          breakpoint={breakpoint}
         />
       </div>
-      <div className="flex min-w-0 flex-col gap-2 min-[90rem]:px-2">
-        <p className="t-stagger-line t-stagger-line--2 text-3xl font-bold leading-tight tracking-tight min-[90rem]:text-[40px]">
+      <div
+        className={`flex min-w-0 flex-col gap-2 ${layoutClasses.profileDetails}`}
+      >
+        <p
+          className={`text-3xl font-bold leading-tight tracking-tight ${layoutClasses.name}`}
+        >
           {title}
         </p>
         {model.page.bio?.trim() ? (
-          <p className="t-stagger-line t-stagger-line--3 px-0.5 text-base leading-6 text-primary/80 min-[90rem]:text-xl min-[90rem]:leading-8">
-            {model.page.bio.trim()}
+          <p
+            className={`whitespace-pre-wrap px-0.5 text-base leading-6 text-primary/80 ${layoutClasses.bio}`}
+          >
+            {model.page.bio}
           </p>
         ) : null}
         {model.readOnly && !model.isPrimaryPage ? (
@@ -56,9 +83,7 @@ export function PublicProfile({ model }: { model: PublicHandleModel }) {
             Upgrade your plan before these pages are deleted.
           </p>
         ) : null}
-        {model.isCurrentUserPage &&
-        model.entitlements.hasAccess &&
-        !model.isPrimaryPage ? (
+        {showPrimaryPageAction ? (
           <PrimaryPageAction handle={model.page.handle} />
         ) : null}
       </div>

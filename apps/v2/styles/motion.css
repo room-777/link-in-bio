@@ -609,41 +609,6 @@
   }
 }
 
-.t-stagger-line {
-  display: block;
-  opacity: 0;
-  transform: translateY(var(--stagger-distance));
-  filter: blur(var(--stagger-blur));
-  transition:
-    opacity var(--stagger-dur) var(--stagger-ease),
-    transform var(--stagger-dur) var(--stagger-ease),
-    filter var(--stagger-dur) var(--stagger-ease);
-  will-change: transform, opacity, filter;
-}
-
-.t-stagger-line--2 {
-  transition-delay: var(--stagger-stagger);
-}
-
-.t-stagger-line--3 {
-  transition-delay: calc(var(--stagger-stagger) * 2);
-}
-
-.t-stagger-line--4 {
-  transition-delay: calc(var(--stagger-stagger) * 3);
-}
-
-.t-stagger.is-shown .t-stagger-line {
-  opacity: 1;
-  transform: translateY(0);
-  filter: blur(0);
-}
-
-.t-stagger-line--1:has([data-profile-crop-open="true"]) {
-  position: relative;
-  z-index: 50;
-}
-
 @keyframes t-breakpoint-view-old {
   to {
     opacity: 0;
@@ -704,7 +669,6 @@
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .t-stagger-line,
   .t-breakpoint-content,
   .t-panel-slide {
     transition: none !important;

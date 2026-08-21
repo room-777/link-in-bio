@@ -199,7 +199,7 @@ export default function Toolbar({
                     <Button
                       variant="brand"
                       size="default"
-                      className="w-28 rounded-lg px-8"
+                      className="w-28 rounded-lg px-8 font-semibold gap-2.5"
                       disabled
                     >
                       <Loader className="size-4 animate-spin" />
@@ -241,15 +241,17 @@ export default function Toolbar({
                     disabled={readOnly || !onMediaSelect}
                     label="Gallery"
                     onClick={() => mediaInputRef.current?.click()}
-                    className="size-6.5 rounded-md overflow-hidden surface-line"
+                    className="overflow-hidden"
                   >
-                    <Image
-                      src={"https://cdn.grabbin.me/assets/features/6.png"}
-                      alt=""
-                      width={24}
-                      height={24}
-                      className="w-full h-full object-cover rounded-lg"
-                    />
+                    <div className="size-6 surface-line before:rounded-md after:rounded-md">
+                      <Image
+                        src={"https://cdn.grabbin.me/assets/features/6.png"}
+                        alt=""
+                        width={300}
+                        height={300}
+                        className="w-full h-full object-cover rounded-lg"
+                      />
+                    </div>
                     {/*<GalleryCircle weight="Outline" className="size-5" />*/}
                   </ToolbarButton>
                   <ToolbarButton

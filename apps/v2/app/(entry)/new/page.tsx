@@ -5,7 +5,7 @@ import JsonLd from "@/components/seo/json-ld";
 import { env } from "@/lib/env";
 import { createWebPageJsonLd } from "@/lib/seo/json-ld";
 import { createMetadata } from "@/lib/seo/metadata";
-import { getSession } from "@/lib/server/page-queries";
+import { getOwnedPages } from "@/lib/server/page-queries";
 
 const NEW_PAGE_DESCRIPTION = "Create your page.";
 
@@ -23,18 +23,17 @@ const newPageJsonLd = createWebPageJsonLd({
 });
 
 export default async function NewPageRoute() {
-  const session = await getSession();
-  if (!session.ok) {
-    if (session.response.status === 401) {
+  const ownedPages = await getOwnedPages();
+  if (!ownedPages.ok) {
+    if (ownedPages.response.status === 401) {
       redirect("/log-in?redirect=/new");
     }
     throw new Error(
-      `Session request failed with status ${session.response.status}.`,
+      `Owned pages request failed with status ${ownedPages.response.status}.`,
     );
   }
 
-  if (!session.data) redirect("/log-in?redirect=/new");
-  if (session.data.user.primaryPageId) redirect("/");
+  if (!ownedPages.data.canCreatePage) redirect("/");
 
   return (
     <>

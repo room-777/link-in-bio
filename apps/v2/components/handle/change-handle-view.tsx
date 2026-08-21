@@ -4,7 +4,7 @@ import type { HandleAvailabilityResponse, PageResponse } from "@grabbin/api";
 import { useMutation } from "@tanstack/react-query";
 import { ChevronLeftIcon } from "lucide-react";
 import { type FormEvent, useEffect, useMemo, useRef, useState } from "react";
-import { CheckCircle, Loader, XCircle } from "reicon-react";
+import { Check, CheckCircle, Loader, XCircle } from "reicon-react";
 import { Button } from "@/components/ui/button";
 import {
   InputGroup,
@@ -23,6 +23,7 @@ type ChangeHandleViewProps = {
   onHandleChange: (value: string) => void;
   onBack: () => void;
   onSaved: (page: PageResponse) => void;
+  onSuccessChange: (isSuccess: boolean) => void;
   onBusy: (busy: boolean) => void;
 };
 
@@ -35,6 +36,7 @@ export function ChangeHandleView({
   onHandleChange,
   onBack,
   onSaved,
+  onSuccessChange,
   onBusy,
 }: ChangeHandleViewProps) {
   const inputRef = useRef<HTMLInputElement>(null);
@@ -47,6 +49,11 @@ export function ChangeHandleView({
     useState<HandleAvailabilityResponse | null>(null);
   const [checking, setChecking] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [isSuccess, setIsSuccess] = useState(false);
+  const [copyState, setCopyState] = useState<"idle" | "copied" | "error">(
+    "idle",
+  );
+  const copyResetRef = useRef<number | null>(null);
   const status = getHandleAvailabilityStatus(handle, availability, checking);
   const domain = useMemo(() => {
     try {
@@ -59,6 +66,18 @@ export function ChangeHandleView({
   useEffect(() => {
     inputRef.current?.focus();
   }, []);
+
+  useEffect(() => {
+    onSuccessChange(isSuccess);
+  }, [isSuccess, onSuccessChange]);
+
+  useEffect(
+    () => () => {
+      if (copyResetRef.current !== null)
+        window.clearTimeout(copyResetRef.current);
+    },
+    [],
+  );
 
   useEffect(() => {
     if (handle.trim().toLowerCase() === page.handle || !handle.trim()) {
@@ -92,6 +111,7 @@ export function ChangeHandleView({
     try {
       const result = await handleMutation.mutateAsync(handle);
       onSaved(result.page);
+      setIsSuccess(true);
     } catch (caught) {
       setError(
         caught instanceof Error
@@ -110,6 +130,67 @@ export function ChangeHandleView({
       : availability?.available === false
         ? XCircle
         : null;
+
+  async function copyLink() {
+    try {
+      await navigator.clipboard.writeText(
+        `${siteOrigin.replace(/\/$/, "")}/${handle}`,
+      );
+      setCopyState("copied");
+    } catch {
+      setCopyState("error");
+    }
+    if (copyResetRef.current !== null)
+      window.clearTimeout(copyResetRef.current);
+    copyResetRef.current = window.setTimeout(() => {
+      setCopyState("idle");
+      copyResetRef.current = null;
+    }, 1400);
+  }
+
+  if (isSuccess) {
+    return (
+      <div className="relative flex min-h-80 flex-col items-center justify-center gap-6 p-1 text-center">
+        <div className="flex flex-col items-center gap-2">
+          <span
+            className="t-success-check text-green-500"
+            data-state="in"
+            aria-hidden="true"
+          >
+            <CheckCircle weight="Filled" className="size-12" />
+          </span>
+          <span className="font-medium text-lg">Successfully changed!</span>
+        </div>
+        <div className="w-full space-y-2">
+          <div className="flex h-11 w-full items-center justify-center rounded-md bg-secondary/80 p-2 text-base text-center">
+            <span className="text-muted-foreground/80">{domain}/</span>
+            <span>{handle}</span>
+          </div>
+          <Button
+            type="button"
+            variant="secondary"
+            className="t-copy-button h-12 w-full rounded-lg"
+            data-state={copyState}
+            onClick={() => void copyLink()}
+          >
+            <span className="t-copy-feedback" aria-live="polite">
+              <span className="t-copy-icon" aria-hidden="true">
+                <Check weight="Filled" className="size-4" />
+              </span>
+              <span className="t-copy-labels">
+                <span className="t-copy-label t-copy-label-idle">
+                  Copy Link
+                </span>
+                <span className="t-copy-label t-copy-label-copied">
+                  {copyState === "error" ? "Copy failed" : "Copied"}
+                </span>
+              </span>
+            </span>
+          </Button>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <form

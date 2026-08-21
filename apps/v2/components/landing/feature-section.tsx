@@ -10,6 +10,9 @@ import {
   interpolateColors,
   useCurrentFrame,
 } from "remotion";
+import { FlexibleWidgetSizesPreview } from "./feature-previews/flexible-widget-sizes-preview";
+import { PerfectFramePreview } from "./feature-previews/perfect-frame-preview";
+import { RichContentPreview } from "./feature-previews/rich-content-preview";
 
 const FEATURE_ITEMS = [
   {
@@ -37,7 +40,11 @@ const FEATURE_ITEMS = [
   },
 ] as const;
 
-export default function FeatureSection() {
+export default function FeatureSection({
+  mapboxAccessToken,
+}: {
+  mapboxAccessToken?: string;
+}) {
   const [isMounted, setIsMounted] = useState(false);
 
   useEffect(() => setIsMounted(true), []);
@@ -83,7 +90,7 @@ export default function FeatureSection() {
               className={
                 "mx-6 mb-6 min-h-[18rem] flex-1 rounded-2xl " +
                 (preview === "rich-content"
-                  ? "min-h-[20rem] overflow-visible bg-background p-2 md:min-h-[40rem]"
+                  ? "flex items-center justify-center min-h-[20rem] overflow-visible bg-background p-2 md:min-h-[40rem]"
                   : "overflow-hidden bg-background " +
                     (preview === "flexible-widget-sizes"
                       ? "md:min-h-[24rem]"
@@ -93,17 +100,16 @@ export default function FeatureSection() {
               {isMounted ? (
                 preview === "drag-drop" ? (
                   <DragDropPreview />
-                ) : (
-                  <>
-                    {/* Grid-based previews remain empty until the V2 Grid renderer is migrated.
-                    <GridItemShell ... />
-                    <ItemRenderer ... />
-                    <FlexibleWidgetSizesPreview />
-                    <PerfectFramePreview />
-                    */}
-                    <div aria-hidden="true" className="size-full" />
-                  </>
-                )
+                ) : null
+              ) : null}
+              {isMounted && preview === "rich-content" ? (
+                <RichContentPreview mapboxAccessToken={mapboxAccessToken} />
+              ) : null}
+              {isMounted && preview === "flexible-widget-sizes" ? (
+                <FlexibleWidgetSizesPreview />
+              ) : null}
+              {isMounted && preview === "perfect-the-frame" ? (
+                <PerfectFramePreview />
               ) : null}
             </div>
           </article>

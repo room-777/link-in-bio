@@ -26,7 +26,10 @@ import {
   getClientImageUrl,
   uploadPageImage,
 } from "@/lib/client/profile-image-api";
-import { widePageLayout } from "@/lib/handle/page-layout";
+import {
+  type Breakpoint,
+  getPageLayoutClasses,
+} from "@/lib/handle/page-layout";
 import {
   getCenteredProfileImageCrop,
   getProfileImageCropImageStyle,
@@ -51,6 +54,7 @@ type ProfileImageEditorProps = {
   acceptPage: (page: PageResponse) => void;
   save: (changes: UpdatePageRequest) => Promise<PageResponse | null>;
   onErrorChange: (error: string | null) => void;
+  breakpoint: Breakpoint;
 };
 
 function clamp(value: number, min: number, max: number) {
@@ -78,6 +82,7 @@ export function ProfileImageEditor({
   acceptPage,
   save,
   onErrorChange,
+  breakpoint,
 }: ProfileImageEditorProps) {
   const inputRef = useRef<HTMLInputElement>(null);
   const frameRef = useRef<HTMLButtonElement>(null);
@@ -363,11 +368,12 @@ export function ProfileImageEditor({
     cropReady && renderedCrop
       ? revealRadius(renderedCrop, frameSize)
       : frameSize;
+  const layoutClasses = getPageLayoutClasses(breakpoint);
 
   return (
-    <div className="t-stagger-line t-stagger-line--1">
+    <div>
       <div
-        className={`group/image relative isolate size-28 sm:size-32 min-[90rem]:size-46 ${cropOpen ? "z-50" : "z-0"}`}
+        className={`group/image relative isolate size-28 ${layoutClasses.image} ${cropOpen ? "z-50" : "z-0"}`}
         data-profile-image-frame="true"
       >
         <button
@@ -468,7 +474,7 @@ export function ProfileImageEditor({
               onClick={() =>
                 cropOpen ? applyRequestRef.current?.() : openExistingCrop()
               }
-              className={`absolute top-0 left-0 inline-flex size-10 items-center justify-center rounded-full border border-border/60 bg-background shadow-md transition-[opacity,transform,scale,background-color,color] duration-150 ease-[cubic-bezier(0.23,1,0.32,1)] focus-visible:scale-100 focus-visible:opacity-100 motion-reduce:transition-none ${widePageLayout.imageCrop} ${cropOpen ? "z-60 border-0! bg-brand-green text-white! opacity-100 hover:bg-brand-green/80" : "opacity-0 group-hover/image:scale-100 group-hover/image:opacity-100"}`}
+              className={`absolute top-0 left-0 inline-flex size-10 items-center justify-center rounded-full border-0! bg-background smooth-shadow-ring-sm shadow-black smooth-ring-neutral-400/30 transition-[opacity,transform,scale,background-color,color] duration-150 ease-[cubic-bezier(0.23,1,0.32,1)] focus-visible:scale-100 focus-visible:opacity-100 motion-reduce:transition-none ${layoutClasses.imageCrop} ${cropOpen ? "z-60 border-0! bg-brand-green text-white! opacity-100 hover:bg-brand-green/80" : "opacity-0 group-hover/image:scale-100 group-hover/image:opacity-100"}`}
             >
               <CropIcon className="size-5 stroke-3" />
             </Button>
@@ -479,7 +485,7 @@ export function ProfileImageEditor({
               aria-label="Remove profile image"
               disabled={cropOpen}
               onClick={() => void removeImage()}
-              className={`absolute top-0 right-0 inline-flex size-10 items-center justify-center rounded-full border border-border/60 bg-background shadow-md transition-[opacity,transform,scale,background-color,color] duration-150 ease-[cubic-bezier(0.23,1,0.32,1)] focus-visible:scale-100 focus-visible:opacity-100 motion-reduce:transition-none ${widePageLayout.imageRemove} ${cropOpen ? "invisible pointer-events-none opacity-0" : "opacity-0 group-hover/image:scale-100 group-hover/image:opacity-100"}`}
+              className={`absolute top-0 right-0 inline-flex size-10 items-center justify-center rounded-full border-0! bg-background smooth-shadow-ring-sm shadow-black smooth-ring-neutral-400/30 transition-[opacity,transform,scale,background-color,color] duration-150 ease-[cubic-bezier(0.23,1,0.32,1)] focus-visible:scale-100 focus-visible:opacity-100 motion-reduce:transition-none ${layoutClasses.imageRemove} ${cropOpen ? "invisible pointer-events-none opacity-0" : "opacity-0 group-hover/image:scale-100 group-hover/image:opacity-100"}`}
             >
               <TrashIcon className="size-5 stroke-3" />
             </Button>

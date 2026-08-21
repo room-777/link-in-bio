@@ -1,15 +1,20 @@
 "use client";
 
-import type { PageResponse, UpdatePageRequest } from "@grabbin/api";
+import type {
+  OwnedPageListResponse,
+  PageResponse,
+  UpdatePageRequest,
+} from "@grabbin/api";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { useCallback, useEffect, useRef, useState } from "react";
 import {
   myPageQueryKey,
+  ownedPagesQueryKey,
   pageQueryKey,
   updatePage,
 } from "@/lib/client/page-api";
 
-const AUTO_SAVE_DELAY = 1000;
+export const AUTO_SAVE_DELAY = 1000;
 
 type EditablePageFields = Pick<
   PageResponse,
@@ -68,6 +73,26 @@ export function usePageAutoSave(page: PageResponse) {
         (current: { page: PageResponse | null } | undefined) =>
           current?.page?.id === nextPage.id
             ? { ...current, page: nextPage }
+            : current,
+      );
+      queryClient.setQueryData<OwnedPageListResponse | undefined>(
+        ownedPagesQueryKey,
+        (current) =>
+          current
+            ? {
+                ...current,
+                pages: current.pages.map((candidate) =>
+                  candidate.id === nextPage.id
+                    ? {
+                        ...candidate,
+                        handle: nextPage.handle,
+                        name: nextPage.name,
+                        image: nextPage.image,
+                        updatedAt: nextPage.updatedAt,
+                      }
+                    : candidate,
+                ),
+              }
             : current,
       );
     },
@@ -153,5 +178,12 @@ export function usePageAutoSave(page: PageResponse) {
     [],
   );
 
-  return { acceptPage, draft, error, save, updateField };
+  return {
+    acceptPage,
+    draft,
+    error,
+    isSaving: mutation.isPending,
+    save,
+    updateField,
+  };
 }

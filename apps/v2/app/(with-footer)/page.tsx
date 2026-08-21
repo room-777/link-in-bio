@@ -3,6 +3,7 @@ import FeatureSection from "@/components/landing/feature-section";
 import HeroSection from "@/components/landing/hero-section";
 import PlanSection from "@/components/landing/plan-section";
 import JsonLd from "@/components/seo/json-ld";
+import { env } from "@/lib/env";
 import { createWebPageJsonLd, createWebSiteJsonLd } from "@/lib/seo/json-ld";
 import {
   createHomeMetadata,
@@ -26,6 +27,9 @@ const homeJsonLd = [
 ];
 
 export default function Home() {
+  const mapboxAccessToken =
+    env.NEXT_PUBLIC_MAPBOX_ACCESS_TOKEN?.trim() || undefined;
+
   return (
     <>
       <JsonLd nodes={homeJsonLd} />
@@ -33,7 +37,7 @@ export default function Home() {
         <div className="flex min-h-lvh flex-col">
           <section className="flex-1 px-5 pb-16">
             <HeroSection />
-            <FeatureSection />
+            <FeatureSection mapboxAccessToken={mapboxAccessToken} />
             <PlanSection />
             <div>
               <CTASection />

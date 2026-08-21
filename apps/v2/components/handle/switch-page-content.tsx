@@ -1,6 +1,7 @@
 import type { OwnedPageListResponse } from "@grabbin/api";
 import { PlusIcon } from "lucide-react";
 import Link from "next/link";
+import { Verified } from "reicon-react";
 import { SharedLayoutBg } from "@/components/motion/shared-layout-bg";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -46,35 +47,44 @@ export function SwitchPageContent({
               key={candidate.id}
               href={`/${encodeURIComponent(candidate.handle)}`}
               onClick={onSelect}
-              className="flex min-h-15 w-full items-center gap-2 rounded-lg text-left font-medium px-2"
+              className="flex min-h-10 w-full items-center justify-between gap-2 rounded-lg px-2 text-left font-medium"
             >
-              <Avatar size="default" className="size-9">
-                <AvatarImage
-                  src={
-                    createPublicImageUrl(
-                      candidate.image,
-                      candidate.updatedAt,
-                      imageBaseUrl,
-                    ) ?? undefined
-                  }
-                  alt=""
-                />
-                <AvatarFallback />
-              </Avatar>
-              <span className="flex min-w-0 flex-col">
-                <span className="truncate">
-                  {candidate.name ?? candidate.handle}
-                </span>
-                <span className="text-muted-foreground/80">
-                  /{candidate.handle}
+              <span className="flex min-w-0 items-center gap-2">
+                <Avatar size="sm" className="">
+                  <AvatarImage
+                    src={
+                      createPublicImageUrl(
+                        candidate.image,
+                        candidate.updatedAt,
+                        imageBaseUrl,
+                      ) ?? undefined
+                    }
+                    alt=""
+                  />
+                  <AvatarFallback />
+                </Avatar>
+                <span className="flex min-w-0 flex-col leading-tight text-sm">
+                  <span className="truncate">
+                    {candidate.name ?? candidate.handle}
+                  </span>
+                  {/*<span className="text-muted-foreground/80">
+                    /{candidate.handle}
+                  </span>*/}
                 </span>
               </span>
+              {candidate.isPrimary ? (
+                <Verified
+                  weight="Filled"
+                  className="size-5 shrink-0 text-brand"
+                  aria-hidden="true"
+                />
+              ) : null}
             </Link>
           ))}
           <Link
             href="/new"
             onClick={onSelect}
-            className="flex min-h-15 w-full! justify-between items-center gap-2 rounded-lg font-medium px-2"
+            className="flex min-h-10 w-full! justify-between items-center gap-2 rounded-lg font-medium px-2"
           >
             <span>Create page</span>
             <PlusIcon className="size-4" aria-hidden="true" />

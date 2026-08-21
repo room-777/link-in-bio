@@ -1,16 +1,32 @@
+"use client";
+
+import type { PageResponse } from "@grabbin/api";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
-import { env } from "@/lib/env";
-import { widePageLayout } from "@/lib/handle/page-layout";
+import { getPageLayoutClasses } from "@/lib/handle/page-layout";
 import type { PublicHandleModel } from "@/lib/server/public-handle-model";
 import { MyPageLink } from "./my-page-link";
 import { OwnerControls } from "./owner-controls";
 import { PublicViews } from "./public-views";
 
-export function PublicControls({ model }: { model: PublicHandleModel }) {
+type PublicControlsProps = {
+  model: PublicHandleModel;
+  apiBaseUrl: string;
+  imageBaseUrl: string | null;
+  siteOrigin: string;
+  onPageChange: (page: PageResponse) => void;
+};
+
+export function PublicControls({
+  model,
+  apiBaseUrl,
+  imageBaseUrl,
+  siteOrigin,
+  onPageChange,
+}: PublicControlsProps) {
   return (
     <aside
-      className={`relative flex flex-col items-center gap-2 py-24 pt-0 z-10 min-[90rem]:flex-row min-[90rem]:py-0 ${widePageLayout.controls}`}
+      className={`relative flex flex-col items-center gap-2 py-24 pt-0 z-10 min-[90rem]:flex-row min-[90rem]:py-0 ${getPageLayoutClasses("wide").controls}`}
       aria-label="Page controls"
     >
       <div
@@ -33,9 +49,10 @@ export function PublicControls({ model }: { model: PublicHandleModel }) {
               hasAccess={model.entitlements.hasAccess}
               isPrimaryPage={model.isPrimaryPage}
               readOnly={model.readOnly}
-              apiBaseUrl={env.NEXT_PUBLIC_API_BASE_URL}
-              imageBaseUrl={env.NEXT_PUBLIC_R2_PUBLIC_URL}
-              siteOrigin={env.NEXT_PUBLIC_APP_URL}
+              apiBaseUrl={apiBaseUrl}
+              imageBaseUrl={imageBaseUrl}
+              siteOrigin={siteOrigin}
+              onPageChange={onPageChange}
             />
           ) : !model.isSignedIn ? (
             <Button
@@ -74,7 +91,7 @@ export function PublicControls({ model }: { model: PublicHandleModel }) {
         {!model.isCurrentUserPage ? (
           <MyPageLink
             enabled={model.isSignedIn && !model.isCurrentUserPage}
-            imageBaseUrl={env.NEXT_PUBLIC_R2_PUBLIC_URL}
+            imageBaseUrl={imageBaseUrl}
           />
         ) : null}
       </div>

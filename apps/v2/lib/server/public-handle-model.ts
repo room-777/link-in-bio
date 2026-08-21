@@ -5,6 +5,7 @@ import {
   type PageResponse,
   type SessionResponse,
 } from "@grabbin/api";
+import { headers } from "next/headers";
 import { notFound } from "next/navigation";
 import { cache } from "react";
 import { getPageByHandle, getSession } from "@/lib/server/page-queries";
@@ -26,9 +27,13 @@ export const getPublicHandleModel = cache(
     const handle = normalizePageHandle(rawHandle);
     if (isReservedPageHandle(handle)) return null;
 
+    const requestHeaders = await headers();
+    const sessionRequest = requestHeaders.has("cookie")
+      ? getSession()
+      : Promise.resolve(null);
     const [pageResult, sessionResult] = await Promise.all([
       getPageByHandle(handle),
-      getSession(),
+      sessionRequest,
     ]);
     if (!pageResult.ok) {
       if (pageResult.response.status === 404) return null;
@@ -37,13 +42,17 @@ export const getPublicHandleModel = cache(
       );
     }
 
-    if (!sessionResult.ok && sessionResult.response.status !== 401) {
+    if (
+      sessionResult &&
+      !sessionResult.ok &&
+      sessionResult.response.status !== 401
+    ) {
       throw new Error(
         `Failed to load session: ${sessionResult.response.status}`,
       );
     }
 
-    const session = sessionResult.ok ? sessionResult.data : null;
+    const session = sessionResult?.ok ? sessionResult.data : null;
     const isSignedIn = Boolean(session?.user);
     const page = pageResult.data.page;
     const isCurrentUserPage = session?.user.id === page.userId;

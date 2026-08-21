@@ -8,6 +8,9 @@ import {
   myPageResponseSchema,
   type OwnedPageListResponse,
   ownedPageListResponseSchema,
+  type PageItemBatchRequest,
+  type PageItemBatchResponse,
+  pageItemBatchResponseSchema,
   type UpdatePageRequest,
   type UpdatePageResponse,
   updatePageResponseSchema,
@@ -68,6 +71,20 @@ export async function updatePage(
       method: "PATCH",
       headers: { "content-type": "application/json" },
       body: JSON.stringify(input),
+    }),
+  );
+}
+
+export async function patchPageItemsBatch(
+  handle: string,
+  batch: PageItemBatchRequest,
+): Promise<PageItemBatchResponse> {
+  return v.parse(
+    pageItemBatchResponseSchema,
+    await requestJson(`/api/pages/${encodeURIComponent(handle)}/batch`, {
+      method: "PATCH",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify(batch),
     }),
   );
 }

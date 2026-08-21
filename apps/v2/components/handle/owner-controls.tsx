@@ -30,6 +30,7 @@ type OwnerControlsProps = {
   apiBaseUrl: string;
   imageBaseUrl?: string | null;
   siteOrigin: string;
+  onPageChange: (page: PageResponse) => void;
 };
 
 type SettingsView = "menu" | "handle" | "delete";
@@ -42,6 +43,7 @@ export function OwnerControls({
   apiBaseUrl,
   imageBaseUrl,
   siteOrigin,
+  onPageChange,
 }: OwnerControlsProps) {
   const [open, setOpen] = useState(false);
   const [view, setView] = useState<SettingsView>("menu");
@@ -199,7 +201,7 @@ export function OwnerControls({
           <PopoverContent
             align="start"
             sideOffset={12}
-            className={`${view === "handle" || handleSuccess ? "w-88" : view === "delete" ? "w-80" : "w-64"} t-resize overflow-hidden rounded-2xl bg-background p-2 beautiful-shadow ${view === "delete" ? "rounded-4xl p-4" : ""}`}
+            className={`${view === "handle" || handleSuccess ? "w-88" : view === "delete" ? "w-80" : "w-64"} t-resize overflow-hidden rounded-2xl bg-background p-2 beautiful-shadow! ${view === "delete" ? "rounded-4xl p-4" : ""}`}
           >
             <div
               className="t-page-slide t-resize"
@@ -321,12 +323,16 @@ export function OwnerControls({
                       setView("menu");
                     }}
                     onSaved={(nextPage) => {
+                      onPageChange(nextPage);
                       setHandle(nextPage.handle);
                       setHandleSuccess(true);
-                      window.location.assign(
+                      window.history.replaceState(
+                        window.history.state,
+                        "",
                         `/${encodeURIComponent(nextPage.handle)}`,
                       );
                     }}
+                    onSuccessChange={setHandleSuccess}
                     onBusy={setBusy}
                   />
                 ) : (

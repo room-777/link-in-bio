@@ -3,8 +3,6 @@ import createMDX from "@next/mdx";
 import { initOpenNextCloudflareForDev } from "@opennextjs/cloudflare";
 import type { NextConfig } from "next";
 
-initOpenNextCloudflareForDev();
-
 const require = createRequire(import.meta.url);
 const mdxPlugin = (name: string) => require.resolve(name);
 
@@ -38,4 +36,7 @@ const withMDX = createMDX({
   },
 });
 
-export default withMDX(nextConfig);
+export default async function config() {
+  await initOpenNextCloudflareForDev();
+  return withMDX(nextConfig);
+}

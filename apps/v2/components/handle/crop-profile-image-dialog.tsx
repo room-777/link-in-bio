@@ -75,7 +75,6 @@ export function CropProfileImageDialog({
     setError(null);
     try {
       await onApply(crop);
-      onOpenChange(false);
     } catch (caught) {
       setError(
         caught instanceof Error

@@ -7,10 +7,6 @@
   --grid-item-pop-blur: 2px;
   --grid-item-exit-duration: 180ms;
   --grid-item-exit-ease: cubic-bezier(0.23, 1, 0.32, 1);
-  --grid-item-initial-duration: 240ms;
-  --grid-item-initial-ease: cubic-bezier(0.23, 1, 0.32, 1);
-  --grid-item-initial-distance: 8px;
-  --grid-item-initial-scale: 0.96;
   --grid-position-duration: 520ms;
   --grid-position-ease: var(--grid-spring-ease);
   --grid-drag-follow-duration: 100ms;
@@ -101,7 +97,6 @@
   cursor: grabbing !important;
 }
 
-/* Item enter motion. Remove this class to disable the enter effect. */
 .grid-item-pop-in {
   filter: blur(0);
   opacity: 1;
@@ -112,40 +107,20 @@
     filter var(--grid-item-pop-duration) var(--grid-item-pop-ease);
 }
 
-.grid-item-pop-in.is-entering {
-  filter: blur(var(--grid-item-pop-blur));
-  opacity: 0;
-  transform: translateY(var(--grid-item-pop-distance))
-    scale(var(--grid-item-pop-scale));
-}
-
-/* Item exit motion mirrors the enter state and stays on compositor-friendly properties. */
+.grid-item-pop-in.is-entering,
 .grid-item-pop-in.is-exiting {
   filter: blur(var(--grid-item-pop-blur));
   opacity: 0;
   transform: translateY(var(--grid-item-pop-distance))
     scale(var(--grid-item-pop-scale));
+}
+
+.grid-item-pop-in.is-exiting {
   transition:
     opacity var(--grid-item-exit-duration) var(--grid-item-exit-ease),
     transform var(--grid-item-exit-duration) var(--grid-item-exit-ease),
     filter var(--grid-item-exit-duration) var(--grid-item-exit-ease);
   will-change: transform, opacity, filter;
-}
-
-/* Initial page entrance stays lighter than the existing new-item pop-in. */
-.grid-item-initial-enter {
-  filter: blur(0);
-  transition:
-    opacity var(--grid-item-initial-duration) var(--grid-item-initial-ease),
-    transform var(--grid-item-initial-duration) var(--grid-item-initial-ease);
-  transition-delay: var(--grid-item-enter-delay, 0ms);
-}
-
-.grid-item-initial-enter.is-entering {
-  filter: none;
-  opacity: 0;
-  transform: translateY(var(--grid-item-initial-distance))
-    scale(var(--grid-item-initial-scale));
 }
 
 /* Drag feedback. RGL's parent keeps the item's grid position; this card appears lifted. */
@@ -168,14 +143,6 @@
     transform var(--grid-drag-lift-duration) var(--grid-drag-lift-ease),
     scale var(--grid-drag-lift-duration) var(--grid-drag-lift-ease),
     box-shadow var(--grid-drag-lift-duration) var(--grid-drag-lift-ease);
-}
-
-.grid-item-pop-in.is-entering:not(.grid-item-initial-enter) {
-  will-change: transform, opacity, filter;
-}
-
-.grid-item-initial-enter.is-entering {
-  will-change: transform, opacity;
 }
 
 /* Section cards stay visually flat until the pointer reaches them. */
@@ -268,7 +235,6 @@
 
 @media (prefers-reduced-motion: reduce) {
   .grid-item-pop-in,
-  .grid-item-initial-enter,
   .grid-item-pop-in.is-exiting,
   .grid-item-card,
   .sinabro-grid-layout .react-grid-item,
@@ -276,24 +242,15 @@
     transition: none !important;
   }
 
-  .grid-item-pop-in,
-  .grid-item-initial-enter,
   .grid-item-card {
     filter: none !important;
     transform: none !important;
     scale: 1 !important;
   }
 
-  .grid-item-pop-in.is-entering,
-  .grid-item-initial-enter.is-entering {
+  .grid-item-pop-in.is-entering {
     filter: none !important;
     opacity: 1 !important;
-    transform: none !important;
-  }
-
-  .grid-item-pop-in.is-exiting {
-    filter: none !important;
-    opacity: 0 !important;
     transform: none !important;
   }
 }

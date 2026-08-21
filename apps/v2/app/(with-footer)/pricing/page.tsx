@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import FeatureSection from "@/components/landing/feature-section";
 import PlanSection from "@/components/landing/plan-section";
 import JsonLd from "@/components/seo/json-ld";
+import { env } from "@/lib/env";
 import { createWebPageJsonLd } from "@/lib/seo/json-ld";
 import { createMetadata, DEFAULT_SOCIAL_IMAGE } from "@/lib/seo/metadata";
 
@@ -24,12 +25,15 @@ const pricingJsonLd = createWebPageJsonLd({
 });
 
 export default function PricingPage() {
+  const mapboxAccessToken =
+    env.NEXT_PUBLIC_MAPBOX_ACCESS_TOKEN?.trim() || undefined;
+
   return (
     <>
       <JsonLd nodes={[pricingJsonLd]} />
       <main className="px-5 pb-16">
         <PlanSection />
-        <FeatureSection />
+        <FeatureSection mapboxAccessToken={mapboxAccessToken} />
       </main>
     </>
   );
