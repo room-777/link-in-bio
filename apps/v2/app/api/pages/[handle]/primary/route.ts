@@ -1,6 +1,8 @@
+import type { InferRequestType, InferResponseType } from "hono/client";
 import {
-  fetchBackendResponse,
+  createBackendClient,
   getBackendRequestHeaders,
+  parseBackendResponse,
 } from "@/lib/server/backend";
 
 type RouteContext = {
@@ -12,8 +14,14 @@ export async function PATCH(
   { params }: RouteContext,
 ): Promise<Response> {
   const { handle } = await params;
-  return fetchBackendResponse(`/pages/${encodeURIComponent(handle)}/primary`, {
-    method: "PATCH",
-    headers: getBackendRequestHeaders(request),
-  });
+  const client = createBackendClient(getBackendRequestHeaders(request));
+  const endpoint = client.pages[":handle"].primary.$patch;
+  const input = {
+    param: { handle },
+  } satisfies InferRequestType<typeof endpoint>;
+  return (
+    await parseBackendResponse<InferResponseType<typeof endpoint>>(
+      await endpoint(input),
+    )
+  ).response;
 }

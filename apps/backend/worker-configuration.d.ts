@@ -43,6 +43,9 @@ declare namespace Cloudflare {
 	interface Env extends __BaseEnv_Env {}
 }
 interface Env extends __BaseEnv_Env {}
+type CloudflareBindings = {
+    [Binding in keyof Env]-?: NonNullable<Env[Binding]>;
+};
 type StringifyValues<EnvType extends Record<string, unknown>> = {
 	[Binding in keyof EnvType]: EnvType[Binding] extends string ? EnvType[Binding] : string;
 };

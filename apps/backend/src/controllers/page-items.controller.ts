@@ -5,10 +5,8 @@ import {
 	pageItemUploadCompleteRequestSchema,
 	pageItemUploadRequestSchema,
 } from "@grabbin/api";
-import type { Context } from "hono";
 import { Hono } from "hono";
-import * as v from "valibot";
-import { UnprocessableEntityError } from "../exceptions/http-exceptions";
+import { jsonBody } from "../middlewares/json-body.middleware";
 import {
 	requireAuthenticatedUser,
 	requireWritableOwnedPage,
@@ -22,19 +20,6 @@ import {
 	mapPageItemResponse,
 	persistPageItemBatch,
 } from "../services/page-item.service";
-
-const readJson = async (
-	c: Context<AppEnv>,
-) => {
-	try {
-		return await c.req.json();
-	} catch {
-		throw new UnprocessableEntityError(
-			"Invalid JSON payload.",
-			"INVALID_JSON_PAYLOAD",
-		);
-	}
-};
 
 export const pageItemsController =
 	new Hono<AppEnv>()
@@ -56,28 +41,25 @@ export const pageItemsController =
 		)
 		.post(
 			"/:handle/metadata",
+			jsonBody(
+				pageItemMetadataRequestSchema,
+				"Invalid link metadata request.",
+				"INVALID_LINK_METADATA_REQUEST",
+			),
 			async (c) => {
 				const user = c.get(
 					"authenticatedUser",
 				);
-				const parsed = v.safeParse(
-					pageItemMetadataRequestSchema,
-					await readJson(c),
-				);
-				if (!parsed.success)
-					throw new UnprocessableEntityError(
-						"Invalid link metadata request.",
-						"INVALID_LINK_METADATA_REQUEST",
-					);
+				const parsed =
+					c.req.valid("json");
 				const item =
 					await enrichPageItemMetadata({
 						db: c.get("db"),
 						handle:
 							c.req.param("handle"),
 						userId: user.id,
-						itemId:
-							parsed.output.itemId,
-						url: parsed.output.url,
+						itemId: parsed.itemId,
+						url: parsed.url,
 						publicBaseUrl:
 							c.env?.R2_PUBLIC_URL,
 						env: c.env,
@@ -94,46 +76,42 @@ export const pageItemsController =
 		)
 		.post(
 			"/:handle/items/upload",
+			jsonBody(
+				pageItemUploadRequestSchema,
+				"Invalid item media.",
+				"INVALID_ITEM_MEDIA",
+			),
 			async (c) => {
 				const user = c.get(
 					"authenticatedUser",
 				);
 				const page = c.get("ownedPage");
-				const parsed = v.safeParse(
-					pageItemUploadRequestSchema,
-					await readJson(c),
-				);
-				if (!parsed.success)
-					throw new UnprocessableEntityError(
-						"Invalid item media.",
-						"INVALID_ITEM_MEDIA",
-					);
+				const parsed =
+					c.req.valid("json");
 				return c.json(
 					await createItemMediaUpload({
 						env: c.env,
 						userId: user.id,
 						pageId: page.id,
-						input: parsed.output,
+						input: parsed,
 					}),
 				);
 			},
 		)
 		.post(
 			"/:handle/items/upload/complete",
+			jsonBody(
+				pageItemUploadCompleteRequestSchema,
+				"Invalid item media key.",
+				"INVALID_ITEM_MEDIA",
+			),
 			async (c) => {
 				const user = c.get(
 					"authenticatedUser",
 				);
 				const page = c.get("ownedPage");
-				const parsed = v.safeParse(
-					pageItemUploadCompleteRequestSchema,
-					await readJson(c),
-				);
-				if (!parsed.success)
-					throw new UnprocessableEntityError(
-						"Invalid item media key.",
-						"INVALID_ITEM_MEDIA",
-					);
+				const parsed =
+					c.req.valid("json");
 				return c.json(
 					await completeItemMediaUpload(
 						{
@@ -141,7 +119,7 @@ export const pageItemsController =
 							userId: user.id,
 							pageId: page.id,
 							objectKey:
-								parsed.output.objectKey,
+								parsed.objectKey,
 						},
 					),
 				);
@@ -149,26 +127,24 @@ export const pageItemsController =
 		)
 		.patch(
 			"/:handle/batch",
+			jsonBody(
+				pageItemBatchRequestSchema,
+				"Invalid item batch.",
+				"INVALID_ITEM_BATCH",
+			),
 			async (c) => {
 				const user = c.get(
 					"authenticatedUser",
 				);
-				const parsed = v.safeParse(
-					pageItemBatchRequestSchema,
-					await readJson(c),
-				);
-				if (!parsed.success)
-					throw new UnprocessableEntityError(
-						"Invalid item batch.",
-						"INVALID_ITEM_BATCH",
-					);
+				const parsed =
+					c.req.valid("json");
 				return c.json(
 					await persistPageItemBatch({
 						db: c.get("db"),
 						handle:
 							c.req.param("handle"),
 						userId: user.id,
-						batch: parsed.output,
+						batch: parsed,
 						queue:
 							c.env
 								?.ITEM_MEDIA_DELETE_QUEUE,

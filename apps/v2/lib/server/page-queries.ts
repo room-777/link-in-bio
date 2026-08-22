@@ -1,18 +1,15 @@
-import {
-  createPageRequestSchema,
-  createPageResponseSchema,
-  handleAvailabilityResponseSchema,
-  myPageResponseSchema,
-  normalizePageHandle,
-  ownedPageListResponseSchema,
-  pageByHandleResponseSchema,
-  type SessionResponse,
-  sessionResponseSchema,
-} from "@grabbin/api";
+import { normalizePageHandle } from "@grabbin/api";
+import type { InferRequestType, InferResponseType } from "hono/client";
 import { headers } from "next/headers";
 import { cache } from "react";
-import * as v from "valibot";
-import { type BackendResult, fetchBackend } from "@/lib/server/backend";
+import {
+  createBackendClient,
+  parseBackendResponse,
+} from "@/lib/server/backend";
+
+type BackendClient = ReturnType<typeof createBackendClient>;
+type CreatePageEndpoint = BackendClient["pages"]["$post"];
+type CreatePageInput = InferRequestType<CreatePageEndpoint>["json"];
 
 const FORWARDED_HEADERS = ["cookie", "origin"] as const;
 
@@ -26,14 +23,6 @@ async function getReadHeaders(request?: Request) {
   }
 
   return forwarded;
-}
-
-function readInit(headers: Headers): RequestInit {
-  return {
-    method: "GET",
-    headers,
-    cache: "no-store",
-  };
 }
 
 export function createReadResponse(response: Response) {
@@ -55,29 +44,31 @@ export function createReadResponse(response: Response) {
   });
 }
 
-export async function getSession(
-  request?: Request,
-): Promise<BackendResult<SessionResponse>> {
-  return fetchBackend(
-    "/auth/get-session",
-    readInit(await getReadHeaders(request)),
-    sessionResponseSchema,
+export async function getSession(request?: Request) {
+  const client = createBackendClient(await getReadHeaders(request), {
+    cache: "no-store",
+  });
+  const endpoint = client.auth["get-session"].$get;
+  return parseBackendResponse<InferResponseType<typeof endpoint>>(
+    await endpoint(),
   );
 }
 
 export async function getMyPage(request?: Request) {
-  return fetchBackend(
-    "/pages/me",
-    readInit(await getReadHeaders(request)),
-    myPageResponseSchema,
+  const client = createBackendClient(await getReadHeaders(request), {
+    cache: "no-store",
+  });
+  return parseBackendResponse<InferResponseType<typeof client.pages.me.$get>>(
+    await client.pages.me.$get(),
   );
 }
 
 export async function getOwnedPages(request?: Request) {
-  return fetchBackend(
-    "/pages",
-    readInit(await getReadHeaders(request)),
-    ownedPageListResponseSchema,
+  const client = createBackendClient(await getReadHeaders(request), {
+    cache: "no-store",
+  });
+  return parseBackendResponse<InferResponseType<typeof client.pages.$get>>(
+    await client.pages.$get(),
   );
 }
 
@@ -85,34 +76,35 @@ export const getPageByHandle = cache(async function getPageByHandle(
   handle: string,
   request?: Request,
 ) {
-  return fetchBackend(
-    `/pages/${encodeURIComponent(normalizePageHandle(handle))}`,
-    readInit(await getReadHeaders(request)),
-    pageByHandleResponseSchema,
+  const client = createBackendClient(await getReadHeaders(request), {
+    cache: "no-store",
+  });
+  const endpoint = client.pages[":handle"].$get;
+  return parseBackendResponse<InferResponseType<typeof endpoint>>(
+    await endpoint({
+      param: { handle: normalizePageHandle(handle) },
+    }),
   );
 });
 
 export async function checkPageHandle(handle: string, request?: Request) {
-  const params = new URLSearchParams({ handle });
-  return fetchBackend(
-    `/pages/check?${params.toString()}`,
-    readInit(await getReadHeaders(request)),
-    handleAvailabilityResponseSchema,
+  const client = createBackendClient(await getReadHeaders(request), {
+    cache: "no-store",
+  });
+  return parseBackendResponse<
+    InferResponseType<typeof client.pages.check.$get>
+  >(
+    await client.pages.check.$get({
+      query: { handle },
+    }),
   );
 }
 
-export async function createPage(input: unknown, request?: Request) {
-  const parsed = v.parse(createPageRequestSchema, input);
-  const requestHeaders = await getReadHeaders(request);
-  requestHeaders.set("content-type", "application/json");
-
-  return fetchBackend(
-    "/pages",
-    {
-      method: "POST",
-      headers: requestHeaders,
-      body: JSON.stringify(parsed),
-    },
-    createPageResponseSchema,
+export async function createPage(input: CreatePageInput, request?: Request) {
+  const client = createBackendClient(await getReadHeaders(request));
+  return parseBackendResponse<InferResponseType<typeof client.pages.$post>>(
+    await client.pages.$post({
+      json: input,
+    }),
   );
 }

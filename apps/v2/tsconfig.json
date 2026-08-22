@@ -19,13 +19,22 @@
       }
     ],
     "paths": {
-      "@/*": ["./*"]
+      "@/*": ["./*"],
+      "@controllers/*": ["../backend/src/controllers/*"],
+      "@middlewares/*": ["../backend/src/middlewares/*"],
+      "@services/*": ["../backend/src/services/*"],
+      "@schemas/*": ["../backend/src/schemas/*"],
+      "@core/*": ["../backend/src/core/*"],
+      "@db/*": ["../backend/src/db/*"],
+      "types/*": ["../backend/src/types/*"],
+      "@types/*": ["../backend/src/types/*"]
     }
   },
   "include": [
     "next-env.d.ts",
     "**/*.ts",
     "**/*.tsx",
+    "../backend/worker-configuration.d.ts",
     ".next/types/**/*.ts",
     ".next/dev/types/**/*.ts",
     "**/*.mts"

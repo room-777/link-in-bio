@@ -27,7 +27,7 @@ export const PRO_PLANS = {
 >;
 
 export const PRO_MONTHLY_PRODUCT_ID = PRO_PLANS.monthly.productId;
-export const PRO_PRODUCT_IDS = new Set([
+export const PRO_PRODUCT_IDS = new Set<string>([
 	PRO_MONTHLY_PRODUCT_ID,
 	PRO_PLANS.yearly.productId,
 ]);

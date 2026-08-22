@@ -178,7 +178,7 @@ export const betterAuthOptions = (
 			emailOTP({
 				expiresIn: 5 * 60,
 				storeOTP: "hashed",
-				sendVerificationOTP: ({
+				sendVerificationOTP: async ({
 					email,
 					otp,
 					type,
