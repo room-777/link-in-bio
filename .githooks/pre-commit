@@ -32,5 +32,5 @@ run_biome() {
 }
 
 run_biome biome.json apps/frontend
-run_biome apps/backend/biome.json apps/backend
-run_biome apps/v2/biome.json apps/v2
+run_biome apps/server/biome.json apps/server
+run_biome apps/web/biome.json apps/web

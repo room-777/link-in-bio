@@ -1,4 +1,4 @@
-import type { AppType } from "@grabbin/backend";
+import type { AppType } from "@grabbin/server";
 import {
   type ClientResponse,
   hc,

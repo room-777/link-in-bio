@@ -1,5 +1,5 @@
 import { env } from "cloudflare:workers";
-import type { AppType } from "@grabbin/backend";
+import type { AppType } from "@grabbin/server";
 import { hc } from "hono/client";
 import { getApiBaseUrl } from "@/lib/site/api-base-url";
 

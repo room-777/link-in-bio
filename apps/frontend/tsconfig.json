@@ -1,5 +1,5 @@
 {
-  "include": ["**/*.ts", "**/*.tsx", "**/*.d.ts", "../backend/worker-configuration.d.ts"],
+  "include": ["**/*.ts", "**/*.tsx", "**/*.d.ts", "../server/worker-configuration.d.ts"],
   "compilerOptions": {
     "target": "ES2022",
     "jsx": "react-jsx",
@@ -8,14 +8,14 @@
     "paths": {
       "@/*": ["./src/*"],
       "content-collections": ["./.content-collections/generated"],
-      "@controllers/*": ["../backend/src/controllers/*"],
-      "@middlewares/*": ["../backend/src/middlewares/*"],
-      "@services/*": ["../backend/src/services/*"],
-      "@schemas/*": ["../backend/src/schemas/*"],
-      "@core/*": ["../backend/src/core/*"],
-      "@db/*": ["../backend/src/db/*"],
-      "types/*": ["../backend/src/types/*"],
-      "@types/*": ["../backend/src/types/*"]
+      "@controllers/*": ["../server/src/controllers/*"],
+      "@middlewares/*": ["../server/src/middlewares/*"],
+      "@services/*": ["../server/src/services/*"],
+      "@schemas/*": ["../server/src/schemas/*"],
+      "@core/*": ["../server/src/core/*"],
+      "@db/*": ["../server/src/db/*"],
+      "types/*": ["../server/src/types/*"],
+      "@types/*": ["../server/src/types/*"]
     },
     "lib": ["ES2022", "DOM", "DOM.Iterable"],
     "types": ["vite/client"],

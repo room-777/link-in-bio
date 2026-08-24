@@ -107,8 +107,8 @@ Apply the Drizzle migration before deploying the Worker. The Worker reads the
 new `pages.image_source` and `pages.image_crop` columns during page queries:
 
 ```sh
-bun run --filter @grabbin/backend db:migrate
-bun run deploy:backend
+bun run --filter @grabbin/server db:migrate
+bun run deploy:server
 ```
 
 Keep the additive columns during rollback; deploy the previous Worker before

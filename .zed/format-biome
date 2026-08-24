@@ -2,8 +2,8 @@
 set -eu
 
 case "$1" in
-  "$PWD"/apps/v2/*)
-    exec "$PWD/apps/v2/node_modules/.bin/biome" format --config-path "$PWD/apps/v2/biome.json" --stdin-file-path "$1"
+  "$PWD"/apps/web/*)
+    exec "$PWD/apps/web/node_modules/.bin/biome" format --config-path "$PWD/apps/web/biome.json" --stdin-file-path "$1"
     ;;
 esac
 

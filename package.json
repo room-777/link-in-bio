@@ -1,5 +1,5 @@
 {
-  "name": "sinabro-workspace",
+  "name": "grabbin",
   "private": true,
   "type": "module",
   "workspaces": ["apps/*", "packages/*"],
@@ -8,19 +8,18 @@
   },
   "scripts": {
     "prepare": "git config core.hooksPath .githooks",
-    "dev": "bun run --parallel --filter @grabbin/frontend --filter @grabbin/backend dev",
-    "dev:good": "bun run --parallel --filter @grabbin/v2 --filter @grabbin/backend dev",
+    "dev": "bun run --parallel --filter @grabbin/frontend --filter @grabbin/server dev",
+    "dev:web": "bun run --parallel --filter @grabbin/web --filter @grabbin/server dev",
     "dev:frontend": "bun run --filter @grabbin/frontend dev",
-    "dev:backend": "bun run --filter @grabbin/backend dev",
-    "dev:v2": "bun run --filter @grabbin/v2 dev",
-    "preview:v2": "bun run --filter @grabbin/v2 preview",
+    "dev:server": "bun run --filter @grabbin/server dev",
+    "preview:web": "bun run --filter @grabbin/web preview",
     "build": "bun run --filter @grabbin/frontend build",
-    "build:v2": "bun run --filter @grabbin/v2 build",
+    "build:web": "bun run --filter @grabbin/web build",
     "check": "bun run --workspaces check",
-    "check:v2": "bun run --filter @grabbin/v2 check",
+    "check:web": "bun run --filter @grabbin/web check",
     "deploy:frontend": "bun run --filter @grabbin/frontend deploy",
-    "deploy:backend": "bun run --filter @grabbin/backend deploy",
-    "deploy:v2": "bun run --filter @grabbin/v2 deploy"
+    "deploy:server": "bun run --filter @grabbin/server deploy",
+    "deploy:web": "bun run --filter @grabbin/web deploy"
   },
   "devDependencies": {
     "@biomejs/biome": "2.4.5",

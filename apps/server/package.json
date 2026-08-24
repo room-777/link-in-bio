@@ -1,5 +1,5 @@
 {
-	"name": "@grabbin/backend",
+	"name": "@grabbin/server",
 	"private": true,
 	"type": "module",
 	"exports": "./src/index.ts",
