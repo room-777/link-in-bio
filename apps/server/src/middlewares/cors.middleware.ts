@@ -17,6 +17,7 @@ export const corsMiddleware = cors({
 		"X-Client-Version",
 		"X-Requested-With",
 		"Api-Key",
+		"X-Entry-Route",
 	],
 	allowMethods: [
 		"GET",

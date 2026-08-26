@@ -6,6 +6,7 @@ import {
 } from "bun:test";
 import type { AppBindings } from "types/type";
 import {
+	getEntryRouteFromHeader,
 	getEntryRouteFromRequest,
 	trackSimpleAnalyticsEvent,
 } from "@services/simple-analytics.service";
@@ -35,7 +36,7 @@ describe("simple analytics service", () => {
 			event: "signup_completed",
 			request: new Request("https://api.grabbin.me/auth", {
 				headers: {
-					Cookie: "grabbin_entry_route=pricing",
+					"X-Entry-Route": "pricing",
 					"User-Agent": "test-agent",
 				},
 			}),
@@ -54,6 +55,14 @@ describe("simple analytics service", () => {
 			ua: "test-agent",
 		});
 		expect(getEntryRouteFromRequest()).toBe("other");
+		expect(getEntryRouteFromHeader("pricing")).toBe("pricing");
+		expect(
+			getEntryRouteFromRequest(
+				new Request("https://api.grabbin.me/auth", {
+					headers: { "X-Entry-Route": "not-allowed" },
+				}),
+			),
+		).toBe("other");
 	});
 
 	it("skips non-production hosts", async () => {

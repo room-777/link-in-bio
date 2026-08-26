@@ -55,7 +55,7 @@ import {
 	listPublicPageHandles,
 } from "../services/public-page.service";
 import {
-	getEntryRouteFromRequest,
+	getEntryRouteFromHeader,
 	trackSimpleAnalyticsEvent,
 } from "../services/simple-analytics.service";
 
@@ -395,8 +395,8 @@ export const pagesController =
 							event: "first_page_created",
 							request: c.req.raw,
 							entryRoute:
-								getEntryRouteFromRequest(
-									c.req.raw,
+								getEntryRouteFromHeader(
+									c.req.header("X-Entry-Route"),
 								),
 						}),
 					);

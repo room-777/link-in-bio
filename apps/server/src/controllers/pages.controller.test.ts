@@ -725,7 +725,7 @@ describe("pagesController", () => {
 				method: "POST",
 				headers: {
 					"Content-Type": "application/json",
-					Cookie: "grabbin_entry_route=pricing",
+					"X-Entry-Route": "pricing",
 				},
 				body: JSON.stringify({
 					handle: " My-Page ",

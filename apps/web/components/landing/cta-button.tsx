@@ -6,6 +6,10 @@ import { useRouter } from "next/navigation";
 import type { MouseEvent } from "react";
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
+import {
+  ENTRY_ROUTE_HEADER,
+  getEntryRouteHeader,
+} from "@/lib/analytics/simple-analytics";
 
 export default function CTAButton({
   href,
@@ -28,6 +32,7 @@ export default function CTAButton({
       const sessionResponse = await fetch("/api/auth/get-session", {
         cache: "no-store",
         credentials: "include",
+        headers: { [ENTRY_ROUTE_HEADER]: getEntryRouteHeader() },
       });
       if (!sessionResponse.ok) {
         router.push(href as never);
@@ -43,6 +48,7 @@ export default function CTAButton({
       const myPageResponse = await fetch("/api/pages/me", {
         cache: "no-store",
         credentials: "include",
+        headers: { [ENTRY_ROUTE_HEADER]: getEntryRouteHeader() },
       });
       if (!myPageResponse.ok) {
         router.push(href as never);

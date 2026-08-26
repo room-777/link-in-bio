@@ -11,7 +11,7 @@ type BackendClient = ReturnType<typeof createBackendClient>;
 type CreatePageEndpoint = BackendClient["pages"]["$post"];
 type CreatePageInput = InferRequestType<CreatePageEndpoint>["json"];
 
-const FORWARDED_HEADERS = ["cookie", "origin"] as const;
+const FORWARDED_HEADERS = ["cookie", "origin", "x-entry-route"] as const;
 
 async function getReadHeaders(request?: Request) {
   const source = request?.headers ?? (await headers());

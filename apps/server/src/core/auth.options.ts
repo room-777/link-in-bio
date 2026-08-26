@@ -122,18 +122,20 @@ export const betterAuthOptions = (
 			user: {
 				create: {
 					after: async () => {
-						const currentRequest = request?.();
-						backgroundTaskHandler?.(
-							trackSimpleAnalyticsEvent({
-								env,
-								event: "signup_completed",
-								request: currentRequest,
-								entryRoute:
-									getEntryRouteFromRequest(
-										currentRequest,
-									),
-							}),
-						);
+						if (backgroundTaskHandler) {
+							const currentRequest = request?.();
+							backgroundTaskHandler(
+								trackSimpleAnalyticsEvent({
+									env,
+									event: "signup_completed",
+									request: currentRequest,
+									entryRoute:
+										getEntryRouteFromRequest(
+											currentRequest,
+										),
+								}),
+							);
+						}
 					},
 				},
 			},

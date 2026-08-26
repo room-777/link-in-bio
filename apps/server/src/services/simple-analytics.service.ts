@@ -39,20 +39,18 @@ const isEntryRoute = (
 	value: string,
 ): value is EntryRoute => entryRoutes.has(value as EntryRoute);
 
+export function getEntryRouteFromHeader(
+	value?: string | null,
+): EntryRoute {
+	return value && isEntryRoute(value) ? value : "other";
+}
+
 export function getEntryRouteFromRequest(
 	request?: Request,
 ): EntryRoute {
-	const cookie = request?.headers.get("cookie");
-	const match = cookie?.match(
-		/(?:^|;\s*)grabbin_entry_route=([^;]*)/,
+	return getEntryRouteFromHeader(
+		request?.headers.get("x-entry-route"),
 	);
-	if (!match) return "other";
-	try {
-		const value = decodeURIComponent(match[1] ?? "");
-		return isEntryRoute(value) ? value : "other";
-	} catch {
-		return "other";
-	}
 }
 
 export async function trackSimpleAnalyticsEvent(

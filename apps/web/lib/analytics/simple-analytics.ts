@@ -22,24 +22,12 @@ declare global {
   }
 }
 
-const ENTRY_ROUTE_COOKIE = "grabbin_entry_route";
+export const ENTRY_ROUTE_HEADER = "X-Entry-Route";
 
-const entryRoutes = new Set<EntryRoute>([
-  "home",
-  "pricing",
-  "blog",
-  "demo",
-  "login",
-  "new",
-  "public_handle",
-  "other",
-]);
+let rememberedEntryRoute: EntryRoute | undefined;
 
 const isProductionHost = () =>
   typeof window !== "undefined" && window.location.hostname === "grabbin.me";
-
-const isEntryRoute = (value: string): value is EntryRoute =>
-  entryRoutes.has(value as EntryRoute);
 
 export function getEntryRoute(pathname: string): EntryRoute {
   if (pathname === "/") return "home";
@@ -52,41 +40,17 @@ export function getEntryRoute(pathname: string): EntryRoute {
   return "other";
 }
 
-const getCookieValue = (name: string) => {
-  if (typeof document === "undefined") return null;
-  const prefix = `${name}=`;
-  const cookie = document.cookie
-    .split(";")
-    .map((part) => part.trim())
-    .find((part) => part.startsWith(prefix));
-  if (!cookie) return null;
-  try {
-    return decodeURIComponent(cookie.slice(prefix.length));
-  } catch {
-    return "";
-  }
-};
-
 export function rememberEntryRoute(pathname: string): EntryRoute {
-  const existingValue = getCookieValue(ENTRY_ROUTE_COOKIE);
-  if (existingValue !== null)
-    return isEntryRoute(existingValue) ? existingValue : "other";
-
+  if (rememberedEntryRoute) return rememberedEntryRoute;
   const route = getEntryRoute(pathname);
-  if (typeof document !== "undefined") {
-    const attributes = [
-      `${ENTRY_ROUTE_COOKIE}=${encodeURIComponent(route)}`,
-      "Path=/",
-      "SameSite=Lax",
-    ];
-    if (isProductionHost()) {
-      attributes.push("Domain=.grabbin.me");
-      if (window.location.protocol === "https:") attributes.push("Secure");
-    }
-    // biome-ignore lint/suspicious/noDocumentCookie: Cookie Store API is not available in all supported browsers.
-    document.cookie = attributes.join("; ");
-  }
+  rememberedEntryRoute = route;
   return route;
+}
+
+export function getEntryRouteHeader(): EntryRoute {
+  if (rememberedEntryRoute) return rememberedEntryRoute;
+  if (typeof window === "undefined") return "other";
+  return getEntryRoute(window.location.pathname);
 }
 
 export function trackSimpleAnalyticsPageview(path?: string) {
