@@ -21,12 +21,17 @@ import {
 	sendDeleteAccountVerificationEmail,
 	sendVerificationOTPEmail,
 } from "./email";
+import {
+	getEntryRouteFromRequest,
+	trackSimpleAnalyticsEvent,
+} from "../services/simple-analytics.service";
 
 type Options = {
 	db: DatabaseClient;
 	backgroundTaskHandler?: (
 		promise: Promise<unknown>,
 	) => void;
+	request?: () => Request | undefined;
 };
 
 export const betterAuthOptions = (
@@ -34,6 +39,7 @@ export const betterAuthOptions = (
 	{
 		backgroundTaskHandler,
 		db,
+		request,
 	}: Options,
 ) => {
 	const frontendHostname = new URL(
@@ -112,6 +118,26 @@ export const betterAuthOptions = (
 		 * @default "/api/auth"
 		 */
 		basePath: "/auth",
+		databaseHooks: {
+			user: {
+				create: {
+					after: async () => {
+						const currentRequest = request?.();
+						backgroundTaskHandler?.(
+							trackSimpleAnalyticsEvent({
+								env,
+								event: "signup_completed",
+								request: currentRequest,
+								entryRoute:
+									getEntryRouteFromRequest(
+										currentRequest,
+									),
+							}),
+						);
+					},
+				},
+			},
+		},
 
 		// .... More options
 		user: {

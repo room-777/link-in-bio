@@ -13,6 +13,7 @@ import { getAllowedOrigins } from "./origins";
 
 type AuthExecutionContext = {
 	waitUntil: ExecutionContext["waitUntil"];
+	request?: Request;
 };
 
 const authExecutionContext =
@@ -31,6 +32,9 @@ export const createAuth = (
 				authExecutionContext
 					.getStore()
 					?.waitUntil(promise),
+			request: () =>
+				authExecutionContext.getStore()
+					?.request,
 		}),
 		database: drizzleAdapter(db, {
 			provider: "pg",
@@ -83,7 +87,7 @@ export const handleAuthRequest = (
 	db?: DatabaseClient,
 ) =>
 	authExecutionContext.run(
-		executionCtx,
+		{ ...executionCtx, request },
 		() =>
 			createAuth(env, db).handler(
 				request,
