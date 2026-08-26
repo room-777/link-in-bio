@@ -704,14 +704,28 @@ describe("pagesController", () => {
 			db,
 			user,
 		});
+		const scheduled: Promise<unknown>[] = [];
+		const executionCtx = {
+			waitUntil: (promise: Promise<unknown>) => {
+				scheduled.push(promise);
+			},
+		};
+		const originalFetch = globalThis.fetch;
+		let sentBody: unknown;
+		globalThis.fetch = (async (
+			_input: RequestInfo,
+			init?: RequestInit,
+		) => {
+			sentBody = JSON.parse(String(init?.body));
+			return new Response(null, { status: 204 });
+		}) as unknown as typeof fetch;
 
-		const response = await app.request(
-			"/pages",
-			{
+		const response = await app.fetch(
+			new Request("http://localhost/pages", {
 				method: "POST",
 				headers: {
-					"Content-Type":
-						"application/json",
+					"Content-Type": "application/json",
+					Cookie: "grabbin_entry_route=pricing",
 				},
 				body: JSON.stringify({
 					handle: " My-Page ",
@@ -720,8 +734,12 @@ describe("pagesController", () => {
 					image: "ignored-image",
 					role: "Engineer",
 				}),
-			},
+			}),
+			{ FRONTEND_URL: "https://grabbin.me" } as never,
+			executionCtx as never,
 		);
+		await Promise.all(scheduled);
+		globalThis.fetch = originalFetch;
 
 		expect(response.status).toBe(201);
 		const body =
@@ -742,6 +760,11 @@ describe("pagesController", () => {
 		expect(
 			state.currentUser.primaryPageId,
 		).toBe(body.page.id);
+		expect(scheduled).toHaveLength(1);
+		expect(sentBody).toMatchObject({
+			event: "first_page_created",
+			metadata: { entry_route: "pricing" },
+		});
 	});
 
 	it("creates a secondary page without replacing the primary page", async () => {
@@ -771,26 +794,39 @@ describe("pagesController", () => {
 					status: "active",
 					productId: PRO_MONTHLY_PRODUCT_ID,
 					periodStart: now,
-					periodEnd: new Date("2026-08-26T00:00:00.000Z"),
+					periodEnd: new Date("2027-08-26T00:00:00.000Z"),
 					cancelAtPeriodEnd: false,
 				},
 			],
 		});
 		const app = createTestApp({ db, user });
+		const scheduled: Promise<unknown>[] = [];
+		const executionCtx = {
+			waitUntil: (promise: Promise<unknown>) => {
+				scheduled.push(promise);
+			},
+		};
 
-		const response = await app.request("/pages", {
-			method: "POST",
-			headers: { "Content-Type": "application/json" },
-			body: JSON.stringify({
-				handle: "second-page",
-				name: null,
-				role: null,
+		const response = await app.fetch(
+			new Request("http://localhost/pages", {
+				method: "POST",
+				headers: {
+					"Content-Type": "application/json",
+				},
+				body: JSON.stringify({
+					handle: "second-page",
+					name: null,
+					role: null,
+				}),
 			}),
-		});
+			{ FRONTEND_URL: "https://grabbin.me" } as never,
+			executionCtx as never,
+		);
 
 		expect(response.status).toBe(201);
 		expect(state.currentUser.primaryPageId).toBe("page_1");
 		expect(state.insertedPages).toHaveLength(1);
+		expect(scheduled).toHaveLength(0);
 	});
 
 	it("deletes a non-primary page without plan access", async () => {
