@@ -22,10 +22,13 @@ afterEach(() => {
 describe("simple analytics service", () => {
 	it("sends an allowlisted event payload in production", async () => {
 		let receivedRequest: Request | undefined;
-		globalThis.fetch = async (input, init) => {
+		globalThis.fetch = (async (
+			input: RequestInfo,
+			init?: RequestInit,
+		) => {
 			receivedRequest = new Request(input, init);
 			return new Response(null, { status: 204 });
-		};
+		}) as unknown as typeof fetch;
 
 		await trackSimpleAnalyticsEvent({
 			env: env("https://grabbin.me"),
@@ -41,7 +44,9 @@ describe("simple analytics service", () => {
 		expect(receivedRequest?.url).toBe(
 			"https://queue.simpleanalyticscdn.com/events",
 		);
-		expect(await receivedRequest?.json()).toEqual({
+		if (!receivedRequest) throw new Error("Missing analytics request");
+		const body: unknown = await receivedRequest.json();
+		expect(body).toEqual({
 			type: "event",
 			hostname: "grabbin.me",
 			event: "signup_completed",
@@ -53,10 +58,10 @@ describe("simple analytics service", () => {
 
 	it("skips non-production hosts", async () => {
 		let fetchCalled = false;
-		globalThis.fetch = async () => {
+		globalThis.fetch = (async () => {
 			fetchCalled = true;
 			return new Response(null, { status: 204 });
-		};
+		}) as unknown as typeof fetch;
 
 		await trackSimpleAnalyticsEvent({
 			env: env("http://localhost:8787"),
@@ -67,9 +72,9 @@ describe("simple analytics service", () => {
 	});
 
 	it("swallows queue failures", async () => {
-		globalThis.fetch = async () => {
+		globalThis.fetch = (async () => {
 			throw new Error("queue unavailable");
-		};
+		}) as unknown as typeof fetch;
 
 		await expect(
 			trackSimpleAnalyticsEvent({
