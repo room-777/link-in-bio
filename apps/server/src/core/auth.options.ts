@@ -15,6 +15,10 @@ import {
 	restoreUserPagesAfterResubscribe,
 	scheduleUserPagesAfterCancellation,
 } from "../services/page-lifecycle.service";
+import {
+	getEntryRouteFromRequest,
+	trackSimpleAnalyticsEvent,
+} from "../services/simple-analytics.service";
 import { getPlanAccess } from "./billing";
 import { syncCreemWebhookState } from "./creem-webhook";
 import {
@@ -27,6 +31,7 @@ type Options = {
 	backgroundTaskHandler?: (
 		promise: Promise<unknown>,
 	) => void;
+	request?: () => Request | undefined;
 };
 
 export const betterAuthOptions = (
@@ -34,6 +39,7 @@ export const betterAuthOptions = (
 	{
 		backgroundTaskHandler,
 		db,
+		request,
 	}: Options,
 ) => {
 	const frontendHostname = new URL(
@@ -112,6 +118,28 @@ export const betterAuthOptions = (
 		 * @default "/api/auth"
 		 */
 		basePath: "/auth",
+		databaseHooks: {
+			user: {
+				create: {
+					after: async () => {
+						if (backgroundTaskHandler) {
+							const currentRequest = request?.();
+							backgroundTaskHandler(
+								trackSimpleAnalyticsEvent({
+									env,
+									event: "signup_completed",
+									request: currentRequest,
+									entryRoute:
+										getEntryRouteFromRequest(
+											currentRequest,
+										),
+								}),
+							);
+						}
+					},
+				},
+			},
+		},
 
 		// .... More options
 		user: {

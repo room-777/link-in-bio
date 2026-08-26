@@ -12,6 +12,7 @@ const FORWARDED_REQUEST_HEADERS = [
   "origin",
   "content-type",
   "authorization",
+  "x-entry-route",
 ] as const;
 
 type BackendSuccess<T> = {

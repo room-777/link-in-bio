@@ -54,6 +54,10 @@ import {
 	getPublicPage,
 	listPublicPageHandles,
 } from "../services/public-page.service";
+import {
+	getEntryRouteFromHeader,
+	trackSimpleAnalyticsEvent,
+} from "../services/simple-analytics.service";
 
 const getPrimaryPageId = (
 	user: unknown,
@@ -359,18 +363,15 @@ export const pagesController =
 				const sessionUser =
 					requireUser(c);
 				const currentUser =
-					await assertPageCreationAllowed(
-						{
-							db: c.get("db"),
-							userId: sessionUser.id,
-						},
-					);
-				const parsed =
-					c.req.valid("json");
+					await assertPageCreationAllowed({
+						db: c.get("db"),
+						userId: sessionUser.id,
+					});
+				const isFirstPage =
+					currentUser.primaryPageId === null;
+				const parsed = c.req.valid("json");
 				if (
-					isReservedPageHandle(
-						parsed.handle,
-					)
+					isReservedPageHandle(parsed.handle)
 				)
 					throw new UnprocessableEntityError(
 						"Reserved handle.",
@@ -387,6 +388,19 @@ export const pagesController =
 						page: mapPageResponse(page),
 					},
 				) satisfies CreatePageResponse;
+				if (isFirstPage) {
+					c.executionCtx.waitUntil(
+						trackSimpleAnalyticsEvent({
+							env: c.env,
+							event: "first_page_created",
+							request: c.req.raw,
+							entryRoute:
+								getEntryRouteFromHeader(
+									c.req.header("X-Entry-Route"),
+								),
+						}),
+					);
+				}
 				return c.json(response, 201);
 			},
 		);

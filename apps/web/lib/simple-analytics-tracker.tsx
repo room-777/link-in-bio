@@ -2,15 +2,10 @@
 
 import { usePathname } from "next/navigation";
 import { useEffect, useRef } from "react";
-
-declare global {
-  interface Window {
-    sa_pageview?: (path?: string) => void;
-  }
-}
-
-const isProductionHost = () =>
-  typeof window !== "undefined" && window.location.hostname === "grabbin.me";
+import {
+  rememberEntryRoute,
+  trackSimpleAnalyticsPageview,
+} from "./analytics/simple-analytics";
 
 const pageAnalyticsPath = (pageId: string) =>
   `/__analytics/pages/${encodeURIComponent(pageId)}`;
@@ -20,20 +15,21 @@ export function SimpleAnalyticsTracker({ pageId }: { pageId?: string } = {}) {
   const trackedPageIdRef = useRef<string | null>(null);
 
   useEffect(() => {
-    if (!isProductionHost()) return;
     if (pageId) {
       if (trackedPageIdRef.current === pageId) return;
       trackedPageIdRef.current = pageId;
+    } else {
+      rememberEntryRoute(pathname);
     }
 
     const path = pageId ? pageAnalyticsPath(pageId) : pathname;
 
-    if (window.sa_pageview) {
-      window.sa_pageview(path);
+    if (typeof window !== "undefined" && window.sa_pageview) {
+      trackSimpleAnalyticsPageview(path);
       return;
     }
 
-    const retryOnLoad = () => window.sa_pageview?.(path);
+    const retryOnLoad = () => trackSimpleAnalyticsPageview(path);
     window.addEventListener("load", retryOnLoad, { once: true });
     return () => window.removeEventListener("load", retryOnLoad);
   }, [pageId, pathname]);

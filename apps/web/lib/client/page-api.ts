@@ -16,6 +16,10 @@ import {
   updatePageResponseSchema,
 } from "@grabbin/api";
 import * as v from "valibot";
+import {
+  ENTRY_ROUTE_HEADER,
+  getEntryRouteHeader,
+} from "@/lib/analytics/simple-analytics";
 
 export const pageQueryKey = (handle: string) => ["pages", handle] as const;
 export const myPageQueryKey = ["pages", "me"] as const;
@@ -27,6 +31,7 @@ async function requestJson(path: string, init?: RequestInit) {
     ...init,
     headers: {
       accept: "application/json",
+      [ENTRY_ROUTE_HEADER]: getEntryRouteHeader(),
       ...init?.headers,
     },
   });
