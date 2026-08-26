@@ -15,16 +15,16 @@ import {
 	restoreUserPagesAfterResubscribe,
 	scheduleUserPagesAfterCancellation,
 } from "../services/page-lifecycle.service";
+import {
+	getEntryRouteFromRequest,
+	trackSimpleAnalyticsEvent,
+} from "../services/simple-analytics.service";
 import { getPlanAccess } from "./billing";
 import { syncCreemWebhookState } from "./creem-webhook";
 import {
 	sendDeleteAccountVerificationEmail,
 	sendVerificationOTPEmail,
 } from "./email";
-import {
-	getEntryRouteFromRequest,
-	trackSimpleAnalyticsEvent,
-} from "../services/simple-analytics.service";
 
 type Options = {
 	db: DatabaseClient;

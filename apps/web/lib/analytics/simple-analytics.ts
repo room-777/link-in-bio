@@ -63,7 +63,7 @@ const getCookieValue = (name: string) => {
   try {
     return decodeURIComponent(cookie.slice(prefix.length));
   } catch {
-    return null;
+    return "";
   }
 };
 

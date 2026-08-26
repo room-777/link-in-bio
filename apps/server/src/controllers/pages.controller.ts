@@ -30,10 +30,6 @@ import {
 	UnprocessableEntityError,
 } from "../exceptions/http-exceptions";
 import {
-	getEntryRouteFromRequest,
-	trackSimpleAnalyticsEvent,
-} from "../services/simple-analytics.service";
-import {
 	mapOwnedPageSummary,
 	mapPageResponse,
 } from "../mappers/page.mapper";
@@ -58,6 +54,10 @@ import {
 	getPublicPage,
 	listPublicPageHandles,
 } from "../services/public-page.service";
+import {
+	getEntryRouteFromRequest,
+	trackSimpleAnalyticsEvent,
+} from "../services/simple-analytics.service";
 
 const getPrimaryPageId = (
 	user: unknown,
