@@ -32,6 +32,11 @@ export default function RootLayout({ children }: { children: ReactNode }) {
           strategy="afterInteractive"
           data-auto-collect="false"
         />
+        <Script
+          src="https://stats.wooky.cfd/glance.js"
+          strategy="afterInteractive"
+          data-site="site_73xx7p5nm623czow"
+        />
         <Providers>
           <SimpleAnalyticsTracker />
           <div className="flex min-h-svh flex-col">{children}</div>
