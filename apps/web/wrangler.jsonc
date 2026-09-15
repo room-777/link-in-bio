@@ -1,7 +1,7 @@
 {
   "$schema": "node_modules/wrangler/config-schema.json",
   "name": "grabbin-v2",
-  "main": ".open-next/worker.js",
+  "main": "src/worker.ts",
   "compatibility_date": "2026-08-19",
   "compatibility_flags": ["nodejs_compat", "global_fetch_strictly_public"],
   "assets": {
@@ -48,5 +48,8 @@
         }
       ]
     }
+  },
+  "secrets": {
+    "required": ["SENTRY_DSN"]
   }
 }

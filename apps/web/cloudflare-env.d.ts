@@ -12,10 +12,11 @@ interface __BaseEnv_CloudflareEnv {
   NEXT_PUBLIC_MAPBOX_ACCESS_TOKEN: string;
   SIMPLE_ANALYTICS_API_KEY: string;
   BACKEND: Fetcher /* grabbin-api */;
+  SENTRY_DSN?: string;
 }
 declare namespace Cloudflare {
   interface GlobalProps {
-    mainModule: typeof import("./.open-next/worker");
+    mainModule: typeof import("./src/worker");
   }
   interface Env extends __BaseEnv_CloudflareEnv {}
 }
@@ -38,6 +39,7 @@ declare namespace NodeJS {
         | "NEXT_PUBLIC_ENABLE_ANNOUNCEMENT"
         | "NEXT_PUBLIC_MAPBOX_ACCESS_TOKEN"
         | "SIMPLE_ANALYTICS_API_KEY"
+        | "SENTRY_DSN"
       >
     > {}
 }

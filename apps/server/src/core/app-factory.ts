@@ -15,6 +15,8 @@ import { requestIdMiddleware } from "@middlewares/request-id.middleware";
 import { secureHeadersMiddleware } from "@middlewares/secure-headers.middleware";
 import { timeoutMiddleware } from "@middlewares/timeout.middleware";
 import { timingMiddleware } from "@middlewares/timing.middleware";
+import { consoleLoggingIntegration } from "@sentry/cloudflare";
+import { sentry } from "@sentry/hono/cloudflare";
 import { createFactory } from "hono/factory";
 import type { AppBindings } from "types/type";
 
@@ -32,6 +34,24 @@ export type AppEnv = {
 export const appFactory =
 	createFactory<AppEnv>({
 		initApp: (app) => {
+			app.use(
+				sentry(app, (env) => ({
+					dsn: env.SENTRY_DSN,
+					tracesSampleRate: 1.0,
+					enableLogs: true,
+					enableMetrics: true,
+					integrations: [
+						consoleLoggingIntegration({
+							levels: [
+								"log",
+								"warn",
+								"error",
+							],
+						}),
+					],
+					_flushInterval: 0,
+				})),
+			);
 			app.use("*", requestIdMiddleware);
 			app.use("*", timingMiddleware);
 			app.use("*", timeoutMiddleware);

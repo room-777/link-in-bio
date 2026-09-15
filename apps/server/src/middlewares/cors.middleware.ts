@@ -18,6 +18,8 @@ export const corsMiddleware = cors({
 		"X-Requested-With",
 		"Api-Key",
 		"X-Entry-Route",
+		"sentry-trace",
+		"baggage",
 	],
 	allowMethods: [
 		"GET",

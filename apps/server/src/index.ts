@@ -14,6 +14,7 @@ import { createDatabaseClient } from "@db/index";
 import { pages } from "@db/schema";
 import { errorHandler } from "@middlewares/error-handler.middleware";
 import { notFoundHandler } from "@middlewares/not-found.middleware";
+import * as Sentry from "@sentry/cloudflare";
 import { lte } from "drizzle-orm";
 import { deleteOwnedPage } from "./services/page.service";
 import { reconcileUserPageLifecycle } from "./services/page-lifecycle.service";
@@ -197,8 +198,43 @@ export const scheduled = async (
 		);
 };
 
+type BackgroundHandler =
+	ExportedHandler<
+		CloudflareBindings,
+		{ objectKey: string }
+	>;
+
+const backgroundHandlers =
+	Sentry.withSentry<
+		CloudflareBindings,
+		{ objectKey: string },
+		unknown,
+		BackgroundHandler
+	>(
+		(env) => ({
+			dsn: env.SENTRY_DSN,
+			tracesSampleRate: 1.0,
+			enableLogs: true,
+			enableMetrics: true,
+			integrations: [
+				Sentry.consoleLoggingIntegration(
+					{
+						levels: [
+							"log",
+							"warn",
+							"error",
+						],
+					},
+				),
+			],
+			_flushInterval: 0,
+		}),
+		{ queue, scheduled },
+	);
+
 export default {
 	fetch: app.fetch,
-	queue,
-	scheduled,
+	queue: backgroundHandlers.queue,
+	scheduled:
+		backgroundHandlers.scheduled,
 };
