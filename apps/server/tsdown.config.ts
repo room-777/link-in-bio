@@ -24,6 +24,7 @@ export default defineConfig({
 	format: "esm",
 	outDir: "./dist",
 	clean: true,
+	dts: false,
 	sourcemap: sourceMapUploadEnabled ? "hidden" : false,
 	plugins: sourceMapUploadEnabled
 		? [

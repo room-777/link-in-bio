@@ -14,6 +14,7 @@
 		"compile": "bun build --compile --minify --sourcemap --bytecode ./src/index.ts --outfile server"
 	},
 	"dependencies": {
+		"@grabbin/api": "workspace:*",
 		"@sentry/cloudflare": "catalog:sentry",
 		"@sentry/hono": "catalog:sentry",
 		"@grabbin/auth": "workspace:*",
