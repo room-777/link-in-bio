@@ -1,6 +1,6 @@
 {
   "$schema": "node_modules/wrangler/config-schema.json",
-  "name": "my-better-t-app-web",
+  "name": "grabbin-web",
   "main": "./worker/index.ts",
   "compatibility_date": "2025-05-05",
   "compatibility_flags": [

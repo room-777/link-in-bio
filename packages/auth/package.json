@@ -1,5 +1,5 @@
 {
-	"name": "@my-better-t-app/auth",
+	"name": "@grabbin/auth",
 	"type": "module",
 	"exports": {
 		".": {
@@ -12,15 +12,14 @@
 	"scripts": {},
 	"dependencies": {
 		"@creem_io/better-auth": "catalog:auth",
-		"@my-better-t-app/db": "workspace:*",
-		"@my-better-t-app/email": "workspace:*",
-		"@my-better-t-app/env": "workspace:*",
+		"@grabbin/db": "workspace:*",
+		"@grabbin/email": "workspace:*",
+		"@grabbin/env": "workspace:*",
 		"better-auth": "catalog:auth",
-		"dotenv": "catalog:runtime",
-		"zod": "catalog:runtime"
+		"dotenv": "catalog:runtime"
 	},
 	"devDependencies": {
-		"@my-better-t-app/config": "workspace:*",
+		"@grabbin/config": "workspace:*",
 		"typescript": "catalog:tooling"
 	}
 }

@@ -2,7 +2,7 @@ import { hc, parseResponse } from "hono/client";
 import type { InferRequestType, InferResponseType } from "hono/client";
 
 import type { AppType } from "server";
-import { env } from "@my-better-t-app/env/web";
+import { env } from "@grabbin/env/web";
 
 export const apiClient = hc<AppType>(env.NEXT_PUBLIC_SERVER_URL, {
 	init: {

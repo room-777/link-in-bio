@@ -84,9 +84,6 @@ export const server = Cloudflare.Worker("server", {
 	},
 	env: {
 		HYPERDRIVE: hyperdrive,
-		DATABASE_SSL_REJECT_UNAUTHORIZED: Config.string(
-			"DATABASE_SSL_REJECT_UNAUTHORIZED",
-		).pipe(Config.withDefault("")),
 		CORS_ORIGIN: Config.string("CORS_ORIGIN"),
 		SENTRY_DSN: Config.string("SENTRY_DSN").pipe(Config.withDefault("")),
 		BETTER_AUTH_SECRET: Config.redacted("BETTER_AUTH_SECRET"),
@@ -128,7 +125,7 @@ export const server = Cloudflare.Worker("server", {
 export type ServerEnv = Cloudflare.InferEnv<typeof server>;
 
 export default Alchemy.Stack(
-	"my-better-t-app",
+	"grabbin",
 	{
 		providers: Cloudflare.providers(),
 		state: Cloudflare.state(),

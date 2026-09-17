@@ -1,5 +1,5 @@
 {
-	"name": "my-better-t-app",
+	"name": "grabbin",
 	"private": true,
 	"workspaces": {
 		"packages": [
@@ -11,7 +11,7 @@
 				"dotenv": "^17.4.2",
 				"evlog": "^2.27.0",
 				"hono": "^4.12.32",
-				"zod": "^4.4.3"
+				"valibot": "^1.2.0"
 			},
 			"auth": {
 				"better-auth": "1.7.5",
@@ -53,26 +53,23 @@
 		"check-types": "bun run --filter '*' check-types",
 		"dev:web": "bun run --filter web dev:bare",
 		"dev:server": "bun run --filter server dev:bare",
-		"db:generate": "bun run --filter @my-better-t-app/db db:generate",
-		"db:local:neon": "docker compose --env-file .env.local -f docker-compose.neon-local.yml up -d",
-		"db:local:neon:stop": "docker compose --env-file .env.local -f docker-compose.neon-local.yml down",
+		"db:generate": "bun run --filter @grabbin/db db:generate",
 		"db:local:supabase": "supabase start --exclude gotrue,realtime,storage-api,imgproxy,kong,inbucket,postgrest,pgadmin-schema-diff,migra,postgres-meta,studio,edge-runtime,logflare,vector,pgbouncer,pg_prove",
 		"db:local:supabase:stop": "supabase stop",
-		"deploy": "bun run --filter @my-better-t-app/infra deploy",
-		"deploy:production": "bun run --filter @my-better-t-app/infra deploy:production",
-		"destroy": "bun run --filter @my-better-t-app/infra destroy",
+		"deploy": "bun run --filter @grabbin/infra deploy",
+		"deploy:production": "bun run --filter @grabbin/infra deploy:production",
+		"destroy": "bun run --filter @grabbin/infra destroy",
 		"check": "biome check --write .",
 		"prepare": "git config core.hooksPath .githooks 2>/dev/null || true"
 	},
 	"dependencies": {
-		"@my-better-t-app/env": "workspace:*",
-		"dotenv": "catalog:runtime",
-		"zod": "catalog:runtime"
+		"@grabbin/env": "workspace:*",
+		"dotenv": "catalog:runtime"
 	},
 	"devDependencies": {
 		"@biomejs/biome": "^2.5.6",
 		"@cloudflare/workers-types": "catalog:cloudflare",
-		"@my-better-t-app/config": "workspace:*",
+		"@grabbin/config": "workspace:*",
 		"@types/node": "^22.20.1",
 		"typescript": "catalog:tooling"
 	},

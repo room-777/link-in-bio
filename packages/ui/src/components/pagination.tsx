@@ -1,4 +1,4 @@
-import { Button } from "@my-better-t-app/ui/components/button";
+import { Button } from "@grabbin/ui/components/button";
 import { cn } from "cn";
 import {
 	ChevronLeftIcon,

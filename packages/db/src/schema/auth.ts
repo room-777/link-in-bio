@@ -7,8 +7,10 @@ export const user = pgTable("user", {
 	email: text("email").notNull().unique(),
 	emailVerified: boolean("email_verified").default(false).notNull(),
 	image: text("image"),
+	primaryPageId: text("primary_page_id"),
 	creemCustomerId: text("creem_customer_id"),
 	hadTrial: boolean("had_trial").default(false),
+	role: text("role").default("user").notNull(),
 	createdAt: timestamp("created_at", { withTimezone: true })
 		.defaultNow()
 		.notNull(),
@@ -87,28 +89,6 @@ export const verification = pgTable(
 			.notNull(),
 	},
 	(table) => [index("verification_identifier_idx").on(table.identifier)],
-);
-
-export const creemSubscription = pgTable(
-	"creem_subscription",
-	{
-		id: text("id").primaryKey(),
-		productId: text("product_id").notNull(),
-		referenceId: text("reference_id").notNull(),
-		creemCustomerId: text("creem_customer_id"),
-		creemSubscriptionId: text("creem_subscription_id"),
-		creemOrderId: text("creem_order_id"),
-		status: text("status").default("pending"),
-		periodStart: timestamp("period_start", { withTimezone: true }),
-		periodEnd: timestamp("period_end", { withTimezone: true }),
-		cancelAtPeriodEnd: boolean("cancel_at_period_end").default(false),
-	},
-	(table) => [
-		index("creem_subscription_referenceId_idx").on(table.referenceId),
-		index("creem_subscription_creemSubscriptionId_idx").on(
-			table.creemSubscriptionId,
-		),
-	],
 );
 
 export const userRelations = relations(user, ({ many }) => ({

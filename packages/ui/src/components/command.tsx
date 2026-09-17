@@ -6,11 +6,11 @@ import {
 	DialogDescription,
 	DialogHeader,
 	DialogTitle,
-} from "@my-better-t-app/ui/components/dialog";
+} from "@grabbin/ui/components/dialog";
 import {
 	InputGroup,
 	InputGroupAddon,
-} from "@my-better-t-app/ui/components/input-group";
+} from "@grabbin/ui/components/input-group";
 import { Command as CommandPrimitive } from "cmdk";
 import { cn } from "cn";
 import { CheckIcon, SearchIcon } from "lucide-react";

@@ -16,7 +16,7 @@ import {
 	DropdownMenuSubContent,
 	DropdownMenuSubTrigger,
 	DropdownMenuTrigger,
-} from "@my-better-t-app/ui/components/dropdown-menu";
+} from "@grabbin/ui/components/dropdown-menu";
 import { cn } from "cn";
 import { CheckIcon } from "lucide-react";
 import type * as React from "react";

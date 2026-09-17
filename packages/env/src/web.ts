@@ -1,17 +1,17 @@
 import { createEnv } from "@t3-oss/env-nextjs";
-import { z } from "zod";
+import * as v from "valibot";
 
 export const env = createEnv({
 	client: {
-		NEXT_PUBLIC_SERVER_URL: z.url(),
-		NEXT_PUBLIC_CREEM_PRODUCT_ID: z.string().optional(),
-		NEXT_PUBLIC_SENTRY_DSN: z.url().optional(),
+		NEXT_PUBLIC_SERVER_URL: v.pipe(v.string(), v.url()),
+		NEXT_PUBLIC_CREEM_PRODUCT_ID: v.optional(v.string()),
+		NEXT_PUBLIC_SENTRY_DSN: v.optional(v.pipe(v.string(), v.url())),
 	},
 	server: {
-		SENTRY_DSN: z.url().optional(),
-		SENTRY_AUTH_TOKEN: z.string().optional(),
-		SENTRY_WEB_ORG: z.string().optional(),
-		SENTRY_WEB_PROJECT: z.string().optional(),
+		SENTRY_DSN: v.optional(v.pipe(v.string(), v.url())),
+		SENTRY_AUTH_TOKEN: v.optional(v.string()),
+		SENTRY_WEB_ORG: v.optional(v.string()),
+		SENTRY_WEB_PROJECT: v.optional(v.string()),
 	},
 	runtimeEnv: {
 		NEXT_PUBLIC_SERVER_URL: process.env.NEXT_PUBLIC_SERVER_URL,

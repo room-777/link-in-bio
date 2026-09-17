@@ -1,7 +1,7 @@
 "use client";
 
-import { Label } from "@my-better-t-app/ui/components/label";
-import { Separator } from "@my-better-t-app/ui/components/separator";
+import { Label } from "@grabbin/ui/components/label";
+import { Separator } from "@grabbin/ui/components/separator";
 import { cva, type VariantProps } from "class-variance-authority";
 import { cn } from "cn";
 import { useMemo } from "react";

@@ -1,13 +1,13 @@
 "use client";
 
 import { Combobox as ComboboxPrimitive } from "@base-ui/react";
-import { Button } from "@my-better-t-app/ui/components/button";
+import { Button } from "@grabbin/ui/components/button";
 import {
 	InputGroup,
 	InputGroupAddon,
 	InputGroupButton,
 	InputGroupInput,
-} from "@my-better-t-app/ui/components/input-group";
+} from "@grabbin/ui/components/input-group";
 import { cn } from "cn";
 import { CheckIcon, ChevronDownIcon, XIcon } from "lucide-react";
 import * as React from "react";

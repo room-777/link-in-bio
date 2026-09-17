@@ -1,5 +1,5 @@
 {
-	"name": "@my-better-t-app/db",
+	"name": "@grabbin/db",
 	"type": "module",
 	"exports": {
 		".": {
@@ -14,14 +14,13 @@
 		"db:migrate:deploy": "drizzle-kit migrate"
 	},
 	"dependencies": {
-		"@my-better-t-app/env": "workspace:*",
+		"@grabbin/env": "workspace:*",
 		"dotenv": "catalog:runtime",
 		"drizzle-orm": "^0.45.2",
-		"pg": "^8.16.3",
-		"zod": "catalog:runtime"
+		"pg": "^8.16.3"
 	},
 	"devDependencies": {
-		"@my-better-t-app/config": "workspace:*",
+		"@grabbin/config": "workspace:*",
 		"@types/pg": "^8.15.6",
 		"drizzle-kit": "^0.31.10",
 		"typescript": "catalog:tooling"

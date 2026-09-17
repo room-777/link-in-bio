@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import { Geist, Geist_Mono, Inter } from "next/font/google";
 
 import "../index.css";
-import { cn } from "@my-better-t-app/ui/lib/utils";
+import { cn } from "@grabbin/ui/lib/utils";
 import Providers from "@/components/provider/providers";
 
 const inter = Inter({ subsets: ["latin"], variable: "--font-sans" });
@@ -18,8 +18,8 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-	title: "my-better-t-app",
-	description: "my-better-t-app",
+	title: "grabbin",
+	description: "grabbin",
 };
 
 export default function RootLayout({

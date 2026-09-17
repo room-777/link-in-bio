@@ -1,6 +1,6 @@
 "use client";
 
-import { Button } from "@my-better-t-app/ui/components/button";
+import { Button } from "@grabbin/ui/components/button";
 import { Activity, useState } from "react";
 import { toast } from "sonner";
 

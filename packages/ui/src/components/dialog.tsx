@@ -1,7 +1,7 @@
 "use client";
 
 import { Dialog as DialogPrimitive } from "@base-ui/react/dialog";
-import { Button } from "@my-better-t-app/ui/components/button";
+import { Button } from "@grabbin/ui/components/button";
 import { cn } from "cn";
 import { XIcon } from "lucide-react";
 import type * as React from "react";

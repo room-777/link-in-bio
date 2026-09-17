@@ -1,8 +1,8 @@
 import { creem } from "@creem_io/better-auth";
-import { createDb } from "@my-better-t-app/db";
-import * as schema from "@my-better-t-app/db/schema/auth";
-import { sendVerificationOTP as sendVerificationOTPEmail } from "@my-better-t-app/email";
-import { env } from "@my-better-t-app/env/server";
+import { createDb } from "@grabbin/db";
+import * as schema from "@grabbin/db/schema/index";
+import { sendVerificationOTP as sendVerificationOTPEmail } from "@grabbin/email";
+import { env } from "@grabbin/env/server";
 import { type BetterAuthOptions, betterAuth } from "better-auth";
 import { drizzleAdapter } from "better-auth/adapters/drizzle";
 import { emailOTP } from "better-auth/plugins";
@@ -37,6 +37,21 @@ const socialProviders: BetterAuthOptions["socialProviders"] = {
 const authOptions: BetterAuthOptions = {
 	basePath: "/auth",
 	trustedOrigins: [env.CORS_ORIGIN],
+	user: {
+		additionalFields: {
+			primaryPageId: {
+				type: "string",
+				required: false,
+				input: false,
+			},
+			role: {
+				type: "string",
+				required: true,
+				defaultValue: "user",
+				input: false,
+			},
+		},
+	},
 	account: {
 		accountLinking: {
 			enabled: true,

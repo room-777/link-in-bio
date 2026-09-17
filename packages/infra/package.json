@@ -1,5 +1,5 @@
 {
-	"name": "@my-better-t-app/infra",
+	"name": "@grabbin/infra",
 	"private": true,
 	"type": "module",
 	"scripts": {
@@ -10,13 +10,12 @@
 		"destroy": "alchemy destroy"
 	},
 	"dependencies": {
-		"dotenv": "catalog:runtime",
-		"zod": "catalog:runtime"
+		"dotenv": "catalog:runtime"
 	},
 	"devDependencies": {
 		"@effect/platform-bun": "4.0.0-rc.108",
 		"@effect/platform-node": "4.0.0-rc.108",
-		"@my-better-t-app/config": "workspace:*",
+		"@grabbin/config": "workspace:*",
 		"alchemy": "2.0.0-beta.72",
 		"effect": "4.0.0-rc.108",
 		"typescript": "catalog:tooling"

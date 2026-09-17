@@ -1,6 +1,6 @@
 import { creemClient } from "@creem_io/better-auth/client";
-import type { AuthOptions } from "@my-better-t-app/auth";
-import { env } from "@my-better-t-app/env/web";
+import type { AuthOptions } from "@grabbin/auth";
+import { env } from "@grabbin/env/web";
 import {
 	emailOTPClient,
 	inferAdditionalFields,

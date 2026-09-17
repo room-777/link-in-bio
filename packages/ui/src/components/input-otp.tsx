@@ -1,6 +1,6 @@
 "use client";
 
-import { cn } from "@my-better-t-app/ui/lib/utils";
+import { cn } from "@grabbin/ui/lib/utils";
 import { IconMinus } from "@tabler/icons-react";
 import { OTPInput, OTPInputContext, REGEXP_ONLY_DIGITS } from "input-otp";
 import { AnimatePresence, motion, useReducedMotion } from "motion/react";

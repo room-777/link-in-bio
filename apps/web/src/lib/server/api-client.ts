@@ -1,4 +1,4 @@
-import { env } from "@my-better-t-app/env/server";
+import { env } from "@grabbin/env/server";
 import type { InferRequestType, InferResponseType } from "hono/client";
 import { hc, parseResponse } from "hono/client";
 import type { AppType } from "server";

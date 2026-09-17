@@ -1,7 +1,7 @@
 "use client";
 
-import { Toaster } from "@my-better-t-app/ui/components/sonner";
-import { Toasts } from "@my-better-t-app/ui/components/toast";
+import { Toaster } from "@grabbin/ui/components/sonner";
+import { Toasts } from "@grabbin/ui/components/toast";
 import { QueryClientProvider } from "@tanstack/react-query";
 import { ReactQueryDevtools } from "@tanstack/react-query-devtools";
 import { getQueryClient } from "../../lib/query-client";

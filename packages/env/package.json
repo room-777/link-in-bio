@@ -1,5 +1,5 @@
 {
-	"name": "@my-better-t-app/env",
+	"name": "@grabbin/env",
 	"version": "0.0.0",
 	"private": true,
 	"type": "module",
@@ -10,11 +10,11 @@
 	"dependencies": {
 		"@t3-oss/env-nextjs": "^0.13.11",
 		"dotenv": "catalog:runtime",
-		"zod": "catalog:runtime"
+		"valibot": "catalog:runtime"
 	},
 	"devDependencies": {
-		"@my-better-t-app/config": "workspace:*",
-		"@my-better-t-app/infra": "workspace:*",
+		"@grabbin/config": "workspace:*",
+		"@grabbin/infra": "workspace:*",
 		"@types/node": "^22.20.1",
 		"typescript": "catalog:tooling"
 	}

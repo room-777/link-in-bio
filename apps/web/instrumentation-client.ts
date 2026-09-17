@@ -1,4 +1,4 @@
-import { env } from "@my-better-t-app/env/web";
+import { env } from "@grabbin/env/web";
 import * as Sentry from "@sentry/react";
 
 Sentry.init({

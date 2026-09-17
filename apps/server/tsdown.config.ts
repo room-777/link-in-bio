@@ -38,7 +38,7 @@ export default defineConfig({
 			]
 		: [],
 	deps: {
-		alwaysBundle: [/@my-better-t-app\/.*/],
+		alwaysBundle: [/@grabbin\/.*/],
 		neverBundle: ["cloudflare:workers"],
 	},
 });

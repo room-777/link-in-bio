@@ -16,18 +16,17 @@
 	"dependencies": {
 		"@sentry/cloudflare": "catalog:sentry",
 		"@sentry/hono": "catalog:sentry",
-		"@my-better-t-app/auth": "workspace:*",
-		"@my-better-t-app/db": "workspace:*",
-		"@my-better-t-app/env": "workspace:*",
+		"@grabbin/auth": "workspace:*",
+		"@grabbin/db": "workspace:*",
+		"@grabbin/env": "workspace:*",
 		"better-auth": "catalog:auth",
 		"dotenv": "catalog:runtime",
 		"evlog": "catalog:runtime",
-		"hono": "catalog:runtime",
-		"zod": "catalog:runtime"
+		"hono": "catalog:runtime"
 	},
 	"devDependencies": {
 		"@cloudflare/workers-types": "catalog:cloudflare",
-		"@my-better-t-app/config": "workspace:*",
+		"@grabbin/config": "workspace:*",
 		"@sentry/vite-plugin": "catalog:sentry",
 		"@types/node": "catalog:tooling",
 		"tsdown": "^0.22.14",

@@ -4,6 +4,6 @@
 // Types are defined in env.d.ts based on your alchemy.run.ts bindings
 
 import { env as cloudflareEnv } from "cloudflare:workers";
-import type { ServerEnv } from "@my-better-t-app/infra/alchemy.run";
+import type { ServerEnv } from "@grabbin/infra/alchemy.run";
 
 export const env = cloudflareEnv as ServerEnv;

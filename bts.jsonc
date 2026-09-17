@@ -10,7 +10,7 @@
   "$schema": "https://r2.better-t-stack.dev/schema.json",
   "version": "3.40.2",
   "createdAt": "2026-08-22T14:32:57.469Z",
-  "reproducibleCommand": "bun create better-t-stack@latest my-better-t-app --frontend next --backend hono --runtime workers --database sqlite --orm drizzle --api none --auth better-auth --payments none --addons biome --examples none --db-setup d1 --web-deploy cloudflare --server-deploy cloudflare --git --package-manager bun --install",
+  "reproducibleCommand": "bun create better-t-stack@latest grabbin --frontend next --backend hono --runtime workers --database sqlite --orm drizzle --api none --auth better-auth --payments none --addons biome --examples none --db-setup d1 --web-deploy cloudflare --server-deploy cloudflare --git --package-manager bun --install",
   "database": "sqlite",
   "orm": "drizzle",
   "backend": "hono",

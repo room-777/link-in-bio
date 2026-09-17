@@ -1,15 +1,15 @@
 "use client";
 
-import { env } from "@my-better-t-app/env/web";
-import { Badge } from "@my-better-t-app/ui/components/badge";
-import { Button } from "@my-better-t-app/ui/components/button";
+import { env } from "@grabbin/env/web";
+import { Badge } from "@grabbin/ui/components/badge";
+import { Button } from "@grabbin/ui/components/button";
 import {
 	Card,
 	CardContent,
 	CardDescription,
 	CardHeader,
 	CardTitle,
-} from "@my-better-t-app/ui/components/card";
+} from "@grabbin/ui/components/card";
 import { useRouter } from "next/navigation";
 import { useCallback, useEffect, useState } from "react";
 import { toast } from "sonner";

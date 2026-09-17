@@ -1,22 +1,22 @@
 "use client";
 
-import { Button } from "@my-better-t-app/ui/components/button";
+import { Button } from "@grabbin/ui/components/button";
 import {
 	Field,
 	FieldError,
 	FieldGroup,
-} from "@my-better-t-app/ui/components/field";
+} from "@grabbin/ui/components/field";
 import {
 	InputGroup,
 	InputGroupAddon,
 	InputGroupInput,
-} from "@my-better-t-app/ui/components/input-group";
-import Loading from "@my-better-t-app/ui/components/loading";
+} from "@grabbin/ui/components/input-group";
+import Loading from "@grabbin/ui/components/loading";
 import { useState } from "react";
 
 import { authClient, getAuthErrorMessage } from "@/lib/auth-client";
 
-import "@my-better-t-app/ui/styles/email-otp-form.css";
+import "@grabbin/ui/styles/email-otp-form.css";
 import { useEmailOtpShake } from "../../hooks/use-email-otp-shake";
 
 type EmailOtpFormProps = {

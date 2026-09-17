@@ -1,14 +1,14 @@
 "use client";
 
-import { Button } from "@my-better-t-app/ui/components/button";
-import { Field, FieldError } from "@my-better-t-app/ui/components/field";
+import { Button } from "@grabbin/ui/components/button";
+import { Field, FieldError } from "@grabbin/ui/components/field";
 import {
 	InputOTP,
 	InputOTPGroup,
 	InputOTPSlot,
-} from "@my-better-t-app/ui/components/input-otp";
-import Loading from "@my-better-t-app/ui/components/loading";
-import { toast } from "@my-better-t-app/ui/components/toast";
+} from "@grabbin/ui/components/input-otp";
+import Loading from "@grabbin/ui/components/loading";
+import { toast } from "@grabbin/ui/components/toast";
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 import { CheckCircle } from "reicon-react/icons/CheckCircle";

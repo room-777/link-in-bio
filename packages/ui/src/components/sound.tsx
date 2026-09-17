@@ -1,6 +1,6 @@
 "use client";
 
-import { cn } from "@my-better-t-app/ui/lib/utils";
+import { cn } from "@grabbin/ui/lib/utils";
 import type { SoundPatch } from "@web-kits/audio";
 import { SoundProvider, usePatch } from "@web-kits/audio/react";
 import { useEffect, useId, useRef, useSyncExternalStore } from "react";

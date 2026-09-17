@@ -2,23 +2,23 @@
 
 import { mergeProps } from "@base-ui/react/merge-props";
 import { useRender } from "@base-ui/react/use-render";
-import { Button } from "@my-better-t-app/ui/components/button";
-import { Input } from "@my-better-t-app/ui/components/input";
-import { Separator } from "@my-better-t-app/ui/components/separator";
+import { Button } from "@grabbin/ui/components/button";
+import { Input } from "@grabbin/ui/components/input";
+import { Separator } from "@grabbin/ui/components/separator";
 import {
 	Sheet,
 	SheetContent,
 	SheetDescription,
 	SheetHeader,
 	SheetTitle,
-} from "@my-better-t-app/ui/components/sheet";
-import { Skeleton } from "@my-better-t-app/ui/components/skeleton";
+} from "@grabbin/ui/components/sheet";
+import { Skeleton } from "@grabbin/ui/components/skeleton";
 import {
 	Tooltip,
 	TooltipContent,
 	TooltipTrigger,
-} from "@my-better-t-app/ui/components/tooltip";
-import { useIsMobile } from "@my-better-t-app/ui/components/use-mobile";
+} from "@grabbin/ui/components/tooltip";
+import { useIsMobile } from "@grabbin/ui/components/use-mobile";
 import { cva, type VariantProps } from "class-variance-authority";
 import { cn } from "cn";
 import { PanelLeftIcon } from "lucide-react";

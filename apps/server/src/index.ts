@@ -1,5 +1,5 @@
-import { createAuth } from "@my-better-t-app/auth";
-import { env } from "@my-better-t-app/env/server";
+import { createAuth } from "@grabbin/auth";
+import { env } from "@grabbin/env/server";
 import { consoleLoggingIntegration, sentry } from "@sentry/hono/cloudflare";
 import { initLogger } from "evlog";
 import { type EvlogVariables, evlog } from "evlog/hono";
@@ -12,7 +12,7 @@ import { trimTrailingSlash } from "hono/trailing-slash";
 
 import { jsonApiError } from "./api-error";
 
-initLogger({ env: { service: "my-better-t-app-server" }, pretty: true });
+initLogger({ env: { service: "grabbin-server" }, pretty: true });
 
 type AppEnv = EvlogVariables & {
 	Bindings: {

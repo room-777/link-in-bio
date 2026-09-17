@@ -1,5 +1,5 @@
 {
-	"name": "@my-better-t-app/email",
+	"name": "@grabbin/email",
 	"private": true,
 	"type": "module",
 	"exports": {
@@ -14,7 +14,7 @@
 		"check-types": "tsc --noEmit"
 	},
 	"devDependencies": {
-		"@my-better-t-app/config": "workspace:*",
+		"@grabbin/config": "workspace:*",
 		"typescript": "catalog:tooling"
 	}
 }

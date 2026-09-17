@@ -1,6 +1,6 @@
 "use client";
 
-import { Button, buttonVariants } from "@my-better-t-app/ui/components/button";
+import { Button, buttonVariants } from "@grabbin/ui/components/button";
 import { cn } from "cn";
 import {
 	ChevronDownIcon,

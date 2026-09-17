@@ -1,4 +1,4 @@
-# my-better-t-app
+# grabbin
 
 This project was created with [Better-T-Stack](https://github.com/AmanVarshney01/create-better-t-stack), a modern TypeScript stack that combines Next.js, Hono, and more.
 
@@ -28,11 +28,11 @@ bun install
 
 This project uses PostgreSQL with Drizzle ORM. The server connects through a
 Cloudflare Hyperdrive binding at runtime, so the database provider can be
-Supabase, Neon, or another PostgreSQL service.
+Supabase or another PostgreSQL service.
 
 Use separate URLs for local development and deployment:
 
-- `DATABASE_URL_LOCAL`: PostgreSQL running on your computer, such as Supabase Local or Neon Local
+- `DATABASE_URL_LOCAL`: PostgreSQL running on your computer, such as Supabase Local
 - `DATABASE_URL`: PostgreSQL used by the deployed Hyperdrive resource
 - `apps/server/.env`: local database values
 - `apps/server/.env.production`: production database values
@@ -52,25 +52,11 @@ bun run db:local:supabase
 The project starts only PostgreSQL by default to keep local memory usage low.
 Run `supabase start` directly when you need the full Supabase service stack.
 
-Neon Local:
-
-```bash
-cp .env.local.example .env.local
-bun run db:local:neon
-```
-
-Neon Local uses `NEON_BRANCH_ID` for an existing branch or
-`NEON_PARENT_BRANCH_ID` to create a temporary branch. Set only one of them.
-This repository exposes Neon Local on host port `15432` to avoid conflicts
-with an existing PostgreSQL process on port `5432`.
-
 Set `DATABASE_URL_LOCAL` in `apps/server/.env` to the connection string shown
-by the selected local database. For Neon Local, also set
-`DATABASE_SSL_REJECT_UNAUTHORIZED=false`. `DATABASE_URL` is still required by
-Alchemy; for local-only work, it can use the same local connection string.
+by the selected local database. `DATABASE_URL` is still required by Alchemy;
+for local-only work, it can use the same local connection string.
 
-Stop the selected local database with `db:local:supabase:stop` or
-`db:local:neon:stop`.
+Stop Supabase Local with `db:local:supabase:stop`.
 
 1. Generate migration files:
 
@@ -90,14 +76,14 @@ The API is running at [http://localhost:3001](http://localhost:3001).
 Apply migrations to the local database selected by `DATABASE_URL_LOCAL`:
 
 ```bash
-bun run --filter @my-better-t-app/db db:migrate:deploy
+bun run --filter @grabbin/db db:migrate:deploy
 ```
 
 For production, set `NODE_ENV=production` so Drizzle reads
 `apps/server/.env.production`:
 
 ```bash
-NODE_ENV=production bun run --filter @my-better-t-app/db db:migrate:deploy
+NODE_ENV=production bun run --filter @grabbin/db db:migrate:deploy
 ```
 
 Run the production command from CI when possible.
@@ -121,7 +107,7 @@ npx shadcn@latest add accordion dialog popover sheet table -c packages/ui
 Import shared components like this:
 
 ```tsx
-import { Button } from "@my-better-t-app/ui/components/button";
+import { Button } from "@grabbin/ui/components/button";
 ```
 
 ### Add app-specific blocks
@@ -138,7 +124,9 @@ If you want to add app-specific blocks instead of shared primitives, run the sha
 - Deploy: bun run deploy (source maps are uploaded to Sentry and removed from deployment files)
 - Destroy: bun run destroy
 
-`alchemy login --configure` stores the selected Cloudflare, Neon, PlanetScale, and/or Prisma provider profiles under `~/.alchemy`; no provider-specific setup command is required by this scaffold.
+`alchemy login --configure` stores the selected Cloudflare provider profile
+under `~/.alchemy`; no provider-specific setup command is required by this
+scaffold.
 
 Deploys are staged and default to a personal `dev_<username>` stage. For production, run the deploy with an explicit stage from `packages/infra`:
 
@@ -159,7 +147,7 @@ Source map upload requires `SENTRY_AUTH_TOKEN`, `SENTRY_SERVER_ORG`, `SENTRY_SER
 ## Project Structure
 
 ```
-my-better-t-app/
+grabbin/
 ├── apps/
 │   ├── web/         # Frontend application (Next.js)
 │   └── server/      # Backend API (Hono)

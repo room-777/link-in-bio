@@ -16,7 +16,7 @@
 		"incremental": true,
 		"paths": {
 			"@/*": ["./src/*"],
-			"@my-better-t-app/ui/*": ["../../packages/ui/src/*"]
+			"@grabbin/ui/*": ["../../packages/ui/src/*"]
 		},
 		"types": ["@cloudflare/workers-types", "vinext/types"]
 	},
