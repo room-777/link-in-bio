@@ -12,8 +12,8 @@ execution: code
 ## Goal Capsule
 
 - **Objective:** handle 예약어 정책과 중복 확인 규칙이 한 곳에서 관리되고, 이후 생성·수정·조회 기능이 같은 규칙을 재사용할 수 있다.
-- **Means:** `valibot` 기반의 순수 handle 정책을 `packages/api`에 두고, DB 조회가 필요한 중복 확인은 `apps/server` service에 둔다.
-- **Scope:** 이번 단계는 정책 파일 위치, 예약어 목록, 정규화·형식 검사, DB 중복 확인 유틸과 서버 테스트까지만 다룬다.
+- **Means:** `valibot` 기반의 순수 handle 정책을 `packages/page-handle`에 두고, DB 조회가 필요한 중복 확인은 `apps/server` service에 둔다.
+- **Scope:** 이번 단계는 정책 파일 위치, 예약어 목록, 정규화·형식 검사, DB 중복 확인 유틸까지만 다룬다.
 - **Not in this step:** 웹 입력 화면, 페이지 API controller, public route, migration 적용, handle 변경 history.
 
 ---
@@ -36,7 +36,7 @@ handle은 `pages`의 공개 주소이므로 DB 계층과 웹 화면이 각자 �
 - R4. 공용 정책은 DB·Hono·React를 import하지 않으며, `valibot` schema의 출력값을 canonical handle로 사용한다.
 - R5. 서버 중복 확인 유틸은 raw 입력을 받아 정규화·형식·예약어를 먼저 판정한 뒤 `pages.handle`을 조회한다.
 - R6. 중복 확인 결과는 `invalid | reserved | taken | available`을 구분할 수 있어야 한다.
-- R7. 서버 테스트는 순수 정책과 DB 조회 유틸의 정상·실패·경계 입력을 확인한다. 웹 테스트는 이번 단계에서 추가하지 않는다.
+- R7. 유틸은 별도 테스트 파일을 만들지 않고, 이후 controller·service 호출 경로 테스트에서 검증한다. 웹 테스트는 이번 단계에서 추가하지 않는다.
 
 ### Acceptance Examples
 
@@ -67,17 +67,17 @@ handle은 `pages`의 공개 주소이므로 DB 계층과 웹 화면이 각자 �
 
 ### Key Technical Decisions
 
-- KTD1. **공용 순수 정책은 `packages/api/src/handle.ts`에 둔다.** 현재 저장소에는 공용 API 패키지가 없지만 서버와 웹이 함께 써야 하는 규칙이므로 새 패키지 하나를 만들 가치가 있다. `packages/db`에는 DB schema만 남긴다.
-- KTD2. **`valibot`을 공용 검증 도구로 사용한다.** 기준 저장소의 `pageHandleSchema` 구조를 유지하되 현재 저장소에 이미 있는 Zod와 섞지 않는다. `packages/api`와 서버가 함께 의존하고, 새 검증 라이브러리는 추가하지 않는다.
-- KTD3. **DB 중복 확인은 서버 service에 둔다.** `packages/api`의 함수는 문자열만 다루고, `apps/server/src/services/page-handle.service.ts`의 `checkPageHandle`이 `DatabaseClient`와 `pages`를 사용한다.
-- KTD4. **예약어는 정적 배열로 시작한다.** route 파일을 실행 중 읽거나 DB에 예약어 row를 추가하지 않는다. 경로가 늘어날 때 같은 정책 파일을 수정하고 테스트를 갱신한다.
+- KTD1. **공용 순수 정책은 `packages/page-handle/src/policy.ts`에 둔다.** 서버와 웹이 함께 써야 하는 규칙이므로 handle 전용 패키지 하나를 둔다. `packages/db`에는 DB schema만 남긴다.
+- KTD2. **`valibot`을 공용 검증 도구로 사용한다.** 기준 저장소의 `pageHandleSchema` 구조를 유지하되 현재 저장소에 이미 있는 다른 검증 도구와 섞지 않는다. `packages/page-handle`과 서버가 함께 의존하고, 새 검증 라이브러리는 추가하지 않는다.
+- KTD3. **DB 중복 확인은 서버 service에 둔다.** `packages/page-handle`의 함수는 문자열만 다루고, `apps/server/src/services/page-handle.service.ts`의 `checkPageHandle`이 `DatabaseClient`와 `pages`를 사용한다.
+- KTD4. **예약어는 정적 배열로 시작한다.** route 파일을 실행 중 읽거나 DB에 예약어 row를 추가하지 않는다. 경로가 늘어날 때 같은 정책 파일과 호출 경로를 함께 갱신한다.
 - KTD5. **이 함수는 사전 확인이며 최종 중복 방어가 아니다.** 실제 생성·수정 단계에서는 이후 DB unique 제약과 충돌 변환을 추가해야 한다.
 
 ### High-Level Technical Design
 
 ```mermaid
 flowchart LR
-  Raw[raw handle] --> Policy[packages/api/src/handle.ts]
+  Raw[raw handle] --> Policy[packages/page-handle/src/policy.ts]
   Policy -->|invalid / reserved| Result[availability result]
   Policy -->|canonical handle| Service[apps/server/src/services/page-handle.service.ts]
   Service --> DB[(pages.handle)]
@@ -103,22 +103,19 @@ flowchart LR
 ### File Placement
 
 ```text
-packages/api/
+packages/page-handle/
 ├── package.json
 ├── tsconfig.json
 └── src/
-    ├── handle.ts       # 순수 규칙·예약어·응답 schema
-    └── index.ts        # handle.ts export
+    ├── policy.ts       # 순수 규칙·예약어·응답 schema
+    └── index.ts        # policy.ts export
 
 apps/server/src/services/
 └── page-handle.service.ts  # DB를 사용하는 중복 확인 함수
 
-apps/server/tests/
-├── services/page-handle.service.test.ts
-└── api/handle-policy.test.ts
 ```
 
-`apps/server/tests/api/handle-policy.test.ts`는 `packages/api`의 순수 함수를 가져와 정책을 확인한다. 실제 DB 접근은 `page-handle.service.test.ts`에만 둔다.
+유틸 함수 자체의 별도 테스트 파일은 만들지 않는다. 이후 controller·service 호출 경로가 추가되면 그 경로 테스트에서 정책과 DB 조회 결과를 함께 확인한다.
 
 ### Evidence and Known Gap
 
@@ -132,19 +129,17 @@ apps/server/tests/
 
 - **Goal:** 브라우저와 서버가 함께 사용할 수 있는 `valibot` 기반 순수 handle 정책을 만든다.
 - **Requirements:** R1, R2, R3, R4, R6.
-- **Files:** `packages/api/package.json`, `packages/api/tsconfig.json`, `packages/api/src/handle.ts`, `packages/api/src/index.ts`, `apps/server/tests/api/handle-policy.test.ts`.
+- **Files:** `packages/page-handle/package.json`, `packages/page-handle/tsconfig.json`, `packages/page-handle/src/policy.ts`, `packages/page-handle/src/index.ts`.
 - **Approach:** 기준 저장소의 3~30자 규칙과 예약어 배열을 옮기되 `log-in` 대신 현재 경로 `sign-in`을 반영한다. schema transform 결과를 저장·조회에 사용할 canonical 값으로 삼는다. `valibot` 의존성은 workspace catalog에 등록한다.
-- **Test scenarios:** 공백·대문자 정규화, 길이 경계, 시작·끝 하이픈, 연속 하이픈, 허용되지 않은 문자, 예약어 대소문자 변형, 응답 schema의 네 상태를 확인한다.
-- **Verification:** `bun test`와 `bun run --filter @grabbin/api check-types`를 실행한다.
+- **Verification:** `bun run --filter @grabbin/page-handle check-types`를 실행한다.
 
 ### U2. Database duplicate-check utility
 
 - **Goal:** DB를 아는 서버 함수 하나로 handle availability를 판정한다.
 - **Requirements:** R5, R6, R7, KTD3, KTD5.
-- **Files:** `apps/server/src/services/page-handle.service.ts`, `apps/server/tests/services/page-handle.service.test.ts`, `apps/server/package.json`.
+- **Files:** `apps/server/src/services/page-handle.service.ts`, `apps/server/package.json`.
 - **Approach:** `checkPageHandle({ db, rawHandle })`를 기준 함수로 두고, invalid/reserved에서는 조기 반환한다. valid handle만 `pages.handle`을 조회한다. 이 단계에서는 생성·수정 controller나 DB migration을 연결하지 않는다.
-- **Test scenarios:** invalid/reserved 입력에서 query가 실행되지 않는지, canonical handle로 조회하는지, existing page가 `taken`, 없는 page가 `available`인지, 저장값이 대문자일 때도 정책상 canonical 비교가 일관적인지 확인한다.
-- **Verification:** `bun test`와 `bun run --filter server check-types`를 실행한다.
+- **Verification:** `bun run --filter server check-types`를 실행한다. 이후 실제 controller·service 테스트를 추가할 때 invalid/reserved의 query 생략과 taken/available 결과를 함께 검증한다.
 
 ---
 
@@ -152,19 +147,17 @@ apps/server/tests/
 
 | Gate | Evidence | Applies to |
 | --- | --- | --- |
-| Policy behavior | `bun test`; normalization, boundary, reserved cases | U1 |
-| Server utility | `bun test`; query skip and taken/available results | U2 |
 | Type boundary | API package and server typechecks | U1, U2 |
-| Scope proof | `git diff --stat`; only policy, utility, dependency, and tests changed | U1, U2 |
+| Scope proof | `git diff --stat`; only policy, utility, dependency, and instruction changes | U1, U2 |
 
 이 단계의 결과는 “중복 확인 유틸이 준비됨”까지다. 실제 생성·수정 성공을 주장하지 않으며, DB unique migration과 API 연결은 다음 단계에서 별도로 검증한다.
 
 ## Definition of Done
 
-- `valibot` 기반 handle schema와 예약어 목록이 `packages/api/src/handle.ts` 한 곳에 있다.
-- `packages/api`는 DB·Hono·React를 import하지 않는다.
+- `valibot` 기반 handle schema와 예약어 목록이 `packages/page-handle/src/policy.ts` 한 곳에 있다.
+- `packages/page-handle`은 DB·Hono·React를 import하지 않는다.
 - `checkPageHandle`은 invalid/reserved에서 DB를 조회하지 않고, valid 입력만 canonical handle로 조회한다.
-- 정책 테스트와 서버 service 테스트가 추가된다.
+- 유틸 함수용 별도 테스트 파일은 추가하지 않는다. 호출 경로가 생길 때 해당 경로 테스트에서 검증한다.
 - 웹 화면·controller·migration·handle history 코드는 이번 변경에 포함되지 않는다.
 - 현재 사용자의 기존 dirty 변경은 보존된다.
 

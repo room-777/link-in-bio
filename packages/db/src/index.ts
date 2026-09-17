@@ -12,3 +12,5 @@ export async function createDb() {
 
 	return drizzle({ client, schema });
 }
+
+export type DatabaseClient = Awaited<ReturnType<typeof createDb>>;

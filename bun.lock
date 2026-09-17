@@ -22,12 +22,15 @@
         "@grabbin/auth": "workspace:*",
         "@grabbin/db": "workspace:*",
         "@grabbin/env": "workspace:*",
+        "@grabbin/page-handle": "workspace:*",
         "@sentry/cloudflare": "catalog:sentry",
         "@sentry/hono": "catalog:sentry",
         "better-auth": "catalog:auth",
         "dotenv": "catalog:runtime",
+        "drizzle-orm": "^0.45.2",
         "evlog": "catalog:runtime",
         "hono": "catalog:runtime",
+        "valibot": "catalog:runtime",
       },
       "devDependencies": {
         "@cloudflare/workers-types": "catalog:cloudflare",
@@ -151,6 +154,17 @@
         "@grabbin/config": "workspace:*",
         "alchemy": "2.0.0-beta.72",
         "effect": "4.0.0-rc.108",
+        "typescript": "catalog:tooling",
+      },
+    },
+    "packages/page-handle": {
+      "name": "@grabbin/page-handle",
+      "version": "0.0.0",
+      "dependencies": {
+        "valibot": "catalog:runtime",
+      },
+      "devDependencies": {
+        "@grabbin/config": "workspace:*",
         "typescript": "catalog:tooling",
       },
     },
@@ -536,6 +550,8 @@
     "@grabbin/env": ["@grabbin/env@workspace:packages/env"],
 
     "@grabbin/infra": ["@grabbin/infra@workspace:packages/infra"],
+
+    "@grabbin/page-handle": ["@grabbin/page-handle@workspace:packages/page-handle"],
 
     "@grabbin/ui": ["@grabbin/ui@workspace:packages/ui"],
 
