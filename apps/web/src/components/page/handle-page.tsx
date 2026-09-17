@@ -1,31 +1,16 @@
 "use client";
 
-import { useQueryClient, useSuspenseQuery } from "@tanstack/react-query";
+import { useState } from "react";
 
-import { pageQueryKey, pageQueryOptions } from "@/lib/page-query";
-import PageOnboardingForm from "./page-onboarding-form";
+import PageOnboardingForm, { type PageData } from "./page-onboarding-form";
 
-export default function HandlePage({ handle }: { handle: string }) {
-	const queryClient = useQueryClient();
-	const { data: page } = useSuspenseQuery(pageQueryOptions(handle));
-
-	if (!page) {
-		return (
-			<main className="mx-auto flex min-h-svh max-w-sm items-center justify-center p-6 text-muted-foreground text-sm">
-				Page not found.
-			</main>
-		);
-	}
+export default function HandlePage({ page: initialPage }: { page: PageData }) {
+	const [page, setPage] = useState(initialPage);
 
 	if (!page.onboarding && page.isOwner) {
 		return (
 			<main className="mx-auto flex min-h-svh w-full max-w-md flex-col justify-start gap-8 p-6 px-12 pt-12 min-[90rem]:mx-0 min-[90rem]:min-h-dvh min-[90rem]:max-w-2xl min-[90rem]:pt-16">
-				<PageOnboardingForm
-					page={page}
-					onComplete={(nextPage) => {
-						queryClient.setQueryData(pageQueryKey(handle), nextPage);
-					}}
-				/>
+				<PageOnboardingForm page={page} onComplete={setPage} />
 			</main>
 		);
 	}
