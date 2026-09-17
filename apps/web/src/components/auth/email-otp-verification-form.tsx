@@ -9,7 +9,6 @@ import {
 } from "@grabbin/ui/components/input-otp";
 import Loading from "@grabbin/ui/components/loading";
 import { toast } from "@grabbin/ui/components/toast";
-import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 import { CheckCircle } from "reicon-react/icons/CheckCircle";
 
@@ -24,7 +23,6 @@ export default function EmailOtpVerificationForm({
 	email,
 	onUseDifferentEmail,
 }: EmailOtpVerificationFormProps) {
-	const router = useRouter();
 	const [otp, setOtp] = useState("");
 	const [errorMessage, setErrorMessage] = useState("");
 	const [isSending, setIsSending] = useState(false);
@@ -55,7 +53,7 @@ export default function EmailOtpVerificationForm({
 	const verifyCode = async () => {
 		setErrorMessage("");
 		setIsSigningIn(true);
-		const { error } = await authClient.signIn.emailOtp({
+		const { data, error } = await authClient.signIn.emailOtp({
 			email,
 			otp,
 		});
@@ -65,7 +63,8 @@ export default function EmailOtpVerificationForm({
 			setErrorMessage(getAuthErrorMessage(error));
 			return;
 		}
-		router.replace("/");
+		const user = data?.user as { primaryPageId?: string | null } | undefined;
+		window.location.replace(user?.primaryPageId ? "/" : "/create");
 	};
 
 	return (

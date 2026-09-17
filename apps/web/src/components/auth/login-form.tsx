@@ -16,7 +16,8 @@ export default function LoginForm() {
 	const handleSocialSignIn = async (provider: SocialProvider) => {
 		const { error } = await authClient.signIn.social({
 			provider,
-			callbackURL: `${window.location.origin}/dashboard`,
+			callbackURL: window.location.origin,
+			newUserCallbackURL: `${window.location.origin}/create`,
 		});
 
 		if (error) {
@@ -42,7 +43,7 @@ export default function LoginForm() {
 					<Button
 						type="button"
 						size={"xl"}
-						variant="secondary"
+						variant="outline"
 						className="h-11 w-full"
 						onClick={() => handleSocialSignIn("google")}
 					>

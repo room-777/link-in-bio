@@ -157,6 +157,9 @@ export default Alchemy.Stack(
 				IMAGES: Cloudflare.Images.Images(),
 				SERVER: serverWorker,
 				NEXT_PUBLIC_SERVER_URL: serverWorker.url.as<string>(),
+				NEXT_PUBLIC_PAGE_DOMAIN: Config.string("NEXT_PUBLIC_PAGE_DOMAIN").pipe(
+					Config.withDefault("grabbin.me"),
+				),
 				NEXT_PUBLIC_CREEM_PRODUCT_ID: Config.string(
 					"NEXT_PUBLIC_CREEM_PRODUCT_ID",
 				).pipe(Config.withDefault("")),

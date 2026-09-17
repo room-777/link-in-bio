@@ -1,4 +1,5 @@
 import { creemClient } from "@creem_io/better-auth/client";
+import type { ApiError } from "@grabbin/api";
 import type { AuthOptions } from "@grabbin/auth";
 import { env } from "@grabbin/env/web";
 import {
@@ -6,7 +7,6 @@ import {
 	inferAdditionalFields,
 } from "better-auth/client/plugins";
 import { createAuthClient } from "better-auth/react";
-import type { ApiError } from "server";
 
 function getServerUrl(url: string) {
 	const processEnv = (
@@ -58,7 +58,7 @@ export const authClient = createAuthClient({
 
 export function getAuthErrorMessage(error: unknown) {
 	if (!error || typeof error !== "object") {
-		return "요청을 처리하지 못했습니다.";
+		return "Please try again.";
 	}
 
 	const details = error as Partial<ApiError> & {
@@ -70,7 +70,7 @@ export function getAuthErrorMessage(error: unknown) {
 	if (details.message) return details.message;
 	if (details.statusText) return details.statusText;
 
-	return "요청을 처리하지 못했습니다.";
+	return "Please try again.";
 }
 
 export type Session = typeof authClient.$Infer.Session;
