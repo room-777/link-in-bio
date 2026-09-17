@@ -1,5 +1,5 @@
 import { creem } from "@creem_io/better-auth";
-import { createDb } from "@grabbin/db";
+import { createDb, type DatabaseClient } from "@grabbin/db";
 import * as schema from "@grabbin/db/schema/index";
 import { sendVerificationOTP as sendVerificationOTPEmail } from "@grabbin/email";
 import { env } from "@grabbin/env/server";
@@ -124,10 +124,10 @@ export type Session = ReturnType<
 	typeof betterAuth<AuthOptions>
 >["$Infer"]["Session"];
 
-export async function createAuth() {
+export async function createAuth(database?: DatabaseClient) {
 	return betterAuth({
 		...authOptions,
-		database: drizzleAdapter(await createDb(), {
+		database: drizzleAdapter(database ?? (await createDb()), {
 			provider: "pg",
 			schema: {
 				...schema,
