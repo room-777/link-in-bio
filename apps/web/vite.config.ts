@@ -28,7 +28,17 @@ export default defineConfig({
 	environments: {
 		rsc: {
 			optimizeDeps: {
-				exclude: ["@base-ui/react"],
+				exclude: ["@base-ui/react", "@tanstack/react-query"],
+			},
+		},
+		ssr: {
+			optimizeDeps: {
+				exclude: ["@tanstack/react-query"],
+			},
+		},
+		client: {
+			optimizeDeps: {
+				exclude: ["@tanstack/react-query"],
 			},
 		},
 	},
