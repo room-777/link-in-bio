@@ -1,0 +1,2 @@
+CREATE INDEX "creem_subscription_referenceId_idx" ON "creem_subscription" USING btree ("reference_id");--> statement-breakpoint
+CREATE INDEX "creem_subscription_creemSubscriptionId_idx" ON "creem_subscription" USING btree ("creem_subscription_id");

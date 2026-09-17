@@ -1,0 +1,20 @@
+{
+	"name": "@my-better-t-app/email",
+	"private": true,
+	"type": "module",
+	"exports": {
+		".": {
+			"default": "./src/index.ts"
+		},
+		"./*": {
+			"default": "./src/*.ts"
+		}
+	},
+	"scripts": {
+		"check-types": "tsc --noEmit"
+	},
+	"devDependencies": {
+		"@my-better-t-app/config": "workspace:*",
+		"typescript": "catalog:tooling"
+	}
+}

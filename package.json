@@ -1,0 +1,84 @@
+{
+	"name": "my-better-t-app",
+	"private": true,
+	"workspaces": {
+		"packages": [
+			"apps/*",
+			"packages/*"
+		],
+		"catalogs": {
+			"runtime": {
+				"dotenv": "^17.4.2",
+				"evlog": "^2.27.0",
+				"hono": "^4.12.32",
+				"zod": "^4.4.3"
+			},
+			"auth": {
+				"better-auth": "1.7.5",
+				"@creem_io/better-auth": "^2.0.0"
+			},
+			"ui": {
+				"lucide-react": "^1.27.0",
+				"motion": "^13.2.0",
+				"reicon-react": "^1.2.0",
+				"next-themes": "^0.4.6",
+				"react": "^19.2.8",
+				"react-dom": "^19.2.8",
+				"shadow-plugin": "^2.1.0",
+				"sonner": "^2.0.7"
+			},
+			"cloudflare": {
+				"@cloudflare/workers-types": "^5.20260728.1"
+			},
+			"sentry": {
+				"@sentry/cloudflare": "10.74.0",
+				"@sentry/hono": "10.74.0",
+				"@sentry/react": "10.74.0",
+				"@sentry/vite-plugin": "5.4.0"
+			},
+			"tooling": {
+				"@tailwindcss/postcss": "^4.3.3",
+				"@types/node": "^20.19.43",
+				"@types/react": "^19.2.17",
+				"@types/react-dom": "^19.2.3",
+				"tailwindcss": "^4.3.3",
+				"typescript": "^7"
+			}
+		}
+	},
+	"type": "module",
+	"scripts": {
+		"dev": "bun run --filter '*' dev",
+		"build": "bun run --filter '*' build",
+		"check-types": "bun run --filter '*' check-types",
+		"dev:web": "bun run --filter web dev:bare",
+		"dev:server": "bun run --filter server dev:bare",
+		"db:generate": "bun run --filter @my-better-t-app/db db:generate",
+		"db:local:neon": "docker compose --env-file .env.local -f docker-compose.neon-local.yml up -d",
+		"db:local:neon:stop": "docker compose --env-file .env.local -f docker-compose.neon-local.yml down",
+		"db:local:supabase": "supabase start --exclude gotrue,realtime,storage-api,imgproxy,kong,inbucket,postgrest,pgadmin-schema-diff,migra,postgres-meta,studio,edge-runtime,logflare,vector,pgbouncer,pg_prove",
+		"db:local:supabase:stop": "supabase stop",
+		"deploy": "bun run --filter @my-better-t-app/infra deploy",
+		"deploy:production": "bun run --filter @my-better-t-app/infra deploy:production",
+		"destroy": "bun run --filter @my-better-t-app/infra destroy",
+		"check": "biome check --write .",
+		"prepare": "git config core.hooksPath .githooks 2>/dev/null || true"
+	},
+	"dependencies": {
+		"@my-better-t-app/env": "workspace:*",
+		"dotenv": "catalog:runtime",
+		"zod": "catalog:runtime"
+	},
+	"devDependencies": {
+		"@biomejs/biome": "^2.5.6",
+		"@cloudflare/workers-types": "catalog:cloudflare",
+		"@my-better-t-app/config": "workspace:*",
+		"@types/node": "^22.20.1",
+		"typescript": "catalog:tooling"
+	},
+	"packageManager": "bun@1.4.0",
+	"overrides": {
+		"effect": "4.0.0-rc.112",
+		"@effect/platform-node-shared": "4.0.0-rc.112"
+	}
+}

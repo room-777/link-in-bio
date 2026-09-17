@@ -1,0 +1,24 @@
+{
+	"name": "@my-better-t-app/infra",
+	"private": true,
+	"type": "module",
+	"scripts": {
+		"check-types": "tsc --noEmit",
+		"dev": "alchemy dev",
+		"deploy": "SENTRY_UPLOAD_SOURCE_MAPS=1 bun run --filter server build && SENTRY_UPLOAD_SOURCE_MAPS=1 alchemy deploy",
+		"deploy:production": "NODE_ENV=production SENTRY_UPLOAD_SOURCE_MAPS=1 bun run --filter server build && NODE_ENV=production SENTRY_UPLOAD_SOURCE_MAPS=1 alchemy deploy --stage production --env-file ../../apps/server/.env.production",
+		"destroy": "alchemy destroy"
+	},
+	"dependencies": {
+		"dotenv": "catalog:runtime",
+		"zod": "catalog:runtime"
+	},
+	"devDependencies": {
+		"@effect/platform-bun": "4.0.0-rc.108",
+		"@effect/platform-node": "4.0.0-rc.108",
+		"@my-better-t-app/config": "workspace:*",
+		"alchemy": "2.0.0-beta.72",
+		"effect": "4.0.0-rc.108",
+		"typescript": "catalog:tooling"
+	}
+}

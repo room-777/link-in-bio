@@ -1,0 +1,29 @@
+{
+	"$schema": "https://ui.shadcn.com/schema.json",
+	"style": "base-nova",
+	"rsc": true,
+	"tsx": true,
+	"tailwind": {
+		"config": "",
+		"css": "src/styles/globals.css",
+		"baseColor": "neutral",
+		"cssVariables": true,
+		"prefix": ""
+	},
+	"iconLibrary": "lucide",
+	"aliases": {
+		"components": "@my-better-t-app/ui/components",
+		"utils": "@my-better-t-app/ui/lib/utils",
+		"hooks": "@my-better-t-app/ui/hooks",
+		"lib": "@my-better-t-app/ui/lib",
+		"ui": "@my-better-t-app/ui/components"
+	},
+	"menuColor": "default",
+	"menuAccent": "subtle",
+	"registries": {
+		"@kobra": {
+			"url": "https://kobra.systems/r/{name}.json"
+		}
+	},
+	"rtl": false
+}
