@@ -10,6 +10,7 @@ import {
 	InputGroupInput,
 } from "@grabbin/ui/components/input-group";
 import Loading from "@grabbin/ui/components/loading";
+import { useQuery } from "@tanstack/react-query";
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 import { CheckCircle } from "reicon-react/icons/CheckCircle";
@@ -24,40 +25,56 @@ type Availability = "idle" | "checking" | "available" | "taken" | "invalid";
 export default function CreatePageForm() {
 	const router = useRouter();
 	const [handle, setHandle] = useState("");
-	const [availability, setAvailability] = useState<Availability>("idle");
+	const [debouncedHandle, setDebouncedHandle] = useState("");
 	const [error, setError] = useState("");
 	const [isSubmitting, setIsSubmitting] = useState(false);
 
 	useEffect(() => {
-		if (!handle.trim()) {
-			setAvailability("idle");
+		const normalizedHandle = handle.trim();
+		if (!normalizedHandle) {
+			setDebouncedHandle("");
 			return;
 		}
 
-		let cancelled = false;
-		setAvailability("checking");
-		const timeout = window.setTimeout(async () => {
-			try {
-				const response = await apiClient.pages.check.$get({
-					query: { handle },
-				});
-				if (cancelled) return;
-				if (!response.ok) {
-					setAvailability("invalid");
-					return;
-				}
-				const result = await response.json();
-				setAvailability(result.available ? "available" : "taken");
-			} catch {
-				if (!cancelled) setAvailability("invalid");
-			}
-		}, 250);
-
-		return () => {
-			cancelled = true;
-			window.clearTimeout(timeout);
-		};
+		const timeout = window.setTimeout(
+			() => setDebouncedHandle(normalizedHandle),
+			250,
+		);
+		return () => window.clearTimeout(timeout);
 	}, [handle]);
+
+	const {
+		data: handleCheck,
+		isError: isHandleCheckError,
+		isFetching: isHandleCheckFetching,
+		isPending: isHandleCheckPending,
+	} = useQuery({
+		queryKey: ["page-handle-check", debouncedHandle],
+		queryFn: async ({ signal }) => {
+			const response = await apiClient.pages.check.$get(
+				{ query: { handle: debouncedHandle } },
+				{ init: { signal } },
+			);
+			if (!response.ok) {
+				throw new Error(await getApiErrorMessage(response));
+			}
+			return response.json();
+		},
+		enabled: !!debouncedHandle,
+	});
+
+	const currentHandle = handle.trim();
+	const availability: Availability = !currentHandle
+		? "idle"
+		: currentHandle !== debouncedHandle ||
+				isHandleCheckPending ||
+				isHandleCheckFetching
+			? "checking"
+			: isHandleCheckError
+				? "invalid"
+				: handleCheck?.available
+					? "available"
+					: "taken";
 
 	const handleSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
 		event.preventDefault();

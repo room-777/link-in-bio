@@ -1,15 +1,15 @@
 "use client";
 
 import { pageProfileSchema } from "@grabbin/api";
-import { env } from "@grabbin/env/web";
 import { Button } from "@grabbin/ui/components/button";
 import { FieldError } from "@grabbin/ui/components/field";
 import Loading from "@grabbin/ui/components/loading";
+import { useMutation } from "@tanstack/react-query";
 import { AnimatePresence, motion, useReducedMotion } from "motion/react";
 import { useState } from "react";
 import * as v from "valibot";
 
-import { getApiErrorMessage } from "@/lib/api-client";
+import { apiClient, getApiErrorMessage } from "@/lib/api-client";
 import PageImageField from "./page-image-field";
 
 export type PageData = {
@@ -33,9 +33,41 @@ export default function PageOnboardingForm({
 	const [name, setName] = useState(page.name ?? "");
 	const [bio, setBio] = useState(page.bio ?? "");
 	const [error, setError] = useState("");
-	const [isSubmitting, setIsSubmitting] = useState(false);
 	const [isFinished, setIsFinished] = useState(false);
 	const [completedPage, setCompletedPage] = useState<PageData | null>(null);
+	const mutation = useMutation({
+		mutationFn: async (profile: v.InferOutput<typeof pageProfileSchema>) => {
+			const response = await apiClient.pages[":handle"].$patch(
+				{
+					param: { handle: page.handle },
+				},
+				{
+					init: {
+						body: JSON.stringify(profile),
+						headers: { "Content-Type": "application/json" },
+					},
+				},
+			);
+			if (!response.ok) {
+				throw new Error(await getApiErrorMessage(response));
+			}
+
+			const body = await response.json();
+			if (!("page" in body)) throw new Error("Please try again.");
+			return body.page;
+		},
+		onSuccess: (nextPage) => {
+			setCompletedPage({ ...nextPage, isOwner: true });
+			setIsFinished(true);
+		},
+		onError: (mutationError) => {
+			setError(
+				mutationError instanceof Error
+					? mutationError.message
+					: "Please try again.",
+			);
+		},
+	});
 
 	const transition = reduceMotion
 		? { duration: 0 }
@@ -54,38 +86,7 @@ export default function PageOnboardingForm({
 		}
 
 		setError("");
-		setIsSubmitting(true);
-		let response: Response;
-		try {
-			response = await fetch(
-				`${env.NEXT_PUBLIC_SERVER_URL}/pages/${encodeURIComponent(page.handle)}`,
-				{
-					method: "PATCH",
-					credentials: "include",
-					headers: { "Content-Type": "application/json" },
-					body: JSON.stringify(parsed.output),
-				},
-			);
-		} catch {
-			setIsSubmitting(false);
-			setError("Please try again.");
-			return;
-		}
-
-		if (!response.ok) {
-			setIsSubmitting(false);
-			setError(await getApiErrorMessage(response));
-			return;
-		}
-
-		const body = (await response.json()) as { page?: PageData };
-		if (!body.page) {
-			setIsSubmitting(false);
-			setError("Please try again.");
-			return;
-		}
-		setCompletedPage({ ...body.page, isOwner: true });
-		setIsFinished(true);
+		mutation.mutate(parsed.output);
 	};
 
 	return (
@@ -96,7 +97,7 @@ export default function PageOnboardingForm({
 			className="w-full"
 		>
 			<AnimatePresence initial={false} mode="popLayout">
-				{!isSubmitting && !isFinished && (
+				{!mutation.isPending && !isFinished && (
 					<motion.header
 						key="onboarding-copy"
 						initial={{ opacity: 1, y: 0 }}
@@ -179,10 +180,10 @@ export default function PageOnboardingForm({
 					>
 						<Button
 							type="submit"
-							disabled={isSubmitting}
+							disabled={mutation.isPending}
 							className="h-11 w-full"
 						>
-							{isSubmitting ? <Loading /> : "Done"}
+							{mutation.isPending ? <Loading /> : "Done"}
 						</Button>
 					</motion.div>
 				)}
