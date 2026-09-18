@@ -72,6 +72,22 @@ export default function PageOnboardingForm({
 	const transition = reduceMotion
 		? { duration: 0 }
 		: { type: "spring" as const, duration: 0.55, bounce: 0.15 };
+	const submitTransition = reduceMotion
+		? { duration: 0 }
+		: {
+				type: "spring" as const,
+				duration: 0.85,
+				bounce: 0.1,
+				opacity: {
+					duration: 0.65,
+					ease: [0.23, 1, 0.32, 1] as const,
+				},
+			};
+	const layoutTransition = reduceMotion
+		? { duration: 0 }
+		: { type: "spring" as const, duration: 1.1, bounce: 0.1 };
+	const activeTransition =
+		mutation.isPending || isFinished ? layoutTransition : transition;
 
 	const handleSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
 		event.preventDefault();
@@ -91,8 +107,10 @@ export default function PageOnboardingForm({
 
 	return (
 		<motion.form
+			initial={reduceMotion ? false : { opacity: 0, y: 16, scale: 0.98 }}
+			animate={{ opacity: 1, y: 0, scale: 1 }}
 			layout="position"
-			transition={transition}
+			transition={activeTransition}
 			onSubmit={handleSubmit}
 			className="w-full"
 		>
@@ -103,7 +121,7 @@ export default function PageOnboardingForm({
 						initial={{ opacity: 1, y: 0 }}
 						animate={{ opacity: 1, y: 0 }}
 						exit={{ opacity: 0, y: -12 }}
-						transition={transition}
+						transition={submitTransition}
 						className="mb-8 flex w-full flex-col gap-0.5"
 					>
 						<h1 className="font-medium text-xl">Make it yours</h1>
@@ -116,7 +134,7 @@ export default function PageOnboardingForm({
 
 			<motion.div
 				layout="position"
-				transition={transition}
+				transition={activeTransition}
 				className="mb-4 flex flex-col gap-8"
 			>
 				<PageImageField
@@ -175,7 +193,7 @@ export default function PageOnboardingForm({
 						initial={{ opacity: 1, y: 0 }}
 						animate={{ opacity: 1, y: 0 }}
 						exit={{ opacity: 0, y: 12 }}
-						transition={transition}
+						transition={submitTransition}
 						layout="position"
 					>
 						<Button
