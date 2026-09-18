@@ -4,6 +4,7 @@ import { notFound } from "next/navigation";
 import { cache } from "react";
 
 import HandlePage from "@/components/page/handle-page";
+import PageFooter from "@/components/page/page-footer";
 import PageOnboardingForm from "@/components/page/page-onboarding-form";
 import PageProfileForm from "@/components/page/page-profile-form";
 import { getPageImageUrl } from "@/lib/page-image-url";
@@ -59,12 +60,13 @@ export default async function Page({ params }: PageProps<"/[handle]">) {
 
 	if (page.canEdit) {
 		return (
-			<main className="mx-auto flex min-h-svh w-full max-w-md flex-col justify-start gap-8 p-6 px-12 pt-12 min-[90rem]:mx-0 min-[90rem]:min-h-dvh min-[90rem]:max-w-2xl min-[90rem]:pt-16">
+			<main className="mx-auto flex min-h-svh w-full max-w-md flex-col justify-between gap-8 p-6 px-12 pt-12 min-[90rem]:mx-0 min-[90rem]:min-h-dvh min-[90rem]:max-w-2xl min-[90rem]:pt-16">
 				{page.onboarding ? (
 					<PageProfileForm page={page} mode="edit" />
 				) : (
 					<PageOnboardingForm page={page} />
 				)}
+				<PageFooter isOwner />
 			</main>
 		);
 	}
