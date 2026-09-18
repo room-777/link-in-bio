@@ -7,7 +7,7 @@ export default function Home() {
 			<Button
 				variant={"brand"}
 				size={"xl"}
-				className="h-14 w-xs text-base outline-depth"
+				className="h-14 w-xs text-base"
 				render={<Link href={"/sign-in"}>Join for free</Link>}
 			/>
 		</main>

@@ -259,7 +259,7 @@ export default function CreatePageForm() {
 							size={"xl"}
 							variant={"default"}
 							disabled={isSubmitting}
-							className="smooth-shadow-xs mt-2 h-11 w-full text-base"
+							className="smooth-shadow-xs mt-2 h-12 w-full text-base"
 						>
 							{isSubmitting ? <Loading /> : "Grab it"}
 						</Button>

@@ -15,11 +15,11 @@ export default function HandlePage({ page }: { page: PageData }) {
 		<main className="mx-auto flex min-h-svh w-full max-w-md flex-col justify-start gap-8 p-6 px-12 pt-12 min-[90rem]:mx-0 min-[90rem]:min-h-dvh min-[90rem]:max-w-2xl min-[90rem]:pt-16">
 			<article className="flex min-w-0 flex-col gap-8">
 				<div className="relative isolate size-28 rounded-full bg-brand-light-gray sm:size-32 min-[90rem]:size-46">
-					{getPageImageUrl(page.image) && (
+					{getPageImageUrl(page.imageKey) && (
 						<motion.img
-							src={getPageImageUrl(page.image) ?? undefined}
+							src={getPageImageUrl(page.imageKey) ?? undefined}
 							alt=""
-							initial={reduceMotion ? false : { opacity: 0, rotate: -180 }}
+							initial={reduceMotion ? false : { opacity: 0, rotate: -8 }}
 							animate={{ opacity: 1, rotate: 0 }}
 							transition={enterTransition}
 							className="size-full rounded-full object-cover"
