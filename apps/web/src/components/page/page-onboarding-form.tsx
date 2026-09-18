@@ -144,7 +144,7 @@ export default function PageOnboardingForm({ page }: { page: PageData }) {
 							onError={setError}
 						/>
 						<div className="flex min-w-0 flex-col gap-2 min-[90rem]:px-2">
-							<InputGroup className="h-auto rounded-none bg-transparent">
+							<InputGroup className="h-auto rounded-none bg-transparent focus-within:ring-0!">
 								<InputGroupTextarea
 									id="page-name"
 									name="name"
@@ -163,7 +163,7 @@ export default function PageOnboardingForm({ page }: { page: PageData }) {
 									aria-describedby="profile-error"
 								/>
 							</InputGroup>
-							<InputGroup className="h-auto rounded-none bg-transparent">
+							<InputGroup className="h-auto rounded-none bg-transparent focus-within:ring-0!">
 								<InputGroupTextarea
 									id="page-bio"
 									name="bio"

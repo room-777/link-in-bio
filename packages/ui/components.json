@@ -23,7 +23,8 @@
 	"registries": {
 		"@kobra": {
 			"url": "https://kobra.systems/r/{name}.json"
-		}
+		},
+		"@spell": "https://spell.sh/r/{name}.json"
 	},
 	"rtl": false
 }

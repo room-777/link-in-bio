@@ -3,25 +3,40 @@
 import { createPageSchema } from "@grabbin/api";
 import { env } from "@grabbin/env/web";
 import { Button } from "@grabbin/ui/components/button";
-import { Field, FieldError, FieldGroup } from "@grabbin/ui/components/field";
+import {
+	Field,
+	FieldError,
+	FieldGroup,
+	FieldLabel,
+} from "@grabbin/ui/components/field";
 import {
 	InputGroup,
 	InputGroupAddon,
 	InputGroupInput,
 } from "@grabbin/ui/components/input-group";
 import Loading from "@grabbin/ui/components/loading";
+import { Marquee } from "@grabbin/ui/components/marquee";
 import { useQuery } from "@tanstack/react-query";
 import { AnimatePresence, motion, useReducedMotion } from "motion/react";
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 import { CheckCircle } from "reicon-react/icons/CheckCircle";
 import { CloseCircle } from "reicon-react/icons/CloseCircle";
+import { Globe } from "reicon-react/icons/globe";
 import { Loader } from "reicon-react/icons/Loader";
 import * as v from "valibot";
 
 import { apiClient, getApiErrorMessage } from "@/lib/api-client";
 
 type Availability = "idle" | "checking" | "available" | "taken" | "invalid";
+
+const exampleHandles = [
+	"alexmorgan",
+	"pixelwander",
+	"dailyroam",
+	"mossandmain",
+	"cloudyframes",
+];
 
 export default function CreatePageForm() {
 	const router = useRouter();
@@ -170,6 +185,21 @@ export default function CreatePageForm() {
 						</p>
 					</header>
 
+					<Marquee
+						id="marquee"
+						aria-hidden="true"
+						className="my-6 w-full min-[90rem]:max-w-sm"
+					>
+						{exampleHandles.map((exampleHandle) => (
+							<div
+								key={exampleHandle}
+								className="smooth-shadow-xs mr-3 w-fit rounded-lg p-2 px-5 font-medium text-lg outline outline-black/10 -outline-offset-1"
+							>
+								@{exampleHandle}
+							</div>
+						))}
+					</Marquee>
+
 					<form
 						noValidate
 						onSubmit={handleSubmit}
@@ -177,42 +207,47 @@ export default function CreatePageForm() {
 					>
 						<FieldGroup>
 							<Field data-invalid={!!error}>
-								<label htmlFor="handle" className="sr-only">
+								<FieldLabel htmlFor="handle" className="sr-only">
 									Handle
-								</label>
-								<InputGroup className="h-11 max-w-full rounded-lg bg-secondary text-base">
-									<InputGroupInput
-										id="handle"
-										name="handle"
-										aria-describedby="handle-status-message handle-error"
-										aria-invalid={!!error}
-										autoComplete="off"
-										className="pl-0.5! text-base! placeholder:font-normal placeholder:text-base! placeholder:text-muted-foreground/50"
-										onChange={(event) => {
-											setHandle(event.target.value);
-											setError("");
-										}}
-										placeholder="your-handle"
-										value={handle}
-									/>
-									<InputGroupAddon
-										align="inline-start"
-										className="pl-4 text-base!"
-									>
-										{env.NEXT_PUBLIC_PAGE_DOMAIN ?? "grabbin.me"}/
-									</InputGroupAddon>
-									{statusIcon && (
+								</FieldLabel>
+								<div className="flex items-center gap-2">
+									<div className="smooth-shadow-xs flex aspect-square size-11 items-center justify-center rounded-lg border">
+										<Globe className="-rotate-z-12 text-foreground" />
+									</div>
+									<InputGroup className="h-11 max-w-full grow rounded-lg bg-secondary text-base">
+										<InputGroupInput
+											id="handle"
+											name="handle"
+											aria-describedby="handle-status-message handle-error"
+											aria-invalid={!!error}
+											autoComplete="off"
+											className="pl-0.5! text-base! placeholder:font-normal placeholder:text-base! placeholder:text-muted-foreground/50"
+											onChange={(event) => {
+												setHandle(event.target.value);
+												setError("");
+											}}
+											placeholder="your-handle"
+											value={handle}
+										/>
 										<InputGroupAddon
-											align="inline-end"
-											data-state={availability}
-											id="handle-status-icon"
-											aria-label={`Handle ${availability}`}
-											className="size-9"
+											align="inline-start"
+											className="pl-4 text-base!"
 										>
-											{statusIcon}
+											{env.NEXT_PUBLIC_PAGE_DOMAIN ?? "grabbin.me"}/
 										</InputGroupAddon>
-									)}
-								</InputGroup>
+										{statusIcon && (
+											<InputGroupAddon
+												align="inline-end"
+												data-state={availability}
+												id="handle-status-icon"
+												aria-label={`Handle ${availability}`}
+												className="size-9"
+											>
+												{statusIcon}
+											</InputGroupAddon>
+										)}
+									</InputGroup>
+								</div>
 								<div id="handle-error" className="min-h-5" aria-live="polite">
 									<FieldError className="text-xs">{error}</FieldError>
 								</div>
