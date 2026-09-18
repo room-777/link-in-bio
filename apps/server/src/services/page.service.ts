@@ -46,7 +46,7 @@ async function insertPage(
 
 		await tx
 			.update(user)
-			.set({ primaryPageId: page.id })
+			.set({ primaryPageHandle: page.handle })
 			.where(eq(user.id, input.userId));
 
 		return page;

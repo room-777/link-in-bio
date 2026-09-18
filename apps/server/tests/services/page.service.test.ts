@@ -64,13 +64,59 @@ describe("page service", () => {
 
 	/**
 	 * Case ID: PAGE-SERVICE-003
+	 * Given: a user without a page submits an available handle.
+	 * When: createPage inserts the page.
+	 * Then: the user's primary page handle is saved in the same transaction.
+	 * Evidence: captured user update values contain the created page handle.
+	 * Result: Pass | Fail | Blocked | Not Run
+	 */
+	it("PAGE-SERVICE-003 stores the created handle as the primary page handle", async () => {
+		let userValues: Record<string, unknown> | undefined;
+		const userUpdate = {
+			set(nextValues: Record<string, unknown>) {
+				userValues = nextValues;
+				return userUpdate;
+			},
+			where() {
+				return userUpdate;
+			},
+		};
+		const tx = {
+			insert() {
+				return {
+					values() {
+						return {
+							returning: async () => [{ id: "page-1", handle: "jane" }],
+						};
+					},
+				};
+			},
+			update: () => userUpdate,
+		};
+		const db = {
+			query: {
+				pages: {
+					findFirst: async () => undefined,
+				},
+			},
+			transaction: async (callback: (value: typeof tx) => unknown) =>
+				callback(tx),
+		} as unknown as DatabaseClient;
+
+		await createPage({ db, userId: "user-1", rawHandle: "Jane" });
+
+		assert.deepEqual(userValues, { primaryPageHandle: "jane" });
+	});
+
+	/**
+	 * Case ID: PAGE-SERVICE-004
 	 * Given: the signed-in owner submits a profile for their page.
 	 * When: completePage updates the page.
 	 * Then: image, name, bio are saved and onboarding becomes true.
 	 * Evidence: returned row and captured update values.
 	 * Result: Pass | Fail | Blocked | Not Run
 	 */
-	it("PAGE-SERVICE-003 completes onboarding for the page owner", async () => {
+	it("PAGE-SERVICE-004 completes onboarding for the page owner", async () => {
 		let values: Record<string, unknown> | undefined;
 		const imageKey = "users/user-1/pages/page-1/profile/jane.webp";
 		const updatedPage = {
@@ -127,7 +173,7 @@ describe("page service", () => {
 		});
 	});
 
-	it("PAGE-SERVICE-004 completes onboarding with only a name", async () => {
+	it("PAGE-SERVICE-005 completes onboarding with only a name", async () => {
 		let values: Record<string, unknown> | undefined;
 		const query = {
 			set(nextValues: Record<string, unknown>) {
@@ -165,14 +211,14 @@ describe("page service", () => {
 	});
 
 	/**
-	 * Case ID: PAGE-SERVICE-005
+	 * Case ID: PAGE-SERVICE-006
 	 * Given: R2 stores an owned image without HTTP metadata.
 	 * When: the owner completes the page with that image key.
 	 * Then: the image key is accepted using the server-generated extension.
 	 * Evidence: page update values contain the image key and onboarding state.
 	 * Result: Pass | Fail | Blocked | Not Run
 	 */
-	it("PAGE-SERVICE-005 accepts an owned image without R2 HTTP metadata", async () => {
+	it("PAGE-SERVICE-006 accepts an owned image without R2 HTTP metadata", async () => {
 		let values: Record<string, unknown> | undefined;
 		const imageKey = "users/user-1/pages/page-1/profile/jane.jpg";
 		const query = {

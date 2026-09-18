@@ -39,7 +39,7 @@ const authOptions: BetterAuthOptions = {
 	trustedOrigins: [env.CORS_ORIGIN],
 	user: {
 		additionalFields: {
-			primaryPageId: {
+			primaryPageHandle: {
 				type: "string",
 				required: false,
 				input: false,

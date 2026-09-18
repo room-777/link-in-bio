@@ -7,7 +7,7 @@ export const user = pgTable("user", {
 	email: text("email").notNull().unique(),
 	emailVerified: boolean("email_verified").default(false).notNull(),
 	image: text("image"),
-	primaryPageId: text("primary_page_id"),
+	primaryPageHandle: text("primary_page_handle"),
 	creemCustomerId: text("creem_customer_id"),
 	hadTrial: boolean("had_trial").default(false),
 	role: text("role").default("user").notNull(),
