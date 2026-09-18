@@ -22,7 +22,7 @@ export const pages = pgTable(
 		onboarding: boolean("onboarding").default(false).notNull(),
 		name: text("name"),
 		bio: text("bio"),
-		image: text("image"),
+		imageKey: text("image_key"),
 		imageSource: text("image_source"),
 		imageCrop: jsonb("image_crop").$type<Record<string, number> | null>(),
 		role: text("role"),

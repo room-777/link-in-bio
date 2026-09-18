@@ -26,7 +26,7 @@ function findPublicPageByHandle(db: DatabaseClient, handle: string) {
 			userId: true,
 			handle: true,
 			onboarding: true,
-			image: true,
+			imageKey: true,
 			name: true,
 			bio: true,
 		},
@@ -58,7 +58,7 @@ function updateOwnedPage(
 	input: {
 		userId: string;
 		handle: string;
-		image: string | null;
+		imageKey: string | null;
 		name: string;
 		bio: string | null;
 	},
@@ -66,7 +66,7 @@ function updateOwnedPage(
 	return db
 		.update(pages)
 		.set({
-			image: input.image,
+			imageKey: input.imageKey,
 			name: input.name,
 			bio: input.bio,
 			onboarding: true,
@@ -112,12 +112,18 @@ async function hasValidOwnedPageImage(input: {
 
 	const object = await input.bucket.head(input.key);
 	const contentType = object?.httpMetadata?.contentType;
+	const hasSupportedExtension = /\.(avif|gif|jpe?g|png|webp)$/i.test(input.key);
+	const hasValidContentType =
+		!contentType ||
+		contentType === "application/octet-stream" ||
+		pageImageContentTypes.includes(
+			contentType as (typeof pageImageContentTypes)[number],
+		);
 	return Boolean(
 		object &&
 			object.size <= 5 * 1024 * 1024 &&
-			pageImageContentTypes.includes(
-				contentType as (typeof pageImageContentTypes)[number],
-			),
+			hasSupportedExtension &&
+			hasValidContentType,
 	);
 }
 
@@ -169,16 +175,16 @@ export async function completePage({
 	const handle = normalizePageHandle(rawHandle);
 	const existingPage = await db.query.pages.findFirst({
 		where: and(eq(pages.handle, handle), eq(pages.userId, userId)),
-		columns: { id: true, image: true },
+		columns: { id: true, imageKey: true },
 	});
 	if (!existingPage) throw new PageServiceError("PAGE_NOT_FOUND");
 
-	const image = profile.image?.trim() || null;
+	const imageKey = profile.imageKey?.trim() || null;
 	if (
-		image &&
+		imageKey &&
 		!(await hasValidOwnedPageImage({
 			bucket,
-			key: image,
+			key: imageKey,
 			userId,
 			pageId: existingPage.id,
 		}))
@@ -189,7 +195,7 @@ export async function completePage({
 	const [page] = await updateOwnedPage(db, {
 		userId,
 		handle,
-		image,
+		imageKey,
 		name: profile.name,
 		bio: profile.bio?.trim() || null,
 	});
@@ -197,8 +203,8 @@ export async function completePage({
 	if (!page) {
 		throw new PageServiceError("PAGE_NOT_FOUND");
 	}
-	if (existingPage.image && existingPage.image !== image) {
-		await bucket.delete(existingPage.image).catch(() => undefined);
+	if (existingPage.imageKey && existingPage.imageKey !== imageKey) {
+		await bucket.delete(existingPage.imageKey).catch(() => undefined);
 	}
 
 	return page;

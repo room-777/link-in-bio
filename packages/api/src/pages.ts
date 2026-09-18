@@ -27,7 +27,7 @@ export const pageImageKeySchema = v.object({
 export const pageDataSchema = v.object({
 	handle: v.string(),
 	onboarding: v.boolean(),
-	image: v.nullable(v.string()),
+	imageKey: v.nullable(v.string()),
 	name: v.nullable(v.string()),
 	bio: v.nullable(v.string()),
 	isOwner: v.boolean(),
@@ -35,7 +35,7 @@ export const pageDataSchema = v.object({
 });
 
 export const pageProfileSchema = v.object({
-	image: v.optional(v.nullable(v.pipe(v.string(), v.maxLength(512)))),
+	imageKey: v.optional(v.nullable(v.pipe(v.string(), v.maxLength(512)))),
 	name: v.pipe(v.string(), v.trim(), v.minLength(1), v.maxLength(80)),
 	bio: v.optional(v.pipe(v.string(), v.trim(), v.maxLength(280))),
 });

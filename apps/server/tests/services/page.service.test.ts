@@ -77,7 +77,7 @@ describe("page service", () => {
 			id: "page-1",
 			handle: "jane",
 			onboarding: true,
-			image: imageKey,
+			imageKey,
 			name: "Jane",
 			bio: "Hello",
 		};
@@ -94,7 +94,7 @@ describe("page service", () => {
 		const db = {
 			query: {
 				pages: {
-					findFirst: async () => ({ id: "page-1", image: null }),
+					findFirst: async () => ({ id: "page-1", imageKey: null }),
 				},
 			},
 			update: () => query,
@@ -113,14 +113,14 @@ describe("page service", () => {
 			userId: "user-1",
 			handle: "Jane",
 			profile: {
-				image: ` ${imageKey} `,
+				imageKey: ` ${imageKey} `,
 				name: "Jane",
 				bio: "Hello",
 			},
 		});
 		assert.deepEqual(result, updatedPage);
 		assert.deepEqual(values, {
-			image: imageKey,
+			imageKey,
 			name: "Jane",
 			bio: "Hello",
 			onboarding: true,
@@ -142,7 +142,7 @@ describe("page service", () => {
 		const db = {
 			query: {
 				pages: {
-					findFirst: async () => ({ id: "page-1", image: null }),
+					findFirst: async () => ({ id: "page-1", imageKey: null }),
 				},
 			},
 			update: () => query,
@@ -157,7 +157,56 @@ describe("page service", () => {
 			profile: { name: "Jane" },
 		});
 		assert.deepEqual(values, {
-			image: null,
+			imageKey: null,
+			name: "Jane",
+			bio: null,
+			onboarding: true,
+		});
+	});
+
+	/**
+	 * Case ID: PAGE-SERVICE-005
+	 * Given: R2 stores an owned image without HTTP metadata.
+	 * When: the owner completes the page with that image key.
+	 * Then: the image key is accepted using the server-generated extension.
+	 * Evidence: page update values contain the image key and onboarding state.
+	 * Result: Pass | Fail | Blocked | Not Run
+	 */
+	it("PAGE-SERVICE-005 accepts an owned image without R2 HTTP metadata", async () => {
+		let values: Record<string, unknown> | undefined;
+		const imageKey = "users/user-1/pages/page-1/profile/jane.jpg";
+		const query = {
+			set(nextValues: Record<string, unknown>) {
+				values = nextValues;
+				return query;
+			},
+			where() {
+				return query;
+			},
+			returning: async () => [{ id: "page-1", imageKey, name: "Jane" }],
+		};
+		const db = {
+			query: {
+				pages: {
+					findFirst: async () => ({ id: "page-1", imageKey: null }),
+				},
+			},
+			update: () => query,
+		} as unknown as DatabaseClient;
+		const bucket = {
+			head: async () => ({ size: 100 }),
+			delete: async () => undefined,
+		} as unknown as R2Bucket;
+
+		await completePage({
+			db,
+			bucket,
+			userId: "user-1",
+			handle: "jane",
+			profile: { imageKey, name: "Jane" },
+		});
+		assert.deepEqual(values, {
+			imageKey,
 			name: "Jane",
 			bio: null,
 			onboarding: true,
