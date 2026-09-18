@@ -73,6 +73,7 @@ export const hyperdrive = Cloudflare.Hyperdrive.Connection(
 );
 
 export const grabbinBucket = Cloudflare.R2.Bucket("grabbin", {
+	name: "grabbin",
 	cors: [
 		{
 			allowedMethods: ["PUT", "HEAD"],
@@ -82,7 +83,7 @@ export const grabbinBucket = Cloudflare.R2.Bucket("grabbin", {
 			maxAgeSeconds: 3600,
 		},
 	],
-});
+}).pipe(Alchemy.remote());
 
 export const server = Cloudflare.Worker("server", {
 	main: serverUsesUploadedBuild
