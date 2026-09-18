@@ -63,8 +63,14 @@ export default function EmailOtpVerificationForm({
 			setErrorMessage(getAuthErrorMessage(error));
 			return;
 		}
-		const user = data?.user as { primaryPageId?: string | null } | undefined;
-		window.location.replace(user?.primaryPageId ? "/" : "/create");
+		const user = data?.user as
+			| { primaryPageHandle?: string | null }
+			| undefined;
+		window.location.replace(
+			user?.primaryPageHandle
+				? `/${encodeURIComponent(user.primaryPageHandle)}`
+				: "/create",
+		);
 	};
 
 	return (
