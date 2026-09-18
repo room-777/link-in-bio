@@ -130,46 +130,13 @@
 	--sidebar-ring: oklch(0.556 0 0);
 }
 
-.t-dropdown {
-	transform: scale(var(--dropdown-pre-scale));
-	opacity: 0;
-	transition:
-		transform var(--dropdown-open-dur) var(--dropdown-ease),
-		opacity var(--dropdown-open-dur) var(--dropdown-ease);
-	will-change: transform, opacity;
-}
-
-.t-dropdown[data-open] {
-	transform: scale(1);
-	opacity: 1;
-}
-
-.t-dropdown[data-closed] {
-	transform: scale(var(--dropdown-closing-scale));
-	opacity: 0;
-	transition-duration: var(--dropdown-close-dur);
-}
-
-.t-select-chevron {
-	transform: rotate(0deg);
-	transition: transform var(--select-chevron-dur) var(--select-chevron-ease);
-}
-
-[data-slot="select-trigger"][data-align-item-with-trigger="false"][data-popup-open]
-	.t-select-chevron {
-	transform: rotate(180deg);
-}
-
-@media (prefers-reduced-motion: reduce) {
-	.t-dropdown,
-	.t-select-chevron {
-		/* biome-ignore lint/complexity/noImportantStyles: reduced motion must override the open transition */
-		transition: none !important;
-	}
-}
-
 @utility outline-depth {
-	@apply outline-1 outline-black/10 -outline-offset-1;
+	outline: 1px solid rgba(0, 0, 0, 0.1) !important;
+	outline-offset: -1px !important;
+
+	@variant dark {
+		outline-color: rgba(255, 255, 255, 0.1) !important;
+	}
 }
 
 @layer base {
