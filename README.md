@@ -124,6 +124,11 @@ If you want to add app-specific blocks instead of shared primitives, run the sha
 - Deploy: bun run deploy (source maps are uploaded to Sentry and removed from deployment files)
 - Destroy: bun run destroy
 
+The production web Worker is deployed through `packages/infra` and Alchemy.
+Alchemy injects the server Worker as the `SERVER` Service Binding; the
+standalone `apps/web/wrangler.jsonc` intentionally does not declare that
+binding. Use the standalone Vinext/Wrangler commands only for local preview.
+
 `alchemy login --configure` stores the selected Cloudflare provider profile
 under `~/.alchemy`; no provider-specific setup command is required by this
 scaffold.
