@@ -5,6 +5,7 @@ import {
 	InputGroup,
 	InputGroupTextarea,
 } from "@grabbin/ui/components/input-group";
+import { motion, useReducedMotion } from "motion/react";
 
 import PageImageField from "./page-image-field";
 
@@ -31,6 +32,11 @@ export default function PageProfileFields({
 	onBioChange: (value: string) => void;
 	error: string;
 }) {
+	const reduceMotion = useReducedMotion();
+	const enterTransition = reduceMotion
+		? { duration: 0 }
+		: { duration: 0.85, ease: [0.22, 1, 0.36, 1] as const };
+
 	return (
 		<FieldGroup className="gap-8">
 			<Field data-invalid={!!error} className="gap-8">
@@ -42,36 +48,48 @@ export default function PageProfileFields({
 					onError={onImageError}
 				/>
 				<div className="flex min-w-0 flex-col gap-2 min-[90rem]:px-2">
-					<InputGroup className="h-auto rounded-none bg-transparent focus-within:ring-0!">
-						<InputGroupTextarea
-							id="page-name"
-							name="name"
-							aria-label="Name"
-							autoComplete="name"
-							className="editable-paragraph field-sizing-content min-h-fit! w-full overflow-hidden whitespace-pre-wrap border-0! bg-transparent! p-0! font-bold text-3xl! leading-tight tracking-tight outline-none transition-[background-color,box-shadow] duration-150 ease-out min-[90rem]:text-[40px]!"
-							rows={1}
-							placeholder="Name"
-							required
-							value={name}
-							onChange={(event) => onNameChange(event.target.value)}
-							aria-invalid={!!error}
-							aria-describedby="profile-error"
-						/>
-					</InputGroup>
-					<InputGroup className="h-auto rounded-none bg-transparent focus-within:ring-0!">
-						<InputGroupTextarea
-							id="page-bio"
-							name="bio"
-							aria-label="Bio"
-							className="editable-paragraph field-sizing-content min-h-fit! w-full overflow-hidden whitespace-pre-wrap border-0! bg-transparent! px-0.5! text-base! text-primary/80 leading-6 outline-none transition-[background-color,box-shadow] duration-150 ease-out min-[90rem]:text-xl! min-[90rem]:leading-8"
-							rows={2}
-							placeholder="Tell about you"
-							value={bio}
-							onChange={(event) => onBioChange(event.target.value)}
-							aria-invalid={!!error}
-							aria-describedby="profile-error"
-						/>
-					</InputGroup>
+					<motion.div
+						initial={reduceMotion ? false : { opacity: 0, y: 10 }}
+						animate={{ opacity: 1, y: 0 }}
+						transition={{ ...enterTransition, delay: 0.08 }}
+					>
+						<InputGroup className="h-auto rounded-none bg-transparent focus-within:ring-0!">
+							<InputGroupTextarea
+								id="page-name"
+								name="name"
+								aria-label="Name"
+								autoComplete="name"
+								className="editable-paragraph field-sizing-content min-h-fit! w-full overflow-hidden whitespace-pre-wrap border-0! bg-transparent! p-0! font-bold text-3xl! leading-tight tracking-tight outline-none transition-[background-color,box-shadow] duration-150 ease-out min-[90rem]:text-[40px]!"
+								rows={1}
+								placeholder="Name"
+								required
+								value={name}
+								onChange={(event) => onNameChange(event.target.value)}
+								aria-invalid={!!error}
+								aria-describedby="profile-error"
+							/>
+						</InputGroup>
+					</motion.div>
+					<motion.div
+						initial={reduceMotion ? false : { opacity: 0, y: 10 }}
+						animate={{ opacity: 1, y: 0 }}
+						transition={{ ...enterTransition, delay: 0.16 }}
+					>
+						<InputGroup className="h-auto rounded-none bg-transparent focus-within:ring-0!">
+							<InputGroupTextarea
+								id="page-bio"
+								name="bio"
+								aria-label="Bio"
+								className="editable-paragraph field-sizing-content min-h-fit! w-full overflow-hidden whitespace-pre-wrap border-0! bg-transparent! px-0.5! text-base! text-primary/80 leading-6 outline-none transition-[background-color,box-shadow] duration-150 ease-out min-[90rem]:text-xl! min-[90rem]:leading-8"
+								rows={2}
+								placeholder="Tell about you"
+								value={bio}
+								onChange={(event) => onBioChange(event.target.value)}
+								aria-invalid={!!error}
+								aria-describedby="profile-error"
+							/>
+						</InputGroup>
+					</motion.div>
 					<div id="profile-error" className="min-h-5" aria-live="polite">
 						<FieldError className="text-xs">{error}</FieldError>
 					</div>

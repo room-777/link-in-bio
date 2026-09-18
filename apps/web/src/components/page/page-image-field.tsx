@@ -3,6 +3,7 @@
 import { pageImageContentTypes } from "@grabbin/api";
 import { Button } from "@grabbin/ui/components/button";
 import { CircleFadingArrowUp, Trash } from "lucide-react";
+import { motion, useReducedMotion } from "motion/react";
 import { useRef } from "react";
 
 const maxImageSize = 5 * 1024 * 1024;
@@ -20,6 +21,10 @@ export default function PageImageField({
 	onError: (message: string) => void;
 	isUploading?: boolean;
 }) {
+	const reduceMotion = useReducedMotion();
+	const enterTransition = reduceMotion
+		? { duration: 0 }
+		: { duration: 0.85, ease: [0.22, 1, 0.36, 1] as const };
 	const inputRef = useRef<HTMLInputElement>(null);
 
 	function handleChange(event: React.ChangeEvent<HTMLInputElement>) {
@@ -51,9 +56,12 @@ export default function PageImageField({
 			>
 				<span className="absolute inset-0 flex items-center justify-center overflow-hidden rounded-full">
 					{value ? (
-						<img
+						<motion.img
 							src={value}
 							alt=""
+							initial={reduceMotion ? false : { opacity: 0, rotate: -180 }}
+							animate={{ opacity: 1, rotate: 0 }}
+							transition={enterTransition}
 							className="size-full rounded-lg object-cover"
 						/>
 					) : (
