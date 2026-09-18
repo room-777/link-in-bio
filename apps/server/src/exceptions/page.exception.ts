@@ -4,6 +4,7 @@ export type PageServiceErrorCode =
 	| "HANDLE_TAKEN"
 	| "PAGE_NOT_FOUND"
 	| "PAGE_ALREADY_EXISTS"
+	| "PAGE_IMAGE_INVALID"
 	| "UNIQUE_CONFLICT";
 
 export class PageServiceError extends Error {

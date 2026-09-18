@@ -21,6 +21,7 @@
 		"@grabbin/db": "workspace:*",
 		"@grabbin/env": "workspace:*",
 		"@grabbin/page-handle": "workspace:*",
+		"aws4fetch": "^1.0.20",
 		"better-auth": "catalog:auth",
 		"dotenv": "catalog:runtime",
 		"drizzle-orm": "^0.45.2",

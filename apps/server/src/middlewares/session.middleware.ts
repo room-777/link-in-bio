@@ -15,7 +15,8 @@ async function getSession(
 export const optionalSession = createMiddleware<AppEnv>(async (c, next) => {
 	const db = await createDb();
 	c.set("db", db);
-	c.set("session", await getSession(c.req.raw, db));
+	const cookie = c.req.header("cookie");
+	c.set("session", cookie ? await getSession(c.req.raw, db) : null);
 	await next();
 });
 

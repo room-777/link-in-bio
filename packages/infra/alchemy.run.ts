@@ -72,6 +72,18 @@ export const hyperdrive = Cloudflare.Hyperdrive.Connection(
 	),
 );
 
+export const grabbinBucket = Cloudflare.R2.Bucket("grabbin", {
+	cors: [
+		{
+			allowedMethods: ["PUT", "HEAD"],
+			allowedOrigins: ["http://localhost:3000", "https://grabbin.me"],
+			allowedHeaders: ["content-type"],
+			exposeHeaders: ["etag"],
+			maxAgeSeconds: 3600,
+		},
+	],
+});
+
 export const server = Cloudflare.Worker("server", {
 	main: serverUsesUploadedBuild
 		? "../../apps/server/dist/index.mjs"
@@ -84,6 +96,13 @@ export const server = Cloudflare.Worker("server", {
 	},
 	env: {
 		HYPERDRIVE: hyperdrive,
+		R2_BUCKET: grabbinBucket,
+		R2_ACCOUNT_ID: Config.string("R2_ACCOUNT_ID"),
+		R2_BUCKET_NAME: Config.string("R2_BUCKET_NAME").pipe(
+			Config.withDefault("grabbin"),
+		),
+		R2_ACCESS_KEY_ID: Config.string("R2_ACCESS_KEY_ID"),
+		R2_SECRET_ACCESS_KEY: Config.redacted("R2_SECRET_ACCESS_KEY"),
 		CORS_ORIGIN: Config.string("CORS_ORIGIN"),
 		SENTRY_DSN: Config.string("SENTRY_DSN").pipe(Config.withDefault("")),
 		BETTER_AUTH_SECRET: Config.redacted("BETTER_AUTH_SECRET"),
@@ -160,6 +179,9 @@ export default Alchemy.Stack(
 				NEXT_PUBLIC_PAGE_DOMAIN: Config.string("NEXT_PUBLIC_PAGE_DOMAIN").pipe(
 					Config.withDefault("grabbin.me"),
 				),
+				NEXT_PUBLIC_R2_PUBLIC_URL: Config.string(
+					"NEXT_PUBLIC_R2_PUBLIC_URL",
+				).pipe(Config.withDefault("")),
 				NEXT_PUBLIC_CREEM_PRODUCT_ID: Config.string(
 					"NEXT_PUBLIC_CREEM_PRODUCT_ID",
 				).pipe(Config.withDefault("")),

@@ -44,7 +44,7 @@ const app = createFactory<AppEnv>({
 			"/*",
 			cors({
 				origin: env.CORS_ORIGIN,
-				allowMethods: ["GET", "POST", "PATCH", "OPTIONS"],
+				allowMethods: ["GET", "POST", "PATCH", "DELETE", "OPTIONS"],
 				allowHeaders: [
 					"Content-Type",
 					"Authorization",
