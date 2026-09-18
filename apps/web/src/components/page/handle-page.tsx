@@ -1,20 +1,6 @@
-"use client";
+import type { PageData } from "./page-onboarding-form";
 
-import { useState } from "react";
-
-import PageOnboardingForm, { type PageData } from "./page-onboarding-form";
-
-export default function HandlePage({ page: initialPage }: { page: PageData }) {
-	const [page, setPage] = useState(initialPage);
-
-	if (!page.onboarding && page.isOwner) {
-		return (
-			<main className="mx-auto flex min-h-svh w-full max-w-md flex-col justify-start gap-8 p-6 px-12 pt-12 min-[90rem]:mx-0 min-[90rem]:min-h-dvh min-[90rem]:max-w-2xl min-[90rem]:pt-16">
-				<PageOnboardingForm page={page} onComplete={setPage} />
-			</main>
-		);
-	}
-
+export default function HandlePage({ page }: { page: PageData }) {
 	return (
 		<main className="mx-auto flex min-h-svh w-full max-w-md flex-col justify-start gap-8 p-6 px-12 pt-12 min-[90rem]:mx-0 min-[90rem]:min-h-dvh min-[90rem]:max-w-2xl min-[90rem]:pt-16">
 			<article className="flex min-w-0 flex-col gap-8">

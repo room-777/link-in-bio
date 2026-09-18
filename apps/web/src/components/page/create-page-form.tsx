@@ -80,6 +80,9 @@ export default function CreatePageForm() {
 					? "available"
 					: "taken";
 
+	const entryTransition = reduceMotion
+		? { duration: 0 }
+		: { type: "spring" as const, duration: 0.55, bounce: 0.1 };
 	const exitTransition = reduceMotion
 		? { duration: 0 }
 		: { duration: 0.42, ease: [0.23, 1, 0.32, 1] as const };
@@ -146,7 +149,6 @@ export default function CreatePageForm() {
 
 	return (
 		<AnimatePresence
-			initial={false}
 			mode="wait"
 			onExitComplete={() => {
 				if (redirectPath) router.replace(redirectPath);
@@ -155,13 +157,15 @@ export default function CreatePageForm() {
 			{!isExiting && (
 				<motion.main
 					key="create-page"
-					exit={{ opacity: 0, y: -16 }}
-					transition={exitTransition}
+					initial={reduceMotion ? false : { opacity: 0, y: 16 }}
+					animate={{ opacity: 1, y: 0 }}
+					exit={{ opacity: 0, y: -16, transition: exitTransition }}
+					transition={entryTransition}
 					className="mx-auto flex min-h-svh w-full max-w-md flex-col justify-start gap-8 p-6 px-12 pt-12 min-[90rem]:mx-0 min-[90rem]:min-h-dvh min-[90rem]:max-w-2xl min-[90rem]:pt-16"
 				>
 					<header className="flex w-full flex-col gap-0.5">
-						<h1 className="font-medium text-xl">First, Claim your handle</h1>
-						<p className="text-wrap text-muted-foreground text-sm">
+						<h1 className="font-semibold text-2xl">First, Claim your handle</h1>
+						<p className="text-wrap text-base text-primary/80">
 							Choose a unique handle for your public page.
 						</p>
 					</header>
@@ -217,9 +221,10 @@ export default function CreatePageForm() {
 
 						<Button
 							type="submit"
+							size={"xl"}
 							variant={"default"}
 							disabled={isSubmitting}
-							className="mt-2 h-11 w-full"
+							className="smooth-shadow-xs mt-2 h-11 w-full text-base"
 						>
 							{isSubmitting ? <Loading /> : "Grab it"}
 						</Button>
