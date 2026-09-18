@@ -1,24 +1,26 @@
-import type { PageData } from "./page-onboarding-form";
+import type { PageData } from "@grabbin/api";
+
+import { getPageImageUrl } from "@/lib/page-image-url";
 
 export default function HandlePage({ page }: { page: PageData }) {
 	return (
 		<main className="mx-auto flex min-h-svh w-full max-w-md flex-col justify-start gap-8 p-6 px-12 pt-12 min-[90rem]:mx-0 min-[90rem]:min-h-dvh min-[90rem]:max-w-2xl min-[90rem]:pt-16">
 			<article className="flex min-w-0 flex-col gap-8">
 				<div className="relative isolate size-28 rounded-full bg-brand-light-gray sm:size-32 min-[90rem]:size-46">
-					{page.image && (
+					{getPageImageUrl(page.image) && (
 						<img
-							src={page.image}
+							src={getPageImageUrl(page.image) ?? undefined}
 							alt=""
 							className="size-full rounded-full object-cover"
 						/>
 					)}
 				</div>
 				<div className="flex min-w-0 flex-col gap-2 min-[90rem]:px-2">
-					<h1 className="editable-paragraph field-sizing-content min-h-fit w-full resize-none overflow-hidden whitespace-pre-wrap font-bold text-3xl leading-tight tracking-tight outline-none transition-[background-color,box-shadow] duration-150 ease-out min-[90rem]:text-[40px]">
+					<h1 className="field-sizing-content min-h-fit w-full overflow-hidden whitespace-pre-wrap font-bold text-3xl leading-tight tracking-tight min-[90rem]:text-[40px]">
 						{page.name ?? page.handle}
 					</h1>
 					{page.bio && (
-						<p className="editable-paragraph field-sizing-content min-h-fit w-full resize-none overflow-hidden whitespace-pre-wrap px-0.5 text-base text-primary/80 leading-6 outline-none transition-[background-color,box-shadow] duration-150 ease-out min-[90rem]:text-xl min-[90rem]:leading-8">
+						<p className="field-sizing-content min-h-fit w-full overflow-hidden whitespace-pre-wrap px-0.5 text-base text-primary/80 leading-6 min-[90rem]:text-xl min-[90rem]:leading-8">
 							{page.bio}
 						</p>
 					)}
