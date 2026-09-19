@@ -16,6 +16,7 @@ import { Skeleton } from "@grabbin/ui/components/skeleton";
 import { toast } from "@grabbin/ui/components/toast";
 import { cn } from "@grabbin/ui/lib/utils";
 import { SlidersHorizontal } from "lucide-react";
+import { motion, useReducedMotion } from "motion/react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
@@ -24,7 +25,13 @@ import { getSignInHref } from "@/lib/auth-redirect";
 
 function OwnerFooter({ handle }: { handle?: string }) {
 	const router = useRouter();
+	const reduceMotion = useReducedMotion();
+	const [activeItem, setActiveItem] = useState<number | null>(null);
+	const [isItemActive, setIsItemActive] = useState(false);
 	const [isSigningOut, setIsSigningOut] = useState(false);
+	const hoverTransition = reduceMotion
+		? { duration: 0 }
+		: { type: "spring" as const, stiffness: 560, damping: 32, mass: 0.8 };
 
 	async function handleSignOut() {
 		setIsSigningOut(true);
@@ -45,7 +52,7 @@ function OwnerFooter({ handle }: { handle?: string }) {
 					<Button
 						variant="ghost"
 						size="icon"
-						className={"text-muted-foreground/80"}
+						className="size-10 text-muted-foreground/80"
 						aria-label="Open page options"
 					/>
 				}
@@ -56,29 +63,68 @@ function OwnerFooter({ handle }: { handle?: string }) {
 				align="end"
 				side="top"
 				sideOffset={8}
-				className="w-60 gap-1 rounded-xl p-2"
+				initialFocus={false}
+				className="relative w-60 gap-1 rounded-2xl p-2"
+				onPointerLeave={() => setIsItemActive(false)}
 			>
-				<PopoverTitle hidden className="px-2 py-1">
-					Page options
-				</PopoverTitle>
+				<PopoverTitle className="sr-only">Page options</PopoverTitle>
+				{activeItem !== null && (
+					<motion.div
+						aria-hidden="true"
+						initial={false}
+						data-active={isItemActive || undefined}
+						className="pointer-events-none absolute top-2 right-2 left-2 z-0 h-16 rounded-lg bg-muted/80 opacity-0 transition-opacity duration-150 data-[active=true]:opacity-100 motion-reduce:transition-none"
+						animate={{ y: activeItem * 68 }}
+						transition={hoverTransition}
+					/>
+				)}
 				<Button
 					variant="ghost"
-					className="h-16 w-full flex-col items-start justify-center gap-0.5 px-5"
+					className="relative z-10 h-16 w-full justify-start px-5 hover:bg-transparent"
+					onPointerEnter={() => {
+						setActiveItem(0);
+						setIsItemActive(true);
+					}}
+					onFocus={() => {
+						setActiveItem(0);
+						setIsItemActive(true);
+					}}
 				>
-					<span className="">Change handle</span>
-					<span className="text-muted-foreground/80 text-sm">
-						{handle ? `/${handle}` : null}
+					<span className="flex flex-col items-start gap-0.5 text-left">
+						<span>Change handle</span>
+						<span className="w-full min-w-0 break-all text-muted-foreground/80 text-sm">
+							{handle ? `/${handle}` : null}
+						</span>
 					</span>
 				</Button>
 				<Button
 					variant="ghost"
-					className="h-16 w-full justify-start px-5"
+					className="relative z-10 h-16 w-full justify-start px-5 hover:bg-transparent"
 					disabled={isSigningOut}
 					onClick={handleSignOut}
+					onPointerEnter={() => {
+						setActiveItem(1);
+						setIsItemActive(true);
+					}}
+					onFocus={() => {
+						setActiveItem(1);
+						setIsItemActive(true);
+					}}
 				>
 					{isSigningOut ? "Logging out..." : "Log out"}
 				</Button>
-				<Button variant="ghost" className="h-16 w-full justify-start px-5">
+				<Button
+					variant="ghost"
+					className="relative z-10 h-16 w-full justify-start px-5 text-primary hover:bg-transparent"
+					onPointerEnter={() => {
+						setActiveItem(2);
+						setIsItemActive(true);
+					}}
+					onFocus={() => {
+						setActiveItem(2);
+						setIsItemActive(true);
+					}}
+				>
 					Delete account
 				</Button>
 			</PopoverContent>
