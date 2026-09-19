@@ -83,6 +83,7 @@ export default function PageImageField({
 					variant="ghost"
 					size="icon-sm"
 					aria-label="Remove profile image"
+					disabled={isUploading}
 					onClick={onRemove}
 					className="smooth-shadow-xs absolute top-0 right-0 inline-flex size-10 items-center justify-center rounded-full border-0! bg-background opacity-0 outline-depth transition-[opacity,transform,scale,background-color,color] duration-150 ease-[cubic-bezier(0.23,1,0.32,1)] focus-visible:scale-100 focus-visible:opacity-100 group-hover/image:scale-100 group-hover/image:opacity-100 min-[90rem]:top-2 min-[90rem]:right-2"
 				>

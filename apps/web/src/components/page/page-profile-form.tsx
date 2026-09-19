@@ -14,11 +14,11 @@ import { useMutation } from "@tanstack/react-query";
 import { Check, Copy } from "lucide-react";
 import { AnimatePresence, motion, useReducedMotion } from "motion/react";
 import { useRouter } from "next/navigation";
-import { Activity, useEffect, useState } from "react";
+import { Activity, useCallback, useEffect, useRef, useState } from "react";
 import Confetti from "react-confetti";
 import { CheckCircle } from "reicon-react/icons/CheckCircle";
 import * as v from "valibot";
-
+import { usePageAutoSave } from "@/hooks/use-page-auto-save";
 import { apiClient, getApiErrorMessage } from "@/lib/api-client";
 import { getPageImageUrl } from "@/lib/page-image-url";
 import PageProfileFields from "./page-profile-fields";
@@ -32,17 +32,52 @@ export default function PageProfileForm({
 }) {
 	const router = useRouter();
 	const reduceMotion = useReducedMotion();
-	const [imageKey, setImageKey] = useState(page.imageKey ?? "");
 	const [imageUrl, setImageUrl] = useState(
 		getPageImageUrl(page.imageKey) ?? "",
 	);
-	const [selectedImageFile, setSelectedImageFile] = useState<File | null>(null);
-	const [name, setName] = useState(page.name ?? "");
-	const [bio, setBio] = useState(page.bio ?? "");
-	const [error, setError] = useState("");
 	const [isImageUploading, setIsImageUploading] = useState(false);
 	const [isSaved, setIsSaved] = useState(false);
 	const [isExiting, setIsExiting] = useState(false);
+	const [completionError, setCompletionError] = useState("");
+	const uploadVersionRef = useRef(0);
+
+	const cleanupUploadedImage = useCallback(
+		async (key: string) => {
+			const parsed = v.safeParse(pageImageKeySchema, { key });
+			if (!parsed.success) return;
+			await apiClient.pages[":handle"]["profile-image"]
+				.$delete(
+					{ param: { handle: page.handle } },
+					{
+						init: {
+							body: JSON.stringify(parsed.output),
+							headers: { "Content-Type": "application/json" },
+						},
+					},
+				)
+				.catch(() => undefined);
+		},
+		[page.handle],
+	);
+
+	const {
+		draft,
+		error: autoSaveError,
+		flush,
+		status: autoSaveStatus,
+		updateField,
+	} = usePageAutoSave({
+		handle: page.handle,
+		page,
+		onSaveFailure: (changes, discardedImageKey, savedImageKey) => {
+			const keys = new Set(
+				[changes.imageKey, discardedImageKey].filter((key): key is string =>
+					Boolean(key && key !== savedImageKey),
+				),
+			);
+			for (const key of keys) void cleanupUploadedImage(key);
+		},
+	});
 
 	useEffect(() => {
 		return () => {
@@ -50,9 +85,15 @@ export default function PageProfileForm({
 		};
 	}, [imageUrl]);
 
+	useEffect(() => {
+		if (!isImageUploading) {
+			setImageUrl(getPageImageUrl(draft.imageKey) ?? "");
+		}
+	}, [draft.imageKey, isImageUploading]);
+
 	const mutation = useMutation({
 		mutationFn: async (profile: v.InferOutput<typeof pageProfileSchema>) => {
-			const response = await apiClient.pages[":handle"].$patch(
+			const response = await apiClient.pages[":handle"].$post(
 				{ param: { handle: page.handle } },
 				{
 					init: {
@@ -67,21 +108,6 @@ export default function PageProfileForm({
 			if (!("page" in body)) throw new Error("Please try again.");
 			return body.page;
 		},
-		onSuccess: () => {
-			setIsSaved(true);
-			if (mode === "onboarding") setIsExiting(true);
-		},
-		onError: (mutationError) => {
-			const message =
-				mutationError instanceof Error
-					? mutationError.message
-					: "Please try again.";
-			if (message === "The uploaded image is invalid.") {
-				toast({ message, state: "error" });
-				return;
-			}
-			setError(message);
-		},
 	});
 
 	const transition = reduceMotion
@@ -89,24 +115,17 @@ export default function PageProfileForm({
 		: { type: "spring" as const, duration: 0.55, bounce: 0.15 };
 	const isFinished = mode === "onboarding" && isSaved && !isExiting;
 	const shouldShowConfetti = mode === "onboarding" && isSaved;
+	const error = completionError || autoSaveError || "";
+	const saveStatusLabel =
+		autoSaveStatus === "saving"
+			? "Saving…"
+			: autoSaveStatus === "dirty"
+				? "Unsaved changes"
+				: autoSaveStatus === "error"
+					? "Could not save"
+					: "Saved";
 
-	const cleanupUploadedImage = async (key: string) => {
-		const parsed = v.safeParse(pageImageKeySchema, { key });
-		if (!parsed.success) return;
-		await apiClient.pages[":handle"]["profile-image"]
-			.$delete(
-				{ param: { handle: page.handle } },
-				{
-					init: {
-						body: JSON.stringify(parsed.output),
-						headers: { "Content-Type": "application/json" },
-					},
-				},
-			)
-			.catch(() => undefined);
-	};
-
-	const handleImageSelect = (file: File) => {
+	const handleImageSelect = async (file: File) => {
 		const parsed = v.safeParse(pageImageUploadSchema, {
 			contentType: file.type,
 			size: file.size,
@@ -119,91 +138,92 @@ export default function PageProfileForm({
 			return;
 		}
 
-		setError("");
-		setSelectedImageFile(file);
-		setImageUrl(URL.createObjectURL(file));
-		setIsSaved(false);
+		const uploadVersion = ++uploadVersionRef.current;
+		const previewUrl = URL.createObjectURL(file);
+		setCompletionError("");
+		setImageUrl(previewUrl);
+		setIsImageUploading(true);
+		let uploadedKey = "";
+		try {
+			const uploadUrlResponse = await apiClient.pages[":handle"][
+				"profile-image"
+			]["upload-url"].$post(
+				{ param: { handle: page.handle } },
+				{
+					init: {
+						body: JSON.stringify({
+							contentType: file.type,
+							size: file.size,
+						}),
+						headers: { "Content-Type": "application/json" },
+					},
+				},
+			);
+			if (!uploadUrlResponse.ok) {
+				throw new Error(await getApiErrorMessage(uploadUrlResponse));
+			}
+
+			const upload = await uploadUrlResponse.json();
+			if (!("key" in upload && "uploadUrl" in upload)) {
+				throw new Error("Please try again.");
+			}
+			uploadedKey = upload.key;
+			const uploadResponse = await fetch(upload.uploadUrl, {
+				method: "PUT",
+				headers: { "Content-Type": file.type },
+				body: file,
+			});
+			if (!uploadResponse.ok) throw new Error("The image upload failed.");
+
+			if (uploadVersion !== uploadVersionRef.current) {
+				await cleanupUploadedImage(uploadedKey);
+				return;
+			}
+			updateField("imageKey", uploadedKey);
+		} catch (uploadError) {
+			if (uploadedKey) await cleanupUploadedImage(uploadedKey);
+			if (uploadVersion !== uploadVersionRef.current) return;
+			setImageUrl(getPageImageUrl(draft.imageKey) ?? "");
+			toast({
+				message:
+					uploadError instanceof Error
+						? uploadError.message
+						: "The image upload failed.",
+				state: "error",
+			});
+		} finally {
+			if (uploadVersion === uploadVersionRef.current) {
+				setIsImageUploading(false);
+			}
+		}
 	};
 
 	const handleSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
 		event.preventDefault();
 		const parsed = v.safeParse(pageProfileSchema, {
-			imageKey: imageKey.trim() || null,
-			name,
-			bio,
+			imageKey: draft.imageKey.trim() || null,
+			name: draft.name,
+			bio: draft.bio,
 		});
 		if (!parsed.success) {
-			setError("Enter a valid name.");
+			setCompletionError("Enter a valid name.");
 			return;
 		}
+		if (autoSaveError) return;
 
-		setError("");
+		setCompletionError("");
 		setIsSaved(false);
-		setIsImageUploading(Boolean(selectedImageFile));
-		let uploadedKey = "";
 		try {
-			if (selectedImageFile) {
-				const uploadUrlResponse = await apiClient.pages[":handle"][
-					"profile-image"
-				]["upload-url"].$post(
-					{ param: { handle: page.handle } },
-					{
-						init: {
-							body: JSON.stringify({
-								contentType: selectedImageFile.type,
-								size: selectedImageFile.size,
-							}),
-							headers: { "Content-Type": "application/json" },
-						},
-					},
-				);
-				if (!uploadUrlResponse.ok) {
-					throw new Error(await getApiErrorMessage(uploadUrlResponse));
-				}
-
-				const upload = await uploadUrlResponse.json();
-				if (!("key" in upload && "uploadUrl" in upload)) {
-					throw new Error("Please try again.");
-				}
-				uploadedKey = upload.key;
-				const uploadResponse = await fetch(upload.uploadUrl, {
-					method: "PUT",
-					headers: { "Content-Type": selectedImageFile.type },
-					body: selectedImageFile,
-				});
-				if (!uploadResponse.ok) {
-					throw new Error("The image upload failed.");
-				}
-			}
-
-			const profile = v.parse(pageProfileSchema, {
-				imageKey: uploadedKey || imageKey.trim() || null,
-				name,
-				bio,
-			});
-			mutation.mutate(profile, {
-				onSuccess: () => {
-					setImageKey(profile.imageKey ?? "");
-					setSelectedImageFile(null);
-					if (profile.imageKey) {
-						setImageUrl(getPageImageUrl(profile.imageKey) ?? "");
-					}
-				},
-				onError: () => {
-					if (uploadedKey) void cleanupUploadedImage(uploadedKey);
-				},
-			});
+			await flush();
+			await mutation.mutateAsync(parsed.output);
+			setIsSaved(true);
+			if (mode === "onboarding") setIsExiting(true);
 		} catch (submitError) {
-			if (uploadedKey) await cleanupUploadedImage(uploadedKey);
-			toast({
-				message:
-					submitError instanceof Error
-						? submitError.message
-						: "The image upload failed.",
-				state: "error",
-			});
-		} finally {
-			setIsImageUploading(false);
+			setCompletionError(
+				submitError instanceof Error
+					? submitError.message
+					: "Please try again.",
+			);
 		}
 	};
 
@@ -246,28 +266,35 @@ export default function PageProfileForm({
 					<div className="mb-4 flex flex-col gap-8">
 						<PageProfileFields
 							imageUrl={imageUrl}
-							isImageUploading={isImageUploading}
+							isImageUploading={isImageUploading || autoSaveStatus === "saving"}
 							onSelectImage={handleImageSelect}
 							onRemoveImage={() => {
-								setImageKey("");
+								uploadVersionRef.current += 1;
+								updateField("imageKey", "");
 								setImageUrl("");
-								setSelectedImageFile(null);
-								setIsSaved(false);
+								setCompletionError("");
 							}}
 							onImageError={(message) => toast({ message, state: "error" })}
-							name={name}
-							bio={bio}
+							name={draft.name}
+							bio={draft.bio}
 							onNameChange={(value) => {
-								setName(value);
-								setError("");
+								updateField("name", value);
+								setCompletionError("");
 							}}
 							onBioChange={(value) => {
-								setBio(value);
-								setError("");
+								updateField("bio", value);
+								setCompletionError("");
 							}}
 							error={error}
 						/>
 					</div>
+					<p
+						className="min-h-5 text-muted-foreground text-xs"
+						role="status"
+						aria-live="polite"
+					>
+						{saveStatusLabel}
+					</p>
 
 					{mode === "onboarding" && !isFinished && (
 						<Button
