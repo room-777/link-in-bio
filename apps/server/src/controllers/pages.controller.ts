@@ -3,6 +3,7 @@ import {
 	pageImageKeySchema,
 	pageImageUploadSchema,
 	pageProfileSchema,
+	updatePageDraftSchema,
 } from "@grabbin/api";
 import { createDb } from "@grabbin/db";
 import type { Context } from "hono";
@@ -20,7 +21,12 @@ import {
 	createPresignedPutUrl,
 	isOwnedPageImageKey,
 } from "../services/media.service";
-import { completePage, createPage, getPage } from "../services/page.service";
+import {
+	completePage,
+	createPage,
+	getPage,
+	updatePageDraft,
+} from "../services/page.service";
 import { checkPageHandle } from "../services/page-handle.service";
 import type { AppEnv } from "../types";
 
@@ -194,6 +200,39 @@ export const pagesController = new Hono<AppEnv>()
 		}
 	})
 	.patch("/:handle", requiredSession, async (c) => {
+		const session = c.var.session;
+		if (!session) {
+			return jsonApiError(c, {
+				status: 401,
+				detail: "Authentication required.",
+			});
+		}
+		const parsed = v.safeParse(
+			updatePageDraftSchema,
+			await c.req.json().catch(() => null),
+		);
+		if (!parsed.success) {
+			return jsonApiError(c, {
+				status: 422,
+				detail: "Enter a valid name.",
+			});
+		}
+
+		try {
+			const page = await updatePageDraft({
+				db: c.var.db,
+				bucket: c.env.R2_BUCKET,
+				userId: session.user.id,
+				handle: c.req.param("handle"),
+				draft: parsed.output,
+			});
+			return c.json({ page });
+		} catch (error) {
+			if (error instanceof PageServiceError) return pageErrorResponse(c, error);
+			throw error;
+		}
+	})
+	.post("/:handle", requiredSession, async (c) => {
 		const session = c.var.session;
 		if (!session) {
 			return jsonApiError(c, {

@@ -75,6 +75,31 @@ function updateOwnedPage(
 		.returning();
 }
 
+function updateOwnedPageDraft(
+	db: DatabaseClient,
+	input: {
+		userId: string;
+		handle: string;
+		name: string;
+		bio?: string | null;
+		imageKey?: string | null;
+	},
+) {
+	const values: {
+		name: string;
+		bio?: string | null;
+		imageKey?: string | null;
+	} = { name: input.name };
+	if ("bio" in input) values.bio = input.bio;
+	if ("imageKey" in input) values.imageKey = input.imageKey;
+
+	return db
+		.update(pages)
+		.set(values)
+		.where(and(eq(pages.handle, input.handle), eq(pages.userId, input.userId)))
+		.returning();
+}
+
 function getHandleError(availability: HandleAvailabilityResponse) {
 	if (availability.reason === "invalid") {
 		return new PageServiceError("HANDLE_INVALID");
@@ -204,6 +229,61 @@ export async function completePage({
 		throw new PageServiceError("PAGE_NOT_FOUND");
 	}
 	if (existingPage.imageKey && existingPage.imageKey !== imageKey) {
+		await bucket.delete(existingPage.imageKey).catch(() => undefined);
+	}
+
+	return page;
+}
+
+export async function updatePageDraft({
+	db,
+	bucket,
+	userId,
+	handle: rawHandle,
+	draft,
+}: {
+	db: DatabaseClient;
+	bucket: R2Bucket;
+	userId: string;
+	handle: string;
+	draft: PageProfile;
+}) {
+	const handle = normalizePageHandle(rawHandle);
+	const existingPage = await db.query.pages.findFirst({
+		where: and(eq(pages.handle, handle), eq(pages.userId, userId)),
+		columns: { id: true, imageKey: true },
+	});
+	if (!existingPage) throw new PageServiceError("PAGE_NOT_FOUND");
+
+	const imageKey = draft.imageKey?.trim() || null;
+	if (
+		"imageKey" in draft &&
+		imageKey &&
+		imageKey !== existingPage.imageKey &&
+		!(await hasValidOwnedPageImage({
+			bucket,
+			key: imageKey,
+			userId,
+			pageId: existingPage.id,
+		}))
+	) {
+		throw new PageServiceError("PAGE_IMAGE_INVALID");
+	}
+
+	const [page] = await updateOwnedPageDraft(db, {
+		userId,
+		handle,
+		name: draft.name.trim(),
+		...("bio" in draft ? { bio: draft.bio?.trim() || null } : {}),
+		...("imageKey" in draft ? { imageKey } : {}),
+	});
+	if (!page) throw new PageServiceError("PAGE_NOT_FOUND");
+
+	if (
+		"imageKey" in draft &&
+		existingPage.imageKey &&
+		existingPage.imageKey !== imageKey
+	) {
 		await bucket.delete(existingPage.imageKey).catch(() => undefined);
 	}
 

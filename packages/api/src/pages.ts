@@ -34,11 +34,14 @@ export const pageDataSchema = v.object({
 	canEdit: v.boolean(),
 });
 
-export const pageProfileSchema = v.object({
+export const updatePageDraftSchema = v.object({
 	imageKey: v.optional(v.nullable(v.pipe(v.string(), v.maxLength(512)))),
 	name: v.pipe(v.string(), v.trim(), v.minLength(1), v.maxLength(80)),
-	bio: v.optional(v.pipe(v.string(), v.trim(), v.maxLength(280))),
+	bio: v.optional(v.nullable(v.pipe(v.string(), v.trim(), v.maxLength(280)))),
 });
 
 export type PageData = v.InferOutput<typeof pageDataSchema>;
-export type PageProfile = v.InferOutput<typeof pageProfileSchema>;
+export type UpdatePageDraft = v.InferOutput<typeof updatePageDraftSchema>;
+export type PageProfile = UpdatePageDraft;
+
+export const pageProfileSchema = updatePageDraftSchema;
