@@ -1,6 +1,6 @@
 # Web architecture reference
 
-`apps/web`은 Next.js App Router 기반입니다. 코드 작성 전 `apps/web/node_modules/next/dist/docs/`에서 현재 설치된 Next 버전에 맞는 문서를 읽습니다. 이 reference는 현재 저장소의 구조를 기준으로 하며, 폴더는 실제 책임이 생길 때만 추가합니다.
+`apps/web`은 Vinext 기반의 Next 호환 `src/app` 구조입니다. 프레임워크 동작은 현재 `vinext` 버전과 `apps/web/vite.config.ts`를 기준으로 판단합니다. 폴더는 실제 책임이 생길 때만 추가합니다.
 
 ## 전체 구조
 
@@ -67,7 +67,7 @@ export default async function Page({ params }: { params: Promise<{ username: str
 ## 기본 데이터 흐름
 
 ```text
-Next route (Server Component)
+Vinext route (Server Component)
   → src/lib/queries 또는 server API client
   → Hono server
   → shared package 타입·schema
