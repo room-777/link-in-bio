@@ -22,7 +22,7 @@ import { useEffect, useState } from "react";
 import { authClient, getAuthErrorMessage } from "@/lib/auth-client";
 import { getSignInHref } from "@/lib/auth-redirect";
 
-function OwnerFooter() {
+function OwnerFooter({ handle }: { handle?: string }) {
 	const router = useRouter();
 	const [isSigningOut, setIsSigningOut] = useState(false);
 
@@ -56,18 +56,30 @@ function OwnerFooter() {
 				align="end"
 				side="top"
 				sideOffset={8}
-				className="w-48 p-1"
+				className="w-60 gap-1 rounded-xl p-2"
 			>
 				<PopoverTitle hidden className="px-2 py-1">
 					Page options
 				</PopoverTitle>
 				<Button
 					variant="ghost"
-					className="w-full justify-start"
+					className="h-16 w-full flex-col items-start justify-center gap-0.5 px-5"
+				>
+					<span className="">Change handle</span>
+					<span className="text-muted-foreground/80 text-sm">
+						{handle ? `/${handle}` : null}
+					</span>
+				</Button>
+				<Button
+					variant="ghost"
+					className="h-16 w-full justify-start px-5"
 					disabled={isSigningOut}
 					onClick={handleSignOut}
 				>
 					{isSigningOut ? "Logging out..." : "Log out"}
+				</Button>
+				<Button variant="ghost" className="h-16 w-full justify-start px-5">
+					Delete account
 				</Button>
 			</PopoverContent>
 		</Popover>
@@ -137,7 +149,11 @@ export default function PageFooter({
 }) {
 	return (
 		<footer className="-mx-4 mb-4 flex min-h-10 items-center justify-start pt-8 min-[90rem]:-mx-2">
-			{isOwner ? <OwnerFooter /> : <ViewerFooter handle={handle} />}
+			{isOwner ? (
+				<OwnerFooter handle={handle} />
+			) : (
+				<ViewerFooter handle={handle} />
+			)}
 		</footer>
 	);
 }

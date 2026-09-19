@@ -66,7 +66,7 @@ export default async function Page({ params }: PageProps<"/[handle]">) {
 				) : (
 					<PageOnboardingForm page={page} />
 				)}
-				<PageFooter isOwner />
+				<PageFooter handle={page.handle} isOwner />
 			</main>
 		);
 	}
