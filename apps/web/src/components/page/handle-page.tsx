@@ -48,7 +48,7 @@ export default function HandlePage({ page }: { page: PageData }) {
 					)}
 				</div>
 			</article>
-			<PageFooter isOwner={page.isOwner} />
+			<PageFooter handle={page.handle} isOwner={page.isOwner} />
 		</main>
 	);
 }

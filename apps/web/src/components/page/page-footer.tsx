@@ -20,6 +20,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 import { authClient, getAuthErrorMessage } from "@/lib/auth-client";
+import { getSignInHref } from "@/lib/auth-redirect";
 
 function OwnerFooter() {
 	const router = useRouter();
@@ -73,7 +74,7 @@ function OwnerFooter() {
 	);
 }
 
-function ViewerFooter() {
+function ViewerFooter({ handle }: { handle?: string }) {
 	const { data: session, isPending } = authClient.useSession();
 	const [isHydrated, setIsHydrated] = useState(false);
 
@@ -86,7 +87,7 @@ function ViewerFooter() {
 	if (!session) {
 		return (
 			<Link
-				href="/sign-in"
+				href={getSignInHref(handle ? `/${encodeURIComponent(handle)}` : null)}
 				className={buttonVariants({
 					variant: "ghost",
 					size: "lg",
@@ -127,10 +128,16 @@ function ViewerFooter() {
 	);
 }
 
-export default function PageFooter({ isOwner }: { isOwner: boolean }) {
+export default function PageFooter({
+	handle,
+	isOwner,
+}: {
+	handle?: string;
+	isOwner: boolean;
+}) {
 	return (
 		<footer className="-mx-4 mb-4 flex min-h-10 items-center justify-start pt-8 min-[90rem]:-mx-2">
-			{isOwner ? <OwnerFooter /> : <ViewerFooter />}
+			{isOwner ? <OwnerFooter /> : <ViewerFooter handle={handle} />}
 		</footer>
 	);
 }

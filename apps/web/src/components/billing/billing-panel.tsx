@@ -14,6 +14,7 @@ import { useRouter } from "next/navigation";
 import { useCallback, useEffect, useState } from "react";
 import { toast } from "sonner";
 import { authClient, getAuthErrorMessage } from "@/lib/auth-client";
+import { getSignInHref } from "@/lib/auth-redirect";
 
 type Subscription = {
 	id: string;
@@ -69,7 +70,9 @@ export default function BillingPanel() {
 	}, [loadAccess]);
 
 	useEffect(() => {
-		if (!isSessionPending && !session) router.replace("/sign-in");
+		if (!isSessionPending && !session) {
+			router.replace(getSignInHref("/billing"));
+		}
 	}, [isSessionPending, router, session]);
 
 	if (isSessionPending) return <p>로그인 상태를 확인하고 있습니다...</p>;
