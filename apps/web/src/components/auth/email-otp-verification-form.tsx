@@ -13,14 +13,17 @@ import { useEffect, useState } from "react";
 import { CheckCircle } from "reicon-react/icons/CheckCircle";
 
 import { authClient, getAuthErrorMessage } from "@/lib/auth-client";
+import { getSignInHref } from "@/lib/auth-redirect";
 
 type EmailOtpVerificationFormProps = {
 	email: string;
+	returnTo?: string | null;
 	onUseDifferentEmail: () => void;
 };
 
 export default function EmailOtpVerificationForm({
 	email,
+	returnTo,
 	onUseDifferentEmail,
 }: EmailOtpVerificationFormProps) {
 	const [otp, setOtp] = useState("");
@@ -53,7 +56,7 @@ export default function EmailOtpVerificationForm({
 	const verifyCode = async () => {
 		setErrorMessage("");
 		setIsSigningIn(true);
-		const { data, error } = await authClient.signIn.emailOtp({
+		const { error } = await authClient.signIn.emailOtp({
 			email,
 			otp,
 		});
@@ -63,14 +66,7 @@ export default function EmailOtpVerificationForm({
 			setErrorMessage(getAuthErrorMessage(error));
 			return;
 		}
-		const user = data?.user as
-			| { primaryPageHandle?: string | null }
-			| undefined;
-		window.location.replace(
-			user?.primaryPageHandle
-				? `/${encodeURIComponent(user.primaryPageHandle)}`
-				: "/create",
-		);
+		window.location.replace(getSignInHref(returnTo));
 	};
 
 	return (

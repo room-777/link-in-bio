@@ -5,19 +5,22 @@ import { Activity, useState } from "react";
 import { toast } from "sonner";
 
 import { authClient, getAuthErrorMessage } from "@/lib/auth-client";
+import { getSignInHref } from "@/lib/auth-redirect";
 import EmailOtpForm from "./email-otp-form";
 import EmailOtpVerificationForm from "./email-otp-verification-form";
 
 type SocialProvider = "google" | "github" | "twitter";
 
-export default function LoginForm() {
+export default function LoginForm({ returnTo }: { returnTo?: string | null }) {
 	const [otpEmail, setOtpEmail] = useState<string | null>(null);
+	const signInHref = getSignInHref(returnTo);
 
 	const handleSocialSignIn = async (provider: SocialProvider) => {
+		const webOrigin = window.location.origin;
 		const { error } = await authClient.signIn.social({
 			provider,
-			callbackURL: window.location.origin,
-			newUserCallbackURL: `${window.location.origin}/create`,
+			callbackURL: new URL(signInHref, webOrigin).toString(),
+			newUserCallbackURL: new URL("/create", webOrigin).toString(),
 		});
 
 		if (error) {
@@ -76,6 +79,7 @@ export default function LoginForm() {
 				{otpEmail && (
 					<EmailOtpVerificationForm
 						email={otpEmail}
+						returnTo={returnTo}
 						onUseDifferentEmail={() => setOtpEmail(null)}
 					/>
 				)}
