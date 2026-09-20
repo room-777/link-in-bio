@@ -16,6 +16,7 @@ import {
 	AvatarImage,
 } from "@grabbin/ui/components/avatar";
 import { Button, buttonVariants } from "@grabbin/ui/components/button";
+import { Dialog, DialogContent } from "@grabbin/ui/components/dialog";
 import Loading from "@grabbin/ui/components/loading";
 import {
 	Popover,
@@ -32,7 +33,6 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { Activity, useEffect, useRef, useState } from "react";
 import { CheckCircle } from "reicon-react/icons/CheckCircle";
-import { InfoCircle } from "reicon-react/icons/InfoCircle";
 import { apiClient, getApiErrorMessage } from "@/lib/api-client";
 import { authClient, getAuthErrorMessage } from "@/lib/auth-client";
 import { getSignInHref } from "@/lib/auth-redirect";
@@ -52,7 +52,7 @@ function OwnerFooter({
 	const { data: session } = authClient.useSession();
 	const [activeItem, setActiveItem] = useState<number | null>(null);
 	const [isItemActive, setIsItemActive] = useState(false);
-	const [isHandlePopoverOpen, setIsHandlePopoverOpen] = useState(false);
+	const [isHandleDialogOpen, setIsHandleDialogOpen] = useState(false);
 	const [isOpen, setIsOpen] = useState(false);
 	const [isSigningOut, setIsSigningOut] = useState(false);
 	const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
@@ -112,7 +112,7 @@ function OwnerFooter({
 			throw new Error("Please try again.");
 		}
 
-		setIsHandlePopoverOpen(false);
+		setIsHandleDialogOpen(false);
 		setIsOpen(false);
 		if (onHandleChange) {
 			onHandleChange(body.page.handle);
@@ -171,7 +171,6 @@ function OwnerFooter({
 				open={isOpen}
 				onOpenChange={(open) => {
 					setIsOpen(open);
-					if (!open) setIsHandlePopoverOpen(false);
 				}}
 			>
 				<PopoverTrigger
@@ -205,53 +204,29 @@ function OwnerFooter({
 							transition={hoverTransition}
 						/>
 					)}
-					<Popover
-						open={isHandlePopoverOpen}
-						onOpenChange={setIsHandlePopoverOpen}
+					<Button
+						variant="ghost"
+						className="relative z-10 h-16 w-full justify-start px-5 hover:bg-transparent"
+						onClick={() => {
+							setIsOpen(false);
+							setIsHandleDialogOpen(true);
+						}}
+						onPointerEnter={() => {
+							setActiveItem(0);
+							setIsItemActive(true);
+						}}
+						onFocus={() => {
+							setActiveItem(0);
+							setIsItemActive(true);
+						}}
 					>
-						<PopoverTrigger
-							render={
-								<Button
-									variant="ghost"
-									className="relative z-10 h-16 w-full justify-start px-5 hover:bg-transparent"
-									onPointerEnter={() => {
-										setActiveItem(0);
-										setIsItemActive(true);
-									}}
-									onFocus={() => {
-										setActiveItem(0);
-										setIsItemActive(true);
-									}}
-								/>
-							}
-						>
-							<span className="flex flex-col items-start gap-0.5 text-left">
-								<span>Change handle</span>
-								<span className="w-full min-w-0 break-all text-muted-foreground/80 text-sm">
-									{handle ? `/${handle}` : null}
-								</span>
+						<span className="flex flex-col items-start gap-0.5 text-left">
+							<span>Change handle</span>
+							<span className="w-full min-w-0 break-all text-muted-foreground/80 text-sm">
+								{handle ? `/${handle}` : null}
 							</span>
-						</PopoverTrigger>
-						<PopoverContent
-							side="left"
-							align="center"
-							sideOffset={0}
-							initialFocus={false}
-							className="smooth-shadow-ring-2xl! w-[min(21rem,calc(100vw-2rem))] rounded-2xl p-4"
-						>
-							<PopoverTitle className="sr-only">
-								Change your handle
-							</PopoverTitle>
-							<PageHandleForm
-								initialHandle={handle}
-								title="Change your handle"
-								description="Choose a new handle for your page."
-								submitLabel="Change handle"
-								compact
-								onSubmit={handleChangeHandle}
-							/>
-						</PopoverContent>
-					</Popover>
+						</span>
+					</Button>
 					<Button
 						variant="ghost"
 						className="relative z-10 h-16 w-full justify-start px-5 hover:bg-transparent"
@@ -288,6 +263,26 @@ function OwnerFooter({
 					</Button>
 				</PopoverContent>
 			</Popover>
+			<Dialog open={isHandleDialogOpen} onOpenChange={setIsHandleDialogOpen}>
+				<DialogContent
+					showCloseButton={false}
+					className="smooth-shadow-md aspect-square gap-0 overflow-hidden rounded-[1.5rem] p-5 ring-0"
+				>
+					<div className="flex h-full min-h-0 min-w-0 flex-col overflow-y-auto p-0">
+						<div className="h-full min-h-0 min-w-0 p-1">
+							<PageHandleForm
+								initialHandle={handle}
+								title="Change your handle"
+								description="Choose a new handle for your page."
+								submitLabel="Change handle"
+								variant="outline"
+								compact
+								onSubmit={handleChangeHandle}
+							/>
+						</div>
+					</div>
+				</DialogContent>
+			</Dialog>
 			<AlertDialog
 				open={isDeleteDialogOpen}
 				onOpenChange={handleDeleteDialogChange}
