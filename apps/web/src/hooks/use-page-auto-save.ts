@@ -61,10 +61,12 @@ function errorMessage(error: unknown) {
 export function usePageAutoSave({
 	handle,
 	page,
+	enabled = true,
 	onSaveFailure,
 }: {
 	handle: string;
 	page: PageSnapshot;
+	enabled?: boolean;
 	onSaveFailure?: (
 		changes: UpdatePageDraft,
 		discardedImageKey: string | null,
@@ -97,6 +99,7 @@ export function usePageAutoSave({
 	}, [handle, page]);
 
 	const save = useCallback(async (): Promise<boolean> => {
+		if (!enabled) return true;
 		if (requestRef.current) return requestRef.current;
 
 		const snapshot = draftRef.current;
@@ -180,15 +183,16 @@ export function usePageAutoSave({
 		})();
 		requestRef.current = request;
 		return request;
-	}, [handle, onSaveFailure]);
+	}, [enabled, handle, onSaveFailure]);
 
 	const scheduleSave = useCallback(() => {
+		if (!enabled) return;
 		if (timerRef.current) clearTimeout(timerRef.current);
 		timerRef.current = setTimeout(() => {
 			timerRef.current = null;
 			void save();
 		}, PAGE_AUTO_SAVE_DELAY);
-	}, [save]);
+	}, [enabled, save]);
 
 	useEffect(() => {
 		scheduleSaveRef.current = scheduleSave;
@@ -215,6 +219,7 @@ export function usePageAutoSave({
 	);
 
 	const flush = useCallback(async () => {
+		if (!enabled) return;
 		if (timerRef.current) {
 			clearTimeout(timerRef.current);
 			timerRef.current = null;
@@ -224,7 +229,7 @@ export function usePageAutoSave({
 			if (!result) throw new Error("Could not save changes.");
 			if (!getChangedFields(draftRef.current, savedRef.current)) return;
 		}
-	}, [save]);
+	}, [enabled, save]);
 
 	useEffect(() => {
 		return () => {

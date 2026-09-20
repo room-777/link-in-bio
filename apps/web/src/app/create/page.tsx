@@ -1,5 +1,6 @@
 import { redirect } from "next/navigation";
 
+import FloatPreview from "@/components/layout/float-preview";
 import CreatePageForm from "@/components/page/create-page-form";
 import { getPrimaryPagePath, getServerSession } from "@/lib/server/session";
 
@@ -10,5 +11,10 @@ export default async function CreatePage() {
 		redirect(getPrimaryPagePath(session));
 	}
 
-	return <CreatePageForm />;
+	return (
+		<div className="grid min-h-svh w-full grid-cols-1 lg:grid-cols-2">
+			<CreatePageForm />
+			<FloatPreview />
+		</div>
+	);
 }

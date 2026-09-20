@@ -26,9 +26,11 @@ import PageProfileFields from "./page-profile-fields";
 export default function PageProfileForm({
 	page,
 	mode,
+	onOnboardingComplete,
 }: {
 	page: PageData;
 	mode: "onboarding" | "edit";
+	onOnboardingComplete?: (stage: "exiting" | "complete") => void;
 }) {
 	const router = useRouter();
 	const reduceMotion = useReducedMotion();
@@ -67,6 +69,7 @@ export default function PageProfileForm({
 		status: autoSaveStatus,
 		updateField,
 	} = usePageAutoSave({
+		enabled: mode === "edit",
 		handle: page.handle,
 		page,
 		onSaveFailure: (changes, discardedImageKey, savedImageKey) => {
@@ -217,7 +220,10 @@ export default function PageProfileForm({
 			await flush();
 			await mutation.mutateAsync(parsed.output);
 			setIsSaved(true);
-			if (mode === "onboarding") setIsExiting(true);
+			if (mode === "onboarding") {
+				onOnboardingComplete?.("exiting");
+				setIsExiting(true);
+			}
 		} catch (submitError) {
 			setCompletionError(
 				submitError instanceof Error
@@ -249,6 +255,7 @@ export default function PageProfileForm({
 					onAnimationComplete={() => {
 						if (isExiting) {
 							setIsExiting(false);
+							onOnboardingComplete?.("complete");
 						}
 					}}
 					onSubmit={handleSubmit}
@@ -277,6 +284,7 @@ export default function PageProfileForm({
 							onImageError={(message) => toast({ message, state: "error" })}
 							name={draft.name}
 							bio={draft.bio}
+							nameRequired={mode !== "onboarding"}
 							onNameChange={(value) => {
 								updateField("name", value);
 								setCompletionError("");
@@ -288,20 +296,22 @@ export default function PageProfileForm({
 							error={error}
 						/>
 					</div>
-					<p
-						className="min-h-5 text-muted-foreground text-xs"
-						role="status"
-						aria-live="polite"
-					>
-						{saveStatusLabel}
-					</p>
+					{mode === "edit" && (
+						<p
+							className="min-h-5 text-muted-foreground text-xs"
+							role="status"
+							aria-live="polite"
+						>
+							{saveStatusLabel}
+						</p>
+					)}
 
 					{mode === "onboarding" && !isFinished && (
 						<Button
 							type="submit"
 							size="xl"
 							disabled={mutation.isPending || isImageUploading || isExiting}
-							className="smooth-shadow-xs h-12 w-full max-w-sm text-base"
+							className="smooth-shadow-xs h-12 w-full max-w-2xs text-base"
 						>
 							{mutation.isPending ? <Loading /> : "Done"}
 						</Button>
@@ -367,7 +377,7 @@ function PageOnboardingComplete({
 			>
 				<CheckCircle
 					weight="Filled"
-					className="size-12 text-brand-green"
+					className="mb-4 size-12 text-brand-green"
 					aria-hidden={true}
 				/>
 				<h1 className="font-semibold text-2xl">Looking good!</h1>
@@ -377,7 +387,7 @@ function PageOnboardingComplete({
 			</header>
 
 			<div className="space-y-2">
-				<div className="flex h-12 items-center justify-between gap-2 rounded-lg bg-secondary p-1.5 pl-3 text-sm">
+				<div className="flex h-12 items-center justify-between gap-2 rounded-lg bg-secondary p-1.5 pl-3 font-medium text-base">
 					<span className="truncate text-muted-foreground">
 						{domain}/<span className="text-foreground">{page.handle}</span>
 					</span>

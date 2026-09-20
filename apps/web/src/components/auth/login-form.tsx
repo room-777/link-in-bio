@@ -29,7 +29,7 @@ export default function LoginForm({ returnTo }: { returnTo?: string | null }) {
 	};
 
 	return (
-		<div className="mx-auto flex min-h-svh w-full max-w-sm flex-col items-center justify-center p-6">
+		<div className="mx-auto flex w-full max-w-sm flex-col items-center justify-center p-6 lg:min-h-svh">
 			<Activity mode={otpEmail ? "hidden" : "visible"}>
 				<header className="mb-8 flex w-full flex-col gap-0.5">
 					<h1 className="font-medium text-xl">Good to see you again.</h1>

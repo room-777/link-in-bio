@@ -5,6 +5,18 @@ import PageProfileForm from "./page-profile-form";
 
 export type PageData = ApiPageData;
 
-export default function PageOnboardingForm({ page }: { page: PageData }) {
-	return <PageProfileForm page={page} mode="onboarding" />;
+export default function PageOnboardingForm({
+	page,
+	onOnboardingComplete,
+}: {
+	page: PageData;
+	onOnboardingComplete?: (stage: "exiting" | "complete") => void;
+}) {
+	return (
+		<PageProfileForm
+			page={page}
+			mode="onboarding"
+			onOnboardingComplete={onOnboardingComplete}
+		/>
+	);
 }
