@@ -7,6 +7,7 @@ import {
 	completePage,
 	createPage,
 	updatePageDraft,
+	updatePageHandle,
 } from "../../src/services/page.service";
 
 describe("page service", () => {
@@ -112,8 +113,62 @@ describe("page service", () => {
 		assert.deepEqual(userValues, { primaryPageHandle: "jane" });
 	});
 
+	it("updates the page and primary user handle together", async () => {
+		let pageValues: Record<string, unknown> | undefined;
+		let userValues: Record<string, unknown> | undefined;
+		let pageQueryCount = 0;
+		const pageUpdate = {
+			set(nextValues: Record<string, unknown>) {
+				pageValues = nextValues;
+				return pageUpdate;
+			},
+			where() {
+				return pageUpdate;
+			},
+			returning: async () => [{ id: "page-1", handle: "new-handle" }],
+		};
+		const userUpdate = {
+			set(nextValues: Record<string, unknown>) {
+				userValues = nextValues;
+				return userUpdate;
+			},
+			where() {
+				return userUpdate;
+			},
+		};
+		const tx = {
+			update() {
+				return pageValues ? userUpdate : pageUpdate;
+			},
+		};
+		const db = {
+			query: {
+				pages: {
+					findFirst: async () => {
+						pageQueryCount += 1;
+						return pageQueryCount === 1
+							? { id: "page-1", handle: "jane" }
+							: undefined;
+					},
+				},
+			},
+			transaction: async (callback: (value: typeof tx) => unknown) =>
+				callback(tx),
+		} as unknown as DatabaseClient;
+
+		await updatePageHandle({
+			db,
+			userId: "user-1",
+			handle: "jane",
+			rawHandle: "new-handle",
+		});
+
+		assert.deepEqual(pageValues, { handle: "new-handle" });
+		assert.deepEqual(userValues, { primaryPageHandle: "new-handle" });
+	});
+
 	/**
-	 * Case ID: PAGE-SERVICE-004
+	 * Case ID: PAGE-SERVICE-005
 	 * Given: the signed-in owner submits a profile for their page.
 	 * When: completePage updates the page.
 	 * Then: image, name, bio are saved and onboarding becomes true.

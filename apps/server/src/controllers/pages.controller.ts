@@ -26,6 +26,7 @@ import {
 	createPage,
 	getPage,
 	updatePageDraft,
+	updatePageHandle,
 } from "../services/page.service";
 import { checkPageHandle } from "../services/page-handle.service";
 import type { AppEnv } from "../types";
@@ -194,6 +195,38 @@ export const pagesController = new Hono<AppEnv>()
 				rawHandle: parsed.output.handle,
 			});
 			return c.json({ page }, 201);
+		} catch (error) {
+			if (error instanceof PageServiceError) return pageErrorResponse(c, error);
+			throw error;
+		}
+	})
+	.patch("/:handle/handle", requiredSession, async (c) => {
+		const session = c.var.session;
+		if (!session) {
+			return jsonApiError(c, {
+				status: 401,
+				detail: "Authentication required.",
+			});
+		}
+		const parsed = v.safeParse(
+			createPageSchema,
+			await c.req.json().catch(() => null),
+		);
+		if (!parsed.success) {
+			return jsonApiError(c, {
+				status: 422,
+				detail: "Choose a valid handle.",
+			});
+		}
+
+		try {
+			const page = await updatePageHandle({
+				db: c.var.db,
+				userId: session.user.id,
+				handle: c.req.param("handle"),
+				rawHandle: parsed.output.handle,
+			});
+			return c.json({ page });
 		} catch (error) {
 			if (error instanceof PageServiceError) return pageErrorResponse(c, error);
 			throw error;

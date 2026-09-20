@@ -184,6 +184,54 @@ export async function createPage({
 	}
 }
 
+export async function updatePageHandle({
+	db,
+	userId,
+	handle: rawCurrentHandle,
+	rawHandle,
+}: {
+	db: DatabaseClient;
+	userId: string;
+	handle: string;
+	rawHandle: string;
+}) {
+	const currentHandle = normalizePageHandle(rawCurrentHandle);
+	const existingPage = await db.query.pages.findFirst({
+		where: and(eq(pages.handle, currentHandle), eq(pages.userId, userId)),
+		columns: { id: true, handle: true },
+	});
+	if (!existingPage) throw new PageServiceError("PAGE_NOT_FOUND");
+
+	const availability = await checkPageHandle({ db, rawHandle });
+	if (!availability.available && availability.handle !== existingPage.handle) {
+		throw getHandleError(availability);
+	}
+	if (availability.handle === existingPage.handle) return existingPage;
+
+	try {
+		return await db.transaction(async (tx) => {
+			const [page] = await tx
+				.update(pages)
+				.set({ handle: availability.handle })
+				.where(and(eq(pages.id, existingPage.id), eq(pages.userId, userId)))
+				.returning();
+			if (!page) throw new PageServiceError("PAGE_NOT_FOUND");
+
+			await tx
+				.update(user)
+				.set({ primaryPageHandle: page.handle })
+				.where(eq(user.id, userId));
+
+			return page;
+		});
+	} catch (error) {
+		if (isUniqueViolation(error)) {
+			throw new PageServiceError("UNIQUE_CONFLICT");
+		}
+		throw error;
+	}
+}
+
 export async function completePage({
 	db,
 	bucket,

@@ -19,7 +19,7 @@ import { Marquee } from "@grabbin/ui/components/marquee";
 import { useQuery } from "@tanstack/react-query";
 import { AnimatePresence, motion, useReducedMotion } from "motion/react";
 import { useRouter } from "next/navigation";
-import { useEffect, useState } from "react";
+import { type FormEvent, useEffect, useState } from "react";
 import { CheckCircle } from "reicon-react/icons/CheckCircle";
 import { CloseCircle } from "reicon-react/icons/CloseCircle";
 import { Globe } from "reicon-react/icons/globe";
@@ -38,15 +38,34 @@ const exampleHandles = [
 	"cloudyframes",
 ];
 
-export default function CreatePageForm() {
-	const router = useRouter();
-	const reduceMotion = useReducedMotion();
-	const [handle, setHandle] = useState("");
-	const [debouncedHandle, setDebouncedHandle] = useState("");
+type PageHandleFormProps = {
+	initialHandle?: string;
+	title: string;
+	description: string;
+	submitLabel: string;
+	variant?: Parameters<typeof Button>[0]["variant"];
+	className?: string;
+	compact?: boolean;
+	onSubmit: (handle: string) => Promise<void>;
+};
+
+export function PageHandleForm({
+	initialHandle = "",
+	title,
+	description,
+	submitLabel,
+	variant,
+	className,
+	compact = false,
+	onSubmit,
+}: PageHandleFormProps) {
+	const normalizedInitialHandle = initialHandle.trim();
+	const [handle, setHandle] = useState(normalizedInitialHandle);
+	const [debouncedHandle, setDebouncedHandle] = useState(
+		normalizedInitialHandle,
+	);
 	const [error, setError] = useState("");
 	const [isSubmitting, setIsSubmitting] = useState(false);
-	const [isExiting, setIsExiting] = useState(false);
-	const [redirectPath, setRedirectPath] = useState<string | null>(null);
 
 	useEffect(() => {
 		const normalizedHandle = handle.trim();
@@ -83,37 +102,39 @@ export default function CreatePageForm() {
 	});
 
 	const currentHandle = handle.trim();
+	const isInitialHandle =
+		Boolean(normalizedInitialHandle) &&
+		currentHandle.toLowerCase() === normalizedInitialHandle.toLowerCase();
 	const availability: Availability = !currentHandle
 		? "idle"
-		: currentHandle !== debouncedHandle ||
-				isHandleCheckPending ||
-				isHandleCheckFetching
-			? "checking"
-			: isHandleCheckError
-				? "invalid"
-				: handleCheck?.available
-					? "available"
-					: "taken";
+		: isInitialHandle
+			? "available"
+			: currentHandle !== debouncedHandle ||
+					isHandleCheckPending ||
+					isHandleCheckFetching
+				? "checking"
+				: isHandleCheckError
+					? "invalid"
+					: handleCheck?.reason === "invalid"
+						? "invalid"
+						: handleCheck?.available
+							? "available"
+							: "taken";
 
-	const entryTransition = reduceMotion
-		? { duration: 0 }
-		: { type: "spring" as const, duration: 0.55, bounce: 0.1 };
-	const exitTransition = reduceMotion
-		? { duration: 0 }
-		: { duration: 0.42, ease: [0.23, 1, 0.32, 1] as const };
-
-	const handleSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
+	const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
 		event.preventDefault();
 		const parsed = v.safeParse(createPageSchema, { handle });
 		if (!parsed.success) {
-			setError("Please choose a handle.");
+			setError("Please choose a valid handle.");
 			return;
 		}
 		if (availability !== "available") {
 			setError(
 				availability === "checking"
 					? "Please wait until your handle is checked."
-					: "Please choose an available handle.",
+					: availability === "invalid"
+						? "Please choose a valid handle."
+						: "Please choose an available handle.",
 			);
 			return;
 		}
@@ -121,27 +142,11 @@ export default function CreatePageForm() {
 		setError("");
 		setIsSubmitting(true);
 		try {
-			const response = await apiClient.pages.$post({
-				json: parsed.output,
-			});
-			if (!response.ok) {
-				setIsSubmitting(false);
-				setError(await getApiErrorMessage(response));
-				return;
-			}
-
-			const body = await response.json();
-			if (!("page" in body)) {
-				setIsSubmitting(false);
-				setError("Please try again.");
-				return;
-			}
-			const { page } = body;
-			setRedirectPath(`/${page.handle}`);
-			setIsExiting(true);
-		} catch {
+			await onSubmit(parsed.output.handle);
+		} catch (caught) {
+			setError(caught instanceof Error ? caught.message : "Please try again.");
+		} finally {
 			setIsSubmitting(false);
-			setError("Please try again.");
 		}
 	};
 
@@ -163,6 +168,135 @@ export default function CreatePageForm() {
 		) : null;
 
 	return (
+		<div
+			className={
+				compact ? "flex w-full flex-col gap-4" : "flex w-full flex-col gap-8"
+			}
+		>
+			<header className="flex w-full flex-col gap-0.5">
+				<h1
+					className={
+						compact ? "font-semibold text-xl" : "font-semibold text-2xl"
+					}
+				>
+					{title}
+				</h1>
+				<p
+					className={
+						compact
+							? "text-wrap text-primary/80 text-sm"
+							: "text-wrap text-base text-primary/80"
+					}
+				>
+					{description}
+				</p>
+			</header>
+
+			<Marquee
+				id="marquee"
+				aria-hidden="true"
+				className={
+					compact
+						? "my-2 w-full min-[90rem]:max-w-sm"
+						: "my-6 w-full min-[90rem]:max-w-sm"
+				}
+			>
+				{exampleHandles.map((exampleHandle) => (
+					<div
+						key={exampleHandle}
+						className="smooth-shadow-xs mr-3 w-fit rounded-lg p-2 px-5 font-medium text-lg outline outline-black/10 -outline-offset-1"
+					>
+						@{exampleHandle}
+					</div>
+				))}
+			</Marquee>
+
+			<form
+				noValidate
+				onSubmit={handleSubmit}
+				className="w-full min-[90rem]:max-w-sm"
+			>
+				<FieldGroup>
+					<Field data-invalid={!!error}>
+						<FieldLabel htmlFor="handle" className="sr-only">
+							Handle
+						</FieldLabel>
+						<div className="flex items-center gap-2">
+							<div className="smooth-shadow-xs flex aspect-square size-11 items-center justify-center rounded-lg border">
+								<Globe className="-rotate-z-12 text-foreground" />
+							</div>
+							<InputGroup className="h-11 max-w-full grow rounded-lg bg-secondary text-base">
+								<InputGroupInput
+									id="handle"
+									name="handle"
+									aria-describedby="handle-status-icon"
+									aria-errormessage="handle-error"
+									aria-invalid={!!error}
+									autoComplete="off"
+									className="pl-0.5! text-base! placeholder:font-normal placeholder:text-base! placeholder:text-muted-foreground/50"
+									onChange={(event) => {
+										setHandle(event.target.value);
+										setError("");
+									}}
+									placeholder="your-handle"
+									value={handle}
+								/>
+								<InputGroupAddon
+									align="inline-start"
+									className="pl-4 text-base!"
+								>
+									{env.NEXT_PUBLIC_PAGE_DOMAIN ?? "grabbin.me"}/
+								</InputGroupAddon>
+								{statusIcon && (
+									<InputGroupAddon
+										align="inline-end"
+										data-state={availability}
+										id="handle-status-icon"
+										aria-label={`Handle ${availability}`}
+										className="size-9"
+									>
+										{statusIcon}
+									</InputGroupAddon>
+								)}
+							</InputGroup>
+						</div>
+						<FieldError
+							id="handle-error"
+							className="text-xs"
+							aria-live="polite"
+						>
+							{error}
+						</FieldError>
+					</Field>
+				</FieldGroup>
+
+				<Button
+					type="submit"
+					size="xl"
+					variant={variant}
+					disabled={isSubmitting}
+					className={`smooth-shadow-xs mt-2 h-12 w-full text-base${className ? ` ${className}` : ""}`}
+				>
+					{isSubmitting ? <Loading /> : submitLabel}
+				</Button>
+			</form>
+		</div>
+	);
+}
+
+export default function CreatePageForm() {
+	const router = useRouter();
+	const reduceMotion = useReducedMotion();
+	const [isExiting, setIsExiting] = useState(false);
+	const [redirectPath, setRedirectPath] = useState<string | null>(null);
+	const entryTransition = reduceMotion
+		? { duration: 0 }
+		: { type: "spring" as const, duration: 0.55, bounce: 0.1 };
+	const exitTransition = reduceMotion
+		? { duration: 0 }
+		: { duration: 0.42, ease: [0.23, 1, 0.32, 1] as const };
+
+	return (
 		<AnimatePresence
 			mode="wait"
 			onExitComplete={() => {
@@ -178,92 +312,26 @@ export default function CreatePageForm() {
 					transition={entryTransition}
 					className="mx-auto flex min-h-svh w-full max-w-md flex-col justify-start gap-8 p-6 px-12 pt-12 min-[90rem]:mx-0 min-[90rem]:min-h-dvh min-[90rem]:max-w-2xl min-[90rem]:pt-16"
 				>
-					<header className="flex w-full flex-col gap-0.5">
-						<h1 className="font-semibold text-2xl">First, Claim your handle</h1>
-						<p className="text-wrap text-base text-primary/80">
-							Choose a unique handle for your public page.
-						</p>
-					</header>
+					<PageHandleForm
+						title="Choose your handle"
+						description="Pick a unique handle for your public page."
+						submitLabel="Grab it"
+						onSubmit={async (handle) => {
+							const response = await apiClient.pages.$post({
+								json: { handle },
+							});
+							if (!response.ok) {
+								throw new Error(await getApiErrorMessage(response));
+							}
 
-					<Marquee
-						id="marquee"
-						aria-hidden="true"
-						className="my-6 w-full min-[90rem]:max-w-sm"
-					>
-						{exampleHandles.map((exampleHandle) => (
-							<div
-								key={exampleHandle}
-								className="smooth-shadow-xs mr-3 w-fit rounded-lg p-2 px-5 font-medium text-lg outline outline-black/10 -outline-offset-1"
-							>
-								@{exampleHandle}
-							</div>
-						))}
-					</Marquee>
-
-					<form
-						noValidate
-						onSubmit={handleSubmit}
-						className="w-full min-[90rem]:max-w-sm"
-					>
-						<FieldGroup>
-							<Field data-invalid={!!error}>
-								<FieldLabel htmlFor="handle" className="sr-only">
-									Handle
-								</FieldLabel>
-								<div className="flex items-center gap-2">
-									<div className="smooth-shadow-xs flex aspect-square size-11 items-center justify-center rounded-lg border">
-										<Globe className="-rotate-z-12 text-foreground" />
-									</div>
-									<InputGroup className="h-11 max-w-full grow rounded-lg bg-secondary text-base">
-										<InputGroupInput
-											id="handle"
-											name="handle"
-											aria-describedby="handle-status-message handle-error"
-											aria-invalid={!!error}
-											autoComplete="off"
-											className="pl-0.5! text-base! placeholder:font-normal placeholder:text-base! placeholder:text-muted-foreground/50"
-											onChange={(event) => {
-												setHandle(event.target.value);
-												setError("");
-											}}
-											placeholder="your-handle"
-											value={handle}
-										/>
-										<InputGroupAddon
-											align="inline-start"
-											className="pl-4 text-base!"
-										>
-											{env.NEXT_PUBLIC_PAGE_DOMAIN ?? "grabbin.me"}/
-										</InputGroupAddon>
-										{statusIcon && (
-											<InputGroupAddon
-												align="inline-end"
-												data-state={availability}
-												id="handle-status-icon"
-												aria-label={`Handle ${availability}`}
-												className="size-9"
-											>
-												{statusIcon}
-											</InputGroupAddon>
-										)}
-									</InputGroup>
-								</div>
-								<div id="handle-error" className="min-h-5" aria-live="polite">
-									<FieldError className="text-xs">{error}</FieldError>
-								</div>
-							</Field>
-						</FieldGroup>
-
-						<Button
-							type="submit"
-							size={"xl"}
-							variant={"default"}
-							disabled={isSubmitting}
-							className="smooth-shadow-xs mt-2 h-12 w-full text-base"
-						>
-							{isSubmitting ? <Loading /> : "Grab it"}
-						</Button>
-					</form>
+							const body = await response.json();
+							if (!("page" in body) || !body.page) {
+								throw new Error("Please try again.");
+							}
+							setRedirectPath(`/${body.page.handle}`);
+							setIsExiting(true);
+						}}
+					/>
 				</motion.main>
 			)}
 		</AnimatePresence>

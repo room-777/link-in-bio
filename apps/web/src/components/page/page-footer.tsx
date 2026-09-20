@@ -20,19 +20,28 @@ import { motion, useReducedMotion } from "motion/react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
+import { apiClient, getApiErrorMessage } from "@/lib/api-client";
 import { authClient, getAuthErrorMessage } from "@/lib/auth-client";
 import { getSignInHref } from "@/lib/auth-redirect";
+import { PageHandleForm } from "./create-page-form";
 
-function OwnerFooter({ handle }: { handle?: string }) {
+function OwnerFooter({
+	handle,
+	onHandleChange,
+}: {
+	handle?: string;
+	onHandleChange?: (handle: string) => void;
+}) {
 	const router = useRouter();
 	const reduceMotion = useReducedMotion();
 	const [activeItem, setActiveItem] = useState<number | null>(null);
 	const [isItemActive, setIsItemActive] = useState(false);
+	const [isHandlePopoverOpen, setIsHandlePopoverOpen] = useState(false);
+	const [isOpen, setIsOpen] = useState(false);
 	const [isSigningOut, setIsSigningOut] = useState(false);
 	const hoverTransition = reduceMotion
 		? { duration: 0 }
 		: { type: "spring" as const, stiffness: 560, damping: 32, mass: 0.8 };
-
 	async function handleSignOut() {
 		setIsSigningOut(true);
 		const { error } = await authClient.signOut();
@@ -45,8 +54,47 @@ function OwnerFooter({ handle }: { handle?: string }) {
 		router.refresh();
 	}
 
+	async function handleChangeHandle(nextHandle: string) {
+		if (!handle) throw new Error("Please try again.");
+		const response = await apiClient.pages[":handle"].handle.$patch(
+			{ param: { handle } },
+			{
+				init: {
+					body: JSON.stringify({ handle: nextHandle }),
+					headers: { "Content-Type": "application/json" },
+				},
+			},
+		);
+		if (!response.ok) throw new Error(await getApiErrorMessage(response));
+
+		const body = await response.json();
+		if (
+			!("page" in body) ||
+			!body.page ||
+			typeof body.page !== "object" ||
+			!("handle" in body.page) ||
+			typeof body.page.handle !== "string"
+		) {
+			throw new Error("Please try again.");
+		}
+
+		setIsHandlePopoverOpen(false);
+		setIsOpen(false);
+		if (onHandleChange) {
+			onHandleChange(body.page.handle);
+		} else {
+			router.replace(`/${encodeURIComponent(body.page.handle)}`);
+		}
+	}
+
 	return (
-		<Popover>
+		<Popover
+			open={isOpen}
+			onOpenChange={(open) => {
+				setIsOpen(open);
+				if (!open) setIsHandlePopoverOpen(false);
+			}}
+		>
 			<PopoverTrigger
 				render={
 					<Button
@@ -78,25 +126,51 @@ function OwnerFooter({ handle }: { handle?: string }) {
 						transition={hoverTransition}
 					/>
 				)}
-				<Button
-					variant="ghost"
-					className="relative z-10 h-16 w-full justify-start px-5 hover:bg-transparent"
-					onPointerEnter={() => {
-						setActiveItem(0);
-						setIsItemActive(true);
-					}}
-					onFocus={() => {
-						setActiveItem(0);
-						setIsItemActive(true);
-					}}
+				<Popover
+					open={isHandlePopoverOpen}
+					onOpenChange={setIsHandlePopoverOpen}
 				>
-					<span className="flex flex-col items-start gap-0.5 text-left">
-						<span>Change handle</span>
-						<span className="w-full min-w-0 break-all text-muted-foreground/80 text-sm">
-							{handle ? `/${handle}` : null}
+					<PopoverTrigger
+						render={
+							<Button
+								variant="ghost"
+								className="relative z-10 h-16 w-full justify-start px-5 hover:bg-transparent"
+								onPointerEnter={() => {
+									setActiveItem(0);
+									setIsItemActive(true);
+								}}
+								onFocus={() => {
+									setActiveItem(0);
+									setIsItemActive(true);
+								}}
+							/>
+						}
+					>
+						<span className="flex flex-col items-start gap-0.5 text-left">
+							<span>Change handle</span>
+							<span className="w-full min-w-0 break-all text-muted-foreground/80 text-sm">
+								{handle ? `/${handle}` : null}
+							</span>
 						</span>
-					</span>
-				</Button>
+					</PopoverTrigger>
+					<PopoverContent
+						side="left"
+						align="center"
+						sideOffset={0}
+						initialFocus={false}
+						className="smooth-shadow-ring-2xl! w-[min(21rem,calc(100vw-2rem))] rounded-2xl p-4"
+					>
+						<PopoverTitle className="sr-only">Change your handle</PopoverTitle>
+						<PageHandleForm
+							initialHandle={handle}
+							title="Change your handle"
+							description="Choose a new handle for your page."
+							submitLabel="Change handle"
+							compact
+							onSubmit={handleChangeHandle}
+						/>
+					</PopoverContent>
+				</Popover>
 				<Button
 					variant="ghost"
 					className="relative z-10 h-16 w-full justify-start px-5 hover:bg-transparent"
@@ -189,14 +263,16 @@ function ViewerFooter({ handle }: { handle?: string }) {
 export default function PageFooter({
 	handle,
 	isOwner,
+	onHandleChange,
 }: {
 	handle?: string;
 	isOwner: boolean;
+	onHandleChange?: (handle: string) => void;
 }) {
 	return (
 		<footer className="-mx-4 mb-4 flex min-h-10 items-center justify-start pt-8 min-[90rem]:-mx-2">
 			{isOwner ? (
-				<OwnerFooter handle={handle} />
+				<OwnerFooter handle={handle} onHandleChange={onHandleChange} />
 			) : (
 				<ViewerFooter handle={handle} />
 			)}
