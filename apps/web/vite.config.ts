@@ -28,16 +28,28 @@ export default defineConfig({
 	environments: {
 		rsc: {
 			optimizeDeps: {
+				include: [
+					"use-sync-external-store/shim",
+					"use-sync-external-store/shim/with-selector",
+				],
 				exclude: ["@base-ui/react", "@tanstack/react-query"],
 			},
 		},
 		ssr: {
 			optimizeDeps: {
-				exclude: ["@tanstack/react-query"],
+				include: [
+					"use-sync-external-store/shim",
+					"use-sync-external-store/shim/with-selector",
+				],
+				exclude: ["@base-ui/react", "@tanstack/react-query"],
 			},
 		},
 		client: {
 			optimizeDeps: {
+				include: [
+					"use-sync-external-store/shim",
+					"use-sync-external-store/shim/with-selector",
+				],
 				exclude: ["@tanstack/react-query"],
 			},
 		},
