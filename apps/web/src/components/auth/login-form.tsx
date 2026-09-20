@@ -34,7 +34,7 @@ export default function LoginForm({ returnTo }: { returnTo?: string | null }) {
 				<header className="mb-8 flex w-full flex-col gap-0.5">
 					<h1 className="font-medium text-xl">Good to see you again.</h1>
 					<p className="text-muted-foreground text-sm">
-						Create your account for free
+						Create your page in seconds
 					</p>
 				</header>
 
