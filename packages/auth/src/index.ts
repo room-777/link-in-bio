@@ -1,7 +1,10 @@
 import { creem } from "@creem_io/better-auth";
 import { createDb, type DatabaseClient } from "@grabbin/db";
 import * as schema from "@grabbin/db/schema/index";
-import { sendVerificationOTP as sendVerificationOTPEmail } from "@grabbin/email";
+import {
+	sendDeleteAccountVerification as sendDeleteAccountVerificationEmail,
+	sendVerificationOTP as sendVerificationOTPEmail,
+} from "@grabbin/email";
 import { env } from "@grabbin/env/server";
 import { type BetterAuthOptions, betterAuth } from "better-auth";
 import { drizzleAdapter } from "better-auth/adapters/drizzle";
@@ -38,6 +41,16 @@ const authOptions: BetterAuthOptions = {
 	basePath: "/auth",
 	trustedOrigins: [env.CORS_ORIGIN],
 	user: {
+		deleteUser: {
+			enabled: true,
+			sendDeleteAccountVerification: ({ user, url }) =>
+				sendDeleteAccountVerificationEmail({
+					apiKey: env.RESEND_API_KEY,
+					from: env.RESEND_FROM_EMAIL,
+					email: user.email,
+					url,
+				}),
+		},
 		additionalFields: {
 			primaryPageHandle: {
 				type: "string",
