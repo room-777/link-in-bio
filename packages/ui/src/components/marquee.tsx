@@ -23,6 +23,8 @@ export function Marquee({
 }: MarqueeProps) {
 	const items = React.Children.toArray(children);
 	const isVertical = direction === "up" || direction === "down";
+	const midpoint = Math.ceil(items.length / 2);
+	const rows = [items.slice(0, midpoint), items.slice(midpoint)];
 
 	return (
 		<>
@@ -66,15 +68,6 @@ export function Marquee({
 
         .marquee-scroller {
           display: flex;
-          animation: ${
-						isVertical
-							? direction === "up"
-								? "scroll-y"
-								: "scroll-y-reverse"
-							: direction === "left"
-								? "scroll"
-								: "scroll-reverse"
-					} ${duration}s linear infinite;
         }
 
         .marquee-scroller.pause-on-hover:hover {
@@ -84,8 +77,8 @@ export function Marquee({
 			</style>
 			<div
 				className={cn(
-					"flex w-full overflow-hidden",
-					isVertical && "flex-col",
+					"flex w-full gap-2 overflow-hidden",
+					isVertical ? "h-full flex-row" : "flex-col",
 					className,
 				)}
 				style={{
@@ -108,30 +101,51 @@ export function Marquee({
 				}}
 				{...props}
 			>
-				<div
-					className={cn(
-						"marquee-scroller flex shrink-0",
-						isVertical && "flex-col",
-						pauseOnHover && "pause-on-hover",
-					)}
-				>
-					{items.map((item, index) => (
+				{rows.map((rowItems, rowIndex) => {
+					const rowDirection =
+						isVertical || rowIndex === 0
+							? direction
+							: direction === "left"
+								? "right"
+								: "left";
+					const animationName = isVertical
+						? direction === "up"
+							? "scroll-y"
+							: "scroll-y-reverse"
+						: rowDirection === "left"
+							? "scroll"
+							: "scroll-reverse";
+
+					return (
 						<div
-							key={`first-${index}`}
-							className={cn("flex shrink-0", isVertical && "w-full")}
+							key={`row-${rowIndex}`}
+							className={cn(
+								"flex overflow-hidden",
+								isVertical ? "min-h-0 flex-1 flex-col" : "w-full",
+							)}
 						>
-							{item}
+							<div
+								className={cn(
+									"marquee-scroller flex shrink-0",
+									isVertical ? "flex-col" : "w-max",
+									pauseOnHover && "pause-on-hover",
+								)}
+								style={{
+									animation: `${animationName} ${duration}s linear infinite`,
+								}}
+							>
+								{[...rowItems, ...rowItems].map((item, index) => (
+									<div
+										key={`${rowIndex}-${index}`}
+										className={cn("flex shrink-0", isVertical && "w-full")}
+									>
+										{item}
+									</div>
+								))}
+							</div>
 						</div>
-					))}
-					{items.map((item, index) => (
-						<div
-							key={`second-${index}`}
-							className={cn("flex shrink-0", isVertical && "w-full")}
-						>
-							{item}
-						</div>
-					))}
-				</div>
+					);
+				})}
 			</div>
 		</>
 	);

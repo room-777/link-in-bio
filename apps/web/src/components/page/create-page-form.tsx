@@ -3,6 +3,7 @@
 import { createPageSchema } from "@grabbin/api";
 import { env } from "@grabbin/env/web";
 import { Button } from "@grabbin/ui/components/button";
+import { DialogDescription, DialogTitle } from "@grabbin/ui/components/dialog";
 import {
 	Field,
 	FieldError,
@@ -16,6 +17,7 @@ import {
 } from "@grabbin/ui/components/input-group";
 import Loading from "@grabbin/ui/components/loading";
 import { Marquee } from "@grabbin/ui/components/marquee";
+import { cn } from "@grabbin/ui/lib/utils";
 import { useQuery } from "@tanstack/react-query";
 import { AnimatePresence, motion, useReducedMotion } from "motion/react";
 import { useRouter } from "next/navigation";
@@ -31,11 +33,16 @@ import { apiClient, getApiErrorMessage } from "@/lib/api-client";
 type Availability = "idle" | "checking" | "available" | "taken" | "invalid";
 
 const exampleHandles = [
-	"alexmorgan",
-	"pixelwander",
-	"dailyroam",
-	"mossandmain",
-	"cloudyframes",
+	"softsignal",
+	"quietorbit",
+	"morrowclub",
+	"oddhours",
+	"tinyatlas",
+	"slowframe",
+	"lucidform",
+	"stillhuman",
+	"aftermoss",
+	"daylightdept",
 ];
 
 type PageHandleFormProps = {
@@ -102,9 +109,9 @@ export function PageHandleForm({
 	});
 
 	const currentHandle = handle.trim();
-	const isInitialHandle =
-		Boolean(normalizedInitialHandle) &&
-		currentHandle.toLowerCase() === normalizedInitialHandle.toLowerCase();
+	const hasHandleChange =
+		currentHandle.toLowerCase() !== normalizedInitialHandle.toLowerCase();
+	const isInitialHandle = Boolean(normalizedInitialHandle) && !hasHandleChange;
 	const availability: Availability = !currentHandle
 		? "idle"
 		: isInitialHandle
@@ -166,30 +173,30 @@ export function PageHandleForm({
 				aria-hidden="true"
 			/>
 		) : null;
+	const Title = compact ? DialogTitle : "h1";
+	const Description = compact ? DialogDescription : "p";
 
 	return (
 		<div
 			className={
-				compact ? "flex w-full flex-col gap-4" : "flex w-full flex-col gap-8"
+				compact ? "flex h-full w-full flex-col" : "flex w-full flex-col gap-8"
 			}
 		>
 			<header className="flex w-full flex-col gap-0.5">
-				<h1
-					className={
-						compact ? "font-semibold text-xl" : "font-semibold text-2xl"
-					}
+				<Title
+					className={compact ? "leading-normal" : "font-semibold text-2xl"}
 				>
 					{title}
-				</h1>
-				<p
+				</Title>
+				<Description
 					className={
 						compact
-							? "text-wrap text-primary/80 text-sm"
+							? "text-balance md:text-pretty"
 							: "text-wrap text-base text-primary/80"
 					}
 				>
 					{description}
-				</p>
+				</Description>
 			</header>
 
 			<Marquee
@@ -197,7 +204,7 @@ export function PageHandleForm({
 				aria-hidden="true"
 				className={
 					compact
-						? "my-2 w-full min-[90rem]:max-w-sm"
+						? "my-4 w-full min-[90rem]:max-w-sm"
 						: "my-6 w-full min-[90rem]:max-w-sm"
 				}
 			>
@@ -214,7 +221,11 @@ export function PageHandleForm({
 			<form
 				noValidate
 				onSubmit={handleSubmit}
-				className="w-full min-[90rem]:max-w-sm"
+				className={
+					compact
+						? "mt-auto w-full min-[90rem]:max-w-sm"
+						: "w-full min-[90rem]:max-w-sm"
+				}
 			>
 				<FieldGroup>
 					<Field data-invalid={!!error}>
@@ -225,7 +236,12 @@ export function PageHandleForm({
 							<div className="smooth-shadow-xs flex aspect-square size-11 items-center justify-center rounded-lg border">
 								<Globe className="-rotate-z-12 text-foreground" />
 							</div>
-							<InputGroup className="h-11 max-w-full grow rounded-lg bg-secondary text-base">
+							<InputGroup
+								className={cn(
+									"h-11 max-w-full grow rounded-lg bg-secondary text-base",
+									compact && "ring-inset",
+								)}
+							>
 								<InputGroupInput
 									id="handle"
 									name="handle"
@@ -274,7 +290,7 @@ export function PageHandleForm({
 					type="submit"
 					size="xl"
 					variant={variant}
-					disabled={isSubmitting}
+					disabled={isSubmitting || (compact && !hasHandleChange)}
 					className={`smooth-shadow-xs mt-2 h-12 w-full text-base${className ? ` ${className}` : ""}`}
 				>
 					{isSubmitting ? <Loading /> : submitLabel}
