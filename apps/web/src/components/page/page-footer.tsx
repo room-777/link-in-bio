@@ -16,6 +16,7 @@ import {
 	AvatarImage,
 } from "@grabbin/ui/components/avatar";
 import { Button, buttonVariants } from "@grabbin/ui/components/button";
+import Loading from "@grabbin/ui/components/loading";
 import {
 	Popover,
 	PopoverContent,
@@ -296,27 +297,27 @@ function OwnerFooter({
 						<div
 							aria-hidden={deleteActivity !== "confirm"}
 							className={cn(
-								"col-start-1 row-start-1 flex flex-col gap-4 opacity-0 transition-opacity duration-200 ease-out motion-reduce:transition-none",
+								"col-start-1 row-start-1 flex h-full w-full min-w-0 flex-col gap-4 opacity-0 transition-opacity duration-200 ease-out motion-reduce:transition-none",
 								deleteActivity === "confirm" && "opacity-100",
 							)}
 							inert={deleteActivity !== "confirm"}
 						>
 							<AlertDialogHeader>
-								<span className="mb-2 self-start" aria-hidden="true">
+								{/*<span className="mb-2 self-start" aria-hidden="true">
 									<InfoCircle
 										weight="Filled"
 										className="size-12 text-primary"
 									/>
-								</span>
+								</span>*/}
 								<AlertDialogTitle>Delete your account?</AlertDialogTitle>
 								<AlertDialogDescription>
 									Your account and all associated data will be permanently
 									deleted. This action can&apos;t be undone.
 								</AlertDialogDescription>
 							</AlertDialogHeader>
-							<AlertDialogFooter className="grow items-end rounded-b-xl border-0 bg-transparent">
+							<AlertDialogFooter className="mx-0 mt-auto w-full! flex-col-reverse! items-end rounded-b-xl border-0 bg-transparent px-0 sm:justify-end">
 								<AlertDialogCancel
-									className={"min-w-0 flex-1 basis-0 whitespace-nowrap"}
+									className={"w-full min-w-0 whitespace-nowrap sm:max-w-36"}
 									size={"xl"}
 									variant={"outline"}
 								>
@@ -329,24 +330,26 @@ function OwnerFooter({
 									onClick={handleDeleteAccount}
 									aria-label={deleteButtonLabel}
 									className={
-										"relative min-w-0 flex-1 basis-0 overflow-hidden whitespace-nowrap motion-safe:active:scale-100"
+										"relative w-full min-w-0 overflow-hidden whitespace-nowrap bg-destructive text-white hover:bg-destructive/80 motion-safe:active:scale-100 sm:max-w-36"
 									}
 								>
-									<span className="relative z-10">{deleteButtonLabel}</span>
-									<span
-										aria-hidden="true"
-										className="pointer-events-none absolute inset-0 z-20 origin-left bg-destructive transition-transform duration-200 ease-out will-change-transform motion-reduce:transition-none"
-										style={{ transform: `scaleX(${deleteProgress})` }}
-									/>
-									<span
-										aria-hidden="true"
-										className="pointer-events-none absolute inset-0 z-30 flex items-center justify-center text-white"
-										style={{
-											clipPath: `inset(0 ${100 - deleteProgress * 100}% 0 0)`,
-										}}
-									>
-										{deleteButtonLabel}
+									<span className="relative z-10 inline-flex items-center gap-2">
+										{isRequestingDelete && (
+											<Loading aria-hidden="true" className="size-4" />
+										)}
+										<span>{deleteButtonLabel}</span>
 									</span>
+									{!isRequestingDelete && (
+										<span
+											aria-hidden="true"
+											className="pointer-events-none absolute inset-x-3 bottom-1 z-20 h-1 overflow-hidden rounded-full bg-white/25"
+										>
+											<span
+												className="block h-full origin-left rounded-full bg-white transition-transform duration-200 ease-out will-change-transform motion-reduce:transition-none"
+												style={{ transform: `scaleX(${deleteProgress})` }}
+											/>
+										</span>
+									)}
 								</AlertDialogAction>
 							</AlertDialogFooter>
 						</div>
@@ -372,12 +375,14 @@ function OwnerFooter({
 									/>
 								</span>
 								<AlertDialogTitle>Check your inbox</AlertDialogTitle>
-								<AlertDialogDescription>
-									We sent a deletion link to{" "}
-									<strong className="font-medium text-primary">
-										{session?.user.email ?? "your email address"}
-									</strong>
-									. Open it to finish deleting your account.
+								<AlertDialogDescription className={"mt-2 sm:mt-0"}>
+									<p>
+										We sent a deletion link to{" "}
+										<strong className="font-medium text-primary">
+											{session?.user.email ?? "your email address"}.
+										</strong>
+									</p>
+									<p>Open it to finish deleting your account.</p>
 								</AlertDialogDescription>
 							</AlertDialogHeader>
 							<AlertDialogFooter className="grow items-end rounded-b-xl border-0 bg-transparent">
@@ -399,9 +404,7 @@ function ViewerFooter({ handle }: { handle?: string }) {
 
 	useEffect(() => setIsHydrated(true), []);
 
-	if (!isHydrated || isPending) {
-		return <Skeleton className="h-10 w-24" />;
-	}
+	if (!isHydrated || isPending) return <Skeleton className="h-10 w-24" />;
 
 	if (!session) {
 		return (
