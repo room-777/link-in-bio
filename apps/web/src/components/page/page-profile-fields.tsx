@@ -19,6 +19,7 @@ export default function PageProfileFields({
 	onNameChange,
 	onBioChange,
 	error,
+	nameRequired,
 }: {
 	imageUrl: string;
 	isImageUploading: boolean;
@@ -30,6 +31,7 @@ export default function PageProfileFields({
 	onNameChange: (value: string) => void;
 	onBioChange: (value: string) => void;
 	error: string;
+	nameRequired: boolean;
 }) {
 	return (
 		<FieldGroup className="gap-8">
@@ -48,10 +50,10 @@ export default function PageProfileFields({
 							name="name"
 							aria-label="Name"
 							autoComplete="name"
-							className="editable-paragraph field-sizing-content min-h-fit! w-full overflow-hidden whitespace-pre-wrap border-0! bg-transparent! p-0! font-bold text-3xl! leading-tight tracking-tight outline-none transition-[background-color,box-shadow] duration-150 ease-out min-[90rem]:text-[40px]!"
+							className="editable-paragraph field-sizing-content min-[90rem]:!text-[40px] min-h-fit! w-full overflow-hidden whitespace-pre-wrap border-0! bg-transparent! p-0! font-bold text-3xl! leading-tight tracking-tight outline-none transition-[background-color,box-shadow] duration-150 ease-out"
 							rows={1}
 							placeholder="Name"
-							required
+							required={nameRequired}
 							value={name}
 							onChange={(event) => onNameChange(event.target.value)}
 							aria-invalid={!!error}

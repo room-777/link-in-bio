@@ -297,43 +297,45 @@ export default function CreatePageForm() {
 		: { duration: 0.42, ease: [0.23, 1, 0.32, 1] as const };
 
 	return (
-		<AnimatePresence
-			mode="wait"
-			onExitComplete={() => {
-				if (redirectPath) router.replace(redirectPath);
-			}}
-		>
-			{!isExiting && (
-				<motion.main
-					key="create-page"
-					initial={reduceMotion ? false : { opacity: 0, y: 16 }}
-					animate={{ opacity: 1, y: 0 }}
-					exit={{ opacity: 0, y: -16, transition: exitTransition }}
-					transition={entryTransition}
-					className="mx-auto flex min-h-svh w-full max-w-md flex-col justify-start gap-8 p-6 px-12 pt-12 min-[90rem]:mx-0 min-[90rem]:min-h-dvh min-[90rem]:max-w-2xl min-[90rem]:pt-16"
-				>
-					<PageHandleForm
-						title="Choose your handle"
-						description="Pick a unique handle for your public page."
-						submitLabel="Grab it"
-						onSubmit={async (handle) => {
-							const response = await apiClient.pages.$post({
-								json: { handle },
-							});
-							if (!response.ok) {
-								throw new Error(await getApiErrorMessage(response));
-							}
+		<div className="min-w-0">
+			<AnimatePresence
+				mode="wait"
+				onExitComplete={() => {
+					if (redirectPath) router.replace(redirectPath);
+				}}
+			>
+				{!isExiting && (
+					<motion.main
+						key="create-page"
+						initial={reduceMotion ? false : { opacity: 0, y: 16 }}
+						animate={{ opacity: 1, y: 0 }}
+						exit={{ opacity: 0, y: -16, transition: exitTransition }}
+						transition={entryTransition}
+						className="mx-auto flex min-h-svh w-full max-w-md flex-col justify-start gap-8 p-6 px-6 pt-12 min-[90rem]:mx-0 min-[90rem]:min-h-dvh min-[90rem]:max-w-2xl min-[90rem]:px-16 min-[90rem]:pt-16"
+					>
+						<PageHandleForm
+							title="Choose your handle"
+							description="Pick a unique handle for your page."
+							submitLabel="Grab it"
+							onSubmit={async (handle) => {
+								const response = await apiClient.pages.$post({
+									json: { handle },
+								});
+								if (!response.ok) {
+									throw new Error(await getApiErrorMessage(response));
+								}
 
-							const body = await response.json();
-							if (!("page" in body) || !body.page) {
-								throw new Error("Please try again.");
-							}
-							setRedirectPath(`/${body.page.handle}`);
-							setIsExiting(true);
-						}}
-					/>
-				</motion.main>
-			)}
-		</AnimatePresence>
+								const body = await response.json();
+								if (!("page" in body) || !body.page) {
+									throw new Error("Please try again.");
+								}
+								setRedirectPath(`/${body.page.handle}`);
+								setIsExiting(true);
+							}}
+						/>
+					</motion.main>
+				)}
+			</AnimatePresence>
+		</div>
 	);
 }

@@ -14,7 +14,7 @@ const Discord = (props: SVGProps<SVGSVGElement>) => (
 export default function Footer() {
 	return (
 		<footer className="w-full py-6">
-			<div className="mx-auto h-[36vh] max-w-2xl">
+			<div className="mx-auto flex h-[36vh] max-w-2xl flex-col gap-16">
 				<div className="flex flex-row items-center justify-center gap-4">
 					<a
 						href="https://x.com/kinwooky"
@@ -111,6 +111,20 @@ export default function Footer() {
 							</div>
 						</FooterCard>
 					</a>
+				</div>
+				<div className="flex flex-col items-center justify-center gap-2 font-medium text-lg">
+					<p>Designed for everyone, made with 🔥</p>
+					<p>
+						built by{" "}
+						<a
+							href="https://x.com/kinwooky"
+							target="_blank"
+							rel="noreferrer"
+							aria-label="Visit kinwooky on X"
+						>
+							wooky
+						</a>
+					</p>
 				</div>
 			</div>
 		</footer>
