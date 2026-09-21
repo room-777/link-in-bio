@@ -1,0 +1,22 @@
+@keyframes map-widget-marker-ping {
+	0% {
+		opacity: 0.6;
+		transform: scale(1);
+	}
+	70%,
+	100% {
+		opacity: 0;
+		transform: scale(2.1);
+	}
+}
+
+.map-widget-marker-ping {
+	animation: map-widget-marker-ping 3s cubic-bezier(0, 0, 0.2, 1) infinite;
+}
+
+@media (prefers-reduced-motion: reduce) {
+	.map-widget-marker-ping {
+		animation: none;
+		opacity: 0;
+	}
+}
