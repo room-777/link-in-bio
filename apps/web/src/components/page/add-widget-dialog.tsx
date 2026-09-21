@@ -21,19 +21,28 @@ import {
 } from "@grabbin/ui/components/input-group";
 import { useIsMobile } from "@grabbin/ui/components/use-mobile";
 import { Link2, Plus } from "lucide-react";
+import dynamic from "next/dynamic";
 import { useState } from "react";
 
-function AddWidgetContent() {
+const MapWidgetPreview = dynamic(
+	() =>
+		import("./map-widget-preview").then(({ MapWidgetPreview }) => ({
+			default: MapWidgetPreview,
+		})),
+	{ ssr: false },
+);
+
+function AddWidgetContent({ isOpen }: { isOpen: boolean }) {
 	return (
 		<>
 			<div className="grid grid-cols-2 gap-2">
 				<Button
 					type="button"
 					variant="outline"
-					className="relative col-span-2 aspect-[2/1] h-auto w-full overflow-hidden rounded-2xl p-0"
+					className="relative col-span-2 aspect-[2/1] h-auto w-full overflow-hidden rounded-2xl border-border/60 p-0"
 				>
 					<div
-						className="pointer-events-none absolute inset-0 overflow-hidden"
+						className="pointer-events-none absolute inset-px overflow-hidden rounded-[calc(var(--radius-2xl)-1px)]"
 						style={{
 							maskImage:
 								"linear-gradient(to bottom right, black 0%, black 78%, transparent 100%)",
@@ -41,34 +50,54 @@ function AddWidgetContent() {
 								"linear-gradient(to bottom right, black 0%, black 78%, transparent 100%)",
 						}}
 					>
-						<img
-							src="/media-widget-sunset.png"
-							alt=""
-							className="smooth-shadow-sm surface-line pointer-events-none absolute right-[-0.5rem] bottom-[-0.75rem] size-28 rotate-[8deg] rounded-2xl object-cover"
-						/>
-						<img
-							src="/media-widget.png"
-							alt=""
-							className="smooth-shadow-sm surface-line pointer-events-none absolute right-16 bottom-[-0.25rem] z-10 size-32 rotate-[-6deg] rounded-2xl object-cover"
-						/>
+						<div className="smooth-shadow-sm pointer-events-none absolute right-32 bottom-0 size-24 rotate-[-14deg] overflow-hidden rounded-2xl">
+							<div className="surface-line relative size-full rounded-2xl outline-depth">
+								<img
+									src="/media-widget-gas.png"
+									alt=""
+									className="size-full object-cover"
+								/>
+							</div>
+						</div>
+						<div className="smooth-shadow-sm pointer-events-none absolute -right-2 bottom-0 size-28 rotate-[8deg] overflow-hidden rounded-2xl">
+							<div className="surface-line relative size-full rounded-2xl outline-depth">
+								<img
+									src="/media-widget-sunset.png"
+									alt=""
+									className="size-full object-cover"
+								/>
+							</div>
+						</div>
+						<div className="smooth-shadow-sm pointer-events-none absolute right-16 bottom-0 z-10 size-32 rotate-[-6deg] overflow-hidden rounded-2xl">
+							<div className="surface-line relative size-full rounded-2xl outline-depth">
+								<img
+									src="/media-widget.png"
+									alt=""
+									className="size-full object-cover"
+								/>
+							</div>
+						</div>
 					</div>
 					<span className="absolute top-3 left-3 z-10 text-base">Media</span>
 				</Button>
 				<Button
 					type="button"
 					variant="outline"
-					className="relative aspect-square h-auto w-full rounded-2xl p-0"
+					className="relative aspect-square h-auto w-full overflow-hidden rounded-2xl border-border/60 p-0"
 				>
+					<div className="smooth-shadow-ring-sm surface-line absolute inset-x-3 top-[40%] aspect-square overflow-hidden rounded-2xl outline-depth">
+						{isOpen && <MapWidgetPreview />}
+					</div>
 					<span className="absolute top-3 left-3 z-10 text-base">Map</span>
 				</Button>
 				<Button
 					type="button"
 					variant="outline"
-					className="relative aspect-square h-auto w-full rounded-2xl p-0"
+					className="relative aspect-square h-auto w-full rounded-2xl border-border/60 p-0"
 				>
 					<span className="absolute top-3 left-3 z-10 text-base">Text</span>
 					<div
-						className="pointer-events-none absolute inset-0 overflow-hidden"
+						className="pointer-events-none absolute inset-px overflow-hidden rounded-[calc(var(--radius-2xl)-1px)]"
 						style={{
 							maskImage:
 								"linear-gradient(to bottom right, black 0%, black 78%, transparent 100%)",
@@ -92,6 +121,24 @@ function AddWidgetContent() {
 						</div>
 					</div>
 				</Button>
+				<Button
+					type="button"
+					variant="outline"
+					className="relative col-span-2 aspect-[4/1] h-auto w-full overflow-hidden rounded-2xl border-border/60 p-0"
+				>
+					<span className="absolute top-3 left-3 z-10 text-base">Section</span>
+					<div
+						aria-hidden="true"
+						className="pointer-events-none absolute inset-px overflow-hidden rounded-[calc(var(--radius-2xl)-1px)]"
+					>
+						<div className="absolute top-3 right-3 flex flex-col items-center gap-2">
+							<div className="h-4 w-30 rounded-sm bg-black" />
+							<div className="smooth-shadow-ring-sm rounded-lg bg-background p-1">
+								<div className="size-28 rounded-md bg-secondary" />
+							</div>
+						</div>
+					</div>
+				</Button>
 			</div>
 			<Field>
 				<div className="flex items-center gap-2">
@@ -106,7 +153,7 @@ function AddWidgetContent() {
 							name="widget-link"
 							aria-label="Link URL"
 							autoComplete="url"
-							placeholder="https://example.com"
+							placeholder="Add link..."
 							className="text-sm"
 						/>
 						<InputGroupAddon align="inline-end" className="pr-2">
@@ -114,7 +161,7 @@ function AddWidgetContent() {
 								type="button"
 								variant="outline"
 								size="default"
-								className="rounded-md px-3.5 text-primary hover:bg-background"
+								className="rounded-md px-3.5 font-semibold text-primary hover:bg-background"
 							>
 								Add
 							</Button>
@@ -143,22 +190,28 @@ export default function AddWidgetDialog() {
 			</Button>
 			{isMobile ? (
 				<Drawer open={open} onOpenChange={setOpen} showSwipeHandle>
-					<DrawerContent className="max-h-[calc(100dvh-2rem)]">
+					<DrawerContent keepMounted className="max-h-[calc(100dvh-2rem)]">
 						<DrawerHeader className="p-5 pb-0 text-left">
-							<DrawerTitle>Add widget</DrawerTitle>
+							<DrawerTitle>Add Widget</DrawerTitle>
 						</DrawerHeader>
 						<div className="flex flex-col gap-6 p-5">
-							<AddWidgetContent />
+							<AddWidgetContent isOpen={open} />
 						</div>
 					</DrawerContent>
 				</Drawer>
 			) : (
 				<Dialog open={open} onOpenChange={setOpen}>
-					<DialogContent showCloseButton={false} className="gap-6 p-5">
-						<DialogHeader className="p-0">
-							<DialogTitle>Add widget</DialogTitle>
+					<DialogContent
+						keepMounted
+						showCloseButton={false}
+						className="gap-6 rounded-[2.2rem] p-6"
+					>
+						<DialogHeader className="p-0 pl-2">
+							<DialogTitle className={"font-bold text-xl!"}>
+								Add Widget
+							</DialogTitle>
 						</DialogHeader>
-						<AddWidgetContent />
+						<AddWidgetContent isOpen={open} />
 					</DialogContent>
 				</Dialog>
 			)}

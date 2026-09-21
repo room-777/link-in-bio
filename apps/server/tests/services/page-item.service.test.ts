@@ -132,6 +132,96 @@ describe("page item service", () => {
 	});
 
 	/**
+	 * Case ID: PAGE-ITEM-SERVICE-008
+	 * Given: a persisted YouTube link with provider metadata.
+	 * When: the service maps the public page item response.
+	 * Then: it adds the normalized provider presentation JSON.
+	 * Evidence: the response contains the provider, action detail, and preview images.
+	 * Result: Pass | Fail | Blocked | Not Run
+	 */
+	it("PAGE-ITEM-SERVICE-008 enriches link presentation data", async () => {
+		const now = new Date("2026-09-21T00:00:00.000Z");
+		const inserted: Array<Record<string, unknown>> = [];
+		const savedItems: Array<Record<string, unknown>> = [];
+		let findManyCount = 0;
+		const itemQuery = {
+			findMany: async () => {
+				findManyCount += 1;
+				return findManyCount < 3 ? [] : savedItems;
+			},
+		};
+		const insertQuery = {
+			values(values: Array<Record<string, unknown>>) {
+				inserted.push(...values);
+				return insertQuery;
+			},
+			onConflictDoUpdate: async () => {
+				savedItems.push({
+					...inserted[0],
+					createdAt: now,
+					updatedAt: now,
+				});
+			},
+		};
+		const tx = {
+			query: {
+				pages: { findFirst: async () => ({ id: "page-1" }) },
+				pageItems: itemQuery,
+			},
+			insert: () => insertQuery,
+		};
+		const db = {
+			transaction: async (callback: (value: typeof tx) => unknown) =>
+				callback(tx),
+		} as unknown as DatabaseClient;
+
+		const result = await persistPageItemBatch({
+			db,
+			handle: "jane",
+			userId: "user-1",
+			batch: {
+				upserts: [
+					{
+						id: "youtube-item",
+						type: "link",
+						data: {
+							url: "https://www.youtube.com/@grabbin",
+							metadata: {
+								title: "Grabbin",
+								providerData: {
+									subscriberCount: 1200,
+									recentVideoThumbnailUrls: [
+										"https://cdn.example.com/video.png",
+									],
+								},
+							},
+						},
+						style: {},
+						layouts: { wide: layout, compact: layout },
+					},
+				],
+				deletes: [],
+			},
+		});
+
+		const link = result.items[0];
+		assert.equal(link?.type, "link");
+		if (link?.type !== "link") return;
+		assert.equal(link.data.metadata?.provider, "youtube");
+		assert.deepEqual(link.data.metadata?.presentation, {
+			provider: "youtube",
+			providerLabel: "YouTube",
+			cardBackground: "#fff2f5",
+			actionBackground: "#ff0033",
+			actionText: "#ffffff",
+			actionLabel: "Watch",
+			actionVariant: "solid",
+			actionDetail: "1.2K",
+			imageUrls: ["https://cdn.example.com/video.png"],
+		});
+	});
+
+	/**
 	 * Case ID: PAGE-ITEM-SERVICE-003
 	 * Given: an item ID belongs to another page.
 	 * When: the current owner tries to upsert it.

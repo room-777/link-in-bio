@@ -13,6 +13,7 @@ import {
 	hasValidGridLayouts,
 } from "@grabbin/grid-layout";
 import { normalizePageHandle } from "@grabbin/page-handle";
+import { resolveLinkMetadata } from "@grabbin/page-link";
 import { and, eq, inArray, sql } from "drizzle-orm";
 import * as v from "valibot";
 import { PageItemServiceError } from "../exceptions/page-item.exception";
@@ -23,11 +24,21 @@ import {
 
 type PageItemLayouts = PageItemBatchRequest["upserts"][number]["layouts"];
 
+function isRecord(value: unknown): value is Record<string, unknown> {
+	return typeof value === "object" && value !== null && !Array.isArray(value);
+}
+
 function mapPageItemResponse(
 	item: typeof pageItems.$inferSelect,
 	publicBaseUrl?: string,
 ): PageItemResponse {
 	const data = { ...item.data };
+	if (item.type === "link" && typeof data.url === "string") {
+		data.metadata = resolveLinkMetadata(
+			data.url,
+			isRecord(data.metadata) ? data.metadata : undefined,
+		);
+	}
 	if (item.type === "media" && typeof data.objectKey === "string") {
 		const mediaUrl = getPublicPageItemMediaUrl(publicBaseUrl, data.objectKey);
 		if (mediaUrl) data.mediaUrl = mediaUrl;

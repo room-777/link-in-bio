@@ -141,6 +141,7 @@
 
 @utility surface-line {
 	position: relative;
+	border-radius: inherit;
 
 	&::before,
 	&::after {
@@ -149,7 +150,7 @@
 		content: "";
 		border-style: solid;
 		border-width: 1px;
-		border-radius: 12px;
+		border-radius: inherit;
 	}
 
 	&::before {
@@ -164,6 +165,13 @@
 		inset: 1px;
 		border-color: rgb(255 255 255 / 40%);
 		mask-image: linear-gradient(to bottom, black, transparent);
+	}
+}
+
+@utility mapbox-clean {
+	& .mapboxgl-ctrl,
+	& .mapboxgl-ctrl-logo {
+		@apply hidden opacity-0;
 	}
 }
 
