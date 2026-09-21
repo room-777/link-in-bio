@@ -4,7 +4,10 @@ import {
 	pageItemUploadRequestSchema,
 	pageItemUploadResponseSchema,
 } from "@grabbin/api";
+import type { DatabaseClient } from "@grabbin/db";
+import { pageItemUploads } from "@grabbin/db/schema/index";
 import { AwsClient } from "aws4fetch";
+import { and, eq, inArray, lte } from "drizzle-orm";
 import * as v from "valibot";
 import { PageItemServiceError } from "../exceptions/page-item.exception";
 
@@ -15,6 +18,10 @@ const imageExtensions = {
 	"image/png": "png",
 	"image/webp": "webp",
 } as const;
+
+const ITEM_MEDIA_UPLOAD_TTL_MS = 15 * 60 * 1000;
+const uploadSessionStatuses = ["pending", "uploaded"] as const;
+type UploadSessionStatus = (typeof uploadSessionStatuses)[number];
 
 export function createPageImageKey(input: {
 	userId: string;
@@ -107,6 +114,8 @@ export async function createPresignedPutUrl(input: {
 }
 
 export async function createItemMediaUpload(input: {
+	db: DatabaseClient;
+	bucket: R2Bucket;
 	accountId: string;
 	bucketName: string;
 	accessKeyId: string;
@@ -132,7 +141,24 @@ export async function createItemMediaUpload(input: {
 		key: objectKey,
 		contentType: parsed.output.contentType,
 	});
+	const uploadId = crypto.randomUUID();
+	try {
+		await input.db.insert(pageItemUploads).values({
+			id: uploadId,
+			userId: input.userId,
+			pageId: input.pageId,
+			itemId: parsed.output.itemId,
+			objectKey,
+			contentType: parsed.output.contentType,
+			status: "pending",
+			expiresAt: new Date(Date.now() + ITEM_MEDIA_UPLOAD_TTL_MS),
+		});
+	} catch (error) {
+		await input.bucket.delete(objectKey).catch(() => undefined);
+		throw error;
+	}
 	return v.parse(pageItemUploadResponseSchema, {
+		uploadId,
 		objectKey,
 		uploadUrl: upload.url,
 		expiresAt: upload.expiresAt,
@@ -140,14 +166,28 @@ export async function createItemMediaUpload(input: {
 }
 
 export async function completeItemMediaUpload(input: {
+	db: DatabaseClient;
 	bucket: R2Bucket;
 	userId: string;
 	pageId: string;
-	objectKey: string;
+	uploadId: string;
 }) {
+	const upload = await input.db.query.pageItemUploads.findFirst({
+		where: and(
+			eq(pageItemUploads.id, input.uploadId),
+			eq(pageItemUploads.userId, input.userId),
+			eq(pageItemUploads.pageId, input.pageId),
+		),
+	});
+	if (
+		!upload ||
+		!uploadSessionStatuses.includes(upload.status as UploadSessionStatus) ||
+		upload.expiresAt <= new Date()
+	)
+		throw new PageItemServiceError("MEDIA_UPLOAD_NOT_FOUND");
 	if (
 		!isOwnedPageMediaKey({
-			key: input.objectKey,
+			key: upload.objectKey,
 			userId: input.userId,
 			pageId: input.pageId,
 			scope: "items",
@@ -156,15 +196,89 @@ export async function completeItemMediaUpload(input: {
 		throw new PageItemServiceError("INVALID_MEDIA_KEY");
 	}
 
-	const object = await input.bucket.head(input.objectKey);
+	const object = await input.bucket.head(upload.objectKey);
 	const mimeType = object?.httpMetadata?.contentType ?? "";
-	if (!object || !/^(image|video)\//i.test(mimeType)) {
+	if (
+		!object ||
+		object.size < 1 ||
+		mimeType !== upload.contentType ||
+		!/^(image|video)\//i.test(mimeType)
+	) {
 		throw new PageItemServiceError("ITEM_MEDIA_NOT_FOUND");
 	}
 
+	if (upload.status === "pending") {
+		await input.db
+			.update(pageItemUploads)
+			.set({ status: "uploaded", updatedAt: new Date() })
+			.where(
+				and(
+					eq(pageItemUploads.id, input.uploadId),
+					eq(pageItemUploads.status, "pending"),
+				),
+			);
+	}
+
 	return v.parse(pageItemUploadCompleteResponseSchema, {
-		objectKey: input.objectKey,
+		objectKey: upload.objectKey,
 		mimeType,
 		size: object.size,
 	});
+}
+
+export async function cancelItemMediaUpload(input: {
+	db: DatabaseClient;
+	bucket: R2Bucket;
+	userId: string;
+	pageId: string;
+	uploadId: string;
+}) {
+	const upload = await input.db.query.pageItemUploads.findFirst({
+		where: and(
+			eq(pageItemUploads.id, input.uploadId),
+			eq(pageItemUploads.userId, input.userId),
+			eq(pageItemUploads.pageId, input.pageId),
+		),
+	});
+	if (!upload) throw new PageItemServiceError("MEDIA_UPLOAD_NOT_FOUND");
+	await input.db
+		.update(pageItemUploads)
+		.set({ status: "canceling", updatedAt: new Date() })
+		.where(
+			and(
+				eq(pageItemUploads.id, input.uploadId),
+				eq(pageItemUploads.status, upload.status),
+			),
+		);
+	await input.bucket.delete(upload.objectKey);
+	await input.db
+		.delete(pageItemUploads)
+		.where(eq(pageItemUploads.id, input.uploadId));
+}
+
+export async function cleanupExpiredItemMediaUploads({
+	db,
+	bucket,
+	now = new Date(),
+}: {
+	db: DatabaseClient;
+	bucket: R2Bucket;
+	now?: Date;
+}) {
+	const expired = await db.query.pageItemUploads.findMany({
+		where: lte(pageItemUploads.expiresAt, now),
+		columns: { id: true, objectKey: true },
+	});
+	const results = await Promise.allSettled(
+		expired.map((upload) => bucket.delete(upload.objectKey)),
+	);
+	const deletedIds = expired
+		.filter((_, index) => results[index]?.status === "fulfilled")
+		.map((upload) => upload.id);
+	if (deletedIds.length) {
+		await db
+			.delete(pageItemUploads)
+			.where(inArray(pageItemUploads.id, deletedIds));
+	}
+	return deletedIds.length;
 }

@@ -34,7 +34,11 @@ describe("page items controller", () => {
 		const response = await app.request("/pages/jane/items/upload", {
 			method: "POST",
 			headers: { "Content-Type": "application/json" },
-			body: JSON.stringify({ contentType: "text/plain", size: 1 }),
+			body: JSON.stringify({
+				itemId: "item-1",
+				contentType: "text/plain",
+				size: 1,
+			}),
 		});
 
 		assert.equal(response.status, 422);
@@ -51,7 +55,7 @@ describe("page items controller", () => {
 		const response = await app.request("/pages/jane/items/upload/complete", {
 			method: "POST",
 			headers: { "Content-Type": "application/json" },
-			body: JSON.stringify({ objectKey: "" }),
+			body: JSON.stringify({ uploadId: "" }),
 		});
 
 		assert.equal(response.status, 422);

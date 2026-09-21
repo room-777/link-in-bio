@@ -268,6 +268,7 @@ export type PageItemMetadataResponse = v.InferOutput<
 >;
 
 export const pageItemUploadRequestSchema = v.object({
+	itemId: v.pipe(v.string(), v.minLength(1)),
 	contentType: v.pipe(
 		v.string(),
 		v.trim(),
@@ -281,6 +282,7 @@ export type PageItemUploadRequest = v.InferOutput<
 >;
 
 export const pageItemUploadResponseSchema = v.object({
+	uploadId: v.pipe(v.string(), v.minLength(1)),
 	objectKey: v.pipe(v.string(), v.minLength(1)),
 	uploadUrl: v.pipe(v.string(), v.url()),
 	expiresAt: v.string(),
@@ -291,11 +293,19 @@ export type PageItemUploadResponse = v.InferOutput<
 >;
 
 export const pageItemUploadCompleteRequestSchema = v.object({
-	objectKey: v.pipe(v.string(), v.minLength(1)),
+	uploadId: v.pipe(v.string(), v.minLength(1)),
 });
 
 export type PageItemUploadCompleteRequest = v.InferOutput<
 	typeof pageItemUploadCompleteRequestSchema
+>;
+
+export const pageItemUploadCancelRequestSchema = v.object({
+	uploadId: v.pipe(v.string(), v.minLength(1)),
+});
+
+export type PageItemUploadCancelRequest = v.InferOutput<
+	typeof pageItemUploadCancelRequestSchema
 >;
 
 export const pageItemUploadCompleteResponseSchema = v.object({

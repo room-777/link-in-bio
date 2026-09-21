@@ -78,6 +78,36 @@ export const pageItems = pgTable(
 	],
 );
 
+export const pageItemUploads = pgTable(
+	"page_item_uploads",
+	{
+		id: text("id").primaryKey(),
+		userId: text("user_id")
+			.notNull()
+			.references(() => user.id, { onDelete: "cascade" }),
+		pageId: text("page_id")
+			.notNull()
+			.references(() => pages.id, { onDelete: "cascade" }),
+		itemId: text("item_id").notNull(),
+		objectKey: text("object_key").notNull(),
+		contentType: text("content_type").notNull(),
+		status: text("status").notNull(),
+		expiresAt: timestamp("expires_at", { withTimezone: true }).notNull(),
+		createdAt: timestamp("created_at", { withTimezone: true })
+			.defaultNow()
+			.notNull(),
+		updatedAt: timestamp("updated_at", { withTimezone: true })
+			.defaultNow()
+			.$onUpdate(() => /* @__PURE__ */ new Date())
+			.notNull(),
+	},
+	(table) => [
+		uniqueIndex("page_item_uploads_object_key_idx").on(table.objectKey),
+		index("page_item_uploads_page_id_idx").on(table.pageId),
+		index("page_item_uploads_expires_at_idx").on(table.expiresAt),
+	],
+);
+
 export const pagesRelations = relations(pages, ({ one, many }) => ({
 	user: one(user, {
 		fields: [pages.userId],
@@ -92,3 +122,13 @@ export const pageItemsRelations = relations(pageItems, ({ one }) => ({
 		references: [pages.id],
 	}),
 }));
+
+export const pageItemUploadsRelations = relations(
+	pageItemUploads,
+	({ one }) => ({
+		page: one(pages, {
+			fields: [pageItemUploads.pageId],
+			references: [pages.id],
+		}),
+	}),
+);
