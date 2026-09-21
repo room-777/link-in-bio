@@ -51,6 +51,16 @@ export default function BentoEditor({
 	);
 
 	const addItem = (itemType: ItemType, url?: string) => {
+		if (itemType === "link") {
+			try {
+				if (new URL(url?.trim() ?? "").protocol !== "https:") {
+					throw new Error();
+				}
+			} catch {
+				toast({ message: "Enter a valid HTTPS link.", state: "error" });
+				return;
+			}
+		}
 		store.dispatchCommand({ type: "add-item", itemType, url });
 	};
 
