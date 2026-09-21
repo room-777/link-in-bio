@@ -9,12 +9,16 @@ import {
 	getColumns,
 	validateBentoLayout,
 } from "@grabbin/bento-layout";
-import { useCallback } from "react";
+import { useCallback, useMemo, useRef, useState } from "react";
 import ReactGridLayout, {
 	type EventCallback,
 	useContainerWidth,
 } from "react-grid-layout";
 import { fastVerticalCompactor } from "react-grid-layout/extras";
+import {
+	resolveBentoDragLayout,
+	toBentoLayoutMap,
+} from "@/lib/bento/bento-drag";
 import type {
 	BentoCommand,
 	BentoItem as BentoItemData,
@@ -61,26 +65,41 @@ export default function BentoSection({
 	const cols = getColumns(breakpoint);
 	const bentoWidth = getBentoWidth(cols);
 	const bottomPaddingClass = breakpoint === "compact" ? "pb-64" : "";
-	const layout = items.map((item) => ({
-		i: item.id,
-		...item.layouts[breakpoint],
-		isResizable: false,
-		resizeHandles: [],
-	}));
+	const dragStartLayoutRef = useRef<ReturnType<typeof toBentoLayoutMap> | null>(
+		null,
+	);
+	const [layoutRevision, setLayoutRevision] = useState(0);
+	const layout = useMemo(
+		() =>
+			items.map((item) => ({
+				i: item.id,
+				...item.layouts[breakpoint],
+				isResizable: false,
+				resizeHandles: [],
+			})),
+		[breakpoint, items],
+	);
+	const handleDragStart: EventCallback = useCallback((currentLayout) => {
+		dragStartLayoutRef.current = toBentoLayoutMap(currentLayout);
+	}, []);
 	const handleDragStop: EventCallback = useCallback(
 		(nextLayout) => {
-			const nextMap = Object.fromEntries(
-				nextLayout.map(({ i, x, y, w, h }) => [i, { x, y, w, h }]),
-			);
-			if (onCommand && validateBentoLayout(nextMap, cols)) {
+			const resolved = resolveBentoDragLayout({
+				nextLayout,
+				startLayout: dragStartLayoutRef.current ?? toBentoLayoutMap(layout),
+				columns: cols,
+			});
+			dragStartLayoutRef.current = null;
+			if (resolved.outsideGrid) setLayoutRevision((revision) => revision + 1);
+			if (onCommand && validateBentoLayout(resolved.layout, cols)) {
 				onCommand({
 					type: "replace-layout",
 					breakpoint,
-					layout: nextMap,
+					layout: resolved.layout,
 				});
 			}
 		},
-		[breakpoint, cols, onCommand],
+		[breakpoint, cols, layout, onCommand],
 	);
 
 	return (
@@ -92,7 +111,7 @@ export default function BentoSection({
 		>
 			{mounted ? (
 				<ReactGridLayout
-					key={breakpoint}
+					key={`${breakpoint}-${layoutRevision}`}
 					className={[
 						"bento-layout max-w-full overflow-visible",
 						mode === "edit" ? "is-edit-mode" : null,
@@ -116,6 +135,7 @@ export default function BentoSection({
 					resizeConfig={{ enabled: false }}
 					autoSize
 					compactor={fastVerticalCompactor}
+					onDragStart={mode === "edit" ? handleDragStart : undefined}
 					onDragStop={mode === "edit" ? handleDragStop : undefined}
 				>
 					{items.map((item) => (
