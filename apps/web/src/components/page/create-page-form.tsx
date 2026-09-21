@@ -204,7 +204,7 @@ export function PageHandleForm({
 				aria-hidden="true"
 				className={
 					compact
-						? "my-4 w-full min-[90rem]:max-w-sm"
+						? "my-auto w-full min-[90rem]:max-w-sm"
 						: "my-6 w-full min-[90rem]:max-w-sm"
 				}
 			>
@@ -223,7 +223,7 @@ export function PageHandleForm({
 				onSubmit={handleSubmit}
 				className={
 					compact
-						? "mt-auto w-full min-[90rem]:max-w-sm"
+						? "w-full min-[90rem]:max-w-sm"
 						: "w-full min-[90rem]:max-w-sm"
 				}
 			>

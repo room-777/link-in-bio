@@ -17,6 +17,15 @@ import {
 } from "@grabbin/ui/components/avatar";
 import { Button, buttonVariants } from "@grabbin/ui/components/button";
 import { Dialog, DialogContent } from "@grabbin/ui/components/dialog";
+import {
+	Drawer,
+	DrawerClose,
+	DrawerContent,
+	DrawerDescription,
+	DrawerFooter,
+	DrawerHeader,
+	DrawerTitle,
+} from "@grabbin/ui/components/drawer";
 import Loading from "@grabbin/ui/components/loading";
 import {
 	Popover,
@@ -26,6 +35,7 @@ import {
 } from "@grabbin/ui/components/popover";
 import { Skeleton } from "@grabbin/ui/components/skeleton";
 import { toast } from "@grabbin/ui/components/toast";
+import { useIsMobile } from "@grabbin/ui/components/use-mobile";
 import { cn } from "@grabbin/ui/lib/utils";
 import { SlidersHorizontal } from "lucide-react";
 import { motion, useReducedMotion } from "motion/react";
@@ -49,6 +59,7 @@ function OwnerFooter({
 }) {
 	const router = useRouter();
 	const reduceMotion = useReducedMotion();
+	const isMobile = useIsMobile();
 	const { data: session } = authClient.useSession();
 	const [activeItem, setActiveItem] = useState<number | null>(null);
 	const [isItemActive, setIsItemActive] = useState(false);
@@ -76,6 +87,17 @@ function OwnerFooter({
 				: deleteClickCount === 2
 					? "One more time"
 					: "Delete anyway";
+	const renderHandleForm = (compact: boolean) => (
+		<PageHandleForm
+			initialHandle={handle}
+			title="Change your handle"
+			description="Choose a new handle for your page."
+			submitLabel="Change handle"
+			variant="outline"
+			compact={compact}
+			onSubmit={handleChangeHandle}
+		/>
+	);
 	async function handleSignOut() {
 		setIsSigningOut(true);
 		const { error } = await authClient.signOut();
@@ -186,7 +208,7 @@ function OwnerFooter({
 					<SlidersHorizontal />
 				</PopoverTrigger>
 				<PopoverContent
-					align="end"
+					align="start"
 					side="top"
 					sideOffset={8}
 					initialFocus={false}
@@ -263,132 +285,256 @@ function OwnerFooter({
 					</Button>
 				</PopoverContent>
 			</Popover>
-			<Dialog open={isHandleDialogOpen} onOpenChange={setIsHandleDialogOpen}>
-				<DialogContent
-					showCloseButton={false}
-					className="smooth-shadow-md aspect-square gap-0 overflow-hidden rounded-[1.5rem] p-5 ring-0"
+			{isMobile ? (
+				<Drawer
+					open={isHandleDialogOpen}
+					onOpenChange={setIsHandleDialogOpen}
+					showSwipeHandle
 				>
-					<div className="flex h-full min-h-0 min-w-0 flex-col overflow-y-auto p-0">
-						<div className="h-full min-h-0 min-w-0 p-1">
-							<PageHandleForm
-								initialHandle={handle}
-								title="Change your handle"
-								description="Choose a new handle for your page."
-								submitLabel="Change handle"
-								variant="outline"
-								compact
-								onSubmit={handleChangeHandle}
-							/>
+					<DrawerContent className="max-h-[calc(100dvh-2rem)]">
+						<DrawerHeader className="sr-only">
+							<DrawerTitle>Change your handle</DrawerTitle>
+							<DrawerDescription>
+								Choose a new handle for your page.
+							</DrawerDescription>
+						</DrawerHeader>
+						<div className="min-h-0 overflow-y-auto p-5 [&_h1]:font-heading [&_h1]:font-medium [&_h1]:text-base [&_p]:text-muted-foreground [&_p]:text-sm">
+							{renderHandleForm(false)}
 						</div>
-					</div>
-				</DialogContent>
-			</Dialog>
-			<AlertDialog
-				open={isDeleteDialogOpen}
-				onOpenChange={handleDeleteDialogChange}
-			>
-				<AlertDialogContent className="aspect-square gap-0 overflow-hidden p-5">
-					<Activity mode="visible">
-						<div
-							aria-hidden={deleteActivity !== "confirm"}
-							className={cn(
-								"col-start-1 row-start-1 flex h-full w-full min-w-0 flex-col gap-4 opacity-0 transition-opacity duration-200 ease-out motion-reduce:transition-none",
-								deleteActivity === "confirm" && "opacity-100",
-							)}
-							inert={deleteActivity !== "confirm"}
-						>
-							<AlertDialogHeader>
-								{/*<span className="mb-2 self-start" aria-hidden="true">
+					</DrawerContent>
+				</Drawer>
+			) : (
+				<Dialog open={isHandleDialogOpen} onOpenChange={setIsHandleDialogOpen}>
+					<DialogContent
+						showCloseButton={false}
+						className="smooth-shadow-md aspect-square gap-0 overflow-hidden p-5 ring-0"
+					>
+						<div className="flex h-full min-h-0 min-w-0 flex-col overflow-y-auto p-0">
+							<div className="h-full min-h-0 min-w-0 p-1">
+								{renderHandleForm(true)}
+							</div>
+						</div>
+					</DialogContent>
+				</Dialog>
+			)}
+			{isMobile ? (
+				<Drawer
+					open={isDeleteDialogOpen}
+					onOpenChange={handleDeleteDialogChange}
+					showSwipeHandle
+				>
+					<DrawerContent className="h-fit! max-h-[calc(100dvh-2rem)]">
+						<Activity mode="visible">
+							<div
+								aria-hidden={deleteActivity !== "confirm"}
+								className={cn(
+									"flex w-full min-w-0 flex-col gap-4 p-5 opacity-0 transition-opacity duration-200 ease-out motion-reduce:transition-none",
+									deleteActivity === "confirm" && "opacity-100",
+									deleteActivity !== "confirm" && "hidden",
+								)}
+								inert={deleteActivity !== "confirm"}
+							>
+								<DrawerHeader className="p-0 text-left">
+									<DrawerTitle>Delete your account?</DrawerTitle>
+									<DrawerDescription>
+										Your account and all associated data will be permanently
+										deleted. This action can&apos;t be undone.
+									</DrawerDescription>
+								</DrawerHeader>
+								<DrawerFooter className="!mt-0 p-0 pt-6">
+									<Button
+										variant="destructive"
+										size="xl"
+										disabled={isRequestingDelete}
+										onClick={handleDeleteAccount}
+										aria-label={deleteButtonLabel}
+										className="relative w-full min-w-0 overflow-hidden whitespace-nowrap bg-destructive text-white hover:bg-destructive/80 motion-safe:active:scale-100"
+									>
+										<span className="relative z-10 inline-flex items-center gap-2">
+											{isRequestingDelete && (
+												<Loading aria-hidden="true" className="size-4" />
+											)}
+											<span>{deleteButtonLabel}</span>
+										</span>
+										{!isRequestingDelete && (
+											<span
+												aria-hidden="true"
+												className="pointer-events-none absolute inset-x-3 bottom-1 z-20 h-1 overflow-hidden rounded-full bg-white/25"
+											>
+												<span
+													className="block h-full origin-left rounded-full bg-white transition-transform duration-200 ease-out will-change-transform motion-reduce:transition-none"
+													style={{ transform: `scaleX(${deleteProgress})` }}
+												/>
+											</span>
+										)}
+									</Button>
+									<DrawerClose
+										render={
+											<Button
+												className="w-full min-w-0 whitespace-nowrap"
+												size="xl"
+												variant="outline"
+											/>
+										}
+									>
+										Cancel
+									</DrawerClose>
+								</DrawerFooter>
+							</div>
+						</Activity>
+						<Activity mode="visible">
+							<div
+								aria-hidden={deleteActivity !== "sent"}
+								className={cn(
+									"flex flex-col gap-4 p-5 opacity-0 transition-opacity duration-200 ease-out motion-reduce:transition-none",
+									deleteActivity === "sent" && "opacity-100",
+									deleteActivity !== "sent" && "hidden",
+								)}
+								inert={deleteActivity !== "sent"}
+							>
+								<DrawerHeader className="p-0 text-left">
+									<span
+										className="t-success-check mb-2 self-center"
+										data-state={deleteActivity === "sent" ? "in" : "out"}
+										aria-hidden="true"
+									>
+										<CheckCircle
+											weight="Filled"
+											className="size-12 text-brand-green"
+										/>
+									</span>
+									<DrawerTitle>Check your inbox</DrawerTitle>
+									<DrawerDescription className="mt-2">
+										<p>
+											We sent a deletion link to{" "}
+											<strong className="font-medium text-primary">
+												{session?.user.email ?? "your email address"}.
+											</strong>
+										</p>
+										<p>Open it to finish deleting your account.</p>
+									</DrawerDescription>
+								</DrawerHeader>
+								<DrawerFooter className="!mt-0 p-0 pt-6">
+									<DrawerClose render={<Button variant="outline" size="xl" />}>
+										Okay, I got it
+									</DrawerClose>
+								</DrawerFooter>
+							</div>
+						</Activity>
+					</DrawerContent>
+				</Drawer>
+			) : (
+				<AlertDialog
+					open={isDeleteDialogOpen}
+					onOpenChange={handleDeleteDialogChange}
+				>
+					<AlertDialogContent className="aspect-square gap-0 overflow-hidden p-5">
+						<Activity mode="visible">
+							<div
+								aria-hidden={deleteActivity !== "confirm"}
+								className={cn(
+									"col-start-1 row-start-1 flex h-full w-full min-w-0 flex-col gap-4 opacity-0 transition-opacity duration-200 ease-out motion-reduce:transition-none",
+									deleteActivity === "confirm" && "opacity-100",
+								)}
+								inert={deleteActivity !== "confirm"}
+							>
+								<AlertDialogHeader>
+									{/*<span className="mb-2 self-start" aria-hidden="true">
 									<InfoCircle
 										weight="Filled"
 										className="size-12 text-primary"
 									/>
 								</span>*/}
-								<AlertDialogTitle>Delete your account?</AlertDialogTitle>
-								<AlertDialogDescription>
-									Your account and all associated data will be permanently
-									deleted. This action can&apos;t be undone.
-								</AlertDialogDescription>
-							</AlertDialogHeader>
-							<AlertDialogFooter className="mx-0 mt-auto w-full! flex-col-reverse! items-end rounded-b-xl border-0 bg-transparent px-0 sm:justify-end">
-								<AlertDialogCancel
-									className={"w-full min-w-0 whitespace-nowrap sm:max-w-36"}
-									size={"xl"}
-									variant={"outline"}
-								>
-									Cancel
-								</AlertDialogCancel>
-								<AlertDialogAction
-									variant="destructive"
-									size={"xl"}
-									disabled={isRequestingDelete}
-									onClick={handleDeleteAccount}
-									aria-label={deleteButtonLabel}
-									className={
-										"relative w-full min-w-0 overflow-hidden whitespace-nowrap bg-destructive text-white hover:bg-destructive/80 motion-safe:active:scale-100 sm:max-w-36"
-									}
-								>
-									<span className="relative z-10 inline-flex items-center gap-2">
-										{isRequestingDelete && (
-											<Loading aria-hidden="true" className="size-4" />
-										)}
-										<span>{deleteButtonLabel}</span>
-									</span>
-									{!isRequestingDelete && (
-										<span
-											aria-hidden="true"
-											className="pointer-events-none absolute inset-x-3 bottom-1 z-20 h-1 overflow-hidden rounded-full bg-white/25"
-										>
-											<span
-												className="block h-full origin-left rounded-full bg-white transition-transform duration-200 ease-out will-change-transform motion-reduce:transition-none"
-												style={{ transform: `scaleX(${deleteProgress})` }}
-											/>
+									<AlertDialogTitle>Delete your account?</AlertDialogTitle>
+									<AlertDialogDescription>
+										Your account and all associated data will be permanently
+										deleted. This action can&apos;t be undone.
+									</AlertDialogDescription>
+								</AlertDialogHeader>
+								<AlertDialogFooter className="mx-0 mt-auto w-full! flex-col-reverse! items-end rounded-b-xl border-0 bg-transparent px-0 sm:justify-end">
+									<AlertDialogCancel
+										className={"w-full min-w-0 whitespace-nowrap sm:max-w-36"}
+										size={"xl"}
+										variant={"outline"}
+									>
+										Cancel
+									</AlertDialogCancel>
+									<AlertDialogAction
+										variant="destructive"
+										size={"xl"}
+										disabled={isRequestingDelete}
+										onClick={handleDeleteAccount}
+										aria-label={deleteButtonLabel}
+										className={
+											"relative w-full min-w-0 overflow-hidden whitespace-nowrap bg-destructive text-white hover:bg-destructive/80 motion-safe:active:scale-100 sm:max-w-36"
+										}
+									>
+										<span className="relative z-10 inline-flex items-center gap-2">
+											{isRequestingDelete && (
+												<Loading aria-hidden="true" className="size-4" />
+											)}
+											<span>{deleteButtonLabel}</span>
 										</span>
-									)}
-								</AlertDialogAction>
-							</AlertDialogFooter>
-						</div>
-					</Activity>
-					<Activity mode="visible">
-						<div
-							aria-hidden={deleteActivity !== "sent"}
-							className={cn(
-								"col-start-1 row-start-1 flex flex-col gap-4 opacity-0 transition-opacity duration-200 ease-out motion-reduce:transition-none",
-								deleteActivity === "sent" && "opacity-100",
-							)}
-							inert={deleteActivity !== "sent"}
-						>
-							<AlertDialogHeader>
-								<span
-									className="t-success-check mb-2 self-start"
-									data-state={deleteActivity === "sent" ? "in" : "out"}
-									aria-hidden="true"
-								>
-									<CheckCircle
-										weight="Filled"
-										className="size-12 text-brand-green"
-									/>
-								</span>
-								<AlertDialogTitle>Check your inbox</AlertDialogTitle>
-								<AlertDialogDescription className={"mt-2 sm:mt-0"}>
-									<p>
-										We sent a deletion link to{" "}
-										<strong className="font-medium text-primary">
-											{session?.user.email ?? "your email address"}.
-										</strong>
-									</p>
-									<p>Open it to finish deleting your account.</p>
-								</AlertDialogDescription>
-							</AlertDialogHeader>
-							<AlertDialogFooter className="grow items-end rounded-b-xl border-0 bg-transparent">
-								<AlertDialogCancel variant="outline" size={"xl"} className={""}>
-									Okay, I got it
-								</AlertDialogCancel>
-							</AlertDialogFooter>
-						</div>
-					</Activity>
-				</AlertDialogContent>
-			</AlertDialog>
+										{!isRequestingDelete && (
+											<span
+												aria-hidden="true"
+												className="pointer-events-none absolute inset-x-3 bottom-1 z-20 h-1 overflow-hidden rounded-full bg-white/25"
+											>
+												<span
+													className="block h-full origin-left rounded-full bg-white transition-transform duration-200 ease-out will-change-transform motion-reduce:transition-none"
+													style={{ transform: `scaleX(${deleteProgress})` }}
+												/>
+											</span>
+										)}
+									</AlertDialogAction>
+								</AlertDialogFooter>
+							</div>
+						</Activity>
+						<Activity mode="visible">
+							<div
+								aria-hidden={deleteActivity !== "sent"}
+								className={cn(
+									"col-start-1 row-start-1 flex flex-col gap-4 opacity-0 transition-opacity duration-200 ease-out motion-reduce:transition-none",
+									deleteActivity === "sent" && "opacity-100",
+								)}
+								inert={deleteActivity !== "sent"}
+							>
+								<AlertDialogHeader>
+									<span
+										className="t-success-check mb-2 self-start"
+										data-state={deleteActivity === "sent" ? "in" : "out"}
+										aria-hidden="true"
+									>
+										<CheckCircle
+											weight="Filled"
+											className="size-12 text-brand-green"
+										/>
+									</span>
+									<AlertDialogTitle>Check your inbox</AlertDialogTitle>
+									<AlertDialogDescription className={"mt-2 sm:mt-0"}>
+										<p>
+											We sent a deletion link to{" "}
+											<strong className="font-medium text-primary">
+												{session?.user.email ?? "your email address"}.
+											</strong>
+										</p>
+										<p>Open it to finish deleting your account.</p>
+									</AlertDialogDescription>
+								</AlertDialogHeader>
+								<AlertDialogFooter className="grow items-end rounded-b-xl border-0 bg-transparent">
+									<AlertDialogCancel
+										variant="outline"
+										size={"xl"}
+										className={""}
+									>
+										Okay, I got it
+									</AlertDialogCancel>
+								</AlertDialogFooter>
+							</div>
+						</Activity>
+					</AlertDialogContent>
+				</AlertDialog>
+			)}
 		</>
 	);
 }
