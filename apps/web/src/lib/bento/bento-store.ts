@@ -1,13 +1,6 @@
 "use client";
 
 import type { PageItemBatchRequest, PageItemResponse } from "@grabbin/api";
-import {
-	getAllowedPresets,
-	getColumns,
-	getPresetGeometry,
-	placeAtFirstAvailable,
-	validateBentoLayout,
-} from "@grabbin/bento-layout";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { patchBentoBatch } from "./bento-api";
 import {
@@ -15,9 +8,11 @@ import {
 	hasBentoBatchChanges,
 	mergeAcknowledgedBentoItems,
 	mergeBentoItems,
+	restoreEmptyBentoItems,
 	toBentoItem,
 } from "./bento-batch";
 import { createBentoItem } from "./bento-factory";
+import { reduceBentoItems } from "./bento-reducer";
 import type { BentoCommand, BentoItem } from "./bento-types";
 
 export type BentoStoreStatus = "saved" | "dirty" | "saving" | "error";
@@ -169,22 +164,26 @@ export function useBentoStore({
 
 	const commitItems = useCallback(
 		(nextItems: BentoItem[]) => {
+			const normalizedItems = restoreEmptyBentoItems(
+				nextItems,
+				persistedRef.current,
+			);
 			if (
-				draftRef.current.length === nextItems.length &&
-				draftRef.current.every((item, index) => item === nextItems[index])
+				draftRef.current.length === normalizedItems.length &&
+				draftRef.current.every((item, index) => item === normalizedItems[index])
 			) {
 				return;
 			}
 			stateVersionRef.current += 1;
-			draftRef.current = nextItems;
-			setItems(nextItems);
+			draftRef.current = normalizedItems;
+			setItems(normalizedItems);
 			if (!persistItems) {
 				setStatus("saved");
 				setErrorMessage(null);
 				return;
 			}
 			const nextBatch = createBentoBatch(
-				nextItems,
+				normalizedItems,
 				persistedRef.current,
 				deletedIdsRef.current,
 			);
@@ -201,113 +200,23 @@ export function useBentoStore({
 		(command: BentoCommand) => {
 			if (!enabled) return undefined;
 			const currentItems = draftRef.current;
-			if (command.type === "add-item") {
-				const newItem = createBentoItem({
-					items: currentItems,
-					itemType: command.itemType,
-					url: command.url,
-				});
+			const result = reduceBentoItems(currentItems, command);
+			if (!result) return undefined;
+			if (command.type === "delete-item") {
+				deletedIdsRef.current.add(command.itemId);
+			}
+
+			if (command.type === "add-item" && result.addedItem) {
 				setAutoFocusItemId(
 					command.itemType === "text" || command.itemType === "section"
-						? newItem.id
+						? result.addedItem.id
 						: null,
 				);
-				commitItems([...currentItems, newItem]);
-				return newItem;
+				commitItems(result.items);
+				return result.addedItem;
 			}
 
-			if (command.type === "replace-layout") {
-				if (
-					!validateBentoLayout(command.layout, getColumns(command.breakpoint))
-				) {
-					return undefined;
-				}
-				commitItems(
-					currentItems.map((item) => {
-						const layout = command.layout[item.id];
-						return layout
-							? {
-									...item,
-									layouts: { ...item.layouts, [command.breakpoint]: layout },
-								}
-							: item;
-					}),
-				);
-				return undefined;
-			}
-
-			if (command.type === "apply-preset") {
-				const target = currentItems.find((item) => item.id === command.itemId);
-				if (
-					!target ||
-					!getAllowedPresets(target.type).includes(command.preset)
-				) {
-					return undefined;
-				}
-				const columns = getColumns(command.breakpoint);
-				const otherLayouts = Object.fromEntries(
-					currentItems
-						.filter((item) => item.id !== target.id)
-						.map((item) => [item.id, item.layouts[command.breakpoint]]),
-				);
-				const geometry = getPresetGeometry(command.preset, command.breakpoint);
-				const currentLayout = target.layouts[command.breakpoint];
-				const positionedLayout = {
-					...geometry,
-					x: currentLayout.x,
-					y: currentLayout.y,
-				};
-				const nextLayout = validateBentoLayout(
-					{ ...otherLayouts, [target.id]: positionedLayout },
-					columns,
-				)
-					? positionedLayout
-					: placeAtFirstAvailable(otherLayouts, geometry, columns);
-				commitItems(
-					currentItems.map((item) =>
-						item.id === target.id
-							? {
-									...item,
-									preset: command.preset,
-									layouts: {
-										...item.layouts,
-										[command.breakpoint]: nextLayout,
-									},
-								}
-							: item,
-					),
-				);
-				return undefined;
-			}
-
-			const target = currentItems.find((item) => item.id === command.itemId);
-			if (!target) return undefined;
-			if (command.type === "update-data") {
-				commitItems(
-					currentItems.map((item) =>
-						item.id === command.itemId
-							? ({
-									...item,
-									data: structuredClone(command.data) as typeof item.data,
-								} as BentoItem)
-							: item,
-					),
-				);
-				return undefined;
-			}
-			if (command.type === "update-style") {
-				commitItems(
-					currentItems.map((item) =>
-						item.id === command.itemId
-							? { ...item, style: { ...item.style, ...command.patch } }
-							: item,
-					),
-				);
-				return undefined;
-			}
-
-			deletedIdsRef.current.add(command.itemId);
-			commitItems(currentItems.filter((item) => item.id !== command.itemId));
+			commitItems(result.items);
 			return undefined;
 		},
 		[commitItems, enabled],
