@@ -20,7 +20,6 @@ import { jsonApiError } from "../api-error";
 import { PageItemServiceError } from "../exceptions/page-item.exception";
 import {
 	cancelItemMediaUpload,
-	cleanupExpiredItemMediaUploads,
 	completeItemMediaUpload,
 	createItemMediaUpload,
 } from "../services/media.service";
@@ -40,7 +39,6 @@ const pageItemErrorDetails = {
 	INVALID_MEDIA_KEY: "The media object key is invalid.",
 	INVALID_MEDIA_UPLOAD: "Invalid item media.",
 	ITEM_MEDIA_NOT_FOUND: "Uploaded item media was not found.",
-	MEDIA_UPLOAD_NOT_FOUND: "The media upload was not found.",
 	CONCURRENT_ITEM_UPDATE: "The item changed before this update was saved.",
 	INVALID_LINK_METADATA: "Invalid link metadata request.",
 	ITEM_NOT_LINK: "The item is not a link.",
@@ -52,9 +50,7 @@ function pageItemErrorResponse(
 	error: PageItemServiceError,
 ) {
 	const status =
-		error.code === "PAGE_NOT_FOUND" ||
-		error.code === "ITEM_NOT_FOUND" ||
-		error.code === "MEDIA_UPLOAD_NOT_FOUND"
+		error.code === "PAGE_NOT_FOUND" || error.code === "ITEM_NOT_FOUND"
 			? 404
 			: error.code === "CONCURRENT_ITEM_UPDATE"
 				? 409
@@ -174,8 +170,6 @@ export function createPageItemsController({
 
 			try {
 				const upload = await createItemMediaUpload({
-					db: c.var.db,
-					bucket: c.env.R2_BUCKET,
 					accountId: c.env.R2_ACCOUNT_ID,
 					bucketName: c.env.R2_BUCKET_NAME,
 					accessKeyId: c.env.R2_ACCESS_KEY_ID,
@@ -184,12 +178,6 @@ export function createPageItemsController({
 					pageId: page.id,
 					request: parsed.output,
 				});
-				c.executionCtx.waitUntil(
-					cleanupExpiredItemMediaUploads({
-						db: c.var.db,
-						bucket: c.env.R2_BUCKET,
-					}),
-				);
 				return c.json(upload);
 			} catch (error) {
 				if (error instanceof PageItemServiceError) {
@@ -230,11 +218,10 @@ export function createPageItemsController({
 			try {
 				return c.json(
 					await completeItemMediaUpload({
-						db: c.var.db,
 						bucket: c.env.R2_BUCKET,
 						userId: session.user.id,
 						pageId: page.id,
-						uploadId: parsed.output.uploadId,
+						objectKey: parsed.output.objectKey,
 					}),
 				);
 			} catch (error) {
@@ -275,11 +262,10 @@ export function createPageItemsController({
 
 			try {
 				await cancelItemMediaUpload({
-					db: c.var.db,
 					bucket: c.env.R2_BUCKET,
 					userId: session.user.id,
 					pageId: page.id,
-					uploadId: parsed.output.uploadId,
+					objectKey: parsed.output.objectKey,
 				});
 				return c.body(null, 204);
 			} catch (error) {

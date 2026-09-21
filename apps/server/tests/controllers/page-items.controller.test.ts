@@ -55,7 +55,7 @@ describe("page items controller", () => {
 		const response = await app.request("/pages/jane/items/upload/complete", {
 			method: "POST",
 			headers: { "Content-Type": "application/json" },
-			body: JSON.stringify({ uploadId: "" }),
+			body: JSON.stringify({ objectKey: "" }),
 		});
 
 		assert.equal(response.status, 422);

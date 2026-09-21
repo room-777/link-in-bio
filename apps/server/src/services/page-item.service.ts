@@ -13,7 +13,7 @@ import {
 	inferPresetFromLayout,
 } from "@grabbin/bento-layout";
 import type { DatabaseClient } from "@grabbin/db";
-import { pageItems, pageItemUploads } from "@grabbin/db/schema/index";
+import { pageItems } from "@grabbin/db/schema/index";
 import { resolveLinkMetadata } from "@grabbin/page-link";
 import { and, eq, inArray, sql } from "drizzle-orm";
 import * as v from "valibot";
@@ -28,12 +28,6 @@ type PageItemLayouts = PageItemBatchRequest["upserts"][number]["layouts"];
 
 function isRecord(value: unknown): value is Record<string, unknown> {
 	return typeof value === "object" && value !== null && !Array.isArray(value);
-}
-
-function getMediaObjectKey(value: unknown) {
-	return isRecord(value) && typeof value.objectKey === "string"
-		? value.objectKey
-		: undefined;
 }
 
 export function mapPageItemResponse(
@@ -204,28 +198,6 @@ export async function persistPageItemBatch({
 		}
 
 		const existingById = new Map(existing.map((item) => [item.id, item]));
-		const mediaUploadsToAuthorize = upserts.filter((item) => {
-			if (item.type !== "media") return false;
-			const current = existingById.get(item.id);
-			return getMediaObjectKey(current?.data) !== item.data.objectKey;
-		});
-		const uploadSessions = mediaUploadsToAuthorize.length
-			? await tx.query.pageItemUploads.findMany({
-					where: and(
-						eq(pageItemUploads.userId, userId),
-						eq(pageItemUploads.pageId, page.id),
-						inArray(
-							pageItemUploads.itemId,
-							mediaUploadsToAuthorize.map((item) => item.id),
-						),
-						eq(pageItemUploads.status, "uploaded"),
-					),
-				})
-			: [];
-		const uploadSessionByObjectKey = new Map(
-			uploadSessions.map((upload) => [upload.objectKey, upload]),
-		);
-		const consumedUploadIds: string[] = [];
 		for (const id of persistableBatch.deletes) {
 			if (!existingById.has(id)) {
 				throw new PageItemServiceError("ITEM_NOT_FOUND");
@@ -243,20 +215,6 @@ export async function persistPageItemBatch({
 				throw new PageItemServiceError("CONCURRENT_ITEM_UPDATE");
 			}
 			assertValidItemPayload(item, userId, page.id);
-			if (item.type === "media") {
-				const currentObjectKey = getMediaObjectKey(current?.data);
-				if (currentObjectKey !== item.data.objectKey) {
-					const upload = uploadSessionByObjectKey.get(item.data.objectKey);
-					if (
-						!upload ||
-						upload.itemId !== item.id ||
-						upload.expiresAt <= new Date()
-					) {
-						throw new PageItemServiceError("INVALID_MEDIA_KEY");
-					}
-					consumedUploadIds.push(upload.id);
-				}
-			}
 		}
 
 		const finalItems = new Map(
@@ -339,12 +297,6 @@ export async function persistPageItemBatch({
 					},
 				});
 		}
-		if (consumedUploadIds.length) {
-			await tx
-				.delete(pageItemUploads)
-				.where(inArray(pageItemUploads.id, consumedUploadIds));
-		}
-
 		const changedIds = [
 			...new Set([
 				...persistableBatch.deletes,

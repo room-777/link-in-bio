@@ -341,7 +341,6 @@ describe("page item service", () => {
 			query: {
 				pages: { findFirst: async () => ({ id: "page-1" }) },
 				pageItems: { findMany: async () => [] },
-				pageItemUploads: { findMany: async () => [] },
 			},
 		};
 		const db = {
@@ -440,7 +439,6 @@ describe("page item service", () => {
 			query: {
 				pages: { findFirst: async () => ({ id: "page-1" }) },
 				pageItems: { findMany: async () => [] },
-				pageItemUploads: { findMany: async () => [] },
 			},
 		};
 		const db = {
@@ -516,16 +514,6 @@ describe("page item service", () => {
 							},
 						];
 					},
-				},
-				pageItemUploads: {
-					findMany: async () => [
-						{
-							id: "upload-1",
-							itemId: "item-1",
-							objectKey: "users/user-1/pages/page-1/items/new-image.webp",
-							expiresAt: new Date("2026-09-22T00:00:00.000Z"),
-						},
-					],
 				},
 			},
 			insert: () => {
