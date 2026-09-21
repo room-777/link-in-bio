@@ -177,7 +177,7 @@ export default function DeleteAccountDialog({
 						inert={deleteActivity !== "sent"}
 					>
 						<DrawerHeader className="p-0 text-left">
-							<SuccessIcon />
+							<SuccessIcon active={deleteActivity === "sent"} />
 							<DrawerTitle>Check your inbox</DrawerTitle>
 							<DrawerDescription className="mt-2">
 								<p>
@@ -252,7 +252,7 @@ export default function DeleteAccountDialog({
 						inert={deleteActivity !== "sent"}
 					>
 						<AlertDialogHeader>
-							<SuccessIcon />
+							<SuccessIcon active={deleteActivity === "sent"} />
 							<AlertDialogTitle>Check your inbox</AlertDialogTitle>
 							<AlertDialogDescription className="mt-2 sm:mt-0">
 								<p>
@@ -306,11 +306,11 @@ function DeleteButtonContent({
 	);
 }
 
-function SuccessIcon() {
+function SuccessIcon({ active }: { active: boolean }) {
 	return (
 		<span
 			className="t-success-check mb-2 self-start"
-			data-state="in"
+			data-state={active ? "in" : "out"}
 			aria-hidden="true"
 		>
 			<CheckCircle weight="Filled" className="size-12 text-brand-green" />
