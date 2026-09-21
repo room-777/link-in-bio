@@ -3,7 +3,6 @@
 import { Toaster } from "@grabbin/ui/components/sonner";
 import { Toasts } from "@grabbin/ui/components/toast";
 import { QueryClientProvider } from "@tanstack/react-query";
-import { ReactQueryDevtools } from "@tanstack/react-query-devtools";
 import { getQueryClient } from "../../lib/query-client";
 import { ThemeProvider } from "../layout/theme-provider";
 
@@ -22,7 +21,7 @@ export default function Providers({ children }: { children: React.ReactNode }) {
 				<Toaster position="bottom-center" />
 				<Toasts position="top-center" />
 			</ThemeProvider>
-			{process.env.NODE_ENV === "development" && <ReactQueryDevtools />}
+			{/*{process.env.NODE_ENV === "development" && <ReactQueryDevtools />}*/}
 		</QueryClientProvider>
 	);
 }
