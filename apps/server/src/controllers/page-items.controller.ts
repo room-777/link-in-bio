@@ -1,6 +1,12 @@
-import type { PageItemBatchRequest, PageItemBatchResponse } from "@grabbin/api";
+import type {
+	PageItemBatchRequest,
+	PageItemBatchResponse,
+	PageItemMetadataRequest,
+	PageItemResponse,
+} from "@grabbin/api";
 import {
 	pageItemBatchRequestSchema,
+	pageItemMetadataRequestSchema,
 	pageItemUploadCompleteRequestSchema,
 	pageItemUploadRequestSchema,
 } from "@grabbin/api";
@@ -32,6 +38,9 @@ const pageItemErrorDetails = {
 	INVALID_MEDIA_UPLOAD: "Invalid item media.",
 	ITEM_MEDIA_NOT_FOUND: "Uploaded item media was not found.",
 	CONCURRENT_ITEM_UPDATE: "The item changed before this update was saved.",
+	INVALID_LINK_METADATA: "Invalid link metadata request.",
+	ITEM_NOT_LINK: "The item is not a link.",
+	STALE_LINK_METADATA: "The link URL changed before metadata completed.",
 } as const;
 
 function pageItemErrorResponse(
@@ -43,7 +52,9 @@ function pageItemErrorResponse(
 			? 404
 			: error.code === "CONCURRENT_ITEM_UPDATE"
 				? 409
-				: 422;
+				: error.code === "STALE_LINK_METADATA"
+					? 409
+					: 422;
 	return jsonApiError(c, {
 		status,
 		code: error.code,
@@ -60,6 +71,16 @@ type PersistPageItemBatch = (input: {
 	cleanupMedia?: (objectKeys: readonly string[]) => Promise<void>;
 }) => Promise<PageItemBatchResponse>;
 
+type EnrichPageItemMetadata = (input: {
+	db: DatabaseClient;
+	handle: string;
+	userId: string;
+	itemId: string;
+	url: PageItemMetadataRequest["url"];
+	publicBaseUrl?: string;
+	fetch: typeof fetch;
+}) => Promise<PageItemResponse>;
+
 async function readJson(c: Context<AppEnv>) {
 	return c.req.json().catch(() => null);
 }
@@ -67,13 +88,55 @@ async function readJson(c: Context<AppEnv>) {
 export type PageItemsControllerOptions = {
 	sessionMiddleware: MiddlewareHandler<AppEnv>;
 	persist: PersistPageItemBatch;
+	enrichMetadata: EnrichPageItemMetadata;
 };
 
 export function createPageItemsController({
 	sessionMiddleware,
 	persist,
+	enrichMetadata,
 }: PageItemsControllerOptions) {
 	return new Hono<AppEnv>()
+		.post("/:handle/metadata", sessionMiddleware, async (c) => {
+			const session = c.var.session;
+			if (!session) {
+				return jsonApiError(c, {
+					status: 401,
+					detail: "Authentication required.",
+				});
+			}
+
+			const parsed = v.safeParse(
+				pageItemMetadataRequestSchema,
+				await readJson(c),
+			);
+			if (!parsed.success) {
+				return jsonApiError(c, {
+					status: 422,
+					code: "INVALID_LINK_METADATA",
+					detail: pageItemErrorDetails.INVALID_LINK_METADATA,
+				});
+			}
+
+			try {
+				return c.json({
+					item: await enrichMetadata({
+						db: c.var.db,
+						handle: c.req.param("handle"),
+						userId: session.user.id,
+						itemId: parsed.output.itemId,
+						url: parsed.output.url,
+						publicBaseUrl: c.env?.R2_PUBLIC_URL,
+						fetch: (input, init) => fetch(input, init),
+					}),
+				});
+			} catch (error) {
+				if (error instanceof PageItemServiceError) {
+					return pageItemErrorResponse(c, error);
+				}
+				throw error;
+			}
+		})
 		.post("/:handle/items/upload", sessionMiddleware, async (c) => {
 			const session = c.var.session;
 			if (!session) {

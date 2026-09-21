@@ -16,10 +16,15 @@ const sessionMiddleware: MiddlewareHandler<AppEnv> = async (c, next) => {
 
 function createTestApp(
 	persist: Parameters<typeof createPageItemsController>[0]["persist"],
+	enrichMetadata: Parameters<
+		typeof createPageItemsController
+	>[0]["enrichMetadata"] = async () => {
+		throw new Error("metadata service should not run");
+	},
 ) {
 	return new Hono<AppEnv>().route(
 		"/pages",
-		createPageItemsController({ sessionMiddleware, persist }),
+		createPageItemsController({ sessionMiddleware, persist, enrichMetadata }),
 	);
 }
 
@@ -148,5 +153,71 @@ describe("page items controller", () => {
 			title: "Conflict",
 			detail: "The item changed before this update was saved.",
 		});
+	});
+
+	it("PAGE-ITEM-API-006 forwards an authenticated metadata refresh", async () => {
+		let captured:
+			| { handle: string; userId: string; itemId: string; url: string }
+			| undefined;
+		const item = {
+			id: "item-1",
+			type: "link" as const,
+			data: { url: "https://example.com" },
+			style: {},
+			layouts: {
+				wide: { x: 0, y: 0, w: 1, h: 2 },
+				compact: { x: 0, y: 0, w: 1, h: 2 },
+			},
+			createdAt: "2026-09-21T00:00:00.000Z",
+			updatedAt: "2026-09-21T00:00:00.000Z",
+		};
+		const app = createTestApp(
+			async () => ({ items: [] }),
+			async (input) => {
+				captured = {
+					handle: input.handle,
+					userId: input.userId,
+					itemId: input.itemId,
+					url: input.url,
+				};
+				return item;
+			},
+		);
+
+		const response = await app.request("/pages/jane/metadata", {
+			method: "POST",
+			headers: { "Content-Type": "application/json" },
+			body: JSON.stringify({ itemId: "item-1", url: "https://example.com" }),
+		});
+
+		assert.equal(response.status, 200);
+		assert.deepEqual(captured, {
+			handle: "jane",
+			userId: "user-1",
+			itemId: "item-1",
+			url: "https://example.com",
+		});
+		const body = (await response.json()) as { item: unknown };
+		assert.deepEqual(body.item, item);
+	});
+
+	it("PAGE-ITEM-API-007 rejects an invalid metadata refresh body", async () => {
+		let enrichCalls = 0;
+		const app = createTestApp(
+			async () => ({ items: [] }),
+			async () => {
+				enrichCalls += 1;
+				throw new Error("should not run");
+			},
+		);
+
+		const response = await app.request("/pages/jane/metadata", {
+			method: "POST",
+			headers: { "Content-Type": "application/json" },
+			body: JSON.stringify({ itemId: "item-1", url: "http://example.com" }),
+		});
+
+		assert.equal(response.status, 422);
+		assert.equal(enrichCalls, 0);
 	});
 });

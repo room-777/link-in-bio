@@ -30,7 +30,7 @@ function isRecord(value: unknown): value is Record<string, unknown> {
 	return typeof value === "object" && value !== null && !Array.isArray(value);
 }
 
-function mapPageItemResponse(
+export function mapPageItemResponse(
 	item: typeof pageItems.$inferSelect,
 	publicBaseUrl?: string,
 ): PageItemResponse {

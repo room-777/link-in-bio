@@ -10,7 +10,10 @@ export type PageItemServiceErrorCode =
 	| "INVALID_MEDIA_KEY"
 	| "INVALID_MEDIA_UPLOAD"
 	| "ITEM_MEDIA_NOT_FOUND"
-	| "CONCURRENT_ITEM_UPDATE";
+	| "CONCURRENT_ITEM_UPDATE"
+	| "INVALID_LINK_METADATA"
+	| "ITEM_NOT_LINK"
+	| "STALE_LINK_METADATA";
 
 export class PageItemServiceError extends Error {
 	constructor(public readonly code: PageItemServiceErrorCode) {

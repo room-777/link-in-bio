@@ -250,6 +250,23 @@ export type PageItemBatchResponse = v.InferOutput<
 	typeof pageItemBatchResponseSchema
 >;
 
+export const pageItemMetadataRequestSchema = v.object({
+	itemId: v.pipe(v.string(), v.minLength(1)),
+	url: pageItemLinkUrlSchema,
+});
+
+export type PageItemMetadataRequest = v.InferOutput<
+	typeof pageItemMetadataRequestSchema
+>;
+
+export const pageItemMetadataResponseSchema = v.object({
+	item: pageItemResponseSchema,
+});
+
+export type PageItemMetadataResponse = v.InferOutput<
+	typeof pageItemMetadataResponseSchema
+>;
+
 export const pageItemUploadRequestSchema = v.object({
 	contentType: v.pipe(
 		v.string(),
