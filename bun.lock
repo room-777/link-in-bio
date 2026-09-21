@@ -21,9 +21,9 @@
       "dependencies": {
         "@grabbin/api": "workspace:*",
         "@grabbin/auth": "workspace:*",
+        "@grabbin/bento-layout": "workspace:*",
         "@grabbin/db": "workspace:*",
         "@grabbin/env": "workspace:*",
-        "@grabbin/grid-layout": "workspace:*",
         "@grabbin/page-handle": "workspace:*",
         "@grabbin/page-link": "workspace:*",
         "@sentry/cloudflare": "catalog:sentry",
@@ -52,8 +52,8 @@
         "@creem_io/better-auth": "catalog:auth",
         "@grabbin/api": "workspace:*",
         "@grabbin/auth": "workspace:*",
+        "@grabbin/bento-layout": "workspace:*",
         "@grabbin/env": "workspace:*",
-        "@grabbin/grid-layout": "workspace:*",
         "@grabbin/ui": "workspace:*",
         "@sentry/cloudflare": "catalog:sentry",
         "@sentry/react": "catalog:sentry",
@@ -123,6 +123,17 @@
         "typescript": "catalog:tooling",
       },
     },
+    "packages/bento-layout": {
+      "name": "@grabbin/bento-layout",
+      "version": "0.0.0",
+      "dependencies": {
+        "@grabbin/api": "workspace:*",
+      },
+      "devDependencies": {
+        "@grabbin/config": "workspace:*",
+        "typescript": "catalog:tooling",
+      },
+    },
     "packages/config": {
       "name": "@grabbin/config",
       "version": "0.0.0",
@@ -161,17 +172,6 @@
         "@grabbin/config": "workspace:*",
         "@grabbin/infra": "workspace:*",
         "@types/node": "^22.20.1",
-        "typescript": "catalog:tooling",
-      },
-    },
-    "packages/grid-layout": {
-      "name": "@grabbin/grid-layout",
-      "version": "0.0.0",
-      "dependencies": {
-        "@grabbin/api": "workspace:*",
-      },
-      "devDependencies": {
-        "@grabbin/config": "workspace:*",
         "typescript": "catalog:tooling",
       },
     },
@@ -584,6 +584,8 @@
 
     "@grabbin/auth": ["@grabbin/auth@workspace:packages/auth"],
 
+    "@grabbin/bento-layout": ["@grabbin/bento-layout@workspace:packages/bento-layout"],
+
     "@grabbin/config": ["@grabbin/config@workspace:packages/config"],
 
     "@grabbin/db": ["@grabbin/db@workspace:packages/db"],
@@ -591,8 +593,6 @@
     "@grabbin/email": ["@grabbin/email@workspace:packages/email"],
 
     "@grabbin/env": ["@grabbin/env@workspace:packages/env"],
-
-    "@grabbin/grid-layout": ["@grabbin/grid-layout@workspace:packages/grid-layout"],
 
     "@grabbin/infra": ["@grabbin/infra@workspace:packages/infra"],
 

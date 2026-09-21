@@ -1,5 +1,6 @@
 "use client";
 
+import type { ItemType } from "@grabbin/api";
 import { Button } from "@grabbin/ui/components/button";
 import {
 	Dialog,
@@ -22,7 +23,7 @@ import {
 import { useIsMobile } from "@grabbin/ui/components/use-mobile";
 import { Link2, Plus } from "lucide-react";
 import dynamic from "next/dynamic";
-import { useState } from "react";
+import { useRef, useState } from "react";
 
 const MapWidgetPreview = dynamic(
 	() =>
@@ -32,14 +33,35 @@ const MapWidgetPreview = dynamic(
 	{ ssr: false },
 );
 
-function AddWidgetContent({ isOpen }: { isOpen: boolean }) {
+function AddWidgetContent({
+	isOpen,
+	onItemAdd,
+	onMediaSelect,
+}: {
+	isOpen: boolean;
+	onItemAdd: (itemType: ItemType, url?: string) => void;
+	onMediaSelect: (file: File) => void;
+}) {
+	const fileInputRef = useRef<HTMLInputElement>(null);
 	return (
 		<>
+			<input
+				ref={fileInputRef}
+				type="file"
+				accept="image/*,video/*"
+				className="sr-only"
+				onChange={(event) => {
+					const file = event.currentTarget.files?.[0];
+					if (file) onMediaSelect(file);
+					event.currentTarget.value = "";
+				}}
+			/>
 			<div className="grid grid-cols-2 gap-2">
 				<Button
 					type="button"
 					variant="outline"
 					className="relative col-span-2 aspect-[2/1] h-auto w-full overflow-hidden rounded-2xl border-border/60 p-0"
+					onClick={() => fileInputRef.current?.click()}
 				>
 					<div
 						className="pointer-events-none absolute inset-px overflow-hidden rounded-[calc(var(--radius-2xl)-1px)]"
@@ -84,6 +106,7 @@ function AddWidgetContent({ isOpen }: { isOpen: boolean }) {
 					type="button"
 					variant="outline"
 					className="relative aspect-square h-auto w-full overflow-hidden rounded-2xl border-border/60 p-0"
+					onClick={() => onItemAdd("map")}
 				>
 					<div className="smooth-shadow-ring-sm surface-line absolute inset-x-3 top-[40%] aspect-square overflow-hidden rounded-2xl outline-depth">
 						{isOpen && <MapWidgetPreview />}
@@ -94,6 +117,7 @@ function AddWidgetContent({ isOpen }: { isOpen: boolean }) {
 					type="button"
 					variant="outline"
 					className="relative aspect-square h-auto w-full rounded-2xl border-border/60 p-0"
+					onClick={() => onItemAdd("text")}
 				>
 					<span className="absolute top-3 left-3 z-10 text-base">Text</span>
 					<div
@@ -125,6 +149,7 @@ function AddWidgetContent({ isOpen }: { isOpen: boolean }) {
 					type="button"
 					variant="outline"
 					className="relative col-span-2 aspect-[4/1] h-auto w-full overflow-hidden rounded-2xl border-border/60 p-0"
+					onClick={() => onItemAdd("section")}
 				>
 					<span className="absolute top-3 left-3 z-10 text-base">Section</span>
 					<div
@@ -140,40 +165,58 @@ function AddWidgetContent({ isOpen }: { isOpen: boolean }) {
 					</div>
 				</Button>
 			</div>
-			<Field>
-				<div className="flex items-center gap-2">
-					<div className="smooth-shadow-xs flex aspect-square size-11 items-center justify-center rounded-lg border">
-						<Link2
-							className="-rotate-45 stroke-[2.5px] text-foreground"
-							aria-hidden="true"
-						/>
+			<form
+				onSubmit={(event) => {
+					event.preventDefault();
+					const form = event.currentTarget;
+					const value = new FormData(form).get("widget-link");
+					if (typeof value === "string" && value.trim()) {
+						onItemAdd("link", value);
+						form.reset();
+					}
+				}}
+			>
+				<Field>
+					<div className="flex items-center gap-2">
+						<div className="smooth-shadow-xs flex aspect-square size-11 items-center justify-center rounded-lg border">
+							<Link2
+								className="-rotate-45 stroke-[2.5px] text-foreground"
+								aria-hidden="true"
+							/>
+						</div>
+						<InputGroup className="h-11 max-w-full grow rounded-lg bg-secondary font-medium text-base">
+							<InputGroupInput
+								name="widget-link"
+								aria-label="Link URL"
+								autoComplete="url"
+								placeholder="Add link..."
+								className="text-sm"
+							/>
+							<InputGroupAddon align="inline-end" className="pr-2">
+								<Button
+									type="submit"
+									variant="outline"
+									size="default"
+									className="rounded-md px-3.5 font-semibold text-primary hover:bg-background"
+								>
+									Add
+								</Button>
+							</InputGroupAddon>
+						</InputGroup>
 					</div>
-					<InputGroup className="h-11 max-w-full grow rounded-lg bg-secondary font-medium text-base">
-						<InputGroupInput
-							name="widget-link"
-							aria-label="Link URL"
-							autoComplete="url"
-							placeholder="Add link..."
-							className="text-sm"
-						/>
-						<InputGroupAddon align="inline-end" className="pr-2">
-							<Button
-								type="button"
-								variant="outline"
-								size="default"
-								className="rounded-md px-3.5 font-semibold text-primary hover:bg-background"
-							>
-								Add
-							</Button>
-						</InputGroupAddon>
-					</InputGroup>
-				</div>
-			</Field>
+				</Field>
+			</form>
 		</>
 	);
 }
 
-export default function AddWidgetDialog() {
+export default function AddWidgetDialog({
+	onItemAdd,
+	onMediaSelect,
+}: {
+	onItemAdd: (itemType: ItemType, url?: string) => void;
+	onMediaSelect: (file: File) => void;
+}) {
 	const isMobile = useIsMobile();
 	const [open, setOpen] = useState(false);
 
@@ -195,7 +238,17 @@ export default function AddWidgetDialog() {
 							<DrawerTitle>Add Widget</DrawerTitle>
 						</DrawerHeader>
 						<div className="flex flex-col gap-6 p-5">
-							<AddWidgetContent isOpen={open} />
+							<AddWidgetContent
+								isOpen={open}
+								onMediaSelect={(file) => {
+									onMediaSelect(file);
+									setOpen(false);
+								}}
+								onItemAdd={(itemType, url) => {
+									onItemAdd(itemType, url);
+									setOpen(false);
+								}}
+							/>
 						</div>
 					</DrawerContent>
 				</Drawer>
@@ -211,7 +264,17 @@ export default function AddWidgetDialog() {
 								Add Widget
 							</DialogTitle>
 						</DialogHeader>
-						<AddWidgetContent isOpen={open} />
+						<AddWidgetContent
+							isOpen={open}
+							onMediaSelect={(file) => {
+								onMediaSelect(file);
+								setOpen(false);
+							}}
+							onItemAdd={(itemType, url) => {
+								onItemAdd(itemType, url);
+								setOpen(false);
+							}}
+						/>
 					</DialogContent>
 				</Dialog>
 			)}

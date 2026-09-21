@@ -1,5 +1,5 @@
 import type { PageItemLinkPresentation, PageItemResponse } from "@grabbin/api";
-import type { PresetName } from "@grabbin/grid-layout";
+import type { PresetName } from "@grabbin/bento-layout";
 import { Button } from "@grabbin/ui/components/button";
 import { TriangleIcon } from "lucide-react";
 import { AnimatePresence, motion } from "motion/react";

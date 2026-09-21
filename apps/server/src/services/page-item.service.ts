@@ -5,13 +5,13 @@ import {
 	pageItemBatchResponseSchema,
 	pageItemResponseSchema,
 } from "@grabbin/api";
+import {
+	type BentoBreakpoint,
+	bentoColumnCounts,
+	hasValidBentoLayouts,
+} from "@grabbin/bento-layout";
 import type { DatabaseClient } from "@grabbin/db";
 import { pageItems, pages } from "@grabbin/db/schema/index";
-import {
-	type GridBreakpoint,
-	gridColumnCounts,
-	hasValidGridLayouts,
-} from "@grabbin/grid-layout";
 import { normalizePageHandle } from "@grabbin/page-handle";
 import { resolveLinkMetadata } from "@grabbin/page-link";
 import { and, eq, inArray, sql } from "drizzle-orm";
@@ -110,9 +110,11 @@ function assertValidPageLayouts(
 		layouts: PageItemLayouts;
 	}>,
 ) {
-	for (const breakpoint of Object.keys(gridColumnCounts) as GridBreakpoint[]) {
+	for (const breakpoint of Object.keys(
+		bentoColumnCounts,
+	) as BentoBreakpoint[]) {
 		if (
-			!hasValidGridLayouts(
+			!hasValidBentoLayouts(
 				items.map((item) => ({
 					id: item.id,
 					layout: item.layouts[breakpoint as keyof PageItemLayouts],

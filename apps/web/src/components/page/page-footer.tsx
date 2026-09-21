@@ -23,7 +23,6 @@ import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 import { authClient, getAuthErrorMessage } from "@/lib/auth-client";
 import { getSignInHref } from "@/lib/auth-redirect";
-import AddWidgetDialog from "./add-widget-dialog";
 import ChangeHandleDialog from "./change-handle-dialog";
 import DeleteAccountDialog from "./delete-account-dialog";
 
@@ -167,7 +166,6 @@ function OwnerFooter({
 					Saving...
 				</span>
 			)}
-			<AddWidgetDialog />
 			<ChangeHandleDialog
 				handle={handle}
 				onHandleChange={onHandleChange}

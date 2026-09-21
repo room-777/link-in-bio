@@ -1,15 +1,17 @@
 "use client";
 
 import type { PageItemResponse } from "@grabbin/api";
+import type { PresetName } from "@grabbin/bento-layout";
 import { env } from "@grabbin/env/web";
-import type { PresetName } from "@grabbin/grid-layout";
 import { buttonVariants } from "@grabbin/ui/components/button";
 import { type ReactNode, useEffect, useRef, useState } from "react";
 import MapboxMap from "react-map-gl/mapbox";
 import "mapbox-gl/dist/mapbox-gl.css";
+import { MoveIcon } from "lucide-react";
 import { CircleArrowRightUp } from "reicon-react";
+import type { BentoCommand, BentoItem } from "@/lib/bento/bento-types";
 import { MAPBOX_STYLE_CONFIG, MAPBOX_STYLE_URL } from "@/lib/map-config";
-import { LinkItem } from "./page-grid-link";
+import { LinkItem } from "./bento-link";
 
 const mapboxLib = import("mapbox-gl").then((module) => {
 	if (typeof window !== "undefined") module.default.prewarm();
@@ -102,9 +104,17 @@ function MapViewportGate({
 function TextItem({
 	item,
 	preset,
+	mode,
+	autoFocus,
+	onAutoFocus,
+	onCommand,
 }: {
-	item: Extract<PageItemResponse, { type: "text" }>;
+	item: Extract<BentoItem, { type: "text" }>;
 	preset: PresetName;
+	mode: "view" | "edit";
+	autoFocus: boolean;
+	onAutoFocus?: () => void;
+	onCommand?: (command: BentoCommand) => void;
 }) {
 	const verticalAlignClass = {
 		bottom: "justify-end",
@@ -117,12 +127,35 @@ function TextItem({
 				<div
 					className={`flex min-h-0 min-w-0 flex-1 flex-col ${verticalAlignClass}`}
 				>
-					<div
-						className={`no-scrollbar min-h-0 min-w-0 flex-1 rounded-lg bg-transparent p-1 px-2 text-foreground/90 outline-none ${textSizeClassByPreset[preset]} overflow-y-auto whitespace-pre-wrap`}
-						style={{ textAlign: item.style.textAlign ?? "left" }}
-					>
-						{item.data.text}
-					</div>
+					{mode === "edit" ? (
+						<textarea
+							ref={(element) => {
+								if (element && autoFocus) {
+									element.focus();
+									onAutoFocus?.();
+								}
+							}}
+							value={item.data.text}
+							placeholder="Write something..."
+							aria-label="Text content"
+							className={`no-scrollbar min-h-0 min-w-0 flex-1 resize-none rounded-lg bg-transparent p-1 px-2 text-foreground/90 outline-none ${textSizeClassByPreset[preset]} overflow-y-auto whitespace-pre-wrap placeholder:text-muted-foreground/60`}
+							style={{ textAlign: item.style.textAlign ?? "left" }}
+							onChange={(event) =>
+								onCommand?.({
+									type: "update-data",
+									itemId: item.id,
+									data: { ...item.data, text: event.target.value },
+								})
+							}
+						/>
+					) : (
+						<div
+							className={`no-scrollbar min-h-0 min-w-0 flex-1 rounded-lg bg-transparent p-1 px-2 text-foreground/90 outline-none ${textSizeClassByPreset[preset]} overflow-y-auto whitespace-pre-wrap`}
+							style={{ textAlign: item.style.textAlign ?? "left" }}
+						>
+							{item.data.text}
+						</div>
+					)}
 				</div>
 			</div>
 			{item.data.link ? (
@@ -187,14 +220,23 @@ function MediaItem({
 
 function MapItem({
 	item,
+	mode,
+	onCommand,
 }: {
-	item: Extract<PageItemResponse, { type: "map" }>;
+	item: Extract<BentoItem, { type: "map" }>;
+	mode: "view" | "edit";
+	onCommand?: (command: BentoCommand) => void;
 }) {
 	const mapsUrl = `https://www.google.com/maps/search/?api=1&query=${item.data.latitude},${item.data.longitude}`;
 	const accessToken = env.NEXT_PUBLIC_MAPBOX_ACCESS_TOKEN?.trim();
 	const [mapError, setMapError] = useState(false);
 	const [mapReady, setMapReady] = useState(false);
 	const [mapRevision, setMapRevision] = useState(0);
+	const [isLocationEditing, setIsLocationEditing] = useState(false);
+	const interactive = mode === "edit" && isLocationEditing;
+	useEffect(() => {
+		if (mode !== "edit") setIsLocationEditing(false);
+	}, [mode]);
 	const showMapFallback = !accessToken || mapError;
 	return (
 		<div
@@ -236,7 +278,9 @@ function MapItem({
 						</div>
 					</div>
 				) : (
-					<div className="pointer-events-none absolute inset-0">
+					<div
+						className={`absolute inset-0 ${interactive ? "" : "pointer-events-none"}`}
+					>
 						<MapViewportGate
 							placeholder={
 								<div
@@ -258,7 +302,7 @@ function MapItem({
 										zoom: item.data.zoom ?? 12,
 									}}
 									attributionControl={false}
-									interactive={false}
+									interactive={interactive}
 									projection="mercator"
 									pitch={0}
 									maxPitch={0}
@@ -268,6 +312,19 @@ function MapItem({
 									minZoom={0}
 									maxZoom={22}
 									style={{ height: "100%", width: "100%" }}
+									onMoveEnd={(event) => {
+										if (!interactive || !onCommand) return;
+										onCommand({
+											type: "update-data",
+											itemId: item.id,
+											data: {
+												...item.data,
+												latitude: event.viewState.latitude,
+												longitude: event.viewState.longitude,
+												zoom: event.viewState.zoom,
+											},
+										});
+									}}
 									onLoad={(event) => {
 										removeMapboxControls(event.target);
 										setMapReady(true);
@@ -288,6 +345,20 @@ function MapItem({
 					</div>
 				)}
 			</div>
+			{mode === "edit" && !showMapFallback ? (
+				<button
+					type="button"
+					data-bento-item-drag-cancel="true"
+					aria-label={
+						isLocationEditing ? "Stop editing location" : "Edit location"
+					}
+					aria-pressed={isLocationEditing}
+					className={`absolute top-3 right-3 z-20 inline-flex size-8 items-center justify-center rounded-lg bg-black/70 text-white shadow-lg transition-colors hover:bg-black ${isLocationEditing ? "bg-brand hover:bg-brand" : ""}`}
+					onClick={() => setIsLocationEditing((current) => !current)}
+				>
+					<MoveIcon className="size-4" aria-hidden="true" />
+				</button>
+			) : null}
 			<div className="pointer-events-none relative size-full" />
 			<div className="pointer-events-none absolute inset-x-0 bottom-0 flex min-w-0 items-center justify-between gap-3 p-4 text-white">
 				<MediaCaption value={item.data.caption} />
@@ -298,14 +369,44 @@ function MapItem({
 
 function SectionItem({
 	item,
+	mode,
+	autoFocus,
+	onAutoFocus,
+	onCommand,
 }: {
-	item: Extract<PageItemResponse, { type: "section" }>;
+	item: Extract<BentoItem, { type: "section" }>;
+	mode: "view" | "edit";
+	autoFocus: boolean;
+	onAutoFocus?: () => void;
+	onCommand?: (command: BentoCommand) => void;
 }) {
 	return (
 		<div className="flex size-full items-center overflow-hidden p-3">
-			<p className="line-clamp-1 w-full min-w-0 truncate px-2 font-semibold text-xl leading-11">
-				{item.data.title}
-			</p>
+			{mode === "edit" ? (
+				<input
+					ref={(element) => {
+						if (element && autoFocus) {
+							element.focus();
+							onAutoFocus?.();
+						}
+					}}
+					value={item.data.title}
+					placeholder="Section title"
+					aria-label="Section title"
+					className="w-full min-w-0 truncate bg-transparent px-2 font-semibold text-xl leading-11 outline-none placeholder:text-muted-foreground/60"
+					onChange={(event) =>
+						onCommand?.({
+							type: "update-data",
+							itemId: item.id,
+							data: { ...item.data, title: event.target.value },
+						})
+					}
+				/>
+			) : (
+				<p className="line-clamp-1 w-full min-w-0 truncate px-2 font-semibold text-xl leading-11">
+					{item.data.title}
+				</p>
+			)}
 		</div>
 	);
 }
@@ -318,16 +419,31 @@ export function RuntimeFallback({ item }: { item: PageItemResponse }) {
 	);
 }
 
-export function renderItem(item: PageItemResponse, preset: PresetName) {
+export function renderItem(
+	item: BentoItem,
+	preset: PresetName,
+	options: {
+		mode: "view" | "edit";
+		autoFocus: boolean;
+		onAutoFocus?: () => void;
+		onCommand?: (command: BentoCommand) => void;
+	},
+) {
 	switch (item.type) {
 		case "text":
-			return <TextItem item={item} preset={preset} />;
+			return <TextItem item={item} preset={preset} {...options} />;
 		case "media":
 			return <MediaItem item={item} preset={preset} />;
 		case "map":
-			return <MapItem item={item} />;
+			return (
+				<MapItem
+					item={item}
+					mode={options.mode}
+					onCommand={options.onCommand}
+				/>
+			);
 		case "section":
-			return <SectionItem item={item} />;
+			return <SectionItem item={item} {...options} />;
 		case "link":
 			return <LinkItem item={item} preset={preset} />;
 	}

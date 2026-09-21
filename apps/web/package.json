@@ -17,7 +17,7 @@
 		"@grabbin/api": "workspace:*",
 		"@grabbin/auth": "workspace:*",
 		"@grabbin/env": "workspace:*",
-		"@grabbin/grid-layout": "workspace:*",
+		"@grabbin/bento-layout": "workspace:*",
 		"@grabbin/ui": "workspace:*",
 		"@sentry/cloudflare": "catalog:sentry",
 		"@sentry/react": "catalog:sentry",

@@ -1,5 +1,5 @@
 @import "@grabbin/ui/globals.css";
 @import "react-grid-layout/css/styles.css";
-@import "./styles/grid-motion.css";
-@import "./styles/grid-layout.css";
+@import "./styles/bento-motion.css";
+@import "./styles/bento-layout.css";
 @import "./styles/map-widget.css";

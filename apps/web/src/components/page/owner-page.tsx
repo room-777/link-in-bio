@@ -4,6 +4,7 @@ import type { PageByHandleResponse } from "@grabbin/api";
 import { useEffect, useState } from "react";
 
 import FloatPreview from "@/components/layout/float-preview";
+import BentoEditor from "./bento-editor";
 import PageFooter from "./page-footer";
 import PageOnboardingForm from "./page-onboarding-form";
 import PageProfileForm from "./page-profile-form";
@@ -26,14 +27,14 @@ export default function OwnerPage({
 		setCurrentPage((page) => ({ ...page, handle }));
 		window.history.replaceState(null, "", `/${encodeURIComponent(handle)}`);
 	};
-	const isOnboarding = !currentPage.onboarding;
+	const hasCompletedOnboarding = currentPage.onboarding;
 
 	return (
 		<div
 			className={
-				isOnboarding
-					? "grid min-h-svh w-full grid-cols-1 lg:grid-cols-2"
-					: undefined
+				hasCompletedOnboarding
+					? "grid min-h-svh w-full grid-cols-1 min-[90rem]:grid-cols-2"
+					: "grid min-h-svh w-full grid-cols-1 lg:grid-cols-2"
 			}
 		>
 			<main className="mx-auto flex min-h-svh w-full max-w-md flex-col justify-between gap-8 p-6 px-6 pt-12 min-[90rem]:mx-0 min-[90rem]:min-h-dvh min-[90rem]:max-w-2xl min-[90rem]:px-16 min-[90rem]:pt-16">
@@ -51,7 +52,7 @@ export default function OwnerPage({
 						}
 					/>
 				)}
-				{!isOnboarding && (
+				{hasCompletedOnboarding && (
 					<PageFooter
 						handle={currentPage.handle}
 						isOwner
@@ -60,7 +61,11 @@ export default function OwnerPage({
 					/>
 				)}
 			</main>
-			{isOnboarding && <FloatPreview visible={isFloatVisible} wideOnly />}
+			{hasCompletedOnboarding ? (
+				<BentoEditor items={pageResponse.items} handle={currentPage.handle} />
+			) : (
+				<FloatPreview visible={isFloatVisible} wideOnly />
+			)}
 		</div>
 	);
 }

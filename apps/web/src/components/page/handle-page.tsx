@@ -3,11 +3,11 @@
 import type { PageByHandleResponse } from "@grabbin/api";
 import { motion, useReducedMotion } from "motion/react";
 import dynamic from "next/dynamic";
-
+import { toBentoItem } from "@/lib/bento/bento-batch";
 import { getPageImageUrl } from "@/lib/page-image-url";
 import PageFooter from "./page-footer";
 
-const PageGrid = dynamic(() => import("./page-grid"), { ssr: false });
+const BentoSection = dynamic(() => import("./bento-section"), { ssr: false });
 
 export default function HandlePage({
 	pageResponse,
@@ -62,9 +62,9 @@ export default function HandlePage({
 						<PageFooter handle={page.handle} isOwner={page.isOwner} />
 					</article>
 				</div>
-				<section className="grid-content-scroll-shell no-scrollbar min-h-[calc(100dvh-3rem)] w-full overflow-visible p-0 pt-0 sm:max-w-md min-[90rem]:h-full min-[90rem]:min-h-[calc(100dvh-4rem)] min-[90rem]:w-4xl min-[90rem]:max-w-none min-[90rem]:shrink-0 min-[90rem]:pt-16 min-[90rem]:pb-24">
+				<section className="bento-content-scroll-shell no-scrollbar min-h-[calc(100dvh-3rem)] w-full overflow-visible p-0 pt-0 sm:max-w-md min-[90rem]:h-full min-[90rem]:min-h-[calc(100dvh-4rem)] min-[90rem]:w-4xl min-[90rem]:max-w-none min-[90rem]:shrink-0 min-[90rem]:pt-16 min-[90rem]:pb-24">
 					<div className="flex flex-col gap-4">
-						<PageGrid items={pageResponse.items} />
+						<BentoSection items={pageResponse.items.map(toBentoItem)} />
 					</div>
 				</section>
 			</div>

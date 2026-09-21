@@ -20,7 +20,7 @@
 		"@grabbin/auth": "workspace:*",
 		"@grabbin/db": "workspace:*",
 		"@grabbin/env": "workspace:*",
-		"@grabbin/grid-layout": "workspace:*",
+		"@grabbin/bento-layout": "workspace:*",
 		"@grabbin/page-handle": "workspace:*",
 		"@grabbin/page-link": "workspace:*",
 		"aws4fetch": "^1.0.20",

@@ -1,0 +1,225 @@
+.bento-layout {
+	--bento-spring-ease: cubic-bezier(0.34, 1.25, 0.64, 1);
+	--bento-item-pop-duration: 440ms;
+	--bento-item-pop-ease: cubic-bezier(0.34, 1.75, 0.64, 1);
+	--bento-item-pop-distance: 8px;
+	--bento-item-pop-scale: 0.88;
+	--bento-item-pop-blur: 2px;
+	--bento-item-exit-duration: 180ms;
+	--bento-item-exit-ease: cubic-bezier(0.23, 1, 0.32, 1);
+	--bento-position-duration: 520ms;
+	--bento-position-ease: var(--bento-spring-ease);
+	--bento-drag-follow-duration: 100ms;
+	--bento-drag-follow-ease: cubic-bezier(0.22, 1, 0.36, 1);
+	--bento-resize-duration: 320ms;
+	--bento-resize-ease: var(--bento-spring-ease);
+	--bento-drag-lift-duration: 480ms;
+	--bento-drag-lift-ease: cubic-bezier(0.23, 1, 0.32, 1);
+	--bento-drag-rotate-x: 0deg;
+	--bento-drag-rotate-z: 0deg;
+	--bento-placeholder-shadow-blur: 12px;
+	--bento-placeholder-fill-strength: 1%;
+	--bento-placeholder-shadow-strength: 1.5%;
+	--bento-placeholder-depth-strength: 0.5%;
+}
+
+/* Layout movement: the grid owns position, while the card owns its visual lift. */
+.bento-layout .react-grid-item {
+	transition:
+		transform var(--bento-position-duration) var(--bento-position-ease),
+		width var(--bento-resize-duration) var(--bento-resize-ease),
+		height var(--bento-resize-duration) var(--bento-resize-ease);
+}
+
+.bento-layout [data-bento-item-shell] {
+	scroll-margin-block: 128px;
+}
+
+.bento-layout .react-grid-item.react-draggable-dragging {
+	cursor: grabbing;
+	opacity: 1 !important;
+	transition:
+		transform var(--bento-drag-follow-duration) var(--bento-drag-follow-ease),
+		translate var(--bento-drag-lift-duration) var(--bento-drag-lift-ease),
+		scale var(--bento-drag-lift-duration) var(--bento-drag-lift-ease),
+		rotate var(--bento-drag-lift-duration) var(--bento-drag-lift-ease) !important;
+	will-change: transform;
+}
+
+.bento-layout .react-grid-item.react-draggable-dragging .bento-item-pop-in {
+	filter: none !important;
+	opacity: 1 !important;
+}
+
+/* Grab affordance is limited to the draggable shell, not interactive content. */
+.bento-layout.is-edit-mode [data-bento-item-shell] {
+	cursor: grab;
+}
+
+.bento-layout.is-edit-mode
+	[data-bento-item-shell]
+	:is(
+		a,
+		button,
+		input,
+		textarea,
+		select,
+		video,
+		[contenteditable="true"],
+		[data-bento-item-drag-cancel="true"]
+	) {
+	cursor: auto;
+}
+
+.bento-layout.is-edit-mode
+	.react-grid-item.react-draggable-dragging
+	[data-bento-item-shell] {
+	cursor: grabbing;
+}
+
+/* Interactive editors must not become hover targets while their card is dragged. */
+.bento-layout.is-edit-mode
+	.react-grid-item.react-draggable-dragging
+	[data-bento-item-shell]
+	:is(input, textarea) {
+	pointer-events: none;
+}
+
+.bento-layout.is-edit-mode .react-grid-item.react-draggable-dragging,
+.bento-layout.is-edit-mode .react-grid-item.react-draggable-dragging *,
+.bento-layout.is-edit-mode .react-grid-item.react-draggable-dragging *::before,
+.bento-layout.is-edit-mode .react-grid-item.react-draggable-dragging *::after {
+	cursor: grabbing !important;
+}
+
+.bento-item-pop-in {
+	filter: blur(0);
+	opacity: 1;
+	transform: translateY(0) scale(1);
+	transition:
+		opacity var(--bento-item-pop-duration) var(--bento-item-pop-ease),
+		transform var(--bento-item-pop-duration) var(--bento-item-pop-ease),
+		filter var(--bento-item-pop-duration) var(--bento-item-pop-ease);
+}
+
+.bento-item-pop-in.is-entering,
+.bento-item-pop-in.is-exiting {
+	filter: blur(var(--bento-item-pop-blur));
+	opacity: 0;
+	transform: translateY(var(--bento-item-pop-distance))
+		scale(var(--bento-item-pop-scale));
+}
+
+.bento-item-pop-in.is-exiting {
+	transition:
+		opacity var(--bento-item-exit-duration) var(--bento-item-exit-ease),
+		transform var(--bento-item-exit-duration) var(--bento-item-exit-ease),
+		filter var(--bento-item-exit-duration) var(--bento-item-exit-ease);
+	will-change: transform, opacity, filter;
+}
+
+/* Drag feedback. RGL's parent keeps the item's grid position; this card appears lifted. */
+.bento-item-card {
+	transform: perspective(800px) translateY(0) scale(1)
+		rotateX(var(--bento-drag-rotate-x)) rotateZ(var(--bento-drag-rotate-z));
+	transform-origin: center;
+	transition:
+		transform var(--bento-drag-lift-duration) var(--bento-drag-lift-ease),
+		scale var(--bento-drag-lift-duration) var(--bento-drag-lift-ease),
+		box-shadow var(--bento-drag-lift-duration) var(--bento-drag-lift-ease);
+	backface-visibility: hidden;
+}
+
+/* Map editing and media cropping are deliberate toggles, so their lift settles gently. */
+.bento-item-card.map-item-interaction {
+	transition:
+		transform var(--bento-drag-lift-duration) var(--bento-drag-lift-ease),
+		scale var(--bento-drag-lift-duration) var(--bento-drag-lift-ease),
+		box-shadow var(--bento-drag-lift-duration) var(--bento-drag-lift-ease);
+}
+
+.react-grid-item.react-draggable-dragging .bento-item-card {
+	@apply smooth-shadow-ring-sm transition-all;
+	transition-duration: var(--bento-drag-lift-duration);
+	transition-timing-function: var(--bento-drag-lift-ease);
+	transform: perspective(800px) translateY(-8px) scale(1.035)
+		rotateX(calc(1deg + var(--bento-drag-rotate-x)))
+		rotateZ(calc(0.35deg + var(--bento-drag-rotate-z)));
+	will-change: transform;
+}
+
+.bento-item-card.map-item-location-editing,
+.bento-item-card.media-crop-interaction {
+	@apply smooth-shadow-ring-sm;
+	transition-duration: var(--bento-drag-lift-duration);
+	transition-timing-function: var(--bento-drag-lift-ease);
+	transform: perspective(800px) translateY(-8px) scale(1)
+		rotateX(var(--bento-drag-rotate-x)) rotateZ(var(--bento-drag-rotate-z));
+	will-change: transform;
+}
+
+.react-grid-item.react-draggable-dragging
+	:is(
+		[data-bento-item-delete-control="true"],
+		[data-bento-item-controls="true"]
+	) {
+	opacity: 0 !important;
+	pointer-events: none !important;
+	transition: none !important;
+}
+
+/* Drop target: an inset shadow reads as a slot waiting for the dragged block. */
+.bento-layout .react-grid-placeholder {
+	background: color-mix(
+		in oklab,
+		var(--primary) var(--bento-placeholder-fill-strength),
+		var(--background)
+	) !important;
+	border: 0 !important;
+	border-radius: var(--radius-2xl) !important;
+	box-shadow:
+		inset 0 0 var(--bento-placeholder-shadow-blur) 2px
+		color-mix(
+			in oklab,
+			var(--primary) var(--bento-placeholder-shadow-strength),
+			transparent
+		),
+		inset 0 0 4px
+		color-mix(
+			in oklab,
+			var(--primary) var(--bento-placeholder-shadow-strength),
+			transparent
+		),
+		inset 0 -8px 16px
+		color-mix(
+			in oklab,
+			var(--primary) var(--bento-placeholder-depth-strength),
+			transparent
+		);
+	opacity: 1 !important;
+	transition: transform var(--bento-position-duration)
+		var(--bento-position-ease) !important;
+	will-change: transform;
+}
+
+@media (prefers-reduced-motion: reduce) {
+	.bento-item-pop-in,
+	.bento-item-pop-in.is-exiting,
+	.bento-item-card,
+	.bento-layout .react-grid-item,
+	.bento-layout .react-grid-placeholder {
+		transition: none !important;
+	}
+
+	.bento-item-card {
+		filter: none !important;
+		transform: none !important;
+		scale: 1 !important;
+	}
+
+	.bento-item-pop-in.is-entering {
+		filter: none !important;
+		opacity: 1 !important;
+		transform: none !important;
+	}
+}
