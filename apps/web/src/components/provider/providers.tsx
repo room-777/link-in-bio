@@ -1,6 +1,5 @@
 "use client";
 
-import { Toaster } from "@grabbin/ui/components/sonner";
 import { Toasts } from "@grabbin/ui/components/toast";
 import { QueryClientProvider } from "@tanstack/react-query";
 import { getQueryClient } from "../../lib/query-client";
@@ -18,7 +17,6 @@ export default function Providers({ children }: { children: React.ReactNode }) {
 				disableTransitionOnChange
 			>
 				{children}
-				<Toaster position="bottom-center" />
 				<Toasts position="top-center" />
 			</ThemeProvider>
 			{/*{process.env.NODE_ENV === "development" && <ReactQueryDevtools />}*/}

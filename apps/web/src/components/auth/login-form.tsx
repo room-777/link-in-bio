@@ -1,8 +1,8 @@
 "use client";
 
 import { Button } from "@grabbin/ui/components/button";
+import { toast } from "@grabbin/ui/components/toast";
 import { Activity, useState } from "react";
-import { toast } from "sonner";
 
 import { authClient, getAuthErrorMessage } from "@/lib/auth-client";
 import { getSignInHref } from "@/lib/auth-redirect";
@@ -24,7 +24,7 @@ export default function LoginForm({ returnTo }: { returnTo?: string | null }) {
 		});
 
 		if (error) {
-			toast.error(getAuthErrorMessage(error));
+			toast({ message: getAuthErrorMessage(error), state: "error" });
 		}
 	};
 

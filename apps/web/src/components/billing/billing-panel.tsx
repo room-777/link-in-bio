@@ -10,9 +10,9 @@ import {
 	CardHeader,
 	CardTitle,
 } from "@grabbin/ui/components/card";
+import { toast } from "@grabbin/ui/components/toast";
 import { useRouter } from "next/navigation";
 import { useCallback, useEffect, useState } from "react";
-import { toast } from "sonner";
 import { authClient, getAuthErrorMessage } from "@/lib/auth-client";
 import { getSignInHref } from "@/lib/auth-redirect";
 
@@ -59,7 +59,7 @@ export default function BillingPanel() {
 		setIsLoading(false);
 
 		if (error) {
-			toast.error(getAuthErrorMessage(error));
+			toast({ message: getAuthErrorMessage(error), state: "error" });
 			return;
 		}
 		setAccess(data);
@@ -86,7 +86,10 @@ export default function BillingPanel() {
 
 	const startCheckout = async () => {
 		if (!productId) {
-			toast.error("NEXT_PUBLIC_CREEM_PRODUCT_ID를 설정해 주세요.");
+			toast({
+				message: "NEXT_PUBLIC_CREEM_PRODUCT_ID를 설정해 주세요.",
+				state: "error",
+			});
 			return;
 		}
 
@@ -95,7 +98,7 @@ export default function BillingPanel() {
 			successUrl: `${window.location.origin}/billing?checkout=success`,
 		});
 		if (error) {
-			toast.error(getAuthErrorMessage(error));
+			toast({ message: getAuthErrorMessage(error), state: "error" });
 			return;
 		}
 		if (data?.url) window.location.assign(data.url);
@@ -104,7 +107,7 @@ export default function BillingPanel() {
 	const openPortal = async () => {
 		const { data, error } = await authClient.creem.createPortal();
 		if (error) {
-			toast.error(getAuthErrorMessage(error));
+			toast({ message: getAuthErrorMessage(error), state: "error" });
 			return;
 		}
 		if (data?.url) window.location.assign(data.url);
@@ -117,10 +120,10 @@ export default function BillingPanel() {
 			id: subscription.id,
 		});
 		if (error) {
-			toast.error(getAuthErrorMessage(error));
+			toast({ message: getAuthErrorMessage(error), state: "error" });
 			return;
 		}
-		toast.success("구독 취소가 예약되었습니다.");
+		toast({ message: "구독 취소가 예약되었습니다.", state: "success" });
 		await loadAccess();
 	};
 
