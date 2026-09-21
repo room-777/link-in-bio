@@ -6,6 +6,7 @@ import {
 	AvatarImage,
 } from "@grabbin/ui/components/avatar";
 import { Button, buttonVariants } from "@grabbin/ui/components/button";
+import Loading from "@grabbin/ui/components/loading";
 import {
 	Popover,
 	PopoverContent,
@@ -29,9 +30,11 @@ import DeleteAccountDialog from "./delete-account-dialog";
 function OwnerFooter({
 	handle,
 	onHandleChange,
+	isSaving,
 }: {
 	handle?: string;
 	onHandleChange?: (handle: string) => void;
+	isSaving?: boolean;
 }) {
 	const router = useRouter();
 	const reduceMotion = useReducedMotion();
@@ -154,6 +157,16 @@ function OwnerFooter({
 					</Button>
 				</PopoverContent>
 			</Popover>
+			{isSaving && (
+				<span
+					className="ml-2 flex items-center gap-2 text-muted-foreground/80 text-xs"
+					role="status"
+					aria-live="polite"
+				>
+					<Loading aria-hidden="true" className="size-4" />
+					Saving...
+				</span>
+			)}
 			<AddWidgetDialog />
 			<ChangeHandleDialog
 				handle={handle}
@@ -225,15 +238,21 @@ export default function PageFooter({
 	handle,
 	isOwner,
 	onHandleChange,
+	isSaving,
 }: {
 	handle?: string;
 	isOwner: boolean;
 	onHandleChange?: (handle: string) => void;
+	isSaving?: boolean;
 }) {
 	return (
 		<footer className="-mx-4 mb-4 flex min-h-10 items-center justify-start pt-8 min-[90rem]:-mx-2">
 			{isOwner ? (
-				<OwnerFooter handle={handle} onHandleChange={onHandleChange} />
+				<OwnerFooter
+					handle={handle}
+					onHandleChange={onHandleChange}
+					isSaving={isSaving}
+				/>
 			) : (
 				<ViewerFooter handle={handle} />
 			)}

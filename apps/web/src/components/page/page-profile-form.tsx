@@ -27,10 +27,12 @@ export default function PageProfileForm({
 	page,
 	mode,
 	onOnboardingComplete,
+	onSavingChange,
 }: {
 	page: PageData;
 	mode: "onboarding" | "edit";
 	onOnboardingComplete?: (stage: "exiting" | "complete") => void;
+	onSavingChange?: (isSaving: boolean) => void;
 }) {
 	const router = useRouter();
 	const reduceMotion = useReducedMotion();
@@ -81,6 +83,16 @@ export default function PageProfileForm({
 			for (const key of keys) void cleanupUploadedImage(key);
 		},
 	});
+	const isSaving = autoSaveStatus === "saving";
+
+	useEffect(() => {
+		onSavingChange?.(isSaving);
+	}, [isSaving, onSavingChange]);
+
+	useEffect(() => {
+		if (!autoSaveError) return;
+		toast({ message: autoSaveError, state: "error" });
+	}, [autoSaveError]);
 
 	useEffect(() => {
 		return () => {
@@ -118,16 +130,6 @@ export default function PageProfileForm({
 		: { type: "spring" as const, duration: 0.55, bounce: 0.15 };
 	const isFinished = mode === "onboarding" && isSaved && !isExiting;
 	const shouldShowConfetti = mode === "onboarding" && isSaved;
-	const error = completionError || autoSaveError || "";
-	const saveStatusLabel =
-		autoSaveStatus === "saving"
-			? "Saving…"
-			: autoSaveStatus === "dirty"
-				? "Unsaved changes"
-				: autoSaveStatus === "error"
-					? "Could not save"
-					: "Saved";
-
 	const handleImageSelect = async (file: File) => {
 		const parsed = v.safeParse(pageImageUploadSchema, {
 			contentType: file.type,
@@ -273,7 +275,7 @@ export default function PageProfileForm({
 					<div className="mb-4 flex flex-col gap-8">
 						<PageProfileFields
 							imageUrl={imageUrl}
-							isImageUploading={isImageUploading || autoSaveStatus === "saving"}
+							isImageUploading={isImageUploading || isSaving}
 							onSelectImage={handleImageSelect}
 							onRemoveImage={() => {
 								uploadVersionRef.current += 1;
@@ -293,19 +295,9 @@ export default function PageProfileForm({
 								updateField("bio", value);
 								setCompletionError("");
 							}}
-							error={error}
+							error={completionError}
 						/>
 					</div>
-					{mode === "edit" && (
-						<p
-							className="min-h-5 text-muted-foreground text-xs"
-							role="status"
-							aria-live="polite"
-						>
-							{saveStatusLabel}
-						</p>
-					)}
-
 					{mode === "onboarding" && !isFinished && (
 						<Button
 							type="submit"
