@@ -53,10 +53,10 @@ function renderLink({ item, preset }: Parameters<ItemRenderer>[0]) {
 
 const itemRendererRegistry: Record<BentoItem["type"], ItemRenderer> = {
 	text: renderText,
-	media: renderMedia,
-	map: renderMap,
 	section: renderSection,
 	link: renderLink,
+	media: renderMedia,
+	map: renderMap,
 };
 
 export function RuntimeFallback({ item }: { item: PageItemResponse }) {

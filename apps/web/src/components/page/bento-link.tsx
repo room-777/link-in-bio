@@ -103,8 +103,29 @@ function parseGithubContributionGraph(
 ): GithubContributionGraphData | undefined {
 	if (typeof value !== "string") return undefined;
 	try {
-		const parsed = JSON.parse(value) as GithubContributionGraphData;
-		return parsed && Array.isArray(parsed.weeks) ? parsed : undefined;
+		const parsed = JSON.parse(value) as unknown;
+		if (
+			typeof parsed !== "object" ||
+			parsed === null ||
+			!Array.isArray((parsed as { weeks?: unknown }).weeks)
+		) {
+			return undefined;
+		}
+		const weeks = (parsed as { weeks: unknown[] }).weeks
+			.filter(
+				(week): week is { days?: unknown } =>
+					typeof week === "object" && week !== null,
+			)
+			.map((week) => ({
+				days: Array.isArray(week.days) ? week.days : [],
+			}))
+			.filter((week) => week.days.length > 0);
+		return weeks.length > 0
+			? {
+					totalContributions: 0,
+					weeks: weeks as GithubContributionGraphData["weeks"],
+				}
+			: undefined;
 	} catch {
 		return undefined;
 	}
@@ -293,7 +314,7 @@ export function LinkItem({
 }) {
 	const metadata = item.data.metadata;
 	const presentation = metadata?.presentation;
-	const title = metadata?.title?.trim() ?? item.data.url;
+	const title = metadata?.title?.trim() || item.data.url;
 	const linkCardClassName = presentation?.cardBackground
 		? "link-card-themed"
 		: "";

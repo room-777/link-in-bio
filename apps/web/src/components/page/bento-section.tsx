@@ -1,5 +1,6 @@
 "use client";
 
+import type { BentoBreakpoint } from "@grabbin/bento-layout";
 import {
 	bentoContainerPadding,
 	bentoMargin,
@@ -23,7 +24,7 @@ import { BentoItemShell } from "./bento/bento-item-shell";
 type BentoSectionProps = {
 	items: readonly BentoItemData[];
 	mode?: "view" | "edit";
-	breakpoint?: "wide" | "compact";
+	breakpoint?: BentoBreakpoint;
 	autoFocusItemId?: string | null;
 	onAutoFocus?: (itemId: string) => void;
 	onCommand?: (command: BentoCommand) => void;

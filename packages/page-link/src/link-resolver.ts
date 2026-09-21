@@ -22,8 +22,9 @@ function getHostname(url: string) {
 function getProvider(url: string) {
 	const hostname = getHostname(url);
 	return (
-		providerByHostname.find(([needle]) => hostname.includes(needle))?.[1] ??
-		"generic-web"
+		providerByHostname.find(
+			([domain]) => hostname === domain || hostname.endsWith(`.${domain}`),
+		)?.[1] ?? "generic-web"
 	);
 }
 

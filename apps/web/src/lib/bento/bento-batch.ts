@@ -123,8 +123,24 @@ export function mergeAcknowledgedBentoItems(
 	return draft.map((item) => {
 		const sentItem = sentById.get(item.id);
 		const acknowledgedItem = acknowledgedById.get(item.id);
-		return sentItem && acknowledgedItem && sameItem(toBatchItem(item), sentItem)
-			? acknowledgedItem
-			: item;
+		if (
+			!sentItem ||
+			!acknowledgedItem ||
+			!sameItem(toBatchItem(item), sentItem)
+		) {
+			return item;
+		}
+		if (
+			item.type === "media" &&
+			acknowledgedItem.type === "media" &&
+			!acknowledgedItem.data.mediaUrl &&
+			item.data.mediaUrl?.startsWith("blob:")
+		) {
+			return {
+				...acknowledgedItem,
+				data: { ...acknowledgedItem.data, mediaUrl: item.data.mediaUrl },
+			};
+		}
+		return acknowledgedItem;
 	});
 }

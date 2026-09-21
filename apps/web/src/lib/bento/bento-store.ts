@@ -91,7 +91,10 @@ export function useBentoStore({
 			let shouldScheduleFollowUp = false;
 			try {
 				const response = await patchBentoBatch(handle, sentBatch);
-				if (stateVersion !== stateVersionRef.current) return { ok: true };
+				if (stateVersion !== stateVersionRef.current) {
+					shouldScheduleFollowUp = hasBentoBatchChanges(pendingRef.current);
+					return { ok: true };
+				}
 
 				const sentIds = new Set(sentBatch.upserts.map((item) => item.id));
 				const acknowledgedItems = response.items
@@ -123,7 +126,10 @@ export function useBentoStore({
 				setStatus(shouldScheduleFollowUp ? "dirty" : "saved");
 				return { ok: true };
 			} catch (error) {
-				if (stateVersion !== stateVersionRef.current) return { ok: true };
+				if (stateVersion !== stateVersionRef.current) {
+					shouldScheduleFollowUp = hasBentoBatchChanges(pendingRef.current);
+					return { ok: true };
+				}
 				const nextBatch = createBentoBatch(
 					draftRef.current,
 					persistedRef.current,
