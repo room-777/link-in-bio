@@ -33,6 +33,19 @@ function findPublicPageByHandle(db: DatabaseClient, handle: string) {
 	});
 }
 
+export function getOwnedPage(
+	db: DatabaseClient,
+	input: { handle: string; userId: string },
+) {
+	return db.query.pages.findFirst({
+		where: and(
+			eq(pages.handle, normalizePageHandle(input.handle)),
+			eq(pages.userId, input.userId),
+		),
+		columns: { id: true },
+	});
+}
+
 async function insertPage(
 	db: DatabaseClient,
 	input: { id: string; userId: string; handle: string },

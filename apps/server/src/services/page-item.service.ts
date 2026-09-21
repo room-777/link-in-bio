@@ -2,6 +2,7 @@ import {
 	hasPageItemContent,
 	type PageItemBatchRequest,
 	type PageItemResponse,
+	pageItemBatchRequestSchema,
 	pageItemBatchResponseSchema,
 	pageItemResponseSchema,
 } from "@grabbin/api";
@@ -9,10 +10,10 @@ import {
 	type BentoBreakpoint,
 	bentoColumnCounts,
 	hasValidBentoLayouts,
+	inferPresetFromLayout,
 } from "@grabbin/bento-layout";
 import type { DatabaseClient } from "@grabbin/db";
-import { pageItems, pages } from "@grabbin/db/schema/index";
-import { normalizePageHandle } from "@grabbin/page-handle";
+import { pageItems } from "@grabbin/db/schema/index";
 import { resolveLinkMetadata } from "@grabbin/page-link";
 import { and, eq, inArray, sql } from "drizzle-orm";
 import * as v from "valibot";
@@ -21,6 +22,7 @@ import {
 	getPublicPageItemMediaUrl,
 	isOwnedPageMediaKey,
 } from "./media.service";
+import { getOwnedPage } from "./page.service";
 
 type PageItemLayouts = PageItemBatchRequest["upserts"][number]["layouts"];
 
@@ -73,24 +75,19 @@ function assertUniqueBatchIds(batch: PageItemBatchRequest) {
 	}
 }
 
-async function findOwnedPageByHandle(
-	db: DatabaseClient,
-	input: { handle: string; userId: string },
-) {
-	return db.query.pages.findFirst({
-		where: and(
-			eq(pages.handle, normalizePageHandle(input.handle)),
-			eq(pages.userId, input.userId),
-		),
-		columns: { id: true },
-	});
-}
-
 function assertValidItemPayload(
 	item: PageItemBatchRequest["upserts"][number],
 	userId: string,
 	pageId: string,
 ) {
+	for (const [breakpoint, layout] of Object.entries(item.layouts) as Array<
+		[BentoBreakpoint, PageItemLayouts[BentoBreakpoint]]
+	>) {
+		if (!inferPresetFromLayout(item.type, layout, breakpoint)) {
+			throw new PageItemServiceError("INVALID_ITEM_LAYOUT");
+		}
+	}
+
 	if (
 		item.type === "media" &&
 		!isOwnedPageMediaKey({
@@ -149,19 +146,26 @@ export async function persistPageItemBatch({
 	userId,
 	batch,
 	publicBaseUrl,
+	cleanupMedia,
 }: {
 	db: DatabaseClient;
 	handle: string;
 	userId: string;
 	batch: PageItemBatchRequest;
 	publicBaseUrl?: string;
+	cleanupMedia?: (objectKeys: readonly string[]) => Promise<void>;
 }) {
-	const upserts = batch.upserts.filter(hasPageItemContent);
-	const persistableBatch = { ...batch, upserts };
+	const parsedBatch = v.safeParse(pageItemBatchRequestSchema, batch);
+	if (!parsedBatch.success) {
+		throw new PageItemServiceError("INVALID_ITEM_BATCH");
+	}
+
+	const upserts = parsedBatch.output.upserts.filter(hasPageItemContent);
+	const persistableBatch = { ...parsedBatch.output, upserts };
 	assertUniqueBatchIds(persistableBatch);
 
 	const response = await db.transaction(async (tx) => {
-		const page = await findOwnedPageByHandle(tx as unknown as DatabaseClient, {
+		const page = await getOwnedPage(tx as unknown as DatabaseClient, {
 			handle,
 			userId,
 		});
@@ -169,10 +173,19 @@ export async function persistPageItemBatch({
 
 		const existing = await tx.query.pageItems.findMany({
 			where: eq(pageItems.pageId, page.id),
-			columns: { id: true, type: true, layouts: true, updatedAt: true },
+			columns: {
+				id: true,
+				type: true,
+				data: true,
+				layouts: true,
+				updatedAt: true,
+			},
 		});
 		const requestedIds = [
-			...new Set([...upserts.map((item) => item.id), ...batch.deletes]),
+			...new Set([
+				...upserts.map((item) => item.id),
+				...persistableBatch.deletes,
+			]),
 		];
 		if (requestedIds.length) {
 			const claimedItems = await tx.query.pageItems.findMany({
@@ -185,7 +198,7 @@ export async function persistPageItemBatch({
 		}
 
 		const existingById = new Map(existing.map((item) => [item.id, item]));
-		for (const id of batch.deletes) {
+		for (const id of persistableBatch.deletes) {
 			if (!existingById.has(id)) {
 				throw new PageItemServiceError("ITEM_NOT_FOUND");
 			}
@@ -207,19 +220,56 @@ export async function persistPageItemBatch({
 		const finalItems = new Map(
 			existing.map((item) => [item.id, { id: item.id, layouts: item.layouts }]),
 		);
-		for (const id of batch.deletes) finalItems.delete(id);
+		const mediaKeysToDelete = new Set<string>();
+		const collectMediaKey = (item: (typeof existing)[number]) => {
+			const objectKey =
+				item.type === "media" && isRecord(item.data)
+					? item.data.objectKey
+					: undefined;
+			if (
+				typeof objectKey === "string" &&
+				isOwnedPageMediaKey({
+					key: objectKey,
+					userId,
+					pageId: page.id,
+					scope: "items",
+				})
+			) {
+				mediaKeysToDelete.add(objectKey);
+			}
+		};
+
+		for (const id of persistableBatch.deletes) {
+			const current = existingById.get(id);
+			if (current) collectMediaKey(current);
+		}
+		for (const item of upserts) {
+			const current = existingById.get(item.id);
+			if (current?.type === "media" && item.type === "media") {
+				const previousKey = isRecord(current.data)
+					? current.data.objectKey
+					: undefined;
+				if (
+					typeof previousKey === "string" &&
+					previousKey !== item.data.objectKey
+				) {
+					collectMediaKey(current);
+				}
+			}
+		}
+		for (const id of persistableBatch.deletes) finalItems.delete(id);
 		for (const item of upserts) {
 			finalItems.set(item.id, { id: item.id, layouts: item.layouts });
 		}
 		assertValidPageLayouts([...finalItems.values()]);
 
-		if (batch.deletes.length) {
+		if (persistableBatch.deletes.length) {
 			await tx
 				.delete(pageItems)
 				.where(
 					and(
 						eq(pageItems.pageId, page.id),
-						inArray(pageItems.id, batch.deletes),
+						inArray(pageItems.id, persistableBatch.deletes),
 					),
 				);
 		}
@@ -249,7 +299,10 @@ export async function persistPageItemBatch({
 		}
 
 		const changedIds = [
-			...new Set([...batch.deletes, ...upserts.map((item) => item.id)]),
+			...new Set([
+				...persistableBatch.deletes,
+				...upserts.map((item) => item.id),
+			]),
 		];
 		const changed = changedIds.length
 			? await tx.query.pageItems.findMany({
@@ -260,8 +313,12 @@ export async function persistPageItemBatch({
 					orderBy: (item, { asc }) => [asc(item.createdAt), asc(item.id)],
 				})
 			: [];
-		return { items: changed };
+		return { items: changed, mediaKeysToDelete: [...mediaKeysToDelete] };
 	});
+
+	if (cleanupMedia && response.mediaKeysToDelete.length) {
+		await cleanupMedia(response.mediaKeysToDelete).catch(() => undefined);
+	}
 
 	return v.parse(pageItemBatchResponseSchema, {
 		items: response.items.map((item) =>

@@ -6,11 +6,42 @@ import type { DatabaseClient } from "@grabbin/db";
 import {
 	completePage,
 	createPage,
+	getOwnedPage,
 	updatePageDraft,
 	updatePageHandle,
 } from "../../src/services/page.service";
 
 describe("page service", () => {
+	/**
+	 * Case ID: PAGE-SERVICE-009
+	 * Given: a handle contains surrounding whitespace.
+	 * When: getOwnedPage receives the handle and session user ID.
+	 * Then: it queries the normalized owner-scoped page lookup.
+	 * Evidence: the helper returns the owned page row without exposing another user's page.
+	 * Result: Pass | Fail | Blocked | Not Run
+	 */
+	it("PAGE-SERVICE-009 finds only the signed-in owner's normalized handle", async () => {
+		let receivedWhere: unknown;
+		const db = {
+			query: {
+				pages: {
+					findFirst: async (input: { where: unknown }) => {
+						receivedWhere = input.where;
+						return { id: "page-1" };
+					},
+				},
+			},
+		} as unknown as DatabaseClient;
+
+		const result = await getOwnedPage(db, {
+			handle: " Jane ",
+			userId: "user-1",
+		});
+
+		assert.deepEqual(result, { id: "page-1" });
+		assert.ok(receivedWhere);
+	});
+
 	/**
 	 * Case ID: PAGE-SERVICE-001
 	 * Given: an invalid handle is submitted.

@@ -5,7 +5,7 @@ import type { DatabaseClient } from "@grabbin/db";
 import { PageItemServiceError } from "../../src/exceptions/page-item.exception";
 import { persistPageItemBatch } from "../../src/services/page-item.service";
 
-const layout = { x: 0, y: 0, w: 1, h: 1 };
+const layout = { x: 0, y: 0, w: 1, h: 2 };
 
 describe("page item service", () => {
 	/**
@@ -380,6 +380,53 @@ describe("page item service", () => {
 	});
 
 	/**
+	 * Case ID: PAGE-ITEM-SERVICE-009
+	 * Given: an item uses a size that is not an allowed preset.
+	 * When: persistPageItemBatch validates the item payload.
+	 * Then: it rejects the batch before writing.
+	 * Evidence: PageItemServiceError.code=INVALID_ITEM_LAYOUT.
+	 * Result: Pass | Fail | Blocked | Not Run
+	 */
+	it("PAGE-ITEM-SERVICE-009 rejects a layout without an allowed preset", async () => {
+		const tx = {
+			query: {
+				pages: { findFirst: async () => ({ id: "page-1" }) },
+				pageItems: { findMany: async () => [] },
+			},
+		};
+		const db = {
+			transaction: async (callback: (value: typeof tx) => unknown) =>
+				callback(tx),
+		} as unknown as DatabaseClient;
+
+		await assert.rejects(
+			persistPageItemBatch({
+				db,
+				handle: "jane",
+				userId: "user-1",
+				batch: {
+					upserts: [
+						{
+							id: "item-1",
+							type: "text",
+							data: { text: "Hello" },
+							style: {},
+							layouts: {
+								wide: { x: 0, y: 0, w: 3, h: 1 },
+								compact: layout,
+							},
+						},
+					],
+					deletes: [],
+				},
+			}),
+			(error: unknown) =>
+				error instanceof PageItemServiceError &&
+				error.code === "INVALID_ITEM_LAYOUT",
+		);
+	});
+
+	/**
 	 * Case ID: PAGE-ITEM-SERVICE-006
 	 * Given: a media item references a key outside the owner's item prefix.
 	 * When: persistPageItemBatch validates the item.
@@ -424,6 +471,96 @@ describe("page item service", () => {
 				error instanceof PageItemServiceError &&
 				error.code === "INVALID_MEDIA_KEY",
 		);
+	});
+
+	/**
+	 * Case ID: PAGE-ITEM-SERVICE-010
+	 * Given: an existing media item is replaced with another owned object key.
+	 * When: persistPageItemBatch commits the replacement.
+	 * Then: it requests cleanup only after the transaction finishes.
+	 * Evidence: cleanup receives only the old object key after transaction completion.
+	 * Result: Pass | Fail | Blocked | Not Run
+	 */
+	it("PAGE-ITEM-SERVICE-010 cleans replaced media after the transaction commits", async () => {
+		const oldObjectKey = "users/user-1/pages/page-1/items/old-image.webp";
+		const current = {
+			id: "item-1",
+			pageId: "page-1",
+			type: "media",
+			data: { objectKey: oldObjectKey, mimeType: "image/webp" },
+			style: {},
+			layouts: { wide: layout, compact: layout },
+			createdAt: new Date("2026-09-20T00:00:00.000Z"),
+			updatedAt: new Date("2026-09-20T00:00:00.000Z"),
+		};
+		let findManyCount = 0;
+		const tx = {
+			query: {
+				pages: { findFirst: async () => ({ id: "page-1" }) },
+				pageItems: {
+					findMany: async () => {
+						findManyCount += 1;
+						if (findManyCount === 1) return [current];
+						if (findManyCount === 2)
+							return [{ id: "item-1", pageId: "page-1" }];
+						return [
+							{
+								...current,
+								data: {
+									objectKey: "users/user-1/pages/page-1/items/new-image.webp",
+									mimeType: "image/webp",
+								},
+								updatedAt: new Date("2026-09-21T00:00:00.000Z"),
+							},
+						];
+					},
+				},
+			},
+			insert: () => {
+				const query = {
+					values: () => query,
+					onConflictDoUpdate: async () => undefined,
+				};
+				return query;
+			},
+		};
+		let transactionFinished = false;
+		const db = {
+			transaction: async (callback: (value: typeof tx) => unknown) => {
+				const result = await callback(tx);
+				transactionFinished = true;
+				return result;
+			},
+		} as unknown as DatabaseClient;
+		const cleanedKeys: string[][] = [];
+
+		await persistPageItemBatch({
+			db,
+			handle: "jane",
+			userId: "user-1",
+			batch: {
+				upserts: [
+					{
+						id: "item-1",
+						type: "media",
+						data: {
+							objectKey: "users/user-1/pages/page-1/items/new-image.webp",
+							mimeType: "image/webp",
+						},
+						style: {},
+						updatedAt: current.updatedAt.toISOString(),
+						layouts: { wide: layout, compact: layout },
+					},
+				],
+				deletes: [],
+			},
+			cleanupMedia: async (keys) => {
+				assert.equal(transactionFinished, true);
+				cleanedKeys.push([...keys]);
+			},
+		});
+
+		assert.deepEqual(cleanedKeys, [[oldObjectKey]]);
 	});
 
 	/**

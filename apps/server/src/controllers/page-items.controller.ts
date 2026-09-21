@@ -5,7 +5,7 @@ import {
 	pageItemUploadRequestSchema,
 } from "@grabbin/api";
 import type { DatabaseClient } from "@grabbin/db";
-import type { MiddlewareHandler } from "hono";
+import type { Context, MiddlewareHandler } from "hono";
 import { Hono } from "hono";
 import * as v from "valibot";
 
@@ -15,11 +15,12 @@ import {
 	completeItemMediaUpload,
 	createItemMediaUpload,
 } from "../services/media.service";
-import { getPage } from "../services/page.service";
+import { getOwnedPage } from "../services/page.service";
 import type { AppEnv } from "../types";
 
 const pageItemErrorDetails = {
 	PAGE_NOT_FOUND: "Page not found.",
+	INVALID_ITEM_BATCH: "Invalid item batch.",
 	DUPLICATE_ITEM_ID: "Item IDs must be unique.",
 	CONFLICTING_ITEM_OPERATION:
 		"An item cannot be deleted and updated in the same batch.",
@@ -56,7 +57,12 @@ type PersistPageItemBatch = (input: {
 	userId: string;
 	batch: PageItemBatchRequest;
 	publicBaseUrl?: string;
+	cleanupMedia?: (objectKeys: readonly string[]) => Promise<void>;
 }) => Promise<PageItemBatchResponse>;
+
+async function readJson(c: Context<AppEnv>) {
+	return c.req.json().catch(() => null);
+}
 
 export type PageItemsControllerOptions = {
 	sessionMiddleware: MiddlewareHandler<AppEnv>;
@@ -79,7 +85,7 @@ export function createPageItemsController({
 
 			const parsed = v.safeParse(
 				pageItemUploadRequestSchema,
-				await c.req.json().catch(() => null),
+				await readJson(c),
 			);
 			if (!parsed.success) {
 				return jsonApiError(c, {
@@ -89,8 +95,11 @@ export function createPageItemsController({
 				});
 			}
 
-			const page = await getPage(c.var.db, c.req.param("handle"));
-			if (!page || page.userId !== session.user.id) {
+			const page = await getOwnedPage(c.var.db, {
+				handle: c.req.param("handle"),
+				userId: session.user.id,
+			});
+			if (!page) {
 				return jsonApiError(c, { status: 404, detail: "Page not found." });
 			}
 
@@ -124,7 +133,7 @@ export function createPageItemsController({
 
 			const parsed = v.safeParse(
 				pageItemUploadCompleteRequestSchema,
-				await c.req.json().catch(() => null),
+				await readJson(c),
 			);
 			if (!parsed.success) {
 				return jsonApiError(c, {
@@ -134,8 +143,11 @@ export function createPageItemsController({
 				});
 			}
 
-			const page = await getPage(c.var.db, c.req.param("handle"));
-			if (!page || page.userId !== session.user.id) {
+			const page = await getOwnedPage(c.var.db, {
+				handle: c.req.param("handle"),
+				userId: session.user.id,
+			});
+			if (!page) {
 				return jsonApiError(c, { status: 404, detail: "Page not found." });
 			}
 
@@ -164,10 +176,7 @@ export function createPageItemsController({
 				});
 			}
 
-			const parsed = v.safeParse(
-				pageItemBatchRequestSchema,
-				await c.req.json().catch(() => null),
-			);
+			const parsed = v.safeParse(pageItemBatchRequestSchema, await readJson(c));
 			if (!parsed.success) {
 				return jsonApiError(c, {
 					status: 422,
@@ -184,6 +193,13 @@ export function createPageItemsController({
 						userId: session.user.id,
 						batch: parsed.output,
 						publicBaseUrl: c.env?.R2_PUBLIC_URL,
+						cleanupMedia: async (objectKeys) => {
+							await Promise.allSettled(
+								objectKeys.map((objectKey) =>
+									c.env.R2_BUCKET.delete(objectKey),
+								),
+							);
+						},
 					}),
 				);
 			} catch (error) {
