@@ -8,6 +8,7 @@ export const env = createEnv({
 		NEXT_PUBLIC_R2_PUBLIC_URL: v.optional(v.pipe(v.string(), v.url())),
 		NEXT_PUBLIC_CREEM_PRODUCT_ID: v.optional(v.string()),
 		NEXT_PUBLIC_SENTRY_DSN: v.optional(v.pipe(v.string(), v.url())),
+		NEXT_PUBLIC_MAPBOX_ACCESS_TOKEN: v.optional(v.string()),
 	},
 	server: {
 		SENTRY_DSN: v.optional(v.pipe(v.string(), v.url())),
@@ -21,6 +22,8 @@ export const env = createEnv({
 		NEXT_PUBLIC_R2_PUBLIC_URL: process.env.NEXT_PUBLIC_R2_PUBLIC_URL,
 		NEXT_PUBLIC_CREEM_PRODUCT_ID: process.env.NEXT_PUBLIC_CREEM_PRODUCT_ID,
 		NEXT_PUBLIC_SENTRY_DSN: process.env.NEXT_PUBLIC_SENTRY_DSN,
+		NEXT_PUBLIC_MAPBOX_ACCESS_TOKEN:
+			process.env.NEXT_PUBLIC_MAPBOX_ACCESS_TOKEN,
 		SENTRY_DSN: process.env.SENTRY_DSN,
 		SENTRY_AUTH_TOKEN: process.env.SENTRY_AUTH_TOKEN,
 		SENTRY_WEB_ORG: process.env.SENTRY_WEB_ORG,

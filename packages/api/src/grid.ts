@@ -113,6 +113,54 @@ export const pageItemLinkMetadataSchema = v.object({
 	faviconUrl: v.optional(httpsUrlSchema),
 	imageUrl: v.optional(httpsUrlSchema),
 	provider: v.optional(v.string()),
+	providerData: v.optional(
+		v.record(
+			v.string(),
+			v.union([
+				v.string(),
+				v.number(),
+				v.boolean(),
+				v.null(),
+				v.array(httpsUrlSchema),
+			]),
+		),
+	),
+});
+
+const pageItemLinkPresentationColorSchema = v.pipe(
+	v.string(),
+	v.regex(
+		/^#(?:[0-9a-f]{3}|[0-9a-f]{4}|[0-9a-f]{6}|[0-9a-f]{8})$/i,
+		"Hex color required.",
+	),
+);
+
+export const pageItemLinkPresentationSchema = v.object({
+	provider: v.pipe(v.string(), v.minLength(1)),
+	providerLabel: v.pipe(v.string(), v.minLength(1)),
+	cardBackground: v.optional(pageItemLinkPresentationColorSchema),
+	actionBackground: v.optional(pageItemLinkPresentationColorSchema),
+	actionText: v.optional(pageItemLinkPresentationColorSchema),
+	actionLabel: v.optional(v.pipe(v.string(), v.minLength(1))),
+	actionVariant: v.optional(v.picklist(["solid", "outline"])),
+	actionDetail: v.optional(v.pipe(v.string(), v.minLength(1))),
+	actionIcon: v.optional(v.literal("upvote")),
+	imageUrls: v.optional(v.array(httpsUrlSchema)),
+	githubContributionGraph: v.optional(v.string()),
+});
+
+export type PageItemLinkPresentation = v.InferOutput<
+	typeof pageItemLinkPresentationSchema
+>;
+
+export const pageItemLinkResponseMetadataSchema = v.object({
+	...pageItemLinkMetadataSchema.entries,
+	presentation: v.optional(pageItemLinkPresentationSchema),
+});
+
+export const pageItemLinkResponseDataSchema = v.object({
+	url: pageItemLinkUrlSchema,
+	metadata: v.optional(pageItemLinkResponseMetadataSchema),
 });
 
 export const pageItemLinkDataSchema = v.object({
@@ -141,7 +189,10 @@ const pageItemResponseVariantSchema = v.variant("type", [
 	v.object({ type: v.literal("media"), data: pageItemMediaResponseDataSchema }),
 	v.object({ type: v.literal("map"), data: pageItemMapDataSchema }),
 	v.object({ type: v.literal("section"), data: pageItemSectionDataSchema }),
-	v.object({ type: v.literal("link"), data: pageItemLinkDataSchema }),
+	v.object({
+		type: v.literal("link"),
+		data: pageItemLinkResponseDataSchema,
+	}),
 ]);
 
 export const pageItemResponseSchema = v.intersect([

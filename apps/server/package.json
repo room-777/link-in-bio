@@ -22,6 +22,7 @@
 		"@grabbin/env": "workspace:*",
 		"@grabbin/grid-layout": "workspace:*",
 		"@grabbin/page-handle": "workspace:*",
+		"@grabbin/page-link": "workspace:*",
 		"aws4fetch": "^1.0.20",
 		"better-auth": "catalog:auth",
 		"dotenv": "catalog:runtime",
