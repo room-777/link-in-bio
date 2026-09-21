@@ -10,9 +10,10 @@ import {
 	InputGroupInput,
 } from "@grabbin/ui/components/input-group";
 import { toast } from "@grabbin/ui/components/toast";
-import { ChevronLeft, Link2, RefreshCw, Unlink2 } from "lucide-react";
+import { ChevronLeft, Crop, Link2, RefreshCw, Unlink2, X } from "lucide-react";
 import { useEffect, useState } from "react";
 import type { BentoCommand, BentoItem } from "@/lib/bento/bento-types";
+import { useOptionalMediaCrop } from "./bento/items/media-crop-context";
 import BentoPresetIcon from "./bento-preset-icon";
 
 const presetLabels = {
@@ -49,6 +50,7 @@ export default function BentoItemControls({
 		item.layouts[breakpoint],
 		breakpoint,
 	);
+	const mediaCrop = useOptionalMediaCrop();
 
 	useEffect(() => {
 		if (view === "link") setLinkUrl(linkValue ?? "");
@@ -178,6 +180,47 @@ export default function BentoItemControls({
 				</div>
 			) : (
 				<>
+					{item.type === "media" && item.data.mediaUrl && mediaCrop ? (
+						mediaCrop.isOpen ? (
+							<>
+								<Button
+									type="button"
+									size="icon-sm"
+									variant="ghost"
+									aria-label="Cancel media crop"
+									title="Cancel media crop"
+									className="cursor-pointer! rounded-md text-white hover:bg-white/20 hover:text-white"
+									onClick={mediaCrop.cancel}
+								>
+									<X className="size-4 stroke-[3]" />
+								</Button>
+								<Button
+									type="button"
+									size="icon-sm"
+									variant="secondary"
+									aria-label="Apply media crop"
+									title="Apply media crop"
+									disabled={!mediaCrop.canApply}
+									className="cursor-pointer! rounded-md"
+									onClick={mediaCrop.apply}
+								>
+									<Crop className="size-4" />
+								</Button>
+							</>
+						) : (
+							<Button
+								type="button"
+								size="icon-sm"
+								variant="ghost"
+								aria-label="Crop media"
+								title="Crop media"
+								className="cursor-pointer! rounded-md text-white hover:bg-white/20 hover:text-white"
+								onClick={mediaCrop.open}
+							>
+								<Crop className="size-4" />
+							</Button>
+						)
+					) : null}
 					{getAllowedPresets(item.type).map((preset) => (
 						<Button
 							key={preset}

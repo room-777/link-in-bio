@@ -35,6 +35,7 @@ export function toBatchItem(item: BentoItem): BentoBatchItem {
 				data: {
 					objectKey: item.data.objectKey,
 					mimeType: item.data.mimeType,
+					...(item.data.crop ? { crop: item.data.crop } : {}),
 					...(item.data.caption !== undefined
 						? { caption: item.data.caption }
 						: {}),

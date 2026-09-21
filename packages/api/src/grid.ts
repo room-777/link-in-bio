@@ -53,6 +53,26 @@ export const pageItemStyleSchema = v.strictObject({
 });
 export type PageItemStyle = v.InferOutput<typeof pageItemStyleSchema>;
 
+export const normalizedCropSchema = v.pipe(
+	v.object({
+		x: v.pipe(v.number(), v.minValue(0), v.maxValue(100)),
+		y: v.pipe(v.number(), v.minValue(0), v.maxValue(100)),
+		width: v.pipe(v.number(), v.minValue(0.1), v.maxValue(100)),
+		height: v.pipe(v.number(), v.minValue(0.1), v.maxValue(100)),
+	}),
+	v.check(
+		(crop) => crop.x + crop.width <= 100 && crop.y + crop.height <= 100,
+		"Crop must stay within the media bounds.",
+	),
+);
+
+export type NormalizedCrop = v.InferOutput<typeof normalizedCropSchema>;
+
+const pageItemMediaCropSchema = v.object({
+	wide: v.optional(normalizedCropSchema),
+	compact: v.optional(normalizedCropSchema),
+});
+
 const httpsUrlSchema = v.pipe(
 	v.string(),
 	v.trim(),
@@ -89,6 +109,7 @@ export const pageItemMediaDataSchema = v.object({
 	),
 	caption: v.optional(v.string()),
 	link: optionalTrimmedLinkSchema,
+	crop: v.optional(pageItemMediaCropSchema),
 });
 
 export const pageItemMediaResponseDataSchema = v.object({

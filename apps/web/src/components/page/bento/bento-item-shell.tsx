@@ -3,10 +3,11 @@
 import { inferPresetFromLayout } from "@grabbin/bento-layout";
 import { Button } from "@grabbin/ui/components/button";
 import { Trash2 } from "lucide-react";
-import type { CSSProperties } from "react";
+import { type CSSProperties, useRef } from "react";
 import type { BentoCommand, BentoItem } from "@/lib/bento/bento-types";
 import BentoItemControls from "../bento-item-controls";
 import { RuntimeFallback, renderItem } from "./bento-item-registry";
+import { MediaCropProvider } from "./items/media-crop-context";
 
 function getBackgroundColor(value: string | undefined) {
 	if (!value) return undefined;
@@ -73,14 +74,8 @@ export function BentoItemShell({
 			getBackgroundColor(item.style.backgroundColor) ??
 			linkTheme?.cardBackground,
 	};
-	return (
-		<div
-			data-bento-item-shell="true"
-			data-bento-item-id={item.id}
-			data-bento-item-type={item.type}
-			data-bento-item-preset={preset ?? "unsupported"}
-			className="group/bento-item bento-item-pop-in relative size-full overflow-visible rounded-2xl transition-[z-index] focus-within:z-50 hover:z-50"
-		>
+	const content = (
+		<>
 			<div
 				data-bento-item-card="true"
 				className={`bento-item-card smooth-shadow-ring-sm relative size-full overflow-hidden rounded-2xl bg-background ${item.type === "map" ? "map-item-interaction" : ""} ${linkTheme ? "link-card-themed" : ""}`}
@@ -123,6 +118,25 @@ export function BentoItemShell({
 					/>
 				</>
 			) : null}
+		</>
+	);
+	const shellRef = useRef<HTMLDivElement>(null);
+	return (
+		<div
+			ref={shellRef}
+			data-bento-item-shell="true"
+			data-bento-item-id={item.id}
+			data-bento-item-type={item.type}
+			data-bento-item-preset={preset ?? "unsupported"}
+			className="group/bento-item bento-item-pop-in relative size-full overflow-visible rounded-2xl transition-[z-index] focus-within:z-50 hover:z-50"
+		>
+			{item.type === "media" ? (
+				<MediaCropProvider containerRef={shellRef} breakpoint={breakpoint}>
+					{content}
+				</MediaCropProvider>
+			) : (
+				content
+			)}
 		</div>
 	);
 }
