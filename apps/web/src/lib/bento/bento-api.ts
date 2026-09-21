@@ -45,7 +45,6 @@ export async function refreshBentoLinkMetadata(
 
 export async function uploadBentoMedia(
 	handle: string,
-	itemId: string,
 	file: File,
 	options: {
 		signal?: AbortSignal;
@@ -57,7 +56,6 @@ export async function uploadBentoMedia(
 		{
 			init: {
 				body: JSON.stringify({
-					itemId,
 					contentType: file.type,
 					size: file.size,
 				}),
@@ -83,7 +81,7 @@ export async function uploadBentoMedia(
 		{ param: { handle } },
 		{
 			init: {
-				body: JSON.stringify({ uploadId: upload.uploadId }),
+				body: JSON.stringify({ objectKey: upload.objectKey }),
 				headers: { "Content-Type": "application/json" },
 				signal: options.signal,
 			},
@@ -98,12 +96,15 @@ export async function uploadBentoMedia(
 	);
 }
 
-export async function cancelBentoMediaUpload(handle: string, uploadId: string) {
+export async function cancelBentoMediaUpload(
+	handle: string,
+	objectKey: string,
+) {
 	const response = await apiClient.pages[":handle"].items.upload.cancel.$post(
 		{ param: { handle } },
 		{
 			init: {
-				body: JSON.stringify({ uploadId }),
+				body: JSON.stringify({ objectKey }),
 				headers: { "Content-Type": "application/json" },
 			},
 		},

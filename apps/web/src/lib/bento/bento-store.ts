@@ -35,7 +35,7 @@ const SAVE_DELAY = 700;
 
 type MediaUploadTask = {
 	controller: AbortController;
-	uploadId?: string;
+	objectKey?: string;
 };
 
 export function useBentoStore({
@@ -80,8 +80,8 @@ export function useBentoStore({
 			if (timerRef.current) clearTimeout(timerRef.current);
 			for (const task of mediaUploadsRef.current.values()) {
 				task.controller.abort();
-				if (task.uploadId) {
-					void cancelBentoMediaUpload(handle, task.uploadId).catch(() => {});
+				if (task.objectKey) {
+					void cancelBentoMediaUpload(handle, task.objectKey).catch(() => {});
 				}
 			}
 			for (const previewUrl of previewUrlsRef.current) {
@@ -252,8 +252,8 @@ export function useBentoStore({
 					setUploadingMediaIds((current) =>
 						current.filter((itemId) => itemId !== command.itemId),
 					);
-					if (task.uploadId) {
-						void cancelBentoMediaUpload(handle, task.uploadId).catch(() => {});
+					if (task.objectKey) {
+						void cancelBentoMediaUpload(handle, task.objectKey).catch(() => {});
 					}
 				}
 			}
@@ -334,10 +334,10 @@ export function useBentoStore({
 			setUploadingMediaIds((current) => [...current, itemId]);
 
 			try {
-				const upload = await uploadBentoMedia(handle, itemId, file, {
+				const upload = await uploadBentoMedia(handle, file, {
 					signal: task.controller.signal,
 					onUploadCreated: (createdUpload) => {
-						task.uploadId = createdUpload.uploadId;
+						task.objectKey = createdUpload.objectKey;
 					},
 				});
 				if (task.controller.signal.aborted) return;
@@ -357,8 +357,8 @@ export function useBentoStore({
 					setUploadingMediaIds((current) =>
 						current.filter((currentItemId) => currentItemId !== itemId),
 					);
-					if (task.uploadId) {
-						void cancelBentoMediaUpload(handle, task.uploadId).catch(() => {});
+					if (task.objectKey) {
+						void cancelBentoMediaUpload(handle, task.objectKey).catch(() => {});
 					}
 					if (draftRef.current.some((item) => item.id === itemId)) {
 						commitItems(draftRef.current.filter((item) => item.id !== itemId));
