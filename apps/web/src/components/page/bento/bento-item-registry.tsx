@@ -16,6 +16,8 @@ type ItemRendererOptions = {
 	autoFocus: boolean;
 	onAutoFocus?: () => void;
 	onCommand?: (command: BentoCommand) => void;
+	isUploading?: boolean;
+	onCancelUpload?: () => void;
 };
 
 type ItemRenderer = (input: {
@@ -29,9 +31,18 @@ function renderText({ item, preset, options }: Parameters<ItemRenderer>[0]) {
 	return <TextItem item={item} preset={preset} {...options} />;
 }
 
-function renderMedia({ item, preset }: Parameters<ItemRenderer>[0]) {
+function renderMedia({ item, preset, options }: Parameters<ItemRenderer>[0]) {
 	if (item.type !== "media") return null;
-	return <MediaItem item={item} preset={preset} />;
+	return (
+		<MediaItem
+			item={item}
+			preset={preset}
+			mode={options.mode}
+			onCommand={options.onCommand}
+			isUploading={options.isUploading}
+			onCancelUpload={options.onCancelUpload}
+		/>
+	);
 }
 
 function renderMap({ item, options }: Parameters<ItemRenderer>[0]) {

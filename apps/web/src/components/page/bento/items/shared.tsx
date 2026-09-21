@@ -1,6 +1,7 @@
 "use client";
 
 import type { PresetName } from "@grabbin/bento-layout";
+import { Input } from "@grabbin/ui/components/input";
 import { type ReactNode, useEffect, useRef, useState } from "react";
 import { CircleArrowRightUp } from "reicon-react";
 
@@ -29,6 +30,9 @@ export const textSizeClassByPreset: Record<PresetName, string> = {
 	portrait: "text-lg font-medium leading-8",
 };
 
+const mediaCaptionClassName =
+	"field-sizing-content h-7.5 w-fit max-w-full rounded-md border border-border bg-white/80 px-2 py-0 font-medium text-foreground text-sm backdrop-blur-sm";
+
 export function ExternalAction({
 	href,
 	label,
@@ -54,10 +58,30 @@ export function ExternalAction({
 	);
 }
 
-export function MediaCaption({ value }: { value: string | undefined }) {
+export function MediaCaption({
+	value,
+	mode = "view",
+	onChange,
+}: {
+	value: string | undefined;
+	mode?: "view" | "edit";
+	onChange?: (value: string) => void;
+}) {
 	const caption = value?.trim();
+	if (mode === "edit") {
+		return (
+			<Input
+				data-bro-ignore="true"
+				value={value ?? ""}
+				placeholder="Caption"
+				aria-label="Media caption"
+				className={`pointer-events-auto min-w-24 truncate ${mediaCaptionClassName}`}
+				onChange={(event) => onChange?.(event.target.value)}
+			/>
+		);
+	}
 	return caption ? (
-		<p className="field-sizing-content flex h-7.5 w-fit min-w-0 max-w-full items-center rounded-md border border-border bg-white/80 px-2 py-0 font-medium text-foreground text-sm backdrop-blur-sm">
+		<p className={`${mediaCaptionClassName} flex min-w-0 items-center`}>
 			<span className="block min-w-0 flex-1 truncate">{caption}</span>
 		</p>
 	) : null;

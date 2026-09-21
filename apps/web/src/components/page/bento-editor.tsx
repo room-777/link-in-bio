@@ -7,8 +7,7 @@ import { toast } from "@grabbin/ui/components/toast";
 import { cn } from "@grabbin/ui/lib/utils";
 import { Monitor, Smartphone } from "lucide-react";
 import dynamic from "next/dynamic";
-import { useEffect, useRef, useState } from "react";
-import { uploadBentoMedia } from "@/lib/bento/bento-api";
+import { useState } from "react";
 import { useBentoStore } from "@/lib/bento/bento-store";
 import AddWidgetDialog from "./add-widget-dialog";
 
@@ -23,32 +22,6 @@ export default function BentoEditor({
 }) {
 	const store = useBentoStore({ initialItems: items, handle });
 	const [breakpoint, setBreakpoint] = useState<BentoBreakpoint>("compact");
-	const previewUrlsRef = useRef(new Set<string>());
-
-	useEffect(() => {
-		const activePreviewUrls = new Set(
-			store.items.flatMap((item) =>
-				item.type === "media" && item.data.mediaUrl?.startsWith("blob:")
-					? [item.data.mediaUrl]
-					: [],
-			),
-		);
-		for (const previewUrl of previewUrlsRef.current) {
-			if (activePreviewUrls.has(previewUrl)) continue;
-			URL.revokeObjectURL(previewUrl);
-			previewUrlsRef.current.delete(previewUrl);
-		}
-	}, [store.items]);
-
-	useEffect(
-		() => () => {
-			for (const previewUrl of previewUrlsRef.current) {
-				URL.revokeObjectURL(previewUrl);
-			}
-			previewUrlsRef.current.clear();
-		},
-		[],
-	);
 
 	const addItem = (itemType: ItemType, url?: string) => {
 		if (itemType === "link") {
@@ -69,25 +42,9 @@ export default function BentoEditor({
 			toast({ message: "Choose an image or video file.", state: "error" });
 			return;
 		}
-		const previewUrl = URL.createObjectURL(file);
-		const itemId = store.addPendingMedia({
-			mimeType: file.type,
-			previewUrl,
-		});
-		if (!itemId) {
-			URL.revokeObjectURL(previewUrl);
-			return;
-		}
-		previewUrlsRef.current.add(previewUrl);
 		try {
-			const upload = await uploadBentoMedia(handle, file);
-			store.updateMediaUpload({
-				itemId,
-				objectKey: upload.objectKey,
-				mimeType: upload.mimeType,
-			});
+			await store.addMediaUpload(file);
 		} catch (error) {
-			store.dispatchCommand({ type: "delete-item", itemId });
 			toast({
 				message:
 					error instanceof Error ? error.message : "The media upload failed.",
@@ -146,6 +103,7 @@ export default function BentoEditor({
 				autoFocusItemId={store.autoFocusItemId}
 				onAutoFocus={store.clearAutoFocusItem}
 				onCommand={store.dispatchCommand}
+				isItemUploading={store.isMediaUploading}
 				onRefreshLinkMetadata={store.refreshLinkMetadata}
 			/>
 			<AddWidgetDialog onItemAdd={addItem} onMediaSelect={selectMedia} />

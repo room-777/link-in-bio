@@ -2,7 +2,12 @@
 
 import type { PageItemBatchRequest, PageItemResponse } from "@grabbin/api";
 import { useCallback, useEffect, useRef, useState } from "react";
-import { patchBentoBatch, refreshBentoLinkMetadata } from "./bento-api";
+import {
+	cancelBentoMediaUpload,
+	patchBentoBatch,
+	refreshBentoLinkMetadata,
+	uploadBentoMedia,
+} from "./bento-api";
 import {
 	createBentoBatch,
 	hasBentoBatchChanges,
@@ -28,6 +33,11 @@ type UseBentoStoreOptions = {
 
 const SAVE_DELAY = 700;
 
+type MediaUploadTask = {
+	controller: AbortController;
+	uploadId?: string;
+};
+
 export function useBentoStore({
 	initialItems,
 	handle,
@@ -48,6 +58,9 @@ export function useBentoStore({
 	const saveInFlightRef = useRef<Promise<SaveResult> | null>(null);
 	const scheduleSaveRef = useRef<() => void>(() => {});
 	const stateVersionRef = useRef(0);
+	const previewUrlsRef = useRef(new Set<string>());
+	const mediaUploadsRef = useRef(new Map<string, MediaUploadTask>());
+	const [uploadingMediaIds, setUploadingMediaIds] = useState<string[]>([]);
 
 	useEffect(() => {
 		const nextItems = initialItems.map(toBentoItem);
@@ -65,9 +78,35 @@ export function useBentoStore({
 	useEffect(
 		() => () => {
 			if (timerRef.current) clearTimeout(timerRef.current);
+			for (const task of mediaUploadsRef.current.values()) {
+				task.controller.abort();
+				if (task.uploadId) {
+					void cancelBentoMediaUpload(handle, task.uploadId).catch(() => {});
+				}
+			}
+			for (const previewUrl of previewUrlsRef.current) {
+				URL.revokeObjectURL(previewUrl);
+			}
+			mediaUploadsRef.current.clear();
+			previewUrlsRef.current.clear();
 		},
-		[],
+		[handle],
 	);
+
+	useEffect(() => {
+		const activePreviewUrls = new Set(
+			items.flatMap((item) =>
+				item.type === "media" && item.data.mediaUrl?.startsWith("blob:")
+					? [item.data.mediaUrl]
+					: [],
+			),
+		);
+		for (const previewUrl of previewUrlsRef.current) {
+			if (activePreviewUrls.has(previewUrl)) continue;
+			URL.revokeObjectURL(previewUrl);
+			previewUrlsRef.current.delete(previewUrl);
+		}
+	}, [items]);
 
 	const savePendingChanges = useCallback(() => {
 		if (!persistItems) {
@@ -205,6 +244,19 @@ export function useBentoStore({
 	const dispatchCommand = useCallback(
 		(command: BentoCommand) => {
 			if (!enabled) return undefined;
+			if (command.type === "delete-item") {
+				const task = mediaUploadsRef.current.get(command.itemId);
+				if (task) {
+					task.controller.abort();
+					mediaUploadsRef.current.delete(command.itemId);
+					setUploadingMediaIds((current) =>
+						current.filter((itemId) => itemId !== command.itemId),
+					);
+					if (task.uploadId) {
+						void cancelBentoMediaUpload(handle, task.uploadId).catch(() => {});
+					}
+				}
+			}
 			const currentItems = draftRef.current;
 			const result = reduceBentoItems(currentItems, command);
 			if (!result) return undefined;
@@ -225,7 +277,7 @@ export function useBentoStore({
 			commitItems(result.items);
 			return undefined;
 		},
-		[commitItems, enabled],
+		[commitItems, enabled, handle],
 	);
 
 	const addPendingMedia = useCallback(
@@ -260,6 +312,63 @@ export function useBentoStore({
 			commitItems(nextItems);
 		},
 		[commitItems],
+	);
+
+	const addMediaUpload = useCallback(
+		async (file: File) => {
+			if (!enabled) return;
+			const previewUrl = URL.createObjectURL(file);
+			const itemId = addPendingMedia({
+				mimeType: file.type,
+				previewUrl,
+			});
+			if (!itemId) {
+				URL.revokeObjectURL(previewUrl);
+				return;
+			}
+			previewUrlsRef.current.add(previewUrl);
+			const task: MediaUploadTask = {
+				controller: new AbortController(),
+			};
+			mediaUploadsRef.current.set(itemId, task);
+			setUploadingMediaIds((current) => [...current, itemId]);
+
+			try {
+				const upload = await uploadBentoMedia(handle, itemId, file, {
+					signal: task.controller.signal,
+					onUploadCreated: (createdUpload) => {
+						task.uploadId = createdUpload.uploadId;
+					},
+				});
+				if (task.controller.signal.aborted) return;
+				if (mediaUploadsRef.current.get(itemId) !== task) return;
+				mediaUploadsRef.current.delete(itemId);
+				setUploadingMediaIds((current) =>
+					current.filter((currentItemId) => currentItemId !== itemId),
+				);
+				updateMediaUpload({
+					itemId,
+					objectKey: upload.objectKey,
+					mimeType: upload.mimeType,
+				});
+			} catch (error) {
+				if (mediaUploadsRef.current.get(itemId) === task) {
+					mediaUploadsRef.current.delete(itemId);
+					setUploadingMediaIds((current) =>
+						current.filter((currentItemId) => currentItemId !== itemId),
+					);
+					if (task.uploadId) {
+						void cancelBentoMediaUpload(handle, task.uploadId).catch(() => {});
+					}
+					if (draftRef.current.some((item) => item.id === itemId)) {
+						commitItems(draftRef.current.filter((item) => item.id !== itemId));
+					}
+				}
+				if (task.controller.signal.aborted) return;
+				throw error;
+			}
+		},
+		[addPendingMedia, commitItems, enabled, handle, updateMediaUpload],
 	);
 
 	const flushPendingChanges = useCallback(async () => {
@@ -346,8 +455,8 @@ export function useBentoStore({
 		status,
 		errorMessage,
 		dispatchCommand,
-		addPendingMedia,
-		updateMediaUpload,
+		addMediaUpload,
+		isMediaUploading: (itemId: string) => uploadingMediaIds.includes(itemId),
 		refreshLinkMetadata,
 		flushPendingChanges,
 	};

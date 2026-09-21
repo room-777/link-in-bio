@@ -1,17 +1,27 @@
 "use client";
 
 import type { PresetName } from "@grabbin/bento-layout";
+import { Button } from "@grabbin/ui/components/button";
+import { LoaderCircle, X } from "lucide-react";
 import { useState } from "react";
 
-import type { BentoItem } from "@/lib/bento/bento-types";
+import type { BentoCommand, BentoItem } from "@/lib/bento/bento-types";
 import { ExternalAction, MediaCaption } from "./shared";
 
 export function MediaItem({
 	item,
 	preset,
+	mode,
+	onCommand,
+	isUploading = false,
+	onCancelUpload,
 }: {
 	item: Extract<BentoItem, { type: "media" }>;
 	preset: PresetName;
+	mode: "view" | "edit";
+	onCommand?: (command: BentoCommand) => void;
+	isUploading?: boolean;
+	onCancelUpload?: () => void;
 }) {
 	const isVideo = item.data.mimeType.startsWith("video/");
 	const [mediaReady, setMediaReady] = useState(false);
@@ -45,8 +55,36 @@ export function MediaItem({
 					/>
 				)
 			) : null}
+			{mode === "edit" && isUploading && onCancelUpload ? (
+				<div className="pointer-events-auto absolute top-3 right-3 z-10 flex items-center gap-2 rounded-full bg-black/50 px-2 py-1 text-white text-xs backdrop-blur-sm">
+					<LoaderCircle className="size-3.5 animate-spin" aria-hidden="true" />
+					<span>Uploading...</span>
+					<Button
+						type="button"
+						variant="ghost"
+						size="icon-xs"
+						aria-label="Cancel media upload"
+						title="Cancel media upload"
+						data-bento-item-drag-cancel="true"
+						onClick={onCancelUpload}
+						className="size-5 rounded-full text-white hover:bg-white/20 hover:text-white"
+					>
+						<X aria-hidden="true" />
+					</Button>
+				</div>
+			) : null}
 			<div className="pointer-events-none absolute inset-x-0 bottom-0 flex min-w-0 items-center justify-between gap-3 p-4 text-white">
-				<MediaCaption value={item.data.caption} />
+				<MediaCaption
+					value={item.data.caption}
+					mode={mode}
+					onChange={(caption) =>
+						onCommand?.({
+							type: "update-data",
+							itemId: item.id,
+							data: { ...item.data, caption: caption.trim() || undefined },
+						})
+					}
+				/>
 				{item.data.link ? (
 					<div className="pointer-events-auto flex h-fit shrink-0 items-center">
 						<ExternalAction href={item.data.link} label="Open media" />

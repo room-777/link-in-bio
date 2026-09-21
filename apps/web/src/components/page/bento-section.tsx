@@ -28,6 +28,7 @@ type BentoSectionProps = {
 	autoFocusItemId?: string | null;
 	onAutoFocus?: (itemId: string) => void;
 	onCommand?: (command: BentoCommand) => void;
+	isItemUploading?: (itemId: string) => boolean;
 	onRefreshLinkMetadata?: (itemId: string) => Promise<void>;
 };
 
@@ -40,6 +41,7 @@ export default function BentoSection({
 	autoFocusItemId = null,
 	onAutoFocus,
 	onCommand,
+	isItemUploading,
 	onRefreshLinkMetadata,
 }: BentoSectionProps) {
 	const {
@@ -129,6 +131,10 @@ export default function BentoSection({
 										: undefined
 								}
 								onCommand={onCommand}
+								isUploading={isItemUploading?.(item.id) ?? false}
+								onCancelUpload={() =>
+									onCommand?.({ type: "delete-item", itemId: item.id })
+								}
 								onRefreshLinkMetadata={onRefreshLinkMetadata}
 							/>
 						</div>

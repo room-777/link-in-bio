@@ -44,6 +44,8 @@ export function BentoItemShell({
 	autoFocus,
 	onAutoFocus,
 	onCommand,
+	isUploading = false,
+	onCancelUpload,
 	onRefreshLinkMetadata,
 }: {
 	item: BentoItem;
@@ -52,6 +54,8 @@ export function BentoItemShell({
 	autoFocus: boolean;
 	onAutoFocus?: () => void;
 	onCommand?: (command: BentoCommand) => void;
+	isUploading?: boolean;
+	onCancelUpload?: () => void;
 	onRefreshLinkMetadata?: (itemId: string) => Promise<void>;
 }) {
 	const preset = inferPresetFromLayout(
@@ -89,6 +93,8 @@ export function BentoItemShell({
 							autoFocus,
 							onAutoFocus,
 							onCommand,
+							isUploading,
+							onCancelUpload,
 						})
 					) : (
 						<RuntimeFallback item={item} />
