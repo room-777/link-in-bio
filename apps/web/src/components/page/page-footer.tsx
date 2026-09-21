@@ -199,13 +199,13 @@ function OwnerFooter({
 					render={
 						<Button
 							variant="ghost"
-							size="icon"
-							className="size-10 text-muted-foreground/80"
+							size="icon-lg"
+							className="text-muted-foreground/80"
 							aria-label="Open page options"
 						/>
 					}
 				>
-					<SlidersHorizontal />
+					<SlidersHorizontal className="stroke-[2.5px]" />
 				</PopoverTrigger>
 				<PopoverContent
 					align="start"
