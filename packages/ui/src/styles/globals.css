@@ -139,6 +139,34 @@
 	}
 }
 
+@utility surface-line {
+	position: relative;
+
+	&::before,
+	&::after {
+		position: absolute;
+		pointer-events: none;
+		content: "";
+		border-style: solid;
+		border-width: 1px;
+		border-radius: 12px;
+	}
+
+	&::before {
+		inset: 0;
+		border-color: color-mix(in oklch, var(--foreground) 18%, transparent);
+		box-shadow:
+			inset 0 1px rgb(255 255 255 / 18%),
+			inset 0 -1px rgb(0 0 0 / 10%);
+	}
+
+	&::after {
+		inset: 1px;
+		border-color: rgb(255 255 255 / 40%);
+		mask-image: linear-gradient(to bottom, black, transparent);
+	}
+}
+
 @layer base {
 	* {
 		@apply border-border outline-ring/50;

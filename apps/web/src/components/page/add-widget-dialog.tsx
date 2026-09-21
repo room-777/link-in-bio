@@ -20,36 +20,77 @@ import {
 	InputGroupInput,
 } from "@grabbin/ui/components/input-group";
 import { useIsMobile } from "@grabbin/ui/components/use-mobile";
-import { Image, Link2, Map as MapIcon, Plus, Type } from "lucide-react";
+import { Link2, Plus } from "lucide-react";
 import { useState } from "react";
 
 function AddWidgetContent() {
 	return (
 		<>
-			<div className="grid grid-cols-3 gap-2">
+			<div className="grid grid-cols-2 gap-2">
 				<Button
 					type="button"
 					variant="outline"
-					className="aspect-square h-auto w-full flex-col gap-2"
+					className="relative col-span-2 aspect-[2/1] h-auto w-full overflow-hidden rounded-2xl p-0"
 				>
-					<Image aria-hidden="true" />
-					<span>Media</span>
+					<div
+						className="pointer-events-none absolute inset-0 overflow-hidden"
+						style={{
+							maskImage:
+								"linear-gradient(to bottom right, black 0%, black 78%, transparent 100%)",
+							WebkitMaskImage:
+								"linear-gradient(to bottom right, black 0%, black 78%, transparent 100%)",
+						}}
+					>
+						<img
+							src="/media-widget-sunset.png"
+							alt=""
+							className="smooth-shadow-sm surface-line pointer-events-none absolute right-[-0.5rem] bottom-[-0.75rem] size-28 rotate-[8deg] rounded-2xl object-cover"
+						/>
+						<img
+							src="/media-widget.png"
+							alt=""
+							className="smooth-shadow-sm surface-line pointer-events-none absolute right-16 bottom-[-0.25rem] z-10 size-32 rotate-[-6deg] rounded-2xl object-cover"
+						/>
+					</div>
+					<span className="absolute top-3 left-3 z-10 text-base">Media</span>
 				</Button>
 				<Button
 					type="button"
 					variant="outline"
-					className="aspect-square h-auto w-full flex-col gap-2"
+					className="relative aspect-square h-auto w-full rounded-2xl p-0"
 				>
-					<MapIcon aria-hidden="true" />
-					<span>Map</span>
+					<span className="absolute top-3 left-3 z-10 text-base">Map</span>
 				</Button>
 				<Button
 					type="button"
 					variant="outline"
-					className="aspect-square h-auto w-full flex-col gap-2"
+					className="relative aspect-square h-auto w-full rounded-2xl p-0"
 				>
-					<Type aria-hidden="true" />
-					<span>Text</span>
+					<span className="absolute top-3 left-3 z-10 text-base">Text</span>
+					<div
+						className="pointer-events-none absolute inset-0 overflow-hidden"
+						style={{
+							maskImage:
+								"linear-gradient(to bottom right, black 0%, black 78%, transparent 100%)",
+							WebkitMaskImage:
+								"linear-gradient(to bottom right, black 0%, black 78%, transparent 100%)",
+						}}
+					>
+						<div
+							aria-hidden="true"
+							className="smooth-shadow-ring absolute right-[-1rem] bottom-[-1rem] size-28 overflow-hidden rounded-2xl bg-background p-2"
+						>
+							<div className="flex size-full min-w-0 items-start justify-start overflow-hidden break-words rounded-xl bg-secondary/60 p-3 text-left text-primary/70 text-sm leading-snug">
+								<p className="min-w-0 max-w-full break-words text-lg leading-tight">
+									A little note
+									<br />
+									about what
+									<br />
+									matters most.
+								</p>
+							</div>
+						</div>
+					</div>
 				</Button>
 			</div>
 			<Field>
