@@ -44,6 +44,7 @@ export function BentoItemShell({
 	autoFocus,
 	onAutoFocus,
 	onCommand,
+	onRefreshLinkMetadata,
 }: {
 	item: BentoItem;
 	breakpoint: "wide" | "compact";
@@ -51,6 +52,7 @@ export function BentoItemShell({
 	autoFocus: boolean;
 	onAutoFocus?: () => void;
 	onCommand?: (command: BentoCommand) => void;
+	onRefreshLinkMetadata?: (itemId: string) => Promise<void>;
 }) {
 	const preset = inferPresetFromLayout(
 		item.type,
@@ -111,6 +113,7 @@ export function BentoItemShell({
 						item={item}
 						breakpoint={breakpoint}
 						onCommand={onCommand}
+						onRefreshLinkMetadata={onRefreshLinkMetadata}
 					/>
 				</>
 			) : null}

@@ -2,7 +2,7 @@
 
 import type { PageItemBatchRequest, PageItemResponse } from "@grabbin/api";
 import { useCallback, useEffect, useRef, useState } from "react";
-import { patchBentoBatch } from "./bento-api";
+import { patchBentoBatch, refreshBentoLinkMetadata } from "./bento-api";
 import {
 	createBentoBatch,
 	hasBentoBatchChanges,
@@ -277,6 +277,64 @@ export function useBentoStore({
 		return draftRef.current;
 	}, [savePendingChanges]);
 
+	const refreshLinkMetadata = useCallback(
+		async (itemId: string) => {
+			await flushPendingChanges();
+			const requestedItem = draftRef.current.find((item) => item.id === itemId);
+			if (requestedItem?.type !== "link") return;
+			const requestedUrl = requestedItem.data.url;
+
+			try {
+				const response = await refreshBentoLinkMetadata(handle, {
+					itemId,
+					url: requestedUrl,
+				});
+				const currentItem = draftRef.current.find((item) => item.id === itemId);
+				if (
+					currentItem?.type !== "link" ||
+					currentItem.data.url !== requestedUrl
+				) {
+					return;
+				}
+
+				const refreshedItem = toBentoItem(response.item);
+				if (refreshedItem.type !== "link") return;
+				const nextItem: BentoItem = {
+					...currentItem,
+					updatedAt: refreshedItem.updatedAt,
+					data: {
+						...currentItem.data,
+						metadata: refreshedItem.data.metadata,
+					},
+				};
+				const nextDraft = draftRef.current.map((item) =>
+					item.id === itemId ? nextItem : item,
+				);
+				draftRef.current = nextDraft;
+				persistedRef.current = mergeBentoItems(persistedRef.current, [
+					refreshedItem,
+				]);
+				pendingRef.current = createBentoBatch(
+					nextDraft,
+					persistedRef.current,
+					deletedIdsRef.current,
+				);
+				setItems(nextDraft);
+				setStatus(hasBentoBatchChanges(pendingRef.current) ? "dirty" : "saved");
+				setErrorMessage(null);
+			} catch (error) {
+				const message =
+					error instanceof Error
+						? error.message
+						: "Unable to refresh link metadata.";
+				setErrorMessage(message);
+				setStatus("error");
+				throw error;
+			}
+		},
+		[flushPendingChanges, handle],
+	);
+
 	const clearAutoFocusItem = useCallback((itemId: string) => {
 		setAutoFocusItemId((current) => (current === itemId ? null : current));
 	}, []);
@@ -290,6 +348,7 @@ export function useBentoStore({
 		dispatchCommand,
 		addPendingMedia,
 		updateMediaUpload,
+		refreshLinkMetadata,
 		flushPendingChanges,
 	};
 }

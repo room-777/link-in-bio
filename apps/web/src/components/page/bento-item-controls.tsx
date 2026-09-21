@@ -9,7 +9,8 @@ import {
 	InputGroup,
 	InputGroupInput,
 } from "@grabbin/ui/components/input-group";
-import { Link2, Unlink2 } from "lucide-react";
+import { toast } from "@grabbin/ui/components/toast";
+import { ChevronLeft, Link2, RefreshCw, Unlink2 } from "lucide-react";
 import { useEffect, useState } from "react";
 import type { BentoCommand, BentoItem } from "@/lib/bento/bento-types";
 import BentoPresetIcon from "./bento-preset-icon";
@@ -27,13 +28,22 @@ export default function BentoItemControls({
 	item,
 	breakpoint,
 	onCommand,
+	onRefreshLinkMetadata,
 }: {
 	item: BentoItem;
 	breakpoint: "wide" | "compact";
 	onCommand: (command: BentoCommand) => void;
+	onRefreshLinkMetadata?: (itemId: string) => Promise<void>;
 }) {
 	const [linkUrl, setLinkUrl] = useState("");
-	const linkItem = item.type === "text" || item.type === "media" ? item : null;
+	const [isRefreshing, setIsRefreshing] = useState(false);
+	const [view, setView] = useState<"toolbar" | "link">("toolbar");
+	const linkValue =
+		item.type === "link"
+			? item.data.url
+			: item.type === "text" || item.type === "media"
+				? (item.data.link ?? "")
+				: null;
 	const currentPreset = inferPresetFromLayout(
 		item.type,
 		item.layouts[breakpoint],
@@ -41,60 +51,175 @@ export default function BentoItemControls({
 	);
 
 	useEffect(() => {
-		setLinkUrl(linkItem?.data.link ?? "");
-	}, [linkItem?.data.link]);
+		if (view === "link") setLinkUrl(linkValue ?? "");
+	}, [linkValue, view]);
+
+	const commitLink = () => {
+		const value = linkUrl.trim();
+		if (item.type === "link") {
+			try {
+				if (new URL(value).protocol !== "https:") throw new Error();
+			} catch {
+				toast({ message: "Enter a valid HTTPS link.", state: "error" });
+				return;
+			}
+			if (value === item.data.url) return;
+			onCommand({
+				type: "update-data",
+				itemId: item.id,
+				data: { url: value },
+			});
+			return;
+		}
+
+		if (item.type !== "text" && item.type !== "media") return;
+		if (!value) {
+			onCommand({
+				type: "update-data",
+				itemId: item.id,
+				data: { ...item.data, link: undefined },
+			});
+			return;
+		}
+		try {
+			if (new URL(value).protocol !== "https:") throw new Error();
+		} catch {
+			toast({ message: "Enter a valid HTTPS link.", state: "error" });
+			return;
+		}
+		if (value === item.data.link) return;
+		onCommand({
+			type: "update-data",
+			itemId: item.id,
+			data: { ...item.data, link: value },
+		});
+	};
+
+	const refreshMetadata = async () => {
+		if (!onRefreshLinkMetadata || item.type !== "link") return;
+		setIsRefreshing(true);
+		try {
+			await onRefreshLinkMetadata(item.id);
+		} catch {
+			// The store exposes the save/refresh error in the editor status.
+		} finally {
+			setIsRefreshing(false);
+		}
+	};
+
+	const closeLinkView = () => {
+		setLinkUrl("");
+		setView("toolbar");
+	};
+
+	const openLinkView = () => {
+		setLinkUrl(linkValue ?? "");
+		setView("link");
+	};
 
 	return (
 		<div
 			data-bento-item-controls="true"
 			data-bento-item-drag-cancel="true"
-			className="pointer-events-none absolute top-full left-1/2 z-50 mt-2 flex w-max -translate-x-1/2 -translate-y-1/2 items-center gap-1 rounded-lg bg-black p-1 opacity-0 shadow-lg transition-opacity duration-150 focus-within:pointer-events-auto focus-within:opacity-100 group-hover/bento-item:pointer-events-auto group-hover/bento-item:opacity-100 motion-reduce:transition-none"
+			className="pointer-events-none absolute top-full left-1/2 z-50 mt-2 flex h-10 w-max -translate-x-1/2 -translate-y-1/2 items-center gap-0.5 rounded-lg bg-black p-1 opacity-0 shadow-lg transition-opacity duration-150 focus-within:pointer-events-auto focus-within:opacity-100 group-hover/bento-item:pointer-events-auto group-hover/bento-item:opacity-100 motion-reduce:transition-none"
 		>
-			{getAllowedPresets(item.type).map((preset) => (
-				<Button
-					key={preset}
-					type="button"
-					size="icon-sm"
-					variant={currentPreset === preset ? "secondary" : "ghost"}
-					aria-label={presetLabels[preset]}
-					title={presetLabels[preset]}
-					className="cursor-pointer! rounded-md text-white hover:bg-white/20 hover:text-white"
-					onClick={() =>
-						onCommand({
-							type: "apply-preset",
-							itemId: item.id,
-							breakpoint,
-							preset,
-						})
-					}
-				>
-					<BentoPresetIcon preset={preset} />
-				</Button>
-			))}
-			{linkItem ? (
-				<InputGroup className="h-7 w-40 rounded-md bg-transparent text-white has-[[data-slot=input-group-control]:focus-visible]:ring-0">
-					{linkUrl ? (
-						<Link2 className="ml-1 size-3.5" />
-					) : (
-						<Unlink2 className="ml-1 size-3.5" />
-					)}
-					<InputGroupInput
-						value={linkUrl}
-						placeholder="Add link"
-						aria-label="Item link"
-						className="h-7 px-1 text-white placeholder:text-white/60"
-						onChange={(event) => {
-							const value = event.target.value;
-							setLinkUrl(value);
-							onCommand({
-								type: "update-data",
-								itemId: item.id,
-								data: { ...item.data, link: value.trim() || undefined },
-							});
-						}}
-					/>
-				</InputGroup>
-			) : null}
+			{view === "link" && linkValue !== null ? (
+				<div className="flex min-w-0 items-center gap-0">
+					<Button
+						type="button"
+						size="icon-sm"
+						variant="ghost"
+						aria-label="Back to controls"
+						className="cursor-pointer! rounded-md text-white hover:bg-white/20 hover:text-white"
+						onClick={closeLinkView}
+					>
+						<ChevronLeft className="size-5" />
+					</Button>
+					<InputGroup className="h-8 w-52 rounded-full bg-transparent text-white has-[[data-slot=input-group-control]:focus-visible]:ring-0">
+						{linkUrl ? (
+							<Link2 className="ml-1 size-3.5" />
+						) : (
+							<Unlink2 className="ml-1 size-3.5" />
+						)}
+						<InputGroupInput
+							value={linkUrl}
+							placeholder="Paste a link"
+							aria-label="Link URL"
+							className="px-1 text-white placeholder:text-white/60"
+							onChange={(event) => setLinkUrl(event.target.value)}
+							onBlur={commitLink}
+							onKeyDown={(event) => {
+								if (event.key === "Enter") event.currentTarget.blur();
+								if (event.key === "Escape") {
+									event.preventDefault();
+									closeLinkView();
+								}
+							}}
+							autoFocus
+							autoComplete="off"
+						/>
+					</InputGroup>
+					{item.type === "link" && onRefreshLinkMetadata ? (
+						<Button
+							type="button"
+							size="icon-sm"
+							variant="ghost"
+							aria-label="Refresh link metadata"
+							title="Refresh link metadata"
+							disabled={isRefreshing}
+							className="cursor-pointer! rounded-md text-white hover:bg-white/20 hover:text-white"
+							onClick={() => void refreshMetadata()}
+						>
+							<RefreshCw
+								className={isRefreshing ? "size-3.5 animate-spin" : "size-3.5"}
+							/>
+						</Button>
+					) : null}
+				</div>
+			) : (
+				<>
+					{getAllowedPresets(item.type).map((preset) => (
+						<Button
+							key={preset}
+							type="button"
+							size="icon-sm"
+							variant={currentPreset === preset ? "secondary" : "ghost"}
+							aria-label={presetLabels[preset]}
+							title={presetLabels[preset]}
+							className="cursor-pointer! rounded-md text-white hover:bg-white/20 hover:text-white"
+							onClick={() =>
+								onCommand({
+									type: "apply-preset",
+									itemId: item.id,
+									breakpoint,
+									preset,
+								})
+							}
+						>
+							<BentoPresetIcon preset={preset} />
+						</Button>
+					))}
+					{linkValue !== null ? (
+						<Button
+							type="button"
+							size="icon-sm"
+							variant="ghost"
+							aria-label={
+								item.type === "link" ? "Edit link URL" : "Manage link"
+							}
+							title={item.type === "link" ? "Edit link URL" : "Manage link"}
+							className="cursor-pointer! rounded-md text-white hover:bg-white/20 hover:text-white"
+							onClick={openLinkView}
+						>
+							{linkValue ? (
+								<Link2 className="size-4 stroke-[3]" />
+							) : (
+								<Unlink2 className="size-4 stroke-[3]" />
+							)}
+						</Button>
+					) : null}
+				</>
+			)}
 		</div>
 	);
 }

@@ -28,6 +28,7 @@ type BentoSectionProps = {
 	autoFocusItemId?: string | null;
 	onAutoFocus?: (itemId: string) => void;
 	onCommand?: (command: BentoCommand) => void;
+	onRefreshLinkMetadata?: (itemId: string) => Promise<void>;
 };
 
 const WIDE_CONTAINER_MIN_WIDTH = getBentoWidth(getColumns("wide"));
@@ -39,6 +40,7 @@ export default function BentoSection({
 	autoFocusItemId = null,
 	onAutoFocus,
 	onCommand,
+	onRefreshLinkMetadata,
 }: BentoSectionProps) {
 	const {
 		width: containerWidth,
@@ -127,6 +129,7 @@ export default function BentoSection({
 										: undefined
 								}
 								onCommand={onCommand}
+								onRefreshLinkMetadata={onRefreshLinkMetadata}
 							/>
 						</div>
 					))}

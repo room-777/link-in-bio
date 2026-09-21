@@ -146,6 +146,7 @@ export default function BentoEditor({
 				autoFocusItemId={store.autoFocusItemId}
 				onAutoFocus={store.clearAutoFocusItem}
 				onCommand={store.dispatchCommand}
+				onRefreshLinkMetadata={store.refreshLinkMetadata}
 			/>
 			<AddWidgetDialog onItemAdd={addItem} onMediaSelect={selectMedia} />
 		</section>

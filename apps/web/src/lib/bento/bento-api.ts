@@ -1,6 +1,7 @@
 import {
 	type PageItemBatchRequest,
 	pageItemBatchResponseSchema,
+	pageItemMetadataResponseSchema,
 	pageItemUploadCompleteResponseSchema,
 	pageItemUploadResponseSchema,
 } from "@grabbin/api";
@@ -22,6 +23,23 @@ export async function patchBentoBatch(
 	);
 	if (!response.ok) throw new Error(await getApiErrorMessage(response));
 	return v.parse(pageItemBatchResponseSchema, await response.json());
+}
+
+export async function refreshBentoLinkMetadata(
+	handle: string,
+	input: { itemId: string; url: string },
+) {
+	const response = await apiClient.pages[":handle"].metadata.$post(
+		{ param: { handle } },
+		{
+			init: {
+				body: JSON.stringify(input),
+				headers: { "Content-Type": "application/json" },
+			},
+		},
+	);
+	if (!response.ok) throw new Error(await getApiErrorMessage(response));
+	return v.parse(pageItemMetadataResponseSchema, await response.json());
 }
 
 export async function uploadBentoMedia(handle: string, file: File) {
