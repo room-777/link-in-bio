@@ -11,6 +11,7 @@ import { timing } from "hono/timing";
 import { trimTrailingSlash } from "hono/trailing-slash";
 
 import { jsonApiError } from "./api-error";
+import { pageItemsController } from "./controllers/page-items.route";
 import { pagesController } from "./controllers/pages.controller";
 import type { AppEnv } from "./types";
 
@@ -66,7 +67,8 @@ const app = createFactory<AppEnv>({
 		(await createAuth()).handler(c.req.raw),
 	)
 	.route("/", createRoutes)
-	.route("/pages", pagesController);
+	.route("/pages", pagesController)
+	.route("/pages", pageItemsController);
 
 export type AppType = typeof app;
 export type { ApiError } from "@grabbin/api";

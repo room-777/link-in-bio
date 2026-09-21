@@ -8,7 +8,7 @@ import {
 import { and, eq } from "drizzle-orm";
 
 import { PageServiceError } from "../exceptions/page.exception";
-import { isOwnedPageImageKey } from "./media.service";
+import { isOwnedPageMediaKey } from "./media.service";
 import { checkPageHandle } from "./page-handle.service";
 
 function findPageIdByUserId(db: DatabaseClient, userId: string) {
@@ -126,10 +126,11 @@ async function hasValidOwnedPageImage(input: {
 	pageId: string;
 }) {
 	if (
-		!isOwnedPageImageKey({
+		!isOwnedPageMediaKey({
 			key: input.key,
 			userId: input.userId,
 			pageId: input.pageId,
+			scope: "profile",
 		})
 	) {
 		return false;

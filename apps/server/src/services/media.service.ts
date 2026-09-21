@@ -16,16 +16,38 @@ export function createPageImageKey(input: {
 	return `users/${input.userId}/pages/${input.pageId}/profile/${crypto.randomUUID()}.${imageExtensions[input.contentType]}`;
 }
 
-export function isOwnedPageImageKey(input: {
+export function isOwnedPageMediaKey(input: {
 	key: string;
 	userId: string;
 	pageId: string;
+	scope: "profile" | "items";
 }) {
+	const prefix = `users/${input.userId}/pages/${input.pageId}/${input.scope}/`;
 	return (
 		input.key === input.key.trim() &&
 		!input.key.includes("..") &&
-		input.key.startsWith(`users/${input.userId}/pages/${input.pageId}/profile/`)
+		input.key.startsWith(prefix) &&
+		input.key.length > prefix.length
 	);
+}
+
+export function getPublicPageItemMediaUrl(
+	publicBaseUrl: string | undefined,
+	objectKey: string,
+) {
+	const base = publicBaseUrl?.trim().replace(/\/+$/, "");
+	if (!base) return undefined;
+
+	try {
+		if (new URL(base).protocol !== "https:") return undefined;
+	} catch {
+		return undefined;
+	}
+
+	return `${base}/${objectKey
+		.split("/")
+		.map((segment) => encodeURIComponent(segment))
+		.join("/")}`;
 }
 
 export async function createPresignedPutUrl(input: {

@@ -33,10 +33,23 @@ export const pageItemLayoutsSchema = v.object({
 
 export type PageItemLayouts = v.InferOutput<typeof pageItemLayoutsSchema>;
 
+const pageItemBackgroundColorSchema = v.pipe(
+	v.string(),
+	v.trim(),
+	v.check(
+		(value) =>
+			/^#(?:[0-9a-f]{3}|[0-9a-f]{4}|[0-9a-f]{6}|[0-9a-f]{8})$/i.test(value) ||
+			/^bg-(?:transparent|current|inherit|black|white|primary|secondary|background|foreground|muted|accent|destructive|input|ring|brand-[a-z0-9-]+|(?:slate|gray|zinc|neutral|stone|red|orange|amber|yellow|lime|green|emerald|teal|cyan|sky|blue|indigo|violet|purple|fuchsia|pink|rose)-(?:50|100|200|300|400|500|600|700|800|900|950))(?:\/(?:0|5|10|20|25|30|40|50|60|70|75|80|90|95|100))?$/.test(
+				value,
+			),
+		"Use a hex color or Tailwind background color token.",
+	),
+);
+
 export const pageItemStyleSchema = v.strictObject({
 	textAlign: v.optional(v.picklist(["left", "center", "right"])),
 	verticalAlign: v.optional(v.picklist(["top", "center", "bottom"])),
-	backgroundColor: v.optional(v.pipe(v.string(), v.trim(), v.minLength(1))),
+	backgroundColor: v.optional(pageItemBackgroundColorSchema),
 });
 export type PageItemStyle = v.InferOutput<typeof pageItemStyleSchema>;
 
@@ -142,6 +155,7 @@ const pageItemUpsertBaseSchema = v.object({
 	id: v.pipe(v.string(), v.minLength(1)),
 	style: pageItemStyleSchema,
 	layouts: pageItemLayoutsSchema,
+	updatedAt: v.optional(v.string()),
 });
 
 export const pageItemUpsertSchema = v.intersect([

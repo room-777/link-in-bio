@@ -23,6 +23,7 @@
         "@grabbin/auth": "workspace:*",
         "@grabbin/db": "workspace:*",
         "@grabbin/env": "workspace:*",
+        "@grabbin/grid-layout": "workspace:*",
         "@grabbin/page-handle": "workspace:*",
         "@sentry/cloudflare": "catalog:sentry",
         "@sentry/hono": "catalog:sentry",
@@ -155,6 +156,17 @@
         "@grabbin/config": "workspace:*",
         "@grabbin/infra": "workspace:*",
         "@types/node": "^22.20.1",
+        "typescript": "catalog:tooling",
+      },
+    },
+    "packages/grid-layout": {
+      "name": "@grabbin/grid-layout",
+      "version": "0.0.0",
+      "dependencies": {
+        "@grabbin/api": "workspace:*",
+      },
+      "devDependencies": {
+        "@grabbin/config": "workspace:*",
         "typescript": "catalog:tooling",
       },
     },
@@ -563,6 +575,8 @@
     "@grabbin/email": ["@grabbin/email@workspace:packages/email"],
 
     "@grabbin/env": ["@grabbin/env@workspace:packages/env"],
+
+    "@grabbin/grid-layout": ["@grabbin/grid-layout@workspace:packages/grid-layout"],
 
     "@grabbin/infra": ["@grabbin/infra@workspace:packages/infra"],
 

@@ -1,6 +1,6 @@
 "use client";
 
-import type { PageData } from "@grabbin/api";
+import type { PageByHandleResponse } from "@grabbin/api";
 import { useEffect, useState } from "react";
 
 import FloatPreview from "@/components/layout/float-preview";
@@ -8,7 +8,12 @@ import PageFooter from "./page-footer";
 import PageOnboardingForm from "./page-onboarding-form";
 import PageProfileForm from "./page-profile-form";
 
-export default function OwnerPage({ page }: { page: PageData }) {
+export default function OwnerPage({
+	pageResponse,
+}: {
+	pageResponse: PageByHandleResponse;
+}) {
+	const { page } = pageResponse;
 	const [currentPage, setCurrentPage] = useState(page);
 	const [isFloatVisible, setIsFloatVisible] = useState(!page.onboarding);
 	const [isSaving, setIsSaving] = useState(false);

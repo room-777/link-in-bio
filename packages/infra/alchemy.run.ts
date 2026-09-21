@@ -98,6 +98,7 @@ export const server = Cloudflare.Worker("server", {
 	env: {
 		HYPERDRIVE: hyperdrive,
 		R2_BUCKET: grabbinBucket,
+		R2_PUBLIC_URL: Config.string("R2_PUBLIC_URL").pipe(Config.withDefault("")),
 		R2_ACCOUNT_ID: Config.string("R2_ACCOUNT_ID"),
 		R2_BUCKET_NAME: Config.string("R2_BUCKET_NAME").pipe(
 			Config.withDefault("grabbin"),

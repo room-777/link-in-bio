@@ -1,4 +1,4 @@
-import { pageDataSchema } from "@grabbin/api";
+import { pageByHandleResponseSchema } from "@grabbin/api";
 import * as v from "valibot";
 
 import { apiClient, getApiErrorMessage } from "@/lib/api-client";
@@ -20,5 +20,5 @@ export async function fetchPage(
 	}
 
 	const body = await response.json();
-	return "page" in body ? v.parse(pageDataSchema, body.page) : null;
+	return "page" in body ? v.parse(pageByHandleResponseSchema, body) : null;
 }

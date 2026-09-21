@@ -1,5 +1,6 @@
 import {
 	createPageSchema,
+	pageByHandleResponseSchema,
 	pageImageKeySchema,
 	pageImageUploadSchema,
 	pageProfileSchema,
@@ -19,7 +20,7 @@ import {
 import {
 	createPageImageKey,
 	createPresignedPutUrl,
-	isOwnedPageImageKey,
+	isOwnedPageMediaKey,
 } from "../services/media.service";
 import {
 	completePage,
@@ -29,6 +30,7 @@ import {
 	updatePageHandle,
 } from "../services/page.service";
 import { checkPageHandle } from "../services/page-handle.service";
+import { listPageItems } from "../services/page-item.service";
 import type { AppEnv } from "../types";
 
 const pageErrorDetails = {
@@ -77,16 +79,24 @@ export const pagesController = new Hono<AppEnv>()
 		const hasCookie = Boolean(c.req.header("cookie"));
 		c.header(
 			"Cache-Control",
-			hasCookie ? "private, no-store" : "public, max-age=60, s-maxage=60",
+			hasCookie ? "private, no-store" : "public, max-age=0, must-revalidate",
 		);
 		if (hasCookie) c.header("Vary", "Cookie");
-		return c.json({
-			page: {
-				...publicPage,
-				isOwner: canEdit,
-				canEdit,
-			},
+		const items = await listPageItems({
+			db: c.var.db,
+			pageId: page.id,
+			publicBaseUrl: c.env.R2_PUBLIC_URL,
 		});
+		return c.json(
+			v.parse(pageByHandleResponseSchema, {
+				page: {
+					...publicPage,
+					isOwner: canEdit,
+					canEdit,
+				},
+				items,
+			}),
+		);
 	})
 	.post("/:handle/profile-image/upload-url", requiredSession, async (c) => {
 		const session = c.var.session;
@@ -157,10 +167,11 @@ export const pagesController = new Hono<AppEnv>()
 			return jsonApiError(c, { status: 404, detail: "Page not found." });
 		}
 		if (
-			!isOwnedPageImageKey({
+			!isOwnedPageMediaKey({
 				key: parsed.output.key,
 				userId: session.user.id,
 				pageId: page.id,
+				scope: "profile",
 			})
 		) {
 			return jsonApiError(c, {

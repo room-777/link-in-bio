@@ -22,19 +22,20 @@ export async function generateMetadata({
 		requestHeaders.get("cookie") ?? "",
 	);
 	if (!page) return {};
+	const { page: pageData } = page;
 
-	const icon = getPageImageUrl(page.imageKey, {
+	const icon = getPageImageUrl(pageData.imageKey, {
 		width: 64,
 		height: 64,
 		format: "png",
 	});
-	const appleIcon = getPageImageUrl(page.imageKey, {
+	const appleIcon = getPageImageUrl(pageData.imageKey, {
 		width: 180,
 		height: 180,
 		format: "png",
 	});
 	return {
-		title: page.name ?? page.handle,
+		title: pageData.name ?? pageData.handle,
 		icons: icon
 			? {
 					icon: { url: icon, type: "image/png", sizes: "64x64" },
@@ -56,9 +57,9 @@ export default async function Page({ params }: PageProps<"/[handle]">) {
 
 	if (!page) notFound();
 
-	if (page.canEdit) {
-		return <OwnerPage page={page} />;
+	if (page.page.canEdit) {
+		return <OwnerPage pageResponse={page} />;
 	}
 
-	return <HandlePage page={page} />;
+	return <HandlePage pageResponse={page} />;
 }

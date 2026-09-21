@@ -1,12 +1,17 @@
 "use client";
 
-import type { PageData } from "@grabbin/api";
+import type { PageByHandleResponse } from "@grabbin/api";
 import { motion, useReducedMotion } from "motion/react";
 
 import { getPageImageUrl } from "@/lib/page-image-url";
 import PageFooter from "./page-footer";
 
-export default function HandlePage({ page }: { page: PageData }) {
+export default function HandlePage({
+	pageResponse,
+}: {
+	pageResponse: PageByHandleResponse;
+}) {
+	const { page } = pageResponse;
 	const reduceMotion = useReducedMotion();
 	const enterTransition = reduceMotion
 		? { duration: 0 }

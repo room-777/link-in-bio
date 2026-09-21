@@ -1,5 +1,7 @@
 import * as v from "valibot";
 
+import { pageItemResponseSchema } from "./grid";
+
 export const createPageSchema = v.object({ handle: v.string() });
 
 export const pageImageContentTypes = [
@@ -34,6 +36,11 @@ export const pageDataSchema = v.object({
 	canEdit: v.boolean(),
 });
 
+export const pageByHandleResponseSchema = v.object({
+	page: pageDataSchema,
+	items: v.array(pageItemResponseSchema),
+});
+
 export const updatePageDraftSchema = v.object({
 	imageKey: v.optional(v.nullable(v.pipe(v.string(), v.maxLength(512)))),
 	name: v.pipe(v.string(), v.trim(), v.minLength(1), v.maxLength(80)),
@@ -41,6 +48,9 @@ export const updatePageDraftSchema = v.object({
 });
 
 export type PageData = v.InferOutput<typeof pageDataSchema>;
+export type PageByHandleResponse = v.InferOutput<
+	typeof pageByHandleResponseSchema
+>;
 export type UpdatePageDraft = v.InferOutput<typeof updatePageDraftSchema>;
 export type PageProfile = UpdatePageDraft;
 
