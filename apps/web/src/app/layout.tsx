@@ -34,7 +34,7 @@ export default function RootLayout({
 			className={cn("font-sans", inter.variable)}
 		>
 			<body
-				className={`${geistSans.variable} ${geistMono.variable} antialiased`}
+				className={`${geistSans.variable} ${geistMono.variable} relative antialiased`}
 			>
 				<Providers>{children}</Providers>
 			</body>
