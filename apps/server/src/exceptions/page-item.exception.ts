@@ -7,6 +7,8 @@ export type PageItemServiceErrorCode =
 	| "ITEM_NOT_FOUND"
 	| "INVALID_ITEM_LAYOUT"
 	| "INVALID_MEDIA_KEY"
+	| "INVALID_MEDIA_UPLOAD"
+	| "ITEM_MEDIA_NOT_FOUND"
 	| "CONCURRENT_ITEM_UPDATE";
 
 export class PageItemServiceError extends Error {

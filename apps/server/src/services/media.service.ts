@@ -1,4 +1,12 @@
+import {
+	type PageItemUploadRequest,
+	pageItemUploadCompleteResponseSchema,
+	pageItemUploadRequestSchema,
+	pageItemUploadResponseSchema,
+} from "@grabbin/api";
 import { AwsClient } from "aws4fetch";
+import * as v from "valibot";
+import { PageItemServiceError } from "../exceptions/page-item.exception";
 
 const imageExtensions = {
 	"image/avif": "avif",
@@ -14,6 +22,20 @@ export function createPageImageKey(input: {
 	contentType: keyof typeof imageExtensions;
 }) {
 	return `users/${input.userId}/pages/${input.pageId}/profile/${crypto.randomUUID()}.${imageExtensions[input.contentType]}`;
+}
+
+function getMediaExtension(contentType: string) {
+	const subtype = contentType.split("/")[1]?.split(/[+;]/, 1)[0];
+	const extension = subtype?.replace(/[^a-z0-9]/gi, "").toLowerCase();
+	return extension || "media";
+}
+
+export function createPageItemMediaKey(input: {
+	userId: string;
+	pageId: string;
+	contentType: string;
+}) {
+	return `users/${input.userId}/pages/${input.pageId}/items/${crypto.randomUUID()}.${getMediaExtension(input.contentType)}`;
 }
 
 export function isOwnedPageMediaKey(input: {
@@ -82,4 +104,67 @@ export async function createPresignedPutUrl(input: {
 		url: request.url,
 		expiresAt: new Date(Date.now() + expiresInSeconds * 1000).toISOString(),
 	};
+}
+
+export async function createItemMediaUpload(input: {
+	accountId: string;
+	bucketName: string;
+	accessKeyId: string;
+	secretAccessKey: string;
+	userId: string;
+	pageId: string;
+	request: PageItemUploadRequest;
+}) {
+	const parsed = v.safeParse(pageItemUploadRequestSchema, input.request);
+	if (!parsed.success) {
+		throw new PageItemServiceError("INVALID_MEDIA_UPLOAD");
+	}
+	const objectKey = createPageItemMediaKey({
+		userId: input.userId,
+		pageId: input.pageId,
+		contentType: parsed.output.contentType,
+	});
+	const upload = await createPresignedPutUrl({
+		accountId: input.accountId,
+		bucketName: input.bucketName,
+		accessKeyId: input.accessKeyId,
+		secretAccessKey: input.secretAccessKey,
+		key: objectKey,
+		contentType: parsed.output.contentType,
+	});
+	return v.parse(pageItemUploadResponseSchema, {
+		objectKey,
+		uploadUrl: upload.url,
+		expiresAt: upload.expiresAt,
+	});
+}
+
+export async function completeItemMediaUpload(input: {
+	bucket: R2Bucket;
+	userId: string;
+	pageId: string;
+	objectKey: string;
+}) {
+	if (
+		!isOwnedPageMediaKey({
+			key: input.objectKey,
+			userId: input.userId,
+			pageId: input.pageId,
+			scope: "items",
+		})
+	) {
+		throw new PageItemServiceError("INVALID_MEDIA_KEY");
+	}
+
+	const object = await input.bucket.head(input.objectKey);
+	const mimeType = object?.httpMetadata?.contentType ?? "";
+	if (!object || !/^(image|video)\//i.test(mimeType)) {
+		throw new PageItemServiceError("ITEM_MEDIA_NOT_FOUND");
+	}
+
+	return v.parse(pageItemUploadCompleteResponseSchema, {
+		objectKey: input.objectKey,
+		mimeType,
+		size: object.size,
+	});
 }

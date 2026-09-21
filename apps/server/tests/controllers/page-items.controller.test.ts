@@ -24,6 +24,40 @@ function createTestApp(
 }
 
 describe("page items controller", () => {
+	it("PAGE-ITEM-API-004 rejects invalid media upload input", async () => {
+		const app = createTestApp(async () => ({ items: [] }));
+		const response = await app.request("/pages/jane/items/upload", {
+			method: "POST",
+			headers: { "Content-Type": "application/json" },
+			body: JSON.stringify({ contentType: "text/plain", size: 1 }),
+		});
+
+		assert.equal(response.status, 422);
+		assert.deepEqual(await response.json(), {
+			status: 422,
+			code: "INVALID_MEDIA_UPLOAD",
+			title: "Unprocessable Entity",
+			detail: "Invalid item media.",
+		});
+	});
+
+	it("PAGE-ITEM-API-005 rejects invalid media completion input", async () => {
+		const app = createTestApp(async () => ({ items: [] }));
+		const response = await app.request("/pages/jane/items/upload/complete", {
+			method: "POST",
+			headers: { "Content-Type": "application/json" },
+			body: JSON.stringify({ objectKey: "" }),
+		});
+
+		assert.equal(response.status, 422);
+		assert.deepEqual(await response.json(), {
+			status: 422,
+			code: "INVALID_MEDIA_KEY",
+			title: "Unprocessable Entity",
+			detail: "The media object key is invalid.",
+		});
+	});
+
 	/**
 	 * Case ID: PAGE-ITEM-API-001
 	 * Given: an authenticated request contains an invalid batch body.

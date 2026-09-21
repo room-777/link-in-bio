@@ -249,3 +249,44 @@ export const pageItemBatchResponseSchema = v.object({
 export type PageItemBatchResponse = v.InferOutput<
 	typeof pageItemBatchResponseSchema
 >;
+
+export const pageItemUploadRequestSchema = v.object({
+	contentType: v.pipe(
+		v.string(),
+		v.trim(),
+		v.regex(/^(image|video)\/[a-z0-9.+-]+$/i, "Media MIME type required."),
+	),
+	size: v.pipe(v.number(), v.integer(), v.minValue(1)),
+});
+
+export type PageItemUploadRequest = v.InferOutput<
+	typeof pageItemUploadRequestSchema
+>;
+
+export const pageItemUploadResponseSchema = v.object({
+	objectKey: v.pipe(v.string(), v.minLength(1)),
+	uploadUrl: v.pipe(v.string(), v.url()),
+	expiresAt: v.string(),
+});
+
+export type PageItemUploadResponse = v.InferOutput<
+	typeof pageItemUploadResponseSchema
+>;
+
+export const pageItemUploadCompleteRequestSchema = v.object({
+	objectKey: v.pipe(v.string(), v.minLength(1)),
+});
+
+export type PageItemUploadCompleteRequest = v.InferOutput<
+	typeof pageItemUploadCompleteRequestSchema
+>;
+
+export const pageItemUploadCompleteResponseSchema = v.object({
+	objectKey: v.pipe(v.string(), v.minLength(1)),
+	mimeType: v.pipe(v.string(), v.regex(/^(image|video)\//i)),
+	size: v.pipe(v.number(), v.integer(), v.minValue(1)),
+});
+
+export type PageItemUploadCompleteResponse = v.InferOutput<
+	typeof pageItemUploadCompleteResponseSchema
+>;
