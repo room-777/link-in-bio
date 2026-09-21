@@ -1,32 +1,11 @@
 "use client";
 
 import {
-	AlertDialog,
-	AlertDialogAction,
-	AlertDialogCancel,
-	AlertDialogContent,
-	AlertDialogDescription,
-	AlertDialogFooter,
-	AlertDialogHeader,
-	AlertDialogTitle,
-} from "@grabbin/ui/components/alert-dialog";
-import {
 	Avatar,
 	AvatarFallback,
 	AvatarImage,
 } from "@grabbin/ui/components/avatar";
 import { Button, buttonVariants } from "@grabbin/ui/components/button";
-import { Dialog, DialogContent } from "@grabbin/ui/components/dialog";
-import {
-	Drawer,
-	DrawerClose,
-	DrawerContent,
-	DrawerDescription,
-	DrawerFooter,
-	DrawerHeader,
-	DrawerTitle,
-} from "@grabbin/ui/components/drawer";
-import Loading from "@grabbin/ui/components/loading";
 import {
 	Popover,
 	PopoverContent,
@@ -35,20 +14,17 @@ import {
 } from "@grabbin/ui/components/popover";
 import { Skeleton } from "@grabbin/ui/components/skeleton";
 import { toast } from "@grabbin/ui/components/toast";
-import { useIsMobile } from "@grabbin/ui/components/use-mobile";
 import { cn } from "@grabbin/ui/lib/utils";
 import { SlidersHorizontal } from "lucide-react";
 import { motion, useReducedMotion } from "motion/react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { Activity, useEffect, useRef, useState } from "react";
-import { CheckCircle } from "reicon-react/icons/CheckCircle";
-import { apiClient, getApiErrorMessage } from "@/lib/api-client";
+import { useEffect, useState } from "react";
 import { authClient, getAuthErrorMessage } from "@/lib/auth-client";
 import { getSignInHref } from "@/lib/auth-redirect";
-import { PageHandleForm } from "./create-page-form";
-
-type DeleteActivity = "confirm" | "sent";
+import AddWidgetDialog from "./add-widget-dialog";
+import ChangeHandleDialog from "./change-handle-dialog";
+import DeleteAccountDialog from "./delete-account-dialog";
 
 function OwnerFooter({
 	handle,
@@ -59,45 +35,15 @@ function OwnerFooter({
 }) {
 	const router = useRouter();
 	const reduceMotion = useReducedMotion();
-	const isMobile = useIsMobile();
-	const { data: session } = authClient.useSession();
 	const [activeItem, setActiveItem] = useState<number | null>(null);
 	const [isItemActive, setIsItemActive] = useState(false);
 	const [isHandleDialogOpen, setIsHandleDialogOpen] = useState(false);
 	const [isOpen, setIsOpen] = useState(false);
 	const [isSigningOut, setIsSigningOut] = useState(false);
 	const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
-	const [deleteActivity, setDeleteActivity] =
-		useState<DeleteActivity>("confirm");
-	const [deleteClickCount, setDeleteClickCount] = useState(0);
-	const [isRequestingDelete, setIsRequestingDelete] = useState(false);
-	const deleteResetTimerRef = useRef<ReturnType<typeof setTimeout> | null>(
-		null,
-	);
 	const hoverTransition = reduceMotion
 		? { duration: 0 }
 		: { type: "spring" as const, stiffness: 560, damping: 32, mass: 0.8 };
-	const deleteProgress = Math.min(deleteClickCount, 3) / 3;
-	const deleteButtonLabel = isRequestingDelete
-		? "Sending link…"
-		: deleteClickCount === 0
-			? "Delete"
-			: deleteClickCount === 1
-				? "Click again"
-				: deleteClickCount === 2
-					? "One more time"
-					: "Delete anyway";
-	const renderHandleForm = (compact: boolean) => (
-		<PageHandleForm
-			initialHandle={handle}
-			title="Change your handle"
-			description="Choose a new handle for your page."
-			submitLabel="Change handle"
-			variant="outline"
-			compact={compact}
-			onSubmit={handleChangeHandle}
-		/>
-	);
 	async function handleSignOut() {
 		setIsSigningOut(true);
 		const { error } = await authClient.signOut();
@@ -109,83 +55,6 @@ function OwnerFooter({
 
 		router.refresh();
 	}
-
-	async function handleChangeHandle(nextHandle: string) {
-		if (!handle) throw new Error("Please try again.");
-		const response = await apiClient.pages[":handle"].handle.$patch(
-			{ param: { handle } },
-			{
-				init: {
-					body: JSON.stringify({ handle: nextHandle }),
-					headers: { "Content-Type": "application/json" },
-				},
-			},
-		);
-		if (!response.ok) throw new Error(await getApiErrorMessage(response));
-
-		const body = await response.json();
-		if (
-			!("page" in body) ||
-			!body.page ||
-			typeof body.page !== "object" ||
-			!("handle" in body.page) ||
-			typeof body.page.handle !== "string"
-		) {
-			throw new Error("Please try again.");
-		}
-
-		setIsHandleDialogOpen(false);
-		setIsOpen(false);
-		if (onHandleChange) {
-			onHandleChange(body.page.handle);
-		} else {
-			router.replace(`/${encodeURIComponent(body.page.handle)}`);
-		}
-	}
-
-	const resetDeleteDialog = () => {
-		setDeleteActivity("confirm");
-		setDeleteClickCount(0);
-		setIsRequestingDelete(false);
-	};
-
-	const handleDeleteDialogChange = (open: boolean) => {
-		if (deleteResetTimerRef.current) {
-			clearTimeout(deleteResetTimerRef.current);
-			deleteResetTimerRef.current = null;
-		}
-
-		setIsDeleteDialogOpen(open);
-		if (open) {
-			resetDeleteDialog();
-			return;
-		}
-
-		setIsRequestingDelete(false);
-		deleteResetTimerRef.current = setTimeout(
-			resetDeleteDialog,
-			reduceMotion ? 0 : 150,
-		);
-	};
-
-	const handleDeleteAccount = async () => {
-		const nextClickCount = deleteClickCount + 1;
-		setDeleteClickCount(nextClickCount);
-		if (nextClickCount < 4) return;
-
-		setIsRequestingDelete(true);
-		const { error } = await authClient.deleteUser({
-			callbackURL: window.location.origin,
-		});
-		setIsRequestingDelete(false);
-
-		if (error) {
-			toast({ message: getAuthErrorMessage(error), state: "error" });
-			return;
-		}
-
-		setDeleteActivity("sent");
-	};
 
 	return (
 		<>
@@ -270,7 +139,7 @@ function OwnerFooter({
 						className="relative z-10 h-16 w-full justify-start px-5 text-primary hover:bg-transparent"
 						onClick={() => {
 							setIsOpen(false);
-							handleDeleteDialogChange(true);
+							setIsDeleteDialogOpen(true);
 						}}
 						onPointerEnter={() => {
 							setActiveItem(2);
@@ -285,256 +154,17 @@ function OwnerFooter({
 					</Button>
 				</PopoverContent>
 			</Popover>
-			{isMobile ? (
-				<Drawer
-					open={isHandleDialogOpen}
-					onOpenChange={setIsHandleDialogOpen}
-					showSwipeHandle
-				>
-					<DrawerContent className="max-h-[calc(100dvh-2rem)]">
-						<DrawerHeader className="sr-only">
-							<DrawerTitle>Change your handle</DrawerTitle>
-							<DrawerDescription>
-								Choose a new handle for your page.
-							</DrawerDescription>
-						</DrawerHeader>
-						<div className="min-h-0 overflow-y-auto p-5 [&_h1]:font-heading [&_h1]:font-medium [&_h1]:text-base [&_p]:text-muted-foreground [&_p]:text-sm">
-							{renderHandleForm(false)}
-						</div>
-					</DrawerContent>
-				</Drawer>
-			) : (
-				<Dialog open={isHandleDialogOpen} onOpenChange={setIsHandleDialogOpen}>
-					<DialogContent
-						showCloseButton={false}
-						className="smooth-shadow-md aspect-square gap-0 overflow-hidden p-5 ring-0"
-					>
-						<div className="flex h-full min-h-0 min-w-0 flex-col overflow-y-auto p-0">
-							<div className="h-full min-h-0 min-w-0 p-1">
-								{renderHandleForm(true)}
-							</div>
-						</div>
-					</DialogContent>
-				</Dialog>
-			)}
-			{isMobile ? (
-				<Drawer
-					open={isDeleteDialogOpen}
-					onOpenChange={handleDeleteDialogChange}
-					showSwipeHandle
-				>
-					<DrawerContent className="h-fit! max-h-[calc(100dvh-2rem)]">
-						<Activity mode="visible">
-							<div
-								aria-hidden={deleteActivity !== "confirm"}
-								className={cn(
-									"flex w-full min-w-0 flex-col gap-4 p-5 opacity-0 transition-opacity duration-200 ease-out motion-reduce:transition-none",
-									deleteActivity === "confirm" && "opacity-100",
-									deleteActivity !== "confirm" && "hidden",
-								)}
-								inert={deleteActivity !== "confirm"}
-							>
-								<DrawerHeader className="p-0 text-left">
-									<DrawerTitle>Delete your account?</DrawerTitle>
-									<DrawerDescription>
-										Your account and all associated data will be permanently
-										deleted. This action can&apos;t be undone.
-									</DrawerDescription>
-								</DrawerHeader>
-								<DrawerFooter className="!mt-0 p-0 pt-6">
-									<Button
-										variant="destructive"
-										size="xl"
-										disabled={isRequestingDelete}
-										onClick={handleDeleteAccount}
-										aria-label={deleteButtonLabel}
-										className="relative w-full min-w-0 overflow-hidden whitespace-nowrap bg-destructive text-white hover:bg-destructive/80 motion-safe:active:scale-100"
-									>
-										<span className="relative z-10 inline-flex items-center gap-2">
-											{isRequestingDelete && (
-												<Loading aria-hidden="true" className="size-4" />
-											)}
-											<span>{deleteButtonLabel}</span>
-										</span>
-										{!isRequestingDelete && (
-											<span
-												aria-hidden="true"
-												className="pointer-events-none absolute inset-x-3 bottom-1 z-20 h-1 overflow-hidden rounded-full bg-white/25"
-											>
-												<span
-													className="block h-full origin-left rounded-full bg-white transition-transform duration-200 ease-out will-change-transform motion-reduce:transition-none"
-													style={{ transform: `scaleX(${deleteProgress})` }}
-												/>
-											</span>
-										)}
-									</Button>
-									<DrawerClose
-										render={
-											<Button
-												className="w-full min-w-0 whitespace-nowrap"
-												size="xl"
-												variant="outline"
-											/>
-										}
-									>
-										Cancel
-									</DrawerClose>
-								</DrawerFooter>
-							</div>
-						</Activity>
-						<Activity mode="visible">
-							<div
-								aria-hidden={deleteActivity !== "sent"}
-								className={cn(
-									"flex flex-col gap-4 p-5 opacity-0 transition-opacity duration-200 ease-out motion-reduce:transition-none",
-									deleteActivity === "sent" && "opacity-100",
-									deleteActivity !== "sent" && "hidden",
-								)}
-								inert={deleteActivity !== "sent"}
-							>
-								<DrawerHeader className="p-0 text-left">
-									<span
-										className="t-success-check mb-2 self-center"
-										data-state={deleteActivity === "sent" ? "in" : "out"}
-										aria-hidden="true"
-									>
-										<CheckCircle
-											weight="Filled"
-											className="size-12 text-brand-green"
-										/>
-									</span>
-									<DrawerTitle>Check your inbox</DrawerTitle>
-									<DrawerDescription className="mt-2">
-										<p>
-											We sent a deletion link to{" "}
-											<strong className="font-medium text-primary">
-												{session?.user.email ?? "your email address"}.
-											</strong>
-										</p>
-										<p>Open it to finish deleting your account.</p>
-									</DrawerDescription>
-								</DrawerHeader>
-								<DrawerFooter className="!mt-0 p-0 pt-6">
-									<DrawerClose render={<Button variant="outline" size="xl" />}>
-										Okay, I got it
-									</DrawerClose>
-								</DrawerFooter>
-							</div>
-						</Activity>
-					</DrawerContent>
-				</Drawer>
-			) : (
-				<AlertDialog
-					open={isDeleteDialogOpen}
-					onOpenChange={handleDeleteDialogChange}
-				>
-					<AlertDialogContent className="aspect-square gap-0 overflow-hidden p-5">
-						<Activity mode="visible">
-							<div
-								aria-hidden={deleteActivity !== "confirm"}
-								className={cn(
-									"col-start-1 row-start-1 flex h-full w-full min-w-0 flex-col gap-4 opacity-0 transition-opacity duration-200 ease-out motion-reduce:transition-none",
-									deleteActivity === "confirm" && "opacity-100",
-								)}
-								inert={deleteActivity !== "confirm"}
-							>
-								<AlertDialogHeader>
-									{/*<span className="mb-2 self-start" aria-hidden="true">
-									<InfoCircle
-										weight="Filled"
-										className="size-12 text-primary"
-									/>
-								</span>*/}
-									<AlertDialogTitle>Delete your account?</AlertDialogTitle>
-									<AlertDialogDescription>
-										Your account and all associated data will be permanently
-										deleted. This action can&apos;t be undone.
-									</AlertDialogDescription>
-								</AlertDialogHeader>
-								<AlertDialogFooter className="mx-0 mt-auto w-full! flex-col-reverse! items-end rounded-b-xl border-0 bg-transparent px-0 sm:justify-end">
-									<AlertDialogCancel
-										className={"w-full min-w-0 whitespace-nowrap sm:max-w-36"}
-										size={"xl"}
-										variant={"outline"}
-									>
-										Cancel
-									</AlertDialogCancel>
-									<AlertDialogAction
-										variant="destructive"
-										size={"xl"}
-										disabled={isRequestingDelete}
-										onClick={handleDeleteAccount}
-										aria-label={deleteButtonLabel}
-										className={
-											"relative w-full min-w-0 overflow-hidden whitespace-nowrap bg-destructive text-white hover:bg-destructive/80 motion-safe:active:scale-100 sm:max-w-36"
-										}
-									>
-										<span className="relative z-10 inline-flex items-center gap-2">
-											{isRequestingDelete && (
-												<Loading aria-hidden="true" className="size-4" />
-											)}
-											<span>{deleteButtonLabel}</span>
-										</span>
-										{!isRequestingDelete && (
-											<span
-												aria-hidden="true"
-												className="pointer-events-none absolute inset-x-3 bottom-1 z-20 h-1 overflow-hidden rounded-full bg-white/25"
-											>
-												<span
-													className="block h-full origin-left rounded-full bg-white transition-transform duration-200 ease-out will-change-transform motion-reduce:transition-none"
-													style={{ transform: `scaleX(${deleteProgress})` }}
-												/>
-											</span>
-										)}
-									</AlertDialogAction>
-								</AlertDialogFooter>
-							</div>
-						</Activity>
-						<Activity mode="visible">
-							<div
-								aria-hidden={deleteActivity !== "sent"}
-								className={cn(
-									"col-start-1 row-start-1 flex flex-col gap-4 opacity-0 transition-opacity duration-200 ease-out motion-reduce:transition-none",
-									deleteActivity === "sent" && "opacity-100",
-								)}
-								inert={deleteActivity !== "sent"}
-							>
-								<AlertDialogHeader>
-									<span
-										className="t-success-check mb-2 self-start"
-										data-state={deleteActivity === "sent" ? "in" : "out"}
-										aria-hidden="true"
-									>
-										<CheckCircle
-											weight="Filled"
-											className="size-12 text-brand-green"
-										/>
-									</span>
-									<AlertDialogTitle>Check your inbox</AlertDialogTitle>
-									<AlertDialogDescription className={"mt-2 sm:mt-0"}>
-										<p>
-											We sent a deletion link to{" "}
-											<strong className="font-medium text-primary">
-												{session?.user.email ?? "your email address"}.
-											</strong>
-										</p>
-										<p>Open it to finish deleting your account.</p>
-									</AlertDialogDescription>
-								</AlertDialogHeader>
-								<AlertDialogFooter className="grow items-end rounded-b-xl border-0 bg-transparent">
-									<AlertDialogCancel
-										variant="outline"
-										size={"xl"}
-										className={""}
-									>
-										Okay, I got it
-									</AlertDialogCancel>
-								</AlertDialogFooter>
-							</div>
-						</Activity>
-					</AlertDialogContent>
-				</AlertDialog>
-			)}
+			<AddWidgetDialog />
+			<ChangeHandleDialog
+				handle={handle}
+				onHandleChange={onHandleChange}
+				onOpenChange={setIsHandleDialogOpen}
+				open={isHandleDialogOpen}
+			/>
+			<DeleteAccountDialog
+				onOpenChange={setIsDeleteDialogOpen}
+				open={isDeleteDialogOpen}
+			/>
 		</>
 	);
 }
