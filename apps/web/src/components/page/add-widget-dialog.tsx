@@ -274,7 +274,7 @@ export default function AddWidgetDialog({
 			<Button
 				variant="default"
 				size="icon-lg"
-				className="fixed right-6 bottom-6 z-50 size-13 rounded-full"
+				className="fixed right-6 bottom-10 z-50 size-13 rounded-full"
 				aria-label="Open add dialog"
 				onClick={() => setOpen(true)}
 			>

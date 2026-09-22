@@ -275,7 +275,7 @@ export default function BentoSection({
 		>
 			{mounted ? (
 				<ReactGridLayout
-					key={`${breakpoint}-${layoutRevision}`}
+					key={layoutRevision}
 					className={[
 						"bento-layout max-w-full overflow-visible",
 						mode === "edit" ? "is-edit-mode" : null,
