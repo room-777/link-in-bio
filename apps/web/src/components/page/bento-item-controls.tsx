@@ -28,9 +28,9 @@ import {
 	Link2,
 	LocateFixed,
 	Minus,
-	Move,
 	Plus,
 	RefreshCw,
+	Search,
 	Unlink,
 } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
@@ -292,51 +292,6 @@ function MapItemExtraControls() {
 	return (
 		<>
 			<Popover
-				open={searchOpen}
-				onOpenChange={(open, details) => {
-					if (!open && keepOpenWhileEditingMap(details)) {
-						details.cancel();
-						return;
-					}
-					setSearchOpen(open);
-					if (open) setMapControlsOpen(false);
-				}}
-			>
-				<PopoverTrigger
-					render={
-						<Button
-							type="button"
-							size="icon-sm"
-							variant="ghost"
-							aria-label={
-								searchOpen ? "Close location search" : "Search location"
-							}
-							aria-pressed={searchOpen}
-							aria-expanded={searchOpen}
-							className={cn(
-								"size-8 cursor-pointer! rounded-md text-white hover:bg-white/20 hover:text-white focus-visible:ring-2 focus-visible:ring-ring/60",
-								searchOpen &&
-									"bg-brand-green! text-white! hover:bg-brand-green!",
-							)}
-						/>
-					}
-				>
-					<Expand className="size-4 stroke-[2.5px]" aria-hidden="true" />
-				</PopoverTrigger>
-				<PopoverContent
-					side="bottom"
-					sideOffset={8}
-					data-bento-item-drag-cancel="true"
-					positionerClassName="z-[100003]"
-					className="grid-action w-64 rounded-lg border-0 bg-black p-1 shadow-lg"
-				>
-					<MapLocationSearch
-						accessToken={env.NEXT_PUBLIC_MAPBOX_ACCESS_TOKEN}
-						onSelect={selectLocation}
-					/>
-				</PopoverContent>
-			</Popover>
-			<Popover
 				open={mapControlsOpen}
 				onOpenChange={(open, details) => {
 					if (!open && keepOpenWhileEditingMap(details)) {
@@ -366,7 +321,7 @@ function MapItemExtraControls() {
 						/>
 					}
 				>
-					<Move className="size-4 stroke-[2.5px]" aria-hidden="true" />
+					<Expand className="size-4 stroke-[2.5px]" aria-hidden="true" />
 				</PopoverTrigger>
 				<PopoverContent
 					side="bottom"
@@ -408,6 +363,51 @@ function MapItemExtraControls() {
 					>
 						<LocateFixed className="size-4 stroke-[2.5px]" aria-hidden="true" />
 					</Button>
+				</PopoverContent>
+			</Popover>
+			<Popover
+				open={searchOpen}
+				onOpenChange={(open, details) => {
+					if (!open && keepOpenWhileEditingMap(details)) {
+						details.cancel();
+						return;
+					}
+					setSearchOpen(open);
+					if (open) setMapControlsOpen(false);
+				}}
+			>
+				<PopoverTrigger
+					render={
+						<Button
+							type="button"
+							size="icon-sm"
+							variant="ghost"
+							aria-label={
+								searchOpen ? "Close location search" : "Search location"
+							}
+							aria-pressed={searchOpen}
+							aria-expanded={searchOpen}
+							className={cn(
+								"size-8 cursor-pointer! rounded-md text-white hover:bg-white/20 hover:text-white focus-visible:ring-2 focus-visible:ring-ring/60",
+								searchOpen &&
+									"bg-brand-green! text-white! hover:bg-brand-green!",
+							)}
+						/>
+					}
+				>
+					<Search className="size-4 stroke-[2.5px]" aria-hidden="true" />
+				</PopoverTrigger>
+				<PopoverContent
+					side="bottom"
+					sideOffset={8}
+					data-bento-item-drag-cancel="true"
+					positionerClassName="z-[100003]"
+					className="grid-action w-64 rounded-lg border-0 bg-black p-1 shadow-lg"
+				>
+					<MapLocationSearch
+						accessToken={env.NEXT_PUBLIC_MAPBOX_ACCESS_TOKEN}
+						onSelect={selectLocation}
+					/>
 				</PopoverContent>
 			</Popover>
 		</>
