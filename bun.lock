@@ -54,6 +54,7 @@
         "@grabbin/auth": "workspace:*",
         "@grabbin/bento-layout": "workspace:*",
         "@grabbin/env": "workspace:*",
+        "@grabbin/page-link": "workspace:*",
         "@grabbin/ui": "workspace:*",
         "@sentry/cloudflare": "catalog:sentry",
         "@sentry/react": "catalog:sentry",

@@ -13,13 +13,14 @@ import {
 	enrichLinkProvider,
 	type LinkProviderEnvironment,
 } from "./link-providers";
+import {
+	fetchHtml,
+	getFaviconUrl,
+	MAX_LINK_METADATA_HTML_BYTES,
+	parseHtmlMetadata,
+} from "./link-providers/runtime";
 import { getOwnedPage } from "./page.service";
 import { mapPageItemResponse } from "./page-item.service";
-
-const LINK_FETCH_TIMEOUT_MS = 2500;
-const MAX_HTML_BYTES = 1024 * 1024;
-const MAX_TITLE_LENGTH = 240;
-const MAX_DESCRIPTION_LENGTH = 1200;
 
 type LinkMetadata = NonNullable<
 	v.InferOutput<typeof pageItemLinkDataSchema>["metadata"]
@@ -29,167 +30,27 @@ type LinkMetadataFetch = (
 	init?: RequestInit,
 ) => Promise<Response>;
 
-function getAttributeValue(attributes: string, name: string) {
-	const match = attributes.match(
-		new RegExp(
-			`(?:^|\\s)${name}\\s*=\\s*(?:["']([^"']*)["']|([^\\s"'=<>]+))`,
-			"i",
-		),
-	);
-	return match?.[1]?.trim() || match?.[2]?.trim() || undefined;
-}
-
-function decodeHtmlEntities(value: string) {
-	return value.replace(
-		/&(?:#x([\da-f]+)|#(\d+)|amp|quot|apos|lt|gt);/gi,
-		(match, hex: string | undefined, decimal: string | undefined) => {
-			if (hex || decimal) {
-				const codePoint = Number.parseInt(hex ?? decimal ?? "", hex ? 16 : 10);
-				return Number.isInteger(codePoint) &&
-					codePoint >= 0 &&
-					codePoint <= 0x10ffff
-					? String.fromCodePoint(codePoint)
-					: match;
-			}
-			return (
-				{
-					amp: "&",
-					quot: '"',
-					apos: "'",
-					lt: "<",
-					gt: ">",
-				}[match.slice(1, -1).toLowerCase()] ?? match
-			);
-		},
-	);
-}
-
-function getMetaContent(html: string, names: readonly string[]) {
-	for (const match of html.matchAll(/<meta\b([^>]+)>/gi)) {
-		const attributes = match[1] ?? "";
-		const key =
-			getAttributeValue(attributes, "property") ??
-			getAttributeValue(attributes, "name");
-		if (!key || !names.includes(key.toLowerCase())) continue;
-		const content = getAttributeValue(attributes, "content");
-		if (content) return decodeHtmlEntities(content);
-	}
-	return undefined;
-}
-
-function getTitle(html: string) {
-	const match = html.match(/<title\b[^>]*>([\s\S]*?)<\/title>/i);
-	const title = match?.[1]?.replace(/<[^>]+>/g, "").trim();
-	return title ? decodeHtmlEntities(title) : undefined;
-}
-
-function getFaviconUrl(html: string, baseUrl: URL) {
-	for (const match of html.matchAll(/<link\b([^>]+)>/gi)) {
-		const attributes = match[1] ?? "";
-		const rel = getAttributeValue(attributes, "rel")?.toLowerCase() ?? "";
-		if (!rel.split(/\s+/).some((value) => value === "icon")) continue;
-		const href = getAttributeValue(attributes, "href");
-		const resolved = resolveHttpsUrl(href, baseUrl);
-		if (resolved) return resolved;
-	}
-	return undefined;
-}
-
-function limitText(value: string | undefined, maxLength: number) {
-	const text = value?.trim();
-	return text ? text.slice(0, maxLength) : undefined;
-}
-
-function resolveHttpsUrl(value: string | undefined, baseUrl: URL) {
-	if (!value) return undefined;
-	try {
-		const resolved = new URL(value, baseUrl);
-		return resolved.protocol === "https:" ? resolved.toString() : undefined;
-	} catch {
-		return undefined;
-	}
-}
-
-async function readHtml(response: Response) {
-	const contentLength = Number(response.headers.get("content-length"));
-	if (Number.isFinite(contentLength) && contentLength > MAX_HTML_BYTES)
-		return "";
-	if (!response.body) return "";
-
-	const reader = response.body.getReader();
-	const decoder = new TextDecoder();
-	let total = 0;
-	let html = "";
-	try {
-		for (;;) {
-			const { done, value } = await reader.read();
-			if (done) break;
-			if (!value) continue;
-			if (total + value.byteLength > MAX_HTML_BYTES) {
-				await reader.cancel();
-				return "";
-			}
-			total += value.byteLength;
-			html += decoder.decode(value, { stream: true });
-			if (/<\/head\s*>/i.test(html)) {
-				await reader.cancel();
-				break;
-			}
-		}
-		return html + decoder.decode();
-	} finally {
-		reader.releaseLock();
-	}
-}
-
 async function fetchLinkMetadata(
 	url: string,
 	fetchFn: LinkMetadataFetch,
 ): Promise<LinkMetadata> {
-	const controller = new AbortController();
-	const timeout = setTimeout(() => controller.abort(), LINK_FETCH_TIMEOUT_MS);
-	try {
-		const response = await fetchFn(url, {
-			redirect: "follow",
-			signal: controller.signal,
-			headers: {
-				Accept: "text/html,application/xhtml+xml",
-				"User-Agent": "Grabbin Link Preview/1.0",
-			},
-		});
-		if (!response.ok) return {};
-		const contentType = response.headers.get("content-type")?.toLowerCase();
-		if (contentType && !contentType.includes("text/html")) return {};
-		const html = await readHtml(response);
-		const baseUrl = new URL(response.url || url);
-		const title = limitText(
-			getMetaContent(html, ["og:title", "twitter:title"]) ?? getTitle(html),
-			MAX_TITLE_LENGTH,
-		);
-		const description = limitText(
-			getMetaContent(html, [
-				"description",
-				"og:description",
-				"twitter:description",
-			]),
-			MAX_DESCRIPTION_LENGTH,
-		);
-		const imageUrl = resolveHttpsUrl(
-			getMetaContent(html, ["og:image", "twitter:image"]),
-			baseUrl,
-		);
-		const faviconUrl = getFaviconUrl(html, baseUrl);
-		return {
-			...(title ? { title } : {}),
-			...(description ? { description } : {}),
-			...(imageUrl ? { imageUrl } : {}),
-			...(faviconUrl ? { faviconUrl } : {}),
-		};
-	} catch {
-		return {};
-	} finally {
-		clearTimeout(timeout);
-	}
+	const document = await fetchHtml(
+		new URL(url),
+		{ fetch: fetchFn },
+		{
+			accept: "text/html,application/xhtml+xml",
+			maxBytes: MAX_LINK_METADATA_HTML_BYTES,
+			stopAtHead: true,
+		},
+	);
+	if (!document) return {};
+	const baseUrl = new URL(document.url);
+	const metadata = parseHtmlMetadata(document.html, baseUrl);
+	const faviconUrl = getFaviconUrl(document.html, baseUrl);
+	return {
+		...metadata,
+		...(faviconUrl ? { faviconUrl } : {}),
+	};
 }
 
 function mergeMetadata(current: LinkMetadata | undefined, next: LinkMetadata) {

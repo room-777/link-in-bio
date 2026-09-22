@@ -1,255 +1,543 @@
-import type { PageItemLinkPresentation } from "@grabbin/api";
+import type {
+	PageItemLinkMetadata,
+	PageItemLinkPresentation,
+} from "@grabbin/api";
+import {
+	getChzzkTarget,
+	getDiscordTarget,
+	getGithubTarget,
+	getInstagramTarget,
+	getProductHuntTarget,
+	getThreadsTarget,
+	getTikTokTarget,
+	getTwitchTarget,
+	getXTarget,
+	getYoutubeTarget,
+	type LinkTargetMatch,
+} from "./provider-targets";
 
 export type ProviderTheme = Pick<
 	PageItemLinkPresentation,
+	| "faviconBackground"
 	| "cardBackground"
 	| "actionBackground"
 	| "actionText"
 	| "actionLabel"
 	| "actionVariant"
->;
-
-export const providerTheme: Record<string, ProviderTheme> = {
-	youtube: {
-		cardBackground: "#fff2f5",
-		actionBackground: "#ff0033",
-		actionText: "#ffffff",
-		actionLabel: "Watch",
-		actionVariant: "solid",
-	},
-	"youtube-music": {
-		cardBackground: "#fff2f5",
-		actionBackground: "#ff0033",
-		actionText: "#ffffff",
-		actionLabel: "Listen",
-		actionVariant: "solid",
-	},
-	discord: {
-		cardBackground: "#f2f3ff",
-		actionBackground: "#5865f2",
-		actionText: "#ffffff",
-		actionLabel: "Join",
-		actionVariant: "solid",
-	},
-	github: {
-		cardBackground: "#ffffff",
-		actionBackground: "#f6f8fa",
-		actionText: "#000000",
-		actionLabel: "Follow",
-		actionVariant: "outline",
-	},
-	x: {
-		cardBackground: "#f7f7f7",
-		actionBackground: "#000000",
-		actionText: "#ffffff",
-		actionLabel: "Follow",
-		actionVariant: "solid",
-	},
-	spotify: {
-		cardBackground: "#f0fbf4",
-		actionBackground: "#1ED760",
-		actionText: "#ffffff",
-		actionLabel: "Play",
-		actionVariant: "solid",
-	},
-	"app-store": {
-		cardBackground: "#EAF4FF",
-		actionBackground: "#007AFF",
-		actionText: "#FFFFFF",
-		actionLabel: "Download",
-		actionVariant: "solid",
-	},
-	"google-play": {
-		cardBackground: "#FFFFFF",
-		actionBackground: "#F6F8FA",
-		actionText: "#000000",
-		actionLabel: "Get it",
-		actionVariant: "outline",
-	},
-	threads: {
-		cardBackground: "#ffffff",
-		actionBackground: "#000000",
-		actionText: "#ffffff",
-		actionLabel: "Follow",
-		actionVariant: "solid",
-	},
-	instagram: {
-		cardBackground: "#ffffff",
-		actionBackground: "#3797f0",
-		actionText: "#ffffff",
-		actionLabel: "Follow",
-		actionVariant: "solid",
-	},
-	"buy-me-a-coffee": {
-		cardBackground: "#fffbe5",
-		actionBackground: "#ffdd00",
-		actionText: "#000000",
-		actionLabel: "Support",
-		actionVariant: "solid",
-	},
-	linkedin: {
-		cardBackground: "#f0f7ff",
-		actionBackground: "#0a66c2",
-		actionText: "#ffffff",
-		actionLabel: "Connect",
-		actionVariant: "solid",
-	},
-	chzzk: {
-		cardBackground: "#ffffff",
-		actionBackground: "#000000",
-		actionText: "#ffffff",
-		actionLabel: "Watch",
-		actionVariant: "solid",
-	},
-	figma: {
-		cardBackground: "#ffffff",
-		actionBackground: "#1769ff",
-		actionText: "#ffffff",
-		actionLabel: "Open",
-		actionVariant: "solid",
-	},
-	"ko-fi": {
-		cardBackground: "#eefaff",
-		actionBackground: "#29abe0",
-		actionText: "#ffffff",
-		actionLabel: "Support",
-		actionVariant: "solid",
-	},
-	gumroad: {
-		cardBackground: "#fff2fc",
-		actionBackground: "#ff90e8",
-		actionText: "#000000",
-		actionLabel: "Get it",
-		actionVariant: "solid",
-	},
-	medium: {
-		cardBackground: "#ffffff",
-		actionBackground: "#000000",
-		actionText: "#ffffff",
-		actionLabel: "Read",
-		actionVariant: "solid",
-	},
-	patreon: {
-		cardBackground: "#ffffff",
-		actionBackground: "#71a0ff",
-		actionText: "#ffffff",
-		actionLabel: "Join",
-		actionVariant: "solid",
-	},
-	"product-hunt": {
-		cardBackground: "#fff4f0",
-		actionBackground: "#da552f",
-		actionText: "#ffffff",
-		actionLabel: "View",
-		actionVariant: "solid",
-	},
-	reddit: {
-		cardBackground: "#fff2ed",
-		actionBackground: "#ff4500",
-		actionText: "#ffffff",
-		actionLabel: "Join",
-		actionVariant: "solid",
-	},
-	tiktok: {
-		cardBackground: "#ffffff",
-		actionBackground: "#000000",
-		actionText: "#ffffff",
-		actionLabel: "Watch",
-		actionVariant: "solid",
-	},
-	twitch: {
-		cardBackground: "#f7f2ff",
-		actionBackground: "#9146ff",
-		actionText: "#ffffff",
-		actionLabel: "Watch",
-		actionVariant: "solid",
-	},
-	behance: {
-		cardBackground: "#f0f5ff",
-		actionBackground: "#1769ff",
-		actionText: "#ffffff",
-		actionLabel: "Follow",
-		actionVariant: "solid",
-	},
-	dribbble: {
-		cardBackground: "#fff2f7",
-		actionBackground: "#ea4c89",
-		actionText: "#ffffff",
-		actionLabel: "Follow",
-		actionVariant: "solid",
-	},
+> & {
+	faviconBackground: string;
 };
 
-export const providerByHostname: Array<[string, string]> = [
-	["music.youtube.com", "youtube-music"],
-	["youtube.com", "youtube"],
-	["youtu.be", "youtube"],
-	["github.com", "github"],
-	["discord.com", "discord"],
-	["discord.gg", "discord"],
-	["instagram.com", "instagram"],
-	["twitter.com", "x"],
-	["x.com", "x"],
-	["spotify.com", "spotify"],
-	["apps.apple.com", "app-store"],
-	["itunes.apple.com", "app-store"],
-	["play.google.com", "google-play"],
-	["threads.net", "threads"],
-	["threads.com", "threads"],
-	["buymeacoffee.com", "buy-me-a-coffee"],
-	["linkedin.com", "linkedin"],
-	["chzzk.naver.com", "chzzk"],
-	["figma.com", "figma"],
-	["ko-fi.com", "ko-fi"],
-	["gumroad.com", "gumroad"],
-	["medium.com", "medium"],
-	["patreon.com", "patreon"],
-	["producthunt.com", "product-hunt"],
-	["reddit.com", "reddit"],
-	["tiktok.com", "tiktok"],
-	["twitch.tv", "twitch"],
-	["behance.net", "behance"],
-	["dribbble.com", "dribbble"],
-	["notion.so", "notion"],
-];
+type ProviderData = NonNullable<PageItemLinkMetadata["providerData"]>;
 
-export const providerLabels: Record<string, string> = {
-	github: "GitHub",
-	youtube: "YouTube",
-	"youtube-music": "YouTube Music",
-	discord: "Discord",
-	instagram: "Instagram",
-	x: "X",
-	spotify: "Spotify",
-	"app-store": "App Store",
-	"google-play": "Google Play",
-	threads: "Threads",
-	"buy-me-a-coffee": "Buy Me a Coffee",
-	linkedin: "LinkedIn",
-	chzzk: "CHZZK",
-	figma: "Figma",
-	"ko-fi": "Ko-fi",
-	gumroad: "Gumroad",
-	medium: "Medium",
-	patreon: "Patreon",
-	"product-hunt": "Product Hunt",
-	reddit: "Reddit",
-	tiktok: "TikTok",
-	twitch: "Twitch",
-	behance: "Behance",
-	dribbble: "Dribbble",
-	notion: "Notion",
+export type LinkProviderTarget = LinkTargetMatch & {
+	provider: LinkProviderId;
 };
 
-export const providerCountKeys: Record<string, string> = {
-	discord: "memberCount",
-	chzzk: "followerCount",
-	instagram: "followerCount",
-	tiktok: "followerCount",
-	threads: "followerCount",
-	youtube: "subscriberCount",
-	twitch: "followerCount",
-	x: "followerCount",
-	github: "followers",
-	"product-hunt": "upvoteCount",
+export type LinkProviderPresentationContext = {
+	url: string;
+	metadata?: PageItemLinkMetadata;
+	providerData?: ProviderData;
+	target?: LinkProviderTarget;
 };
+
+const providerIconUrl = (providerId: string) =>
+	`/api/provider-icons/${providerId}.svg`;
+
+export type LinkProviderDefinition = {
+	id: string;
+	hosts: readonly string[];
+	label: string;
+	faviconUrl?: string;
+	theme?: ProviderTheme;
+	countKey?: string;
+	resolveTarget?: (url: URL) => LinkTargetMatch | undefined;
+	getActionDetail?: (
+		providerData: ProviderData | undefined,
+	) => string | undefined;
+	getImageUrls?: (context: LinkProviderPresentationContext) => string[];
+	present?: (
+		context: LinkProviderPresentationContext,
+	) => Partial<PageItemLinkPresentation>;
+};
+
+const youtubeTheme: ProviderTheme = {
+	faviconBackground: "#FF0033",
+	cardBackground: "#fff2f5",
+	actionBackground: "#ff0033",
+	actionText: "#ffffff",
+	actionLabel: "Watch",
+	actionVariant: "solid",
+};
+
+const youtubeMusicTheme: ProviderTheme = {
+	...youtubeTheme,
+	actionLabel: "Listen",
+};
+
+const youtubeImageUrls = ({
+	metadata,
+	providerData,
+}: LinkProviderPresentationContext) => {
+	const recentVideoThumbnailUrls = Array.isArray(
+		providerData?.recentVideoThumbnailUrls,
+	)
+		? providerData.recentVideoThumbnailUrls.filter(
+				(value): value is string =>
+					typeof value === "string" && value.startsWith("https://"),
+			)
+		: [];
+	if (recentVideoThumbnailUrls.length > 0) return recentVideoThumbnailUrls;
+
+	const channelImageUrl =
+		typeof providerData?.channelImageUrl === "string" &&
+		providerData.channelImageUrl.startsWith("https://")
+			? [providerData.channelImageUrl]
+			: [];
+	if (channelImageUrl.length > 0) return channelImageUrl;
+	return typeof metadata?.imageUrl === "string" ? [metadata.imageUrl] : [];
+};
+
+export const providerDefinitions = [
+	{
+		id: "youtube",
+		hosts: ["youtube.com", "youtu.be"],
+		label: "YouTube",
+		faviconUrl: providerIconUrl("youtube"),
+		theme: youtubeTheme,
+		countKey: "subscriberCount",
+		resolveTarget: getYoutubeTarget,
+		getImageUrls: youtubeImageUrls,
+	},
+	{
+		id: "youtube-music",
+		hosts: ["music.youtube.com"],
+		label: "YouTube Music",
+		faviconUrl: providerIconUrl("youtube-music"),
+		theme: youtubeMusicTheme,
+		resolveTarget: getYoutubeTarget,
+	},
+	{
+		id: "discord",
+		hosts: ["discord.com", "discord.gg"],
+		label: "Discord",
+		faviconUrl: providerIconUrl("discord"),
+		theme: {
+			faviconBackground: "#5865F2",
+			cardBackground: "#f2f3ff",
+			actionBackground: "#5865f2",
+			actionText: "#ffffff",
+			actionLabel: "Join",
+			actionVariant: "solid",
+		},
+		countKey: "memberCount",
+		resolveTarget: getDiscordTarget,
+	},
+	{
+		id: "github",
+		hosts: ["github.com"],
+		label: "GitHub",
+		faviconUrl: providerIconUrl("github"),
+		theme: {
+			faviconBackground: "#181717",
+			cardBackground: "#ffffff",
+			actionBackground: "#f6f8fa",
+			actionText: "#000000",
+			actionLabel: "Follow",
+			actionVariant: "outline",
+		},
+		countKey: "followers",
+		resolveTarget: getGithubTarget,
+		present: ({ providerData }) =>
+			typeof providerData?.githubContributionGraph === "string" &&
+			providerData.githubContributionGraph.trim()
+				? { githubContributionGraph: providerData.githubContributionGraph }
+				: {},
+	},
+	{
+		id: "x",
+		hosts: ["twitter.com", "x.com"],
+		label: "X",
+		faviconUrl: providerIconUrl("x"),
+		theme: {
+			faviconBackground: "#000000",
+			cardBackground: "#f7f7f7",
+			actionBackground: "#000000",
+			actionText: "#ffffff",
+			actionLabel: "Follow",
+			actionVariant: "solid",
+		},
+		countKey: "followerCount",
+		resolveTarget: getXTarget,
+	},
+	{
+		id: "spotify",
+		hosts: ["spotify.com"],
+		label: "Spotify",
+		faviconUrl: providerIconUrl("spotify"),
+		theme: {
+			faviconBackground: "#1ED760",
+			cardBackground: "#f0fbf4",
+			actionBackground: "#1ED760",
+			actionText: "#ffffff",
+			actionLabel: "Play",
+			actionVariant: "solid",
+		},
+	},
+	{
+		id: "app-store",
+		hosts: ["apps.apple.com", "itunes.apple.com"],
+		label: "App Store",
+		faviconUrl: providerIconUrl("app-store"),
+		theme: {
+			faviconBackground: "#2072F3",
+			cardBackground: "#EAF4FF",
+			actionBackground: "#007AFF",
+			actionText: "#FFFFFF",
+			actionLabel: "Download",
+			actionVariant: "solid",
+		},
+	},
+	{
+		id: "google-play",
+		hosts: ["play.google.com"],
+		label: "Google Play",
+		faviconUrl: providerIconUrl("google-play"),
+		theme: {
+			faviconBackground: "#01875F",
+			cardBackground: "#FFFFFF",
+			actionBackground: "#F6F8FA",
+			actionText: "#000000",
+			actionLabel: "Get it",
+			actionVariant: "outline",
+		},
+	},
+	{
+		id: "threads",
+		hosts: ["threads.net", "threads.com"],
+		label: "Threads",
+		faviconUrl: providerIconUrl("threads"),
+		theme: {
+			faviconBackground: "#000000",
+			cardBackground: "#ffffff",
+			actionBackground: "#000000",
+			actionText: "#ffffff",
+			actionLabel: "Follow",
+			actionVariant: "solid",
+		},
+		countKey: "followerCount",
+		getActionDetail: (providerData) =>
+			typeof providerData?.followerCountLabel === "string" &&
+			providerData.followerCountLabel.trim()
+				? providerData.followerCountLabel.trim()
+				: undefined,
+		resolveTarget: getThreadsTarget,
+	},
+	{
+		id: "instagram",
+		hosts: ["instagram.com"],
+		label: "Instagram",
+		faviconUrl: providerIconUrl("instagram"),
+		theme: {
+			faviconBackground: "#FF005F",
+			cardBackground: "#ffffff",
+			actionBackground: "#3797f0",
+			actionText: "#ffffff",
+			actionLabel: "Follow",
+			actionVariant: "solid",
+		},
+		countKey: "followerCount",
+		resolveTarget: getInstagramTarget,
+	},
+	{
+		id: "buy-me-a-coffee",
+		hosts: ["buymeacoffee.com"],
+		label: "Buy Me a Coffee",
+		faviconUrl: providerIconUrl("buy-me-a-coffee"),
+		theme: {
+			faviconBackground: "#FFDD00",
+			cardBackground: "#fffbe5",
+			actionBackground: "#ffdd00",
+			actionText: "#000000",
+			actionLabel: "Support",
+			actionVariant: "solid",
+		},
+	},
+	{
+		id: "linkedin",
+		hosts: ["linkedin.com"],
+		label: "LinkedIn",
+		faviconUrl: providerIconUrl("linkedin"),
+		theme: {
+			faviconBackground: "#0A66C2",
+			cardBackground: "#f0f7ff",
+			actionBackground: "#0a66c2",
+			actionText: "#ffffff",
+			actionLabel: "Connect",
+			actionVariant: "solid",
+		},
+	},
+	{
+		id: "chzzk",
+		hosts: ["chzzk.naver.com"],
+		label: "CHZZK",
+		faviconUrl: providerIconUrl("chzzk"),
+		theme: {
+			faviconBackground: "#00FFA3",
+			cardBackground: "#ffffff",
+			actionBackground: "#000000",
+			actionText: "#ffffff",
+			actionLabel: "Watch",
+			actionVariant: "solid",
+		},
+		countKey: "followerCount",
+		resolveTarget: getChzzkTarget,
+	},
+	{
+		id: "figma",
+		hosts: ["figma.com"],
+		label: "Figma",
+		faviconUrl: providerIconUrl("figma"),
+		theme: {
+			faviconBackground: "#9747FF",
+			cardBackground: "#ffffff",
+			actionBackground: "#1769ff",
+			actionText: "#ffffff",
+			actionLabel: "Open",
+			actionVariant: "solid",
+		},
+	},
+	{
+		id: "ko-fi",
+		hosts: ["ko-fi.com"],
+		label: "Ko-fi",
+		faviconUrl: providerIconUrl("ko-fi"),
+		theme: {
+			faviconBackground: "#C19BFF",
+			cardBackground: "#eefaff",
+			actionBackground: "#29abe0",
+			actionText: "#ffffff",
+			actionLabel: "Support",
+			actionVariant: "solid",
+		},
+	},
+	{
+		id: "gumroad",
+		hosts: ["gumroad.com"],
+		label: "Gumroad",
+		faviconUrl: providerIconUrl("gumroad"),
+		theme: {
+			faviconBackground: "#FF90E8",
+			cardBackground: "#fff2fc",
+			actionBackground: "#ff90e8",
+			actionText: "#000000",
+			actionLabel: "Get it",
+			actionVariant: "solid",
+		},
+	},
+	{
+		id: "medium",
+		hosts: ["medium.com"],
+		label: "Medium",
+		faviconUrl: providerIconUrl("medium"),
+		theme: {
+			faviconBackground: "#000000",
+			cardBackground: "#ffffff",
+			actionBackground: "#000000",
+			actionText: "#ffffff",
+			actionLabel: "Read",
+			actionVariant: "solid",
+		},
+	},
+	{
+		id: "patreon",
+		hosts: ["patreon.com"],
+		label: "Patreon",
+		faviconUrl: providerIconUrl("patreon"),
+		theme: {
+			faviconBackground: "#71A0FF",
+			cardBackground: "#ffffff",
+			actionBackground: "#71a0ff",
+			actionText: "#ffffff",
+			actionLabel: "Join",
+			actionVariant: "solid",
+		},
+	},
+	{
+		id: "product-hunt",
+		hosts: ["producthunt.com"],
+		label: "Product Hunt",
+		faviconUrl: providerIconUrl("product-hunt"),
+		theme: {
+			faviconBackground: "#FF6154",
+			cardBackground: "#fff4f0",
+			actionBackground: "#da552f",
+			actionText: "#ffffff",
+			actionLabel: "View",
+			actionVariant: "solid",
+		},
+		countKey: "upvoteCount",
+		resolveTarget: getProductHuntTarget,
+		present: ({ providerData }) => {
+			const count = providerData?.upvoteCount;
+			const number =
+				typeof count === "number"
+					? count
+					: typeof count === "string"
+						? Number(count)
+						: Number.NaN;
+			return Number.isFinite(number)
+				? { actionIcon: "upvote", actionLabel: "Upvote" }
+				: {};
+		},
+	},
+	{
+		id: "reddit",
+		hosts: ["reddit.com"],
+		label: "Reddit",
+		faviconUrl: providerIconUrl("reddit"),
+		theme: {
+			faviconBackground: "#FF4500",
+			cardBackground: "#fff2ed",
+			actionBackground: "#ff4500",
+			actionText: "#ffffff",
+			actionLabel: "Join",
+			actionVariant: "solid",
+		},
+	},
+	{
+		id: "tiktok",
+		hosts: ["tiktok.com"],
+		label: "TikTok",
+		faviconUrl: providerIconUrl("tiktok"),
+		theme: {
+			faviconBackground: "#000000",
+			cardBackground: "#ffffff",
+			actionBackground: "#000000",
+			actionText: "#ffffff",
+			actionLabel: "Watch",
+			actionVariant: "solid",
+		},
+		countKey: "followerCount",
+		resolveTarget: getTikTokTarget,
+	},
+	{
+		id: "twitch",
+		hosts: ["twitch.tv"],
+		label: "Twitch",
+		faviconUrl: providerIconUrl("twitch"),
+		theme: {
+			faviconBackground: "#9147FF",
+			cardBackground: "#f7f2ff",
+			actionBackground: "#9146ff",
+			actionText: "#ffffff",
+			actionLabel: "Watch",
+			actionVariant: "solid",
+		},
+		countKey: "followerCount",
+		resolveTarget: getTwitchTarget,
+	},
+	{
+		id: "behance",
+		hosts: ["behance.net"],
+		label: "Behance",
+		faviconUrl: providerIconUrl("behance"),
+		theme: {
+			faviconBackground: "#1769FF",
+			cardBackground: "#f0f5ff",
+			actionBackground: "#1769ff",
+			actionText: "#ffffff",
+			actionLabel: "Follow",
+			actionVariant: "solid",
+		},
+	},
+	{
+		id: "dribbble",
+		hosts: ["dribbble.com"],
+		label: "Dribbble",
+		faviconUrl: providerIconUrl("dribbble"),
+		theme: {
+			faviconBackground: "#EA4C89",
+			cardBackground: "#fff2f7",
+			actionBackground: "#ea4c89",
+			actionText: "#ffffff",
+			actionLabel: "Follow",
+			actionVariant: "solid",
+		},
+	},
+	{
+		id: "notion",
+		hosts: ["notion.so"],
+		label: "Notion",
+		faviconUrl: providerIconUrl("notion"),
+		theme: {
+			faviconBackground: "#000000",
+		},
+	},
+] as const satisfies readonly LinkProviderDefinition[];
+
+export type LinkProviderId =
+	| (typeof providerDefinitions)[number]["id"]
+	| "generic-web";
+
+export const providerDefinitionList: readonly LinkProviderDefinition[] =
+	providerDefinitions;
+
+export type ResolvedLinkProvider = {
+	id: LinkProviderId;
+	definition?: LinkProviderDefinition;
+	target?: LinkProviderTarget;
+};
+
+export function resolveLinkProvider(url: URL): ResolvedLinkProvider {
+	const hostname = url.hostname.toLowerCase();
+	const definition = providerDefinitionList
+		.map((candidate) => ({
+			candidate,
+			matchLength: Math.max(
+				...candidate.hosts
+					.filter(
+						(domain) => hostname === domain || hostname.endsWith(`.${domain}`),
+					)
+					.map((domain) => domain.length),
+				-1,
+			),
+		}))
+		.filter(({ matchLength }) => matchLength >= 0)
+		.sort((left, right) => right.matchLength - left.matchLength)[0]?.candidate;
+	if (!definition) return { id: "generic-web" };
+
+	const providerId = definition.id as LinkProviderId;
+	const targetMatch = definition.resolveTarget?.(url);
+	return {
+		id: providerId,
+		definition,
+		target: targetMatch
+			? { ...targetMatch, provider: providerId }
+			: definition.resolveTarget
+				? undefined
+				: { kind: "page", params: {}, provider: providerId },
+	};
+}
+
+export const providerByHostname: Array<[string, string]> = (
+	providerDefinitionList.flatMap(({ id, hosts }) =>
+		hosts.map((host) => [host, id]),
+	) as Array<[string, string]>
+).sort((left, right) => right[0].length - left[0].length);
+
+export const providerLabels: Record<string, string> = Object.fromEntries(
+	providerDefinitionList.map(({ id, label }) => [id, label]),
+);
+
+export const providerTheme: Record<string, ProviderTheme> = Object.fromEntries(
+	providerDefinitionList.flatMap(({ id, theme }) =>
+		theme ? [[id, theme]] : [],
+	),
+);
+
+export const providerCountKeys: Record<string, string> = Object.fromEntries(
+	providerDefinitionList.flatMap(({ id, countKey }) =>
+		countKey ? [[id, countKey]] : [],
+	),
+);

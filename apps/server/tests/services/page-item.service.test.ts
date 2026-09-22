@@ -211,6 +211,7 @@ describe("page item service", () => {
 		assert.deepEqual(link.data.metadata?.presentation, {
 			provider: "youtube",
 			providerLabel: "YouTube",
+			faviconBackground: "#FF0033",
 			cardBackground: "#fff2f5",
 			actionBackground: "#ff0033",
 			actionText: "#ffffff",

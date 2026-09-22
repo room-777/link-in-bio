@@ -261,18 +261,28 @@ function LinkBadge({
 	const providerLabel = presentation?.providerLabel ?? "Link";
 	const [failedFaviconUrl, setFailedFaviconUrl] = useState<string>();
 	const faviconFailed = failedFaviconUrl === faviconUrl;
+	const faviconImageStyle =
+		presentation?.provider === "x" || presentation?.provider === "threads"
+			? { filter: "invert(1)" }
+			: undefined;
 	return faviconUrl && !faviconFailed ? (
 		<a
 			href={item.data.url}
 			target="_blank"
 			rel="noreferrer"
 			aria-label={`Open ${providerLabel}`}
-			className="inline-flex size-8 shrink-0 cursor-pointer! items-center justify-center rounded-md bg-muted/30 p-0.5 transition-transform hover:scale-105 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/60"
+			className="inline-flex size-8 shrink-0 cursor-pointer! items-center justify-center rounded-md bg-muted/30 p-1 transition-transform hover:scale-105 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/60"
+			style={
+				presentation?.faviconBackground
+					? { backgroundColor: presentation.faviconBackground }
+					: undefined
+			}
 		>
 			<img
 				src={faviconUrl}
 				alt=""
 				className="size-full object-contain"
+				style={faviconImageStyle}
 				onError={() => setFailedFaviconUrl(faviconUrl)}
 			/>
 		</a>

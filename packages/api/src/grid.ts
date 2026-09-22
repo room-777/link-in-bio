@@ -80,6 +80,15 @@ const httpsUrlSchema = v.pipe(
 	v.check((value) => value.startsWith("https://"), "HTTPS URL required."),
 );
 
+const faviconUrlSchema = v.union([
+	httpsUrlSchema,
+	v.pipe(
+		v.string(),
+		v.trim(),
+		v.regex(/^\/api\/provider-icons\/[a-z0-9-]+\.svg$/i),
+	),
+]);
+
 export const pageItemLinkUrlSchema = httpsUrlSchema;
 
 const optionalTrimmedLinkSchema = v.pipe(
@@ -131,7 +140,7 @@ export const pageItemSectionDataSchema = v.object({
 export const pageItemLinkMetadataSchema = v.object({
 	title: v.optional(v.string()),
 	description: v.optional(v.string()),
-	faviconUrl: v.optional(httpsUrlSchema),
+	faviconUrl: v.optional(faviconUrlSchema),
 	imageUrl: v.optional(httpsUrlSchema),
 	provider: v.optional(v.string()),
 	providerData: v.optional(
@@ -163,6 +172,7 @@ const pageItemLinkPresentationColorSchema = v.pipe(
 export const pageItemLinkPresentationSchema = v.object({
 	provider: v.pipe(v.string(), v.minLength(1)),
 	providerLabel: v.pipe(v.string(), v.minLength(1)),
+	faviconBackground: v.optional(pageItemLinkPresentationColorSchema),
 	cardBackground: v.optional(pageItemLinkPresentationColorSchema),
 	actionBackground: v.optional(pageItemLinkPresentationColorSchema),
 	actionText: v.optional(pageItemLinkPresentationColorSchema),

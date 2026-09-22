@@ -1,8 +1,15 @@
 import assert from "node:assert/strict";
 import { describe, it } from "node:test";
+import {
+	providerDefinitionList,
+	resolveLinkMetadata,
+	resolveLinkProvider,
+} from "@grabbin/page-link";
 
 import type { LinkProviderEnvironment } from "../../src/services/link-providers";
 import { enrichLinkProvider } from "../../src/services/link-providers";
+
+const providerIconBaseUrl = "/api/provider-icons";
 
 function html(description: string) {
 	return new Response(
@@ -256,5 +263,78 @@ describe("link provider metadata", () => {
 				testCase.name,
 			);
 		}
+	});
+
+	/**
+	 * Case ID: LINK-PROVIDERS-002
+	 * Given: one real provider-shaped link for every supported provider.
+	 * When: the shared provider registry resolves the links.
+	 * Then: every link keeps its provider identity and presentation label.
+	 * Evidence: provider ID and provider label for every real provider hostname.
+	 * Result: Pass | Fail | Blocked | Not Run
+	 */
+	it("LINK-PROVIDERS-002 resolves every supported provider link", async () => {
+		const cases = [
+			["youtube", "https://www.youtube.com/watch?v=dQw4w9WgXcQ"],
+			["youtube-music", "https://music.youtube.com/watch?v=dQw4w9WgXcQ"],
+			["discord", "https://discord.gg/grabbin"],
+			["github", "https://github.com/kinwooky"],
+			["x", "https://x.com/kinwooky"],
+			["spotify", "https://open.spotify.com/artist/0"],
+			["app-store", "https://apps.apple.com/us/app/grabbin/id1"],
+			[
+				"google-play",
+				"https://play.google.com/store/apps/details?id=com.grabbin",
+			],
+			["threads", "https://www.threads.net/@instagram"],
+			["instagram", "https://www.instagram.com/instagram/"],
+			["buy-me-a-coffee", "https://www.buymeacoffee.com/kinwooky"],
+			["linkedin", "https://www.linkedin.com/in/kinwooky"],
+			["chzzk", "https://chzzk.naver.com/0123456789abcdef0123456789abcdef"],
+			["figma", "https://www.figma.com/file/abc"],
+			["ko-fi", "https://ko-fi.com/kinwooky"],
+			["gumroad", "https://gumroad.com/l/grabbin"],
+			["medium", "https://medium.com/@kinwooky"],
+			["patreon", "https://www.patreon.com/kinwooky"],
+			["product-hunt", "https://www.producthunt.com/products/grabbin"],
+			["reddit", "https://www.reddit.com/r/programming/"],
+			["tiktok", "https://www.tiktok.com/@tiktok"],
+			["twitch", "https://www.twitch.tv/kinwooky"],
+			["behance", "https://www.behance.net/kinwooky"],
+			["dribbble", "https://dribbble.com/kinwooky"],
+			["notion", "https://www.notion.so/"],
+		] as const;
+
+		assert.equal(cases.length, providerDefinitionList.length);
+		for (const [expectedProvider, url] of cases) {
+			const resolved = resolveLinkProvider(new URL(url));
+			const metadata = resolveLinkMetadata(url);
+			const definition = providerDefinitionList.find(
+				({ id }) => id === expectedProvider,
+			);
+			assert.equal(resolved.id, expectedProvider, url);
+			assert.equal(metadata.presentation.provider, expectedProvider, url);
+			assert.ok(metadata.presentation.providerLabel, url);
+			assert.ok(definition?.theme?.faviconBackground, url);
+			assert.equal(
+				metadata.presentation.faviconBackground,
+				definition?.theme?.faviconBackground,
+				url,
+			);
+			assert.equal(
+				metadata.faviconUrl,
+				`${providerIconBaseUrl}/${expectedProvider}.svg`,
+				url,
+			);
+			const enriched = await enrichLinkProvider(new URL(url), {
+				fetch: createFetch(),
+			});
+			assert.equal(enriched.provider, expectedProvider, url);
+		}
+		assert.equal(
+			providerDefinitionList.find(({ id }) => id === "github")?.theme
+				?.faviconBackground,
+			"#181717",
+		);
 	});
 });
