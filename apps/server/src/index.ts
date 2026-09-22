@@ -13,6 +13,7 @@ import { trimTrailingSlash } from "hono/trailing-slash";
 import { jsonApiError } from "./api-error";
 import { pageItemsController } from "./controllers/page-items.route";
 import { pagesController } from "./controllers/pages.controller";
+import { providerIconsController } from "./controllers/provider-icons.controller";
 import type { AppEnv } from "./types";
 
 initLogger({ env: { service: "grabbin-server" }, pretty: true });
@@ -68,7 +69,8 @@ const app = createFactory<AppEnv>({
 	)
 	.route("/", createRoutes)
 	.route("/pages", pagesController)
-	.route("/pages", pageItemsController);
+	.route("/pages", pageItemsController)
+	.route("/provider-icons", providerIconsController);
 
 export type AppType = typeof app;
 export type { ApiError } from "@grabbin/api";
