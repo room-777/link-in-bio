@@ -32,7 +32,7 @@ export default function PageLayoutPreset({
 
 	return (
 		<div className="smooth-shadow-ring-lg smooth-ring-neutral-200/40 pointer-events-none fixed bottom-10 left-1/2 z-100003 flex -translate-x-1/2 items-center gap-3 rounded-xl bg-background p-1 shadow-neutral-900">
-			<fieldset className="pointer-events-auto relative flex items-center gap-1 p-1">
+			<fieldset className="pointer-events-auto flex items-center gap-1 p-1">
 				<legend className="sr-only">Editing layout breakpoint</legend>
 				<Button
 					type="button"
@@ -51,48 +51,42 @@ export default function PageLayoutPreset({
 						"Share Link"
 					)}
 				</Button>
-				<Button
-					type="button"
-					size="default"
-					variant="ghost"
-					aria-pressed={value === "compact"}
-					aria-label="Edit compact layout"
-					onClick={() => onChange("compact")}
-					className="relative z-10 px-5 text-foreground hover:bg-transparent aria-pressed:text-primary-foreground aria-pressed:hover:text-primary-foreground"
-				>
-					{value === "compact" ? (
-						<motion.span
-							layoutId="owner-page-layout-breakpoint-selection"
-							initial={false}
-							transition={layoutTransition}
-							aria-hidden="true"
-							className="smooth-shadow-xs pointer-events-none absolute inset-0 rounded-lg bg-primary drop-shadow-lg!"
-						/>
-					) : null}
-					<Smartphone className="relative z-10 size-5" aria-hidden="true" />
-					<span className="sr-only">Compact</span>
-				</Button>
-				<Button
-					type="button"
-					size="default"
-					variant="ghost"
-					aria-pressed={value === "wide"}
-					aria-label="Edit wide layout"
-					onClick={() => onChange("wide")}
-					className="relative z-10 px-5 text-foreground hover:bg-transparent aria-pressed:text-primary-foreground aria-pressed:hover:text-primary-foreground"
-				>
-					{value === "wide" ? (
-						<motion.span
-							layoutId="owner-page-layout-breakpoint-selection"
-							initial={false}
-							transition={layoutTransition}
-							aria-hidden="true"
-							className="smooth-shadow-xs pointer-events-none absolute inset-0 rounded-lg bg-primary drop-shadow-lg!"
-						/>
-					) : null}
-					<Laptop className="relative z-10 size-5" aria-hidden="true" />
-					<span className="sr-only">Wide</span>
-				</Button>
+				<div className="relative grid shrink-0 grid-cols-2 gap-1">
+					<motion.span
+						initial={false}
+						animate={{
+							x: value === "compact" ? 0 : "calc(100% + 0.25rem)",
+						}}
+						transition={layoutTransition}
+						aria-hidden="true"
+						className="smooth-shadow-xs pointer-events-none absolute inset-y-0 left-0 z-0 rounded-lg bg-primary drop-shadow-lg!"
+						style={{ width: "calc(50% - 0.125rem)" }}
+					/>
+					<Button
+						type="button"
+						size="default"
+						variant="ghost"
+						aria-pressed={value === "compact"}
+						aria-label="Edit compact layout"
+						onClick={() => onChange("compact")}
+						className="relative z-10 w-full px-5 text-foreground hover:bg-transparent aria-pressed:text-primary-foreground aria-pressed:hover:text-primary-foreground"
+					>
+						<Smartphone className="relative z-10 size-5" aria-hidden="true" />
+						<span className="sr-only">Compact</span>
+					</Button>
+					<Button
+						type="button"
+						size="default"
+						variant="ghost"
+						aria-pressed={value === "wide"}
+						aria-label="Edit wide layout"
+						onClick={() => onChange("wide")}
+						className="relative z-10 w-full px-5 text-foreground hover:bg-transparent aria-pressed:text-primary-foreground aria-pressed:hover:text-primary-foreground"
+					>
+						<Laptop className="relative z-10 size-5" aria-hidden="true" />
+						<span className="sr-only">Wide</span>
+					</Button>
+				</div>
 			</fieldset>
 		</div>
 	);
