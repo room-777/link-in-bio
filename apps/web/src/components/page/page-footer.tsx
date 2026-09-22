@@ -15,16 +15,68 @@ import {
 } from "@grabbin/ui/components/popover";
 import { Skeleton } from "@grabbin/ui/components/skeleton";
 import { toast } from "@grabbin/ui/components/toast";
+import {
+	Tooltip,
+	TooltipContent,
+	TooltipTrigger,
+} from "@grabbin/ui/components/tooltip";
 import { cn } from "@grabbin/ui/lib/utils";
 import { SlidersHorizontal } from "lucide-react";
 import { motion, useReducedMotion } from "motion/react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { useEffect, useState } from "react";
+import type { ComponentPropsWithoutRef } from "react";
+import { forwardRef, useEffect, useState } from "react";
 import { authClient, getAuthErrorMessage } from "@/lib/auth-client";
 import { getSignInHref } from "@/lib/auth-redirect";
 import ChangeHandleDialog from "./change-handle-dialog";
 import DeleteAccountDialog from "./delete-account-dialog";
+
+type DiscordLinkProps = ComponentPropsWithoutRef<"a">;
+
+const DiscordLink = forwardRef<HTMLAnchorElement, DiscordLinkProps>(
+	function DiscordLink({ className, ...props }, ref) {
+		return (
+			<a
+				{...props}
+				ref={ref}
+				href="https://discord.com/invite/U4NNF9hMms"
+				target="_blank"
+				rel="noreferrer"
+				aria-label="Join the Discord community"
+				className={buttonVariants({
+					variant: "ghost",
+					size: "icon-lg",
+					className: cn("text-muted-foreground/80", className),
+				})}
+			>
+				<svg
+					viewBox="0 0 256 199"
+					preserveAspectRatio="xMidYMid"
+					aria-hidden="true"
+				>
+					<path
+						d="M216.856 16.597A208.502 208.502 0 0 0 164.042 0c-2.275 4.113-4.933 9.645-6.766 14.046-19.692-2.961-39.203-2.961-58.533 0-1.832-4.4-4.55-9.933-6.846-14.046a207.809 207.809 0 0 0-52.855 16.638C5.618 67.147-3.443 116.4 1.087 164.956c22.169 16.555 43.653 26.612 64.775 33.193A161.094 161.094 0 0 0 79.735 175.3a136.413 136.413 0 0 1-21.846-10.632 108.636 108.636 0 0 0 5.356-4.237c42.122 19.702 87.89 19.702 129.51 0a131.66 131.66 0 0 0 5.355 4.237 136.07 136.07 0 0 1-21.886 10.653c4.006 8.02 8.638 15.67 13.873 22.848 21.142-6.58 42.646-16.637 64.815-33.213 5.316-56.288-9.08-105.09-38.056-148.36ZM85.474 135.095c-12.645 0-23.015-11.805-23.015-26.18s10.149-26.2 23.015-26.2c12.867 0 23.236 11.804 23.015 26.2.02 14.375-10.148 26.18-23.015 26.18Zm85.051 0c-12.645 0-23.014-11.805-23.014-26.18s10.148-26.2 23.014-26.2 23.236 11.804 23.015 26.2c0 14.375-10.148 26.18-23.015 26.18Z"
+						fill="currentColor"
+					/>
+				</svg>
+				<span className="sr-only">Join the Discord community</span>
+			</a>
+		);
+	},
+);
+
+function DiscordTooltip({ className }: { className?: string }) {
+	return (
+		<Tooltip>
+			<TooltipTrigger
+				delay={0}
+				render={<DiscordLink className={className} />}
+			/>
+			<TooltipContent>community</TooltipContent>
+		</Tooltip>
+	);
+}
 
 function OwnerFooter({
 	handle,
@@ -66,18 +118,26 @@ function OwnerFooter({
 					setIsOpen(open);
 				}}
 			>
-				<PopoverTrigger
-					render={
-						<Button
-							variant="ghost"
-							size="icon-lg"
-							className="text-muted-foreground/80"
-							aria-label="Open page options"
-						/>
-					}
-				>
-					<SlidersHorizontal className="stroke-[2.5px]" />
-				</PopoverTrigger>
+				<Tooltip>
+					<TooltipTrigger
+						delay={0}
+						render={
+							<PopoverTrigger
+								render={
+									<Button
+										variant="ghost"
+										size="icon-lg"
+										className="text-muted-foreground/80"
+										aria-label="Open page options"
+									>
+										<SlidersHorizontal className="stroke-[2.5px]" />
+									</Button>
+								}
+							/>
+						}
+					/>
+					<TooltipContent>setting</TooltipContent>
+				</Tooltip>
 				<PopoverContent
 					align="start"
 					side="top"
@@ -156,6 +216,7 @@ function OwnerFooter({
 					</Button>
 				</PopoverContent>
 			</Popover>
+			<DiscordTooltip className="ml-1" />
 			{isSaving && (
 				<span
 					className="ml-2 flex items-center gap-2 text-muted-foreground/80 text-xs"
@@ -190,16 +251,19 @@ function ViewerFooter({ handle }: { handle?: string }) {
 
 	if (!session) {
 		return (
-			<Link
-				href={getSignInHref(handle ? `/${encodeURIComponent(handle)}` : null)}
-				className={buttonVariants({
-					variant: "ghost",
-					size: "lg",
-					className: "text-muted-foreground/80",
-				})}
-			>
-				Sign in
-			</Link>
+			<div className="flex items-center gap-1">
+				<Link
+					href={getSignInHref(handle ? `/${encodeURIComponent(handle)}` : null)}
+					className={buttonVariants({
+						variant: "ghost",
+						size: "lg",
+						className: "text-muted-foreground/80",
+					})}
+				>
+					Sign in
+				</Link>
+				<DiscordTooltip />
+			</div>
 		);
 	}
 
@@ -244,7 +308,7 @@ export default function PageFooter({
 	isSaving?: boolean;
 }) {
 	return (
-		<footer className="-mx-4 mb-4 flex min-h-10 items-center justify-start pt-8 min-[90rem]:fixed min-[90rem]:bottom-6 min-[90rem]:left-16 min-[90rem]:z-30 min-[90rem]:-mx-2">
+		<footer className="-mx-4 mb-4 flex min-h-10 items-center justify-start py-12 min-[90rem]:fixed min-[90rem]:bottom-6 min-[90rem]:left-16 min-[90rem]:z-30 min-[90rem]:-mx-2 min-[90rem]:py-0">
 			{isOwner ? (
 				<OwnerFooter
 					handle={handle}
