@@ -31,7 +31,7 @@ export default function PageLayoutPreset({
 	};
 
 	return (
-		<div className="smooth-shadow-ring-lg smooth-ring-neutral-200/40 pointer-events-none fixed bottom-10 left-1/2 z-100003 flex -translate-x-1/2 items-center gap-3 rounded-xl bg-background p-1 shadow-neutral-900">
+		<div className="smooth-shadow-ring-lg smooth-ring-neutral-200/40 pointer-events-none fixed bottom-10 left-1/2 z-40 flex -translate-x-1/2 items-center gap-3 rounded-xl bg-background p-1 shadow-neutral-900">
 			<fieldset className="pointer-events-auto flex items-center gap-1 p-1">
 				<legend className="sr-only">Editing layout breakpoint</legend>
 				<Button
