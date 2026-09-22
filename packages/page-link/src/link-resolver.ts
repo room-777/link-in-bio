@@ -138,11 +138,15 @@ export function resolveLinkMetadata(
 	metadata?: Record<string, unknown>,
 ) {
 	const presentation = resolveLinkPresentation(url, metadata);
+	const hostname = getHostname(url);
 	return {
 		...(metadata ?? {}),
 		...(metadata && Object.hasOwn(metadata, "title")
 			? {}
-			: { title: getHostname(url) }),
+			: { title: hostname }),
+		...(metadata?.faviconUrl
+			? {}
+			: { faviconUrl: `https://icons.duckduckgo.com/ip3/${hostname}.ico` }),
 		provider: presentation.provider,
 		presentation,
 	};

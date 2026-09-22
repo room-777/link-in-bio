@@ -98,7 +98,10 @@ export const server = Cloudflare.Worker("server", {
 	env: {
 		HYPERDRIVE: hyperdrive,
 		R2_BUCKET: grabbinBucket,
-		R2_PUBLIC_URL: Config.string("R2_PUBLIC_URL").pipe(Config.withDefault("")),
+		R2_PUBLIC_URL: Config.string("R2_PUBLIC_URL").pipe(
+			Config.orElse(() => Config.string("NEXT_PUBLIC_R2_PUBLIC_URL")),
+			Config.withDefault(""),
+		),
 		R2_ACCOUNT_ID: Config.string("R2_ACCOUNT_ID"),
 		R2_BUCKET_NAME: Config.string("R2_BUCKET_NAME").pipe(
 			Config.withDefault("grabbin"),
@@ -135,6 +138,28 @@ export const server = Cloudflare.Worker("server", {
 			Config.withDefault(""),
 		),
 		RESEND_FROM_EMAIL: Config.string("RESEND_FROM_EMAIL").pipe(
+			Config.withDefault(""),
+		),
+		YOUTUBE_API_KEY: Config.string("YOUTUBE_API_KEY").pipe(
+			Config.withDefault(""),
+		),
+		CHZZK_CLIENT_ID: Config.string("CHZZK_CLIENT_ID").pipe(
+			Config.withDefault(""),
+		),
+		CHZZK_CLIENT_SECRET: Config.redacted("CHZZK_CLIENT_SECRET").pipe(
+			Config.withDefault(""),
+		),
+		TWITCH_CLIENT_ID: Config.string("TWITCH_CLIENT_ID").pipe(
+			Config.withDefault(""),
+		),
+		TWITCH_CLIENT_SECRET: Config.redacted("TWITCH_CLIENT_SECRET").pipe(
+			Config.withDefault(""),
+		),
+		TWITCH_USER_ACCESS_TOKEN: Config.redacted("TWITCH_USER_ACCESS_TOKEN").pipe(
+			Config.withDefault(""),
+		),
+		GITHUB_TOKEN: Config.redacted("GITHUB_TOKEN").pipe(Config.withDefault("")),
+		PRODUCT_HUNT_TOKEN: Config.redacted("PRODUCT_HUNT_TOKEN").pipe(
 			Config.withDefault(""),
 		),
 	},

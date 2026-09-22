@@ -195,6 +195,7 @@ export const providerByHostname: Array<[string, string]> = [
 	["itunes.apple.com", "app-store"],
 	["play.google.com", "google-play"],
 	["threads.net", "threads"],
+	["threads.com", "threads"],
 	["buymeacoffee.com", "buy-me-a-coffee"],
 	["linkedin.com", "linkedin"],
 	["chzzk.naver.com", "chzzk"],

@@ -16,6 +16,14 @@ export type AppEnv = EvlogVariables & {
 		R2_BUCKET_NAME: string;
 		R2_ACCESS_KEY_ID: string;
 		R2_SECRET_ACCESS_KEY: string;
+		YOUTUBE_API_KEY: string;
+		CHZZK_CLIENT_ID: string;
+		CHZZK_CLIENT_SECRET: string;
+		TWITCH_CLIENT_ID: string;
+		TWITCH_CLIENT_SECRET: string;
+		TWITCH_USER_ACCESS_TOKEN: string;
+		GITHUB_TOKEN: string;
+		PRODUCT_HUNT_TOKEN: string;
 	};
 	Variables: {
 		db: DatabaseClient;

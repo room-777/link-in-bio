@@ -1,4 +1,4 @@
-import type { ItemType } from "@grabbin/api";
+import { createInitialLinkMetadata, type ItemType } from "@grabbin/api";
 import {
 	type BentoBreakpoint,
 	getColumns,
@@ -84,12 +84,17 @@ export function createBentoItem({
 				type: itemType,
 				data: { latitude: 37.5665, longitude: 126.978, zoom: 12 },
 			};
-		case "link":
+		case "link": {
+			const linkUrl = url?.trim() || "https://example.com";
 			return {
 				...base,
 				type: itemType,
-				data: { url: url?.trim() || "https://example.com" },
+				data: {
+					url: linkUrl,
+					metadata: createInitialLinkMetadata(linkUrl),
+				},
 			};
+		}
 		case "media":
 			return {
 				...base,

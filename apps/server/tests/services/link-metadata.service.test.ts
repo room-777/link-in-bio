@@ -7,13 +7,13 @@ import { enrichPageItemMetadata } from "../../src/services/link-metadata.service
 
 const layout = { x: 0, y: 0, w: 1, h: 2 };
 
-function createDatabase() {
+function createDatabase(url = "https://example.com") {
 	const now = new Date("2026-09-21T00:00:00.000Z");
 	const current = {
 		id: "item-1",
 		pageId: "page-1",
 		type: "link",
-		data: { url: "https://example.com" },
+		data: { url },
 		style: {},
 		layouts: { wide: layout, compact: layout },
 		createdAt: now,
@@ -49,7 +49,7 @@ describe("link metadata service", () => {
 			url: "https://example.com",
 			fetch: async () =>
 				new Response(
-					'<html><head><title> Example </title><meta name="description" content="A page"><meta property="og:image" content="https://cdn.example.com/card.png"></head></html>',
+					'<html><head><link rel="icon" href="/favicon.svg"><title> Example </title><meta name="description" content="A page"><meta property="og:image" content="https://cdn.example.com/card.png"></head></html>',
 					{ headers: { "content-type": "text/html" } },
 				),
 		});
@@ -62,12 +62,18 @@ describe("link metadata service", () => {
 			result.data.metadata?.imageUrl,
 			"https://cdn.example.com/card.png",
 		);
+		assert.equal(
+			result.data.metadata?.faviconUrl,
+			"https://example.com/favicon.svg",
+		);
 		assert.deepEqual(current.data, {
 			url: "https://example.com",
 			metadata: {
 				title: "Example",
 				description: "A page",
 				imageUrl: "https://cdn.example.com/card.png",
+				faviconUrl: "https://example.com/favicon.svg",
+				provider: "generic-web",
 			},
 		});
 	});
@@ -93,5 +99,48 @@ describe("link metadata service", () => {
 				error.code === "STALE_LINK_METADATA",
 		);
 		assert.equal(fetchCalls, 0);
+	});
+
+	/**
+	 * Case ID: LINK-METADATA-SERVICE-003
+	 * Given: an X profile link whose HTML contains its follower count.
+	 * When: the metadata refresh endpoint enriches the saved item.
+	 * Then: it stores the X provider data used by the public presentation.
+	 * Evidence: followerCount=101909 and actionDetail=101.9K.
+	 * Result: Pass | Fail | Blocked | Not Run
+	 */
+	it("LINK-METADATA-SERVICE-003 stores X profile follower metadata", async () => {
+		const { db, current } = createDatabase("https://twitter.com/kinwooky");
+		const html =
+			'<html><head><meta property="og:title" content="Kin Wooky"><meta property="og:description" content="Kin Wooky profile"><script>followers:101909,following:168</script></head></html>';
+
+		const result = await enrichPageItemMetadata({
+			db,
+			handle: "jane",
+			userId: "user-1",
+			itemId: "item-1",
+			url: "https://twitter.com/kinwooky",
+			fetch: async () =>
+				new Response(html, { headers: { "content-type": "text/html" } }),
+		});
+
+		assert.equal(result.type, "link");
+		if (result.type !== "link") return;
+		assert.equal(result.data.metadata?.provider, "x");
+		assert.equal(result.data.metadata?.providerData?.followerCount, 101909);
+		assert.equal(result.data.metadata?.presentation?.actionDetail, "101.9K");
+		assert.deepEqual(current.data, {
+			url: "https://twitter.com/kinwooky",
+			metadata: {
+				title: "Kin Wooky",
+				description: "Kin Wooky profile",
+				provider: "x",
+				providerData: {
+					followerCount: 101909,
+					followerCountLabel: "101909",
+					followerCountApproximate: false,
+				},
+			},
+		});
 	});
 });

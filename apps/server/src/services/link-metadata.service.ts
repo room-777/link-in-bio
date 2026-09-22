@@ -9,6 +9,10 @@ import { and, eq } from "drizzle-orm";
 import * as v from "valibot";
 
 import { PageItemServiceError } from "../exceptions/page-item.exception";
+import {
+	enrichLinkProvider,
+	type LinkProviderEnvironment,
+} from "./link-providers";
 import { getOwnedPage } from "./page.service";
 import { mapPageItemResponse } from "./page-item.service";
 
@@ -77,6 +81,18 @@ function getTitle(html: string) {
 	const match = html.match(/<title\b[^>]*>([\s\S]*?)<\/title>/i);
 	const title = match?.[1]?.replace(/<[^>]+>/g, "").trim();
 	return title ? decodeHtmlEntities(title) : undefined;
+}
+
+function getFaviconUrl(html: string, baseUrl: URL) {
+	for (const match of html.matchAll(/<link\b([^>]+)>/gi)) {
+		const attributes = match[1] ?? "";
+		const rel = getAttributeValue(attributes, "rel")?.toLowerCase() ?? "";
+		if (!rel.split(/\s+/).some((value) => value === "icon")) continue;
+		const href = getAttributeValue(attributes, "href");
+		const resolved = resolveHttpsUrl(href, baseUrl);
+		if (resolved) return resolved;
+	}
+	return undefined;
 }
 
 function limitText(value: string | undefined, maxLength: number) {
@@ -162,10 +178,12 @@ async function fetchLinkMetadata(
 			getMetaContent(html, ["og:image", "twitter:image"]),
 			baseUrl,
 		);
+		const faviconUrl = getFaviconUrl(html, baseUrl);
 		return {
 			...(title ? { title } : {}),
 			...(description ? { description } : {}),
 			...(imageUrl ? { imageUrl } : {}),
+			...(faviconUrl ? { faviconUrl } : {}),
 		};
 	} catch {
 		return {};
@@ -175,10 +193,18 @@ async function fetchLinkMetadata(
 }
 
 function mergeMetadata(current: LinkMetadata | undefined, next: LinkMetadata) {
-	return {
-		...(current ?? {}),
-		...next,
-	};
+	const previous =
+		current?.provider && next.provider && current.provider !== next.provider
+			? Object.fromEntries(
+					Object.entries(current).filter(([key]) => key !== "providerData"),
+				)
+			: current;
+	return Object.fromEntries(
+		Object.entries({
+			...(previous ?? {}),
+			...next,
+		}).filter(([, value]) => value !== undefined),
+	) as LinkMetadata;
 }
 
 export async function enrichPageItemMetadata({
@@ -189,6 +215,7 @@ export async function enrichPageItemMetadata({
 	url,
 	publicBaseUrl,
 	fetch: fetchFn,
+	env,
 }: {
 	db: DatabaseClient;
 	handle: string;
@@ -197,6 +224,7 @@ export async function enrichPageItemMetadata({
 	url: string;
 	publicBaseUrl?: string;
 	fetch: LinkMetadataFetch;
+	env?: LinkProviderEnvironment;
 }): Promise<PageItemResponse> {
 	const parsedUrl = v.safeParse(pageItemLinkUrlSchema, url);
 	if (!parsedUrl.success)
@@ -216,8 +244,14 @@ export async function enrichPageItemMetadata({
 		throw new PageItemServiceError("STALE_LINK_METADATA");
 	}
 
-	const fetchedMetadata = await fetchLinkMetadata(parsedUrl.output, fetchFn);
-	const mergedMetadata = mergeMetadata(currentData.metadata, fetchedMetadata);
+	const [fetchedMetadata, providerMetadata] = await Promise.all([
+		fetchLinkMetadata(parsedUrl.output, fetchFn),
+		enrichLinkProvider(new URL(parsedUrl.output), { fetch: fetchFn, env }),
+	]);
+	const mergedMetadata = mergeMetadata(currentData.metadata, {
+		...fetchedMetadata,
+		...providerMetadata,
+	});
 	const nextData = {
 		...currentData,
 		...(Object.keys(mergedMetadata).length ? { metadata: mergedMetadata } : {}),

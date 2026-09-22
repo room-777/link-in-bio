@@ -18,6 +18,7 @@ import * as v from "valibot";
 
 import { jsonApiError } from "../api-error";
 import { PageItemServiceError } from "../exceptions/page-item.exception";
+import type { LinkProviderEnvironment } from "../services/link-providers";
 import {
 	cancelItemMediaUpload,
 	completeItemMediaUpload,
@@ -81,6 +82,7 @@ type EnrichPageItemMetadata = (input: {
 	url: PageItemMetadataRequest["url"];
 	publicBaseUrl?: string;
 	fetch: typeof fetch;
+	env?: LinkProviderEnvironment;
 }) => Promise<PageItemResponse>;
 
 async function readJson(c: Context<AppEnv>) {
@@ -130,6 +132,7 @@ export function createPageItemsController({
 						url: parsed.output.url,
 						publicBaseUrl: c.env?.R2_PUBLIC_URL,
 						fetch: (input, init) => fetch(input, init),
+						env: c.env,
 					}),
 				});
 			} catch (error) {

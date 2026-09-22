@@ -148,6 +148,10 @@ export const pageItemLinkMetadataSchema = v.object({
 	),
 });
 
+export type PageItemLinkMetadata = v.InferOutput<
+	typeof pageItemLinkMetadataSchema
+>;
+
 const pageItemLinkPresentationColorSchema = v.pipe(
 	v.string(),
 	v.regex(
@@ -188,6 +192,16 @@ export const pageItemLinkDataSchema = v.object({
 	url: pageItemLinkUrlSchema,
 	metadata: v.optional(pageItemLinkMetadataSchema),
 });
+
+export function createInitialLinkMetadata(value: string) {
+	const parsed = new URL(value);
+	const hostname = parsed.hostname.replace(/^www\./, "");
+	const path = parsed.pathname.replace(/^\//, "").replace(/\/$/, "");
+	return {
+		title: path ? `${hostname}/${path}` : hostname,
+		faviconUrl: `https://icons.duckduckgo.com/ip3/${hostname}.ico`,
+	} satisfies v.InferOutput<typeof pageItemLinkMetadataSchema>;
+}
 
 export const pageItemDataSchemas = {
 	text: pageItemTextDataSchema,
