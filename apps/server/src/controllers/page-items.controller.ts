@@ -225,6 +225,8 @@ export function createPageItemsController({
 						userId: session.user.id,
 						pageId: page.id,
 						objectKey: parsed.output.objectKey,
+						itemId: parsed.output.itemId,
+						kind: parsed.output.kind,
 					}),
 				);
 			} catch (error) {
@@ -269,6 +271,8 @@ export function createPageItemsController({
 					userId: session.user.id,
 					pageId: page.id,
 					objectKey: parsed.output.objectKey,
+					itemId: parsed.output.itemId,
+					kind: parsed.output.kind,
 				});
 				return c.body(null, 204);
 			} catch (error) {

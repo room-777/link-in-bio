@@ -49,6 +49,8 @@ export async function uploadBentoMedia(
 	options: {
 		signal?: AbortSignal;
 		onUploadCreated?: (upload: PageItemUploadResponse) => void;
+		itemId?: string;
+		kind?: "link-image";
 	} = {},
 ) {
 	const response = await apiClient.pages[":handle"].items.upload.$post(
@@ -58,6 +60,8 @@ export async function uploadBentoMedia(
 				body: JSON.stringify({
 					contentType: file.type,
 					size: file.size,
+					...(options.itemId ? { itemId: options.itemId } : {}),
+					...(options.kind ? { kind: options.kind } : {}),
 				}),
 				headers: { "Content-Type": "application/json" },
 				signal: options.signal,
@@ -81,7 +85,11 @@ export async function uploadBentoMedia(
 		{ param: { handle } },
 		{
 			init: {
-				body: JSON.stringify({ objectKey: upload.objectKey }),
+				body: JSON.stringify({
+					objectKey: upload.objectKey,
+					...(options.itemId ? { itemId: options.itemId } : {}),
+					...(options.kind ? { kind: options.kind } : {}),
+				}),
 				headers: { "Content-Type": "application/json" },
 				signal: options.signal,
 			},
@@ -99,12 +107,17 @@ export async function uploadBentoMedia(
 export async function cancelBentoMediaUpload(
 	handle: string,
 	objectKey: string,
+	options: { itemId?: string; kind?: "link-image" } = {},
 ) {
 	const response = await apiClient.pages[":handle"].items.upload.cancel.$post(
 		{ param: { handle } },
 		{
 			init: {
-				body: JSON.stringify({ objectKey }),
+				body: JSON.stringify({
+					objectKey,
+					...(options.itemId ? { itemId: options.itemId } : {}),
+					...(options.kind ? { kind: options.kind } : {}),
+				}),
 				headers: { "Content-Type": "application/json" },
 			},
 		},

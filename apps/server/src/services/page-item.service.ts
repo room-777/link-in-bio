@@ -20,6 +20,7 @@ import * as v from "valibot";
 import { PageItemServiceError } from "../exceptions/page-item.exception";
 import {
 	getPublicPageItemMediaUrl,
+	isOwnedPageLinkImageKey,
 	isOwnedPageMediaKey,
 } from "./media.service";
 import { getOwnedPage } from "./page.service";
@@ -30,16 +31,41 @@ function isRecord(value: unknown): value is Record<string, unknown> {
 	return typeof value === "object" && value !== null && !Array.isArray(value);
 }
 
+function getPageItemMediaKey(item: { type: string; data: unknown }) {
+	if (!isRecord(item.data)) return undefined;
+	if (item.type === "media" && typeof item.data.objectKey === "string") {
+		return item.data.objectKey;
+	}
+	if (item.type === "link" && typeof item.data.imageKey === "string") {
+		return item.data.imageKey;
+	}
+	return undefined;
+}
+
 export function mapPageItemResponse(
 	item: typeof pageItems.$inferSelect,
 	publicBaseUrl?: string,
 ): PageItemResponse {
 	const data = { ...item.data };
 	if (item.type === "link" && typeof data.url === "string") {
-		data.metadata = resolveLinkMetadata(
+		const linkMetadata = resolveLinkMetadata(
 			data.url,
 			isRecord(data.metadata) ? data.metadata : undefined,
 		);
+		const imageKey = data.imageKey;
+		const imageUrl =
+			typeof imageKey === "string"
+				? getPublicPageItemMediaUrl(publicBaseUrl, imageKey)
+				: undefined;
+		data.metadata = {
+			...linkMetadata,
+			presentation:
+				imageKey === null
+					? { ...linkMetadata.presentation, imageUrls: [] }
+					: imageUrl
+						? { ...linkMetadata.presentation, imageUrls: [imageUrl] }
+						: linkMetadata.presentation,
+		};
 	}
 	if (item.type === "media" && typeof data.objectKey === "string") {
 		const mediaUrl = getPublicPageItemMediaUrl(publicBaseUrl, data.objectKey);
@@ -88,14 +114,22 @@ function assertValidItemPayload(
 		}
 	}
 
+	const mediaKey = getPageItemMediaKey(item);
 	if (
-		item.type === "media" &&
-		!isOwnedPageMediaKey({
-			key: item.data.objectKey,
-			userId,
-			pageId,
-			scope: "items",
-		})
+		mediaKey &&
+		(item.type === "media"
+			? !isOwnedPageMediaKey({
+					key: mediaKey,
+					userId,
+					pageId,
+					scope: "items",
+				})
+			: !isOwnedPageLinkImageKey({
+					key: mediaKey,
+					userId,
+					pageId,
+					itemId: item.id,
+				}))
 	) {
 		throw new PageItemServiceError("INVALID_MEDIA_KEY");
 	}
@@ -222,10 +256,7 @@ export async function persistPageItemBatch({
 		);
 		const mediaKeysToDelete = new Set<string>();
 		const collectMediaKey = (item: (typeof existing)[number]) => {
-			const objectKey =
-				item.type === "media" && isRecord(item.data)
-					? item.data.objectKey
-					: undefined;
+			const objectKey = getPageItemMediaKey(item);
 			if (
 				typeof objectKey === "string" &&
 				isOwnedPageMediaKey({
@@ -245,16 +276,10 @@ export async function persistPageItemBatch({
 		}
 		for (const item of upserts) {
 			const current = existingById.get(item.id);
-			if (current?.type === "media" && item.type === "media") {
-				const previousKey = isRecord(current.data)
-					? current.data.objectKey
-					: undefined;
-				if (
-					typeof previousKey === "string" &&
-					previousKey !== item.data.objectKey
-				) {
-					collectMediaKey(current);
-				}
+			if (current && current.type === item.type) {
+				const previousKey = getPageItemMediaKey(current);
+				const nextKey = getPageItemMediaKey(item);
+				if (previousKey && previousKey !== nextKey) collectMediaKey(current);
 			}
 		}
 		for (const id of persistableBatch.deletes) finalItems.delete(id);

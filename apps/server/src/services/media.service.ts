@@ -38,6 +38,15 @@ export function createPageItemMediaKey(input: {
 	return `users/${input.userId}/pages/${input.pageId}/items/${crypto.randomUUID()}.${getMediaExtension(input.contentType)}`;
 }
 
+export function createPageLinkImageKey(input: {
+	userId: string;
+	pageId: string;
+	itemId: string;
+	contentType: string;
+}) {
+	return `users/${input.userId}/pages/${input.pageId}/items/${input.itemId}/image/${crypto.randomUUID()}.${getMediaExtension(input.contentType)}`;
+}
+
 export function isOwnedPageMediaKey(input: {
 	key: string;
 	userId: string;
@@ -51,6 +60,52 @@ export function isOwnedPageMediaKey(input: {
 		input.key.startsWith(prefix) &&
 		input.key.length > prefix.length
 	);
+}
+
+function isSafePageItemId(itemId: string) {
+	return /^[^/]+$/.test(itemId) && !itemId.includes("..");
+}
+
+export function isOwnedPageLinkImageKey(input: {
+	key: string;
+	userId: string;
+	pageId: string;
+	itemId: string;
+}) {
+	if (!isSafePageItemId(input.itemId)) return false;
+	const prefix = `users/${input.userId}/pages/${input.pageId}/items/${input.itemId}/image/`;
+	return (
+		input.key === input.key.trim() &&
+		!input.key.includes("..") &&
+		input.key.startsWith(prefix) &&
+		input.key.length > prefix.length
+	);
+}
+
+function isOwnedItemUploadKey(input: {
+	key: string;
+	userId: string;
+	pageId: string;
+	itemId?: string;
+	kind?: "link-image";
+}) {
+	if (input.kind === "link-image") {
+		return Boolean(
+			input.itemId &&
+				isOwnedPageLinkImageKey({
+					key: input.key,
+					userId: input.userId,
+					pageId: input.pageId,
+					itemId: input.itemId,
+				}),
+		);
+	}
+	return isOwnedPageMediaKey({
+		key: input.key,
+		userId: input.userId,
+		pageId: input.pageId,
+		scope: "items",
+	});
 }
 
 export function getPublicPageItemMediaUrl(
@@ -119,11 +174,29 @@ export async function createItemMediaUpload(input: {
 	if (!parsed.success) {
 		throw new PageItemServiceError("INVALID_MEDIA_UPLOAD");
 	}
-	const objectKey = createPageItemMediaKey({
-		userId: input.userId,
-		pageId: input.pageId,
-		contentType: parsed.output.contentType,
-	});
+	let objectKey: string;
+	if (parsed.output.kind === "link-image") {
+		const itemId = parsed.output.itemId;
+		if (
+			!itemId ||
+			!isSafePageItemId(itemId) ||
+			!/^image\//i.test(parsed.output.contentType)
+		) {
+			throw new PageItemServiceError("INVALID_MEDIA_UPLOAD");
+		}
+		objectKey = createPageLinkImageKey({
+			userId: input.userId,
+			pageId: input.pageId,
+			itemId,
+			contentType: parsed.output.contentType,
+		});
+	} else {
+		objectKey = createPageItemMediaKey({
+			userId: input.userId,
+			pageId: input.pageId,
+			contentType: parsed.output.contentType,
+		});
+	}
 	const upload = await createPresignedPutUrl({
 		accountId: input.accountId,
 		bucketName: input.bucketName,
@@ -144,13 +217,16 @@ export async function completeItemMediaUpload(input: {
 	userId: string;
 	pageId: string;
 	objectKey: string;
+	itemId?: string;
+	kind?: "link-image";
 }) {
 	if (
-		!isOwnedPageMediaKey({
+		!isOwnedItemUploadKey({
 			key: input.objectKey,
 			userId: input.userId,
 			pageId: input.pageId,
-			scope: "items",
+			itemId: input.itemId,
+			kind: input.kind,
 		})
 	) {
 		throw new PageItemServiceError("INVALID_MEDIA_KEY");
@@ -158,7 +234,13 @@ export async function completeItemMediaUpload(input: {
 
 	const object = await input.bucket.head(input.objectKey);
 	const mimeType = object?.httpMetadata?.contentType ?? "";
-	if (!object || object.size < 1 || !/^(image|video)\//i.test(mimeType)) {
+	if (
+		!object ||
+		object.size < 1 ||
+		(input.kind === "link-image"
+			? !/^image\//i.test(mimeType)
+			: !/^(image|video)\//i.test(mimeType))
+	) {
 		throw new PageItemServiceError("ITEM_MEDIA_NOT_FOUND");
 	}
 
@@ -174,13 +256,16 @@ export async function cancelItemMediaUpload(input: {
 	userId: string;
 	pageId: string;
 	objectKey: string;
+	itemId?: string;
+	kind?: "link-image";
 }) {
 	if (
-		!isOwnedPageMediaKey({
+		!isOwnedItemUploadKey({
 			key: input.objectKey,
 			userId: input.userId,
 			pageId: input.pageId,
-			scope: "items",
+			itemId: input.itemId,
+			kind: input.kind,
 		})
 	)
 		throw new PageItemServiceError("INVALID_MEDIA_KEY");

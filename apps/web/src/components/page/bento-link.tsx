@@ -2,7 +2,7 @@ import type { PageItemLinkPresentation, PageItemResponse } from "@grabbin/api";
 import type { PresetName } from "@grabbin/bento-layout";
 import { Button } from "@grabbin/ui/components/button";
 import { Textarea } from "@grabbin/ui/components/textarea";
-import { TriangleIcon } from "lucide-react";
+import { CircleFadingArrowUp, Trash, TriangleIcon } from "lucide-react";
 import { AnimatePresence, motion } from "motion/react";
 import {
 	type CSSProperties,
@@ -12,6 +12,7 @@ import {
 	useState,
 } from "react";
 import type { BentoCommand } from "@/lib/bento/bento-types";
+import { getPageImageUrl } from "@/lib/page-image-url";
 
 function LinkAction({
 	href,
@@ -227,7 +228,7 @@ function LinkPreview({
 }) {
 	if (imageUrls.length > 1) {
 		return (
-			<div className="grid size-full grid-cols-2 gap-2">
+			<div className="grid size-full grid-cols-2 gap-2 overflow-hidden">
 				{imageUrls.map((imageUrl) => (
 					<div
 						key={imageUrl}
@@ -241,12 +242,114 @@ function LinkPreview({
 	}
 	const imageUrl = imageUrls[0];
 	return imageUrl ? (
-		<img src={imageUrl} alt="" className="size-full object-cover" />
+		<div className="size-full overflow-hidden">
+			<img src={imageUrl} alt="" className="size-full object-cover" />
+		</div>
 	) : (
 		<div
-			className="flex size-full items-center justify-center px-4 text-center font-semibold text-lg tracking-tight"
+			className="link-image-placeholder flex size-full items-center justify-center px-4 text-center font-semibold text-lg tracking-tight"
 			style={{ backgroundColor }}
 		/>
+	);
+}
+
+function LinkImageControls({
+	hasImage,
+	isAnyItemDragging,
+	onSelect,
+	onDelete,
+}: {
+	hasImage: boolean;
+	isAnyItemDragging: boolean;
+	onSelect?: (file: File) => void | Promise<void>;
+	onDelete?: () => void;
+}) {
+	const inputRef = useRef<HTMLInputElement>(null);
+	if (!onSelect) return null;
+	return (
+		<>
+			<div
+				className={`pointer-events-none absolute -top-3 left-2 z-20 flex h-9 w-max items-center gap-1 rounded-lg bg-black p-1 opacity-0 shadow-lg transition-opacity duration-150 group-focus-within/link-image:pointer-events-auto group-focus-within/link-image:opacity-100 group-hover/link-image:pointer-events-auto group-hover/link-image:opacity-100 motion-reduce:transition-none ${isAnyItemDragging ? "pointer-events-none! opacity-0!" : ""}`}
+			>
+				<Button
+					type="button"
+					size="icon-sm"
+					variant="ghost"
+					aria-label={hasImage ? "Replace link image" : "Add link image"}
+					title={hasImage ? "Replace link image" : "Add link image"}
+					data-bento-item-drag-cancel="true"
+					className="size-7 cursor-pointer! rounded-md text-white hover:bg-white/20 hover:text-white focus-visible:ring-2 focus-visible:ring-white/60"
+					onClick={() => inputRef.current?.click()}
+				>
+					<CircleFadingArrowUp className="size-5" aria-hidden="true" />
+				</Button>
+				{onDelete ? (
+					<Button
+						type="button"
+						size="icon-sm"
+						variant="ghost"
+						disabled={!hasImage}
+						aria-label="Remove link image"
+						title="Remove link image"
+						data-bento-item-drag-cancel="true"
+						className="size-7 cursor-pointer! rounded-md text-white hover:bg-white/20 hover:text-white focus-visible:ring-2 focus-visible:ring-white/60 disabled:cursor-not-allowed! disabled:opacity-40 disabled:hover:bg-transparent"
+						onClick={onDelete}
+					>
+						<Trash className="size-5" aria-hidden="true" />
+					</Button>
+				) : null}
+			</div>
+			<input
+				ref={inputRef}
+				type="file"
+				accept="image/*"
+				className="sr-only"
+				tabIndex={-1}
+				onChange={(event) => {
+					const file = event.currentTarget.files?.[0];
+					event.currentTarget.value = "";
+					if (file) void onSelect(file);
+				}}
+			/>
+		</>
+	);
+}
+
+function LinkImageArea({
+	imageUrls,
+	backgroundColor,
+	flexClassName,
+	mode,
+	hasImage,
+	isAnyItemDragging,
+	onSelect,
+	onDelete,
+}: {
+	imageUrls: readonly string[];
+	backgroundColor?: string;
+	flexClassName: string;
+	mode: "view" | "edit";
+	hasImage: boolean;
+	isAnyItemDragging: boolean;
+	onSelect?: (file: File) => void | Promise<void>;
+	onDelete?: () => void;
+}) {
+	return (
+		<div
+			className={`group/link-image relative min-h-0 min-w-0 ${flexClassName}`}
+		>
+			<div className="size-full min-h-0 overflow-hidden rounded-lg bg-muted/30 outline-depth">
+				<LinkPreview imageUrls={imageUrls} backgroundColor={backgroundColor} />
+			</div>
+			{mode === "edit" ? (
+				<LinkImageControls
+					hasImage={hasImage}
+					isAnyItemDragging={isAnyItemDragging}
+					onSelect={onSelect}
+					onDelete={onDelete}
+				/>
+			) : null}
+		</div>
 	);
 }
 
@@ -261,28 +364,21 @@ function LinkBadge({
 	const providerLabel = presentation?.providerLabel ?? "Link";
 	const [failedFaviconUrl, setFailedFaviconUrl] = useState<string>();
 	const faviconFailed = failedFaviconUrl === faviconUrl;
-	const faviconImageStyle =
-		presentation?.provider === "x" || presentation?.provider === "threads"
-			? { filter: "invert(1)" }
-			: undefined;
+	const faviconSrc = faviconUrl?.startsWith("/api/provider-icons/")
+		? `${faviconUrl}?v=3`
+		: faviconUrl;
 	return faviconUrl && !faviconFailed ? (
 		<a
 			href={item.data.url}
 			target="_blank"
 			rel="noreferrer"
 			aria-label={`Open ${providerLabel}`}
-			className="inline-flex size-8 shrink-0 cursor-pointer! items-center justify-center rounded-md bg-muted/30 p-1 transition-transform hover:scale-105 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/60"
-			style={
-				presentation?.faviconBackground
-					? { backgroundColor: presentation.faviconBackground }
-					: undefined
-			}
+			className="inline-flex size-8 shrink-0 cursor-pointer! items-center justify-center rounded-md transition-transform hover:scale-105 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/60"
 		>
 			<img
-				src={faviconUrl}
+				src={faviconSrc}
 				alt=""
 				className="size-full object-contain"
-				style={faviconImageStyle}
 				onError={() => setFailedFaviconUrl(faviconUrl)}
 			/>
 		</a>
@@ -346,7 +442,7 @@ function LinkTitle({
 					const nextValue = value.trim();
 					if (nextValue) onCommit(nextValue);
 				}}
-				className={`link-title-input cursor-text! resize-none border-0 bg-transparent text-current outline-none focus-visible:ring-0 ${titleClassName} overflow-y-auto overflow-x-hidden`}
+				className={`link-title-input -ml-1 cursor-text! resize-none border-0 bg-transparent text-current outline-none focus-visible:ring-0 ${titleClassName} overflow-y-auto overflow-x-hidden`}
 			/>
 		);
 	}
@@ -370,11 +466,15 @@ export function LinkItem({
 	preset,
 	mode = "view",
 	onCommand,
+	isAnyItemDragging = false,
+	onImageSelect,
 }: {
 	item: Extract<PageItemResponse, { type: "link" }>;
 	preset: PresetName;
 	mode?: "view" | "edit";
 	onCommand?: (command: BentoCommand) => void;
+	isAnyItemDragging?: boolean;
+	onImageSelect?: (file: File) => void | Promise<void>;
 }) {
 	const metadata = item.data.metadata;
 	const presentation = metadata?.presentation;
@@ -388,8 +488,17 @@ export function LinkItem({
 				"--link-card-background": presentation.cardBackground,
 			} as CSSProperties)
 		: undefined;
+	const ownedImageUrl = item.data.imageKey
+		? getPageImageUrl(item.data.imageKey)
+		: null;
 	const imageUrls =
-		presentation?.imageUrls ?? (metadata?.imageUrl ? [metadata.imageUrl] : []);
+		item.data.imageKey !== undefined
+			? ownedImageUrl
+				? [ownedImageUrl]
+				: []
+			: (presentation?.imageUrls ??
+				(metadata?.imageUrl ? [metadata.imageUrl] : []));
+	const hasImage = imageUrls.length > 0;
 	const githubGraph = parseGithubContributionGraph(
 		presentation?.githubContributionGraph,
 	);
@@ -408,6 +517,12 @@ export function LinkItem({
 				...item.data,
 				metadata: { ...item.data.metadata, title: value },
 			},
+		});
+	const removeImage = () =>
+		onCommand?.({
+			type: "update-data",
+			itemId: item.id,
+			data: { ...item.data, imageKey: null },
 		});
 	const linkActionProps = {
 		label: presentation?.actionLabel ?? "Open",
@@ -515,13 +630,17 @@ export function LinkItem({
 					<div className="relative min-h-0 min-w-0 flex-4 overflow-hidden rounded-lg">
 						<GithubContributionGraph data={githubGraph} preset="landscape" />
 					</div>
-				) : isLandscape && imageUrls.length > 0 ? (
-					<div className="relative min-h-0 min-w-0 flex-4 overflow-hidden rounded-lg bg-muted/30">
-						<LinkPreview
-							imageUrls={imageUrls}
-							backgroundColor={presentation?.cardBackground}
-						/>
-					</div>
+				) : isLandscape ? (
+					<LinkImageArea
+						imageUrls={imageUrls}
+						backgroundColor={presentation?.cardBackground}
+						flexClassName="flex-4"
+						mode={mode}
+						hasImage={hasImage}
+						isAnyItemDragging={isAnyItemDragging}
+						onSelect={onImageSelect}
+						onDelete={removeImage}
+					/>
 				) : null}
 				{content}
 				{!isLandscape && isGithubGraphPreset && githubGraph ? (
@@ -531,13 +650,17 @@ export function LinkItem({
 							preset={preset as "portrait" | "squareLarge"}
 						/>
 					</div>
-				) : !isLandscape && imageUrls.length > 0 ? (
-					<div className="relative min-h-0 flex-3 overflow-hidden rounded-lg bg-muted/30">
-						<LinkPreview
-							imageUrls={imageUrls}
-							backgroundColor={presentation?.cardBackground}
-						/>
-					</div>
+				) : !isLandscape ? (
+					<LinkImageArea
+						imageUrls={imageUrls}
+						backgroundColor={presentation?.cardBackground}
+						flexClassName="flex-3"
+						mode={mode}
+						hasImage={hasImage}
+						isAnyItemDragging={isAnyItemDragging}
+						onSelect={onImageSelect}
+						onDelete={removeImage}
+					/>
 				) : null}
 			</div>
 		);

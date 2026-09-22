@@ -76,9 +76,7 @@ main:has([data-page-image-crop-open="true"]) {
 }
 
 .bento-text-input:hover,
-.bento-text-input:focus,
-.link-title-input:hover,
-.link-title-input:focus {
+.bento-text-input:focus {
 	background-color: color-mix(in oklch, white 8%, transparent) !important;
 }
 
@@ -88,9 +86,20 @@ main:has([data-page-image-crop-open="true"]) {
 	) !important;
 }
 
-.link-card-themed .link-title-input:is(:hover, :focus-visible) {
+.link-title-input {
+	max-width: calc(100% + 0.5rem);
+	width: calc(100% + 0.5rem);
+}
+
+.link-title-input:is(:hover, :focus-visible) {
 	background-color: oklch(
-		from var(--link-card-background) calc(l - 0.04) c h
+		from var(--link-card-background, var(--background)) calc(l - 0.04) c h
+	) !important;
+}
+
+.link-image-placeholder:is(:hover, :focus-visible) {
+	background-color: oklch(
+		from var(--link-card-background, var(--background)) calc(l - 0.04) c h
 	) !important;
 }
 

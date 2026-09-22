@@ -6,6 +6,8 @@ import {
 	cancelItemMediaUpload,
 	completeItemMediaUpload,
 	createPageItemMediaKey,
+	createPageLinkImageKey,
+	isOwnedPageLinkImageKey,
 } from "../../src/services/media.service";
 
 const objectKey = createPageItemMediaKey({
@@ -15,6 +17,38 @@ const objectKey = createPageItemMediaKey({
 });
 
 describe("page item media service", () => {
+	it("creates link image keys inside the owning item prefix", () => {
+		const linkImageKey = createPageLinkImageKey({
+			userId: "user-1",
+			pageId: "page-1",
+			itemId: "link-1",
+			contentType: "image/webp",
+		});
+
+		assert.match(
+			linkImageKey,
+			/^users\/user-1\/pages\/page-1\/items\/link-1\/image\/[0-9a-f-]+\.webp$/,
+		);
+		assert.equal(
+			isOwnedPageLinkImageKey({
+				key: linkImageKey,
+				userId: "user-1",
+				pageId: "page-1",
+				itemId: "link-1",
+			}),
+			true,
+		);
+		assert.equal(
+			isOwnedPageLinkImageKey({
+				key: linkImageKey,
+				userId: "user-1",
+				pageId: "page-1",
+				itemId: "other-link",
+			}),
+			false,
+		);
+	});
+
 	it("rejects a foreign object key before reading storage", async () => {
 		let headCalls = 0;
 		const bucket = {

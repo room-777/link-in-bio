@@ -53,6 +53,9 @@ export function toBatchItem(item: BentoItem): BentoBatchItem {
 				type: item.type,
 				data: {
 					url: item.data.url,
+					...(item.data.imageKey !== undefined
+						? { imageKey: item.data.imageKey }
+						: {}),
 					...(metadata ? { metadata } : {}),
 				},
 			};

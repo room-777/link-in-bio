@@ -195,11 +195,13 @@ export const pageItemLinkResponseMetadataSchema = v.object({
 
 export const pageItemLinkResponseDataSchema = v.object({
 	url: pageItemLinkUrlSchema,
+	imageKey: v.optional(v.nullable(v.pipe(v.string(), v.maxLength(512)))),
 	metadata: v.optional(pageItemLinkResponseMetadataSchema),
 });
 
 export const pageItemLinkDataSchema = v.object({
 	url: pageItemLinkUrlSchema,
+	imageKey: v.optional(v.nullable(v.pipe(v.string(), v.maxLength(512)))),
 	metadata: v.optional(pageItemLinkMetadataSchema),
 });
 
@@ -319,6 +321,8 @@ export const pageItemUploadRequestSchema = v.object({
 		v.regex(/^(image|video)\/[a-z0-9.+-]+$/i, "Media MIME type required."),
 	),
 	size: v.pipe(v.number(), v.integer(), v.minValue(1)),
+	itemId: v.optional(v.pipe(v.string(), v.minLength(1), v.maxLength(128))),
+	kind: v.optional(v.literal("link-image")),
 });
 
 export type PageItemUploadRequest = v.InferOutput<
@@ -337,6 +341,8 @@ export type PageItemUploadResponse = v.InferOutput<
 
 export const pageItemUploadCompleteRequestSchema = v.object({
 	objectKey: v.pipe(v.string(), v.minLength(1)),
+	itemId: v.optional(v.pipe(v.string(), v.minLength(1), v.maxLength(128))),
+	kind: v.optional(v.literal("link-image")),
 });
 
 export type PageItemUploadCompleteRequest = v.InferOutput<
@@ -345,6 +351,8 @@ export type PageItemUploadCompleteRequest = v.InferOutput<
 
 export const pageItemUploadCancelRequestSchema = v.object({
 	objectKey: v.pipe(v.string(), v.minLength(1)),
+	itemId: v.optional(v.pipe(v.string(), v.minLength(1), v.maxLength(128))),
+	kind: v.optional(v.literal("link-image")),
 });
 
 export type PageItemUploadCancelRequest = v.InferOutput<

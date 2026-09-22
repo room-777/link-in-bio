@@ -429,13 +429,13 @@ describe("page item service", () => {
 
 	/**
 	 * Case ID: PAGE-ITEM-SERVICE-006
-	 * Given: a media item references a key outside the owner's item prefix.
+	 * Given: a media or link item references a key outside its owned prefix.
 	 * When: persistPageItemBatch validates the item.
 	 * Then: it rejects the batch.
 	 * Evidence: PageItemServiceError.code=INVALID_MEDIA_KEY.
 	 * Result: Pass | Fail | Blocked | Not Run
 	 */
-	it("PAGE-ITEM-SERVICE-006 rejects media keys outside the page prefix", async () => {
+	it("PAGE-ITEM-SERVICE-006 rejects keys outside the owned item prefix", async () => {
 		const tx = {
 			query: {
 				pages: { findFirst: async () => ({ id: "page-1" }) },
@@ -460,6 +460,33 @@ describe("page item service", () => {
 							data: {
 								objectKey: "users/user-1/pages/page-2/items/photo.png",
 								mimeType: "image/png",
+							},
+							style: {},
+							layouts: { wide: layout, compact: layout },
+						},
+					],
+					deletes: [],
+				},
+			}),
+			(error: unknown) =>
+				error instanceof PageItemServiceError &&
+				error.code === "INVALID_MEDIA_KEY",
+		);
+
+		await assert.rejects(
+			persistPageItemBatch({
+				db,
+				handle: "jane",
+				userId: "user-1",
+				batch: {
+					upserts: [
+						{
+							id: "link-1",
+							type: "link",
+							data: {
+								url: "https://example.com",
+								imageKey:
+									"users/user-1/pages/page-1/items/other-link/image/photo.png",
 							},
 							style: {},
 							layouts: { wide: layout, compact: layout },

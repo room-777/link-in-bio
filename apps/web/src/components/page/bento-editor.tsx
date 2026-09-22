@@ -49,7 +49,7 @@ export default function BentoEditor({
 	const editorClassName =
 		breakpoint === "compact"
 			? "relative flex w-full max-w-lg shrink-0 flex-col overflow-visible bg-background px-6 min-[90rem]:pt-12 pb-32 no-scrollbar"
-			: "relative flex min-w-0 flex-1 flex-col overflow-visible bg-background px-6 pt-12 pb-32 no-scrollbar min-[90rem]:w-4xl min-[90rem]:max-w-none min-[90rem]:flex-none min-[90rem]:pt-16";
+			: "relative flex min-w-0 flex-1 flex-col overflow-visible bg-background px-6 pt-12 pb-32 no-scrollbar min-[100rem]:w-4xl min-[100rem]:max-w-none min-[100rem]:flex-none min-[100rem]:pt-16";
 
 	const selectMedia = async (file: File) => {
 		if (!/^(image|video)\//i.test(file.type)) {
@@ -66,6 +66,21 @@ export default function BentoEditor({
 			});
 		}
 	};
+	const selectLinkImage = async (itemId: string, file: File) => {
+		if (!/^image\//i.test(file.type)) {
+			toast({ message: "Choose an image file.", state: "error" });
+			return;
+		}
+		try {
+			await store.replaceLinkImage(itemId, file);
+		} catch (error) {
+			toast({
+				message:
+					error instanceof Error ? error.message : "The image upload failed.",
+				state: "error",
+			});
+		}
+	};
 
 	return (
 		<section className={`bento-editor ${editorClassName}`}>
@@ -77,6 +92,7 @@ export default function BentoEditor({
 				onAutoFocus={store.clearAutoFocusItem}
 				onCommand={store.dispatchCommand}
 				onRefreshLinkMetadata={store.refreshLinkMetadata}
+				onLinkImageSelect={selectLinkImage}
 			/>
 			<AddWidgetDialog onItemAdd={addItem} onMediaSelect={selectMedia} />
 		</section>

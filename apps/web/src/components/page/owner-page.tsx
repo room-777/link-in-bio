@@ -34,7 +34,7 @@ export default function OwnerPage({
 		: { type: "spring" as const, stiffness: 560, damping: 32, mass: 0.8 };
 
 	useEffect(() => {
-		const mediaQuery = window.matchMedia("(min-width: 90rem)");
+		const mediaQuery = window.matchMedia("(min-width: 100rem)");
 		const syncViewportBreakpoint = () => {
 			const nextBreakpoint = mediaQuery.matches ? "wide" : "compact";
 			setViewportBreakpoint(nextBreakpoint);
@@ -59,7 +59,7 @@ export default function OwnerPage({
 	const effectiveBreakpoint = isViewportCompact ? "compact" : layoutBreakpoint;
 	const isCompactPageLayout = effectiveBreakpoint === "compact";
 	const desktopMainClassName =
-		"page-profile mx-auto flex min-h-svh w-full max-w-md flex-col justify-between gap-8 p-6 px-6 pt-12 min-[90rem]:mx-0 min-[90rem]:sticky min-[90rem]:top-0 min-[90rem]:min-h-dvh min-[90rem]:w-2xl min-[90rem]:max-w-none min-[90rem]:flex-none min-[90rem]:self-start min-[90rem]:px-16 min-[90rem]:pt-16";
+		"page-profile mx-auto flex min-h-svh w-full max-w-md flex-col justify-between gap-8 p-6 px-6 pt-12 min-[100rem]:mx-0 min-[100rem]:sticky min-[100rem]:top-0 min-[100rem]:min-h-dvh min-[100rem]:w-2xl min-[100rem]:max-w-none min-[100rem]:flex-none min-[100rem]:self-start min-[100rem]:px-16 min-[100rem]:pt-16";
 	const mainClassName = isCompactPageLayout
 		? "flex w-full max-w-lg shrink-0 flex-col justify-start overflow-visible p-6 px-6 pt-12"
 		: desktopMainClassName;
@@ -77,7 +77,7 @@ export default function OwnerPage({
 			className={
 				isCompactPageLayout
 					? "bento-page-scroll relative flex min-h-svh w-full flex-col items-center overflow-visible"
-					: "bento-page-scroll flex min-h-svh w-full flex-col min-[90rem]:flex-row min-[90rem]:items-start min-[90rem]:justify-around min-[90rem]:overflow-visible"
+					: "bento-page-scroll flex min-h-svh w-full flex-col min-[100rem]:flex-row min-[100rem]:items-start min-[100rem]:justify-around min-[100rem]:overflow-visible"
 			}
 		>
 			<main className={mainClassName}>
@@ -139,7 +139,7 @@ export default function OwnerPage({
 											initial={false}
 											transition={layoutTransition}
 											aria-hidden="true"
-											className="smooth-shadow-xs surface-line pointer-events-none absolute inset-0 rounded-lg bg-primary"
+											className="smooth-shadow-xs surface-line pointer-events-none absolute inset-0 rounded-md bg-primary"
 										/>
 									) : null}
 									<Smartphone
@@ -163,7 +163,7 @@ export default function OwnerPage({
 											initial={false}
 											transition={layoutTransition}
 											aria-hidden="true"
-											className="smooth-shadow-xs surface-line pointer-events-none absolute inset-0 rounded-lg bg-primary"
+											className="smooth-shadow-xs surface-line pointer-events-none absolute inset-0 rounded-md bg-primary"
 										/>
 									) : null}
 									<Laptop className="relative z-10 size-5" aria-hidden="true" />
