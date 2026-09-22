@@ -71,8 +71,8 @@ export default function OwnerPage({
 		<div
 			className={
 				isCompactPageLayout
-					? "bento-page-scroll relative flex min-h-svh w-full flex-col items-center overflow-visible"
-					: "bento-page-scroll flex min-h-svh w-full flex-col min-[100rem]:flex-row min-[100rem]:items-start min-[100rem]:justify-around min-[100rem]:overflow-visible"
+					? "bento-page-scroll relative isolate flex min-h-svh w-full flex-col items-center overflow-visible"
+					: "bento-page-scroll isolate flex min-h-svh w-full flex-col min-[100rem]:flex-row min-[100rem]:items-start min-[100rem]:justify-around min-[100rem]:overflow-visible"
 			}
 		>
 			<main className={mainClassName}>
