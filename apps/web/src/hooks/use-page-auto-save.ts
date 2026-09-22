@@ -1,6 +1,6 @@
 "use client";
 
-import type { UpdatePageDraft } from "@grabbin/api";
+import type { PageImageCrop, UpdatePageDraft } from "@grabbin/api";
 import { updatePageDraftSchema } from "@grabbin/api";
 import { useCallback, useEffect, useRef, useState } from "react";
 import * as v from "valibot";
@@ -15,12 +15,14 @@ type PageDraft = {
 	name: string;
 	bio: string;
 	imageKey: string;
+	imageCrop: PageImageCrop | null;
 };
 
 type PageSnapshot = {
 	name: string | null;
 	bio: string | null;
 	imageKey: string | null;
+	imageCrop: PageImageCrop | null;
 };
 
 function toDraft(page: PageSnapshot): PageDraft {
@@ -28,6 +30,7 @@ function toDraft(page: PageSnapshot): PageDraft {
 		name: page.name ?? "",
 		bio: page.bio ?? "",
 		imageKey: page.imageKey ?? "",
+		imageCrop: page.imageCrop ?? null,
 	};
 }
 
@@ -48,6 +51,10 @@ function getChangedFields(draft: PageDraft, saved: PageSnapshot) {
 	const imageKey = normalize(draft.imageKey);
 	if (imageKey !== normalize(saved.imageKey)) {
 		changes.imageKey = imageKey;
+		hasChanges = true;
+	}
+	if (JSON.stringify(draft.imageCrop) !== JSON.stringify(saved.imageCrop)) {
+		changes.imageCrop = draft.imageCrop;
 		hasChanges = true;
 	}
 
@@ -150,6 +157,10 @@ export function usePageAutoSave({
 						"imageKey" in body.page && typeof body.page.imageKey === "string"
 							? body.page.imageKey
 							: null,
+					imageCrop:
+						"imageCrop" in body.page && body.page.imageCrop
+							? (body.page.imageCrop as PageImageCrop)
+							: null,
 				};
 				if (sentVersion === versionRef.current) {
 					const nextDraft = toDraft(savedRef.current);
@@ -199,7 +210,7 @@ export function usePageAutoSave({
 	}, [scheduleSave]);
 
 	const updateField = useCallback(
-		(field: keyof PageDraft, value: string) => {
+		(field: keyof PageDraft, value: PageDraft[typeof field]) => {
 			const nextDraft = { ...draftRef.current, [field]: value };
 			versionRef.current += 1;
 			draftRef.current = nextDraft;

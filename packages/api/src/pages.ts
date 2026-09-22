@@ -1,6 +1,6 @@
 import * as v from "valibot";
 
-import { pageItemResponseSchema } from "./grid";
+import { normalizedCropSchema, pageItemResponseSchema } from "./grid";
 
 export const createPageSchema = v.object({ handle: v.string() });
 
@@ -22,6 +22,9 @@ export const pageImageUploadSchema = v.object({
 	),
 });
 
+export const pageImageCropSchema = normalizedCropSchema;
+export type PageImageCrop = v.InferOutput<typeof pageImageCropSchema>;
+
 export const pageImageKeySchema = v.object({
 	key: v.pipe(v.string(), v.maxLength(512)),
 });
@@ -30,6 +33,8 @@ export const pageDataSchema = v.object({
 	handle: v.string(),
 	onboarding: v.boolean(),
 	imageKey: v.nullable(v.string()),
+	imageSource: v.nullable(v.string()),
+	imageCrop: v.nullable(pageImageCropSchema),
 	name: v.nullable(v.string()),
 	bio: v.nullable(v.string()),
 	isOwner: v.boolean(),
@@ -43,6 +48,7 @@ export const pageByHandleResponseSchema = v.object({
 
 export const updatePageDraftSchema = v.object({
 	imageKey: v.optional(v.nullable(v.pipe(v.string(), v.maxLength(512)))),
+	imageCrop: v.optional(v.nullable(pageImageCropSchema)),
 	name: v.pipe(v.string(), v.trim(), v.minLength(1), v.maxLength(80)),
 	bio: v.optional(v.nullable(v.pipe(v.string(), v.trim(), v.maxLength(280)))),
 });

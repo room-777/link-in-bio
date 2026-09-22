@@ -6,6 +6,7 @@ import {
 	pageImageUploadSchema,
 	pageProfileSchema,
 } from "@grabbin/api";
+import type { BentoBreakpoint } from "@grabbin/bento-layout";
 import { env } from "@grabbin/env/web";
 import { Button } from "@grabbin/ui/components/button";
 import Loading from "@grabbin/ui/components/loading";
@@ -26,18 +27,25 @@ import PageProfileFields from "./page-profile-fields";
 export default function PageProfileForm({
 	page,
 	mode,
+	breakpoint = "wide",
 	onOnboardingComplete,
 	onSavingChange,
 }: {
 	page: PageData;
 	mode: "onboarding" | "edit";
+	breakpoint?: BentoBreakpoint;
 	onOnboardingComplete?: (stage: "exiting" | "complete") => void;
 	onSavingChange?: (isSaving: boolean) => void;
 }) {
 	const router = useRouter();
 	const reduceMotion = useReducedMotion();
 	const [imageUrl, setImageUrl] = useState(
-		getPageImageUrl(page.imageKey) ?? "",
+		getPageImageUrl(page.imageSource ?? page.imageKey, {
+			width: 1024,
+			height: 1024,
+			format: "auto",
+			fit: "scale-down",
+		}) ?? "",
 	);
 	const [isImageUploading, setIsImageUploading] = useState(false);
 	const [isSaved, setIsSaved] = useState(false);
@@ -102,9 +110,16 @@ export default function PageProfileForm({
 
 	useEffect(() => {
 		if (!isImageUploading) {
-			setImageUrl(getPageImageUrl(draft.imageKey) ?? "");
+			setImageUrl(
+				getPageImageUrl(
+					draft.imageKey === page.imageKey
+						? (page.imageSource ?? page.imageKey)
+						: draft.imageKey,
+					{ width: 1024, height: 1024, format: "auto", fit: "scale-down" },
+				) ?? "",
+			);
 		}
-	}, [draft.imageKey, isImageUploading]);
+	}, [draft.imageKey, isImageUploading, page.imageKey, page.imageSource]);
 
 	const mutation = useMutation({
 		mutationFn: async (profile: v.InferOutput<typeof pageProfileSchema>) => {
@@ -185,6 +200,7 @@ export default function PageProfileForm({
 				return;
 			}
 			updateField("imageKey", uploadedKey);
+			updateField("imageCrop", null);
 		} catch (uploadError) {
 			if (uploadedKey) await cleanupUploadedImage(uploadedKey);
 			if (uploadVersion !== uploadVersionRef.current) return;
@@ -207,6 +223,7 @@ export default function PageProfileForm({
 		event.preventDefault();
 		const parsed = v.safeParse(pageProfileSchema, {
 			imageKey: draft.imageKey.trim() || null,
+			imageCrop: draft.imageCrop,
 			name: draft.name,
 			bio: draft.bio,
 		});
@@ -280,12 +297,16 @@ export default function PageProfileForm({
 							onRemoveImage={() => {
 								uploadVersionRef.current += 1;
 								updateField("imageKey", "");
+								updateField("imageCrop", null);
 								setImageUrl("");
 								setCompletionError("");
 							}}
 							onImageError={(message) => toast({ message, state: "error" })}
+							imageCrop={draft.imageCrop}
+							onImageCropChange={(crop) => updateField("imageCrop", crop)}
 							name={draft.name}
 							bio={draft.bio}
+							breakpoint={breakpoint}
 							nameRequired={mode !== "onboarding"}
 							onNameChange={(value) => {
 								updateField("name", value);

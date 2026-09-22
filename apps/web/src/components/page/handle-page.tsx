@@ -4,6 +4,7 @@ import type { PageByHandleResponse } from "@grabbin/api";
 import { motion, useReducedMotion } from "motion/react";
 import dynamic from "next/dynamic";
 import { toBentoItem } from "@/lib/bento/bento-batch";
+import { getMediaCropStyle } from "@/lib/bento/media-crop";
 import { getPageImageUrl } from "@/lib/page-image-url";
 import PageFooter from "./page-footer";
 
@@ -16,7 +17,15 @@ export default function HandlePage({
 }) {
 	const { page } = pageResponse;
 	const title = page.name?.trim() || `@${page.handle}`;
-	const imageUrl = getPageImageUrl(page.imageKey);
+	const imageUrl = getPageImageUrl(page.imageSource ?? page.imageKey, {
+		width: 1024,
+		height: 1024,
+		format: "auto",
+		fit: "scale-down",
+	});
+	const imageStyle = page.imageCrop
+		? getMediaCropStyle(page.imageCrop)
+		: undefined;
 	const reduceMotion = useReducedMotion();
 	const enterTransition = reduceMotion
 		? { duration: 0 }
@@ -25,8 +34,8 @@ export default function HandlePage({
 	return (
 		<main className="page-scroll-container no-scrollbar relative box-border min-h-dvh w-full overflow-y-auto bg-background min-[90rem]:flex min-[90rem]:h-dvh min-[90rem]:items-start min-[90rem]:justify-center">
 			<div className="flex w-full flex-col items-center gap-8 min-[90rem]:min-h-dvh min-[90rem]:flex-row min-[90rem]:items-stretch min-[90rem]:justify-around">
-				<div className="flex w-full min-w-0 max-w-md flex-col min-[90rem]:min-h-0 min-[90rem]:w-2xl min-[90rem]:max-w-none">
-					<article className="flex min-h-0 w-full flex-1 flex-col gap-8 p-6 px-12 pt-12 min-[90rem]:sticky min-[90rem]:top-0 min-[90rem]:min-h-dvh min-[90rem]:flex-none min-[90rem]:self-start min-[90rem]:pt-16">
+				<div className="contents w-full min-w-0 max-w-md min-[90rem]:flex min-[90rem]:min-h-0 min-[90rem]:w-2xl min-[90rem]:max-w-none min-[90rem]:flex-col">
+					<article className="order-1 flex min-h-0 w-full max-w-md flex-1 flex-col gap-8 p-6 px-12 pt-12 min-[90rem]:sticky min-[90rem]:top-0 min-[90rem]:min-h-dvh min-[90rem]:max-w-none min-[90rem]:flex-none min-[90rem]:self-start min-[90rem]:pt-16">
 						<div className="relative flex size-28 items-center justify-center overflow-hidden rounded-full sm:size-32 min-[90rem]:size-46">
 							{imageUrl && (
 								<motion.img
@@ -36,6 +45,7 @@ export default function HandlePage({
 									animate={{ opacity: 1, rotate: 0 }}
 									transition={enterTransition}
 									className="size-full rounded-lg object-cover"
+									style={imageStyle}
 								/>
 							)}
 						</div>
@@ -59,15 +69,15 @@ export default function HandlePage({
 								</motion.p>
 							)}
 						</div>
-						<PageFooter handle={page.handle} isOwner={page.isOwner} />
 					</article>
 				</div>
-				<section className="bento-content-scroll-shell no-scrollbar min-h-[calc(100dvh-3rem)] w-full overflow-visible p-0 pt-0 sm:max-w-md min-[90rem]:h-full min-[90rem]:min-h-[calc(100dvh-4rem)] min-[90rem]:w-4xl min-[90rem]:max-w-none min-[90rem]:shrink-0 min-[90rem]:pt-16 min-[90rem]:pb-24">
+				<section className="bento-content-scroll-shell no-scrollbar order-2 min-h-[calc(100dvh-3rem)] w-full overflow-visible p-0 pt-0 sm:max-w-md min-[90rem]:order-none min-[90rem]:h-full min-[90rem]:min-h-[calc(100dvh-4rem)] min-[90rem]:w-4xl min-[90rem]:max-w-none min-[90rem]:shrink-0 min-[90rem]:pt-16 min-[90rem]:pb-24">
 					<div className="flex flex-col gap-4">
 						<BentoSection items={pageResponse.items.map(toBentoItem)} />
 					</div>
 				</section>
 			</div>
+			<PageFooter handle={page.handle} isOwner={page.isOwner} />
 		</main>
 	);
 }

@@ -4,6 +4,7 @@ type PageImageOptions = {
 	width: number;
 	height: number;
 	format?: "auto" | "png";
+	fit?: "cover" | "scale-down";
 };
 
 export function getPageImageUrl(
@@ -28,7 +29,7 @@ export function getPageImageUrl(
 	const transform = [
 		`width=${options.width}`,
 		`height=${options.height}`,
-		"fit=cover",
+		`fit=${options.fit ?? "cover"}`,
 		`format=${options.format ?? "auto"}`,
 	].join(",");
 	return `https://${pageDomain}/cdn-cgi/image/${transform}/${source}`;

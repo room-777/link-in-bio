@@ -27,6 +27,8 @@ function findPublicPageByHandle(db: DatabaseClient, handle: string) {
 			handle: true,
 			onboarding: true,
 			imageKey: true,
+			imageSource: true,
+			imageCrop: true,
 			name: true,
 			bio: true,
 		},
@@ -72,6 +74,8 @@ function updateOwnedPage(
 		userId: string;
 		handle: string;
 		imageKey: string | null;
+		imageSource: string | null;
+		imageCrop: PageProfile["imageCrop"];
 		name: string;
 		bio: string | null;
 	},
@@ -80,6 +84,8 @@ function updateOwnedPage(
 		.update(pages)
 		.set({
 			imageKey: input.imageKey,
+			imageSource: input.imageSource,
+			imageCrop: input.imageCrop,
 			name: input.name,
 			bio: input.bio,
 			onboarding: true,
@@ -96,15 +102,24 @@ function updateOwnedPageDraft(
 		name: string;
 		bio?: string | null;
 		imageKey?: string | null;
+		imageCrop?: PageProfile["imageCrop"];
 	},
 ) {
 	const values: {
 		name: string;
 		bio?: string | null;
 		imageKey?: string | null;
+		imageSource?: string | null;
+		imageCrop?: PageProfile["imageCrop"];
 	} = { name: input.name };
 	if ("bio" in input) values.bio = input.bio;
-	if ("imageKey" in input) values.imageKey = input.imageKey;
+	if ("imageKey" in input) {
+		values.imageKey = input.imageKey;
+		values.imageSource = input.imageKey;
+		values.imageCrop = input.imageKey ? (input.imageCrop ?? null) : null;
+	} else if ("imageCrop" in input) {
+		values.imageCrop = input.imageCrop;
+	}
 
 	return db
 		.update(pages)
@@ -262,7 +277,7 @@ export async function completePage({
 	const handle = normalizePageHandle(rawHandle);
 	const existingPage = await db.query.pages.findFirst({
 		where: and(eq(pages.handle, handle), eq(pages.userId, userId)),
-		columns: { id: true, imageKey: true },
+		columns: { id: true, imageKey: true, imageSource: true, imageCrop: true },
 	});
 	if (!existingPage) throw new PageServiceError("PAGE_NOT_FOUND");
 
@@ -283,6 +298,8 @@ export async function completePage({
 		userId,
 		handle,
 		imageKey,
+		imageSource: imageKey,
+		imageCrop: imageKey ? (profile.imageCrop ?? null) : null,
 		name: profile.name,
 		bio: profile.bio?.trim() || null,
 	});
@@ -313,7 +330,7 @@ export async function updatePageDraft({
 	const handle = normalizePageHandle(rawHandle);
 	const existingPage = await db.query.pages.findFirst({
 		where: and(eq(pages.handle, handle), eq(pages.userId, userId)),
-		columns: { id: true, imageKey: true },
+		columns: { id: true, imageKey: true, imageSource: true, imageCrop: true },
 	});
 	if (!existingPage) throw new PageServiceError("PAGE_NOT_FOUND");
 
@@ -331,6 +348,9 @@ export async function updatePageDraft({
 	) {
 		throw new PageServiceError("PAGE_IMAGE_INVALID");
 	}
+	if ("imageCrop" in draft && draft.imageCrop && !existingPage.imageKey) {
+		throw new PageServiceError("PAGE_IMAGE_INVALID");
+	}
 
 	const [page] = await updateOwnedPageDraft(db, {
 		userId,
@@ -338,6 +358,9 @@ export async function updatePageDraft({
 		name: draft.name.trim(),
 		...("bio" in draft ? { bio: draft.bio?.trim() || null } : {}),
 		...("imageKey" in draft ? { imageKey } : {}),
+		...("imageCrop" in draft && !("imageKey" in draft)
+			? { imageCrop: draft.imageCrop }
+			: {}),
 	});
 	if (!page) throw new PageServiceError("PAGE_NOT_FOUND");
 

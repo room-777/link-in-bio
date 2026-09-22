@@ -257,6 +257,8 @@ describe("page service", () => {
 		assert.deepEqual(result, updatedPage);
 		assert.deepEqual(values, {
 			imageKey,
+			imageSource: imageKey,
+			imageCrop: null,
 			name: "Jane",
 			bio: "Hello",
 			onboarding: true,
@@ -294,6 +296,8 @@ describe("page service", () => {
 		});
 		assert.deepEqual(values, {
 			imageKey: null,
+			imageSource: null,
+			imageCrop: null,
 			name: "Jane",
 			bio: null,
 			onboarding: true,
@@ -343,6 +347,8 @@ describe("page service", () => {
 		});
 		assert.deepEqual(values, {
 			imageKey,
+			imageSource: imageKey,
+			imageCrop: null,
 			name: "Jane",
 			bio: null,
 			onboarding: true,
@@ -427,7 +433,48 @@ describe("page service", () => {
 			draft: { name: "Jane", imageKey },
 		});
 
-		assert.deepEqual(values, { name: "Jane", imageKey });
+		assert.deepEqual(values, {
+			name: "Jane",
+			imageKey,
+			imageSource: imageKey,
+			imageCrop: null,
+		});
 		assert.deepEqual(deletedKeys, [oldImageKey]);
+	});
+
+	it("PAGE-SERVICE-010 saves a profile image crop without replacing the image", async () => {
+		let values: Record<string, unknown> | undefined;
+		const query = {
+			set(nextValues: Record<string, unknown>) {
+				values = nextValues;
+				return query;
+			},
+			where() {
+				return query;
+			},
+			returning: async () => [{ id: "page-1", imageCrop: null }],
+		};
+		const db = {
+			query: {
+				pages: {
+					findFirst: async () => ({
+						id: "page-1",
+						imageKey: "users/user-1/pages/page-1/profile/avatar.webp",
+					}),
+				},
+			},
+			update: () => query,
+		} as unknown as DatabaseClient;
+		const crop = { x: 10, y: 0, width: 80, height: 100 };
+
+		await updatePageDraft({
+			db,
+			bucket: {} as R2Bucket,
+			userId: "user-1",
+			handle: "jane",
+			draft: { name: "Jane", imageCrop: crop },
+		});
+
+		assert.deepEqual(values, { name: "Jane", imageCrop: crop });
 	});
 });
