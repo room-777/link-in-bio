@@ -383,7 +383,7 @@ export function MapItem({
 						className={`absolute inset-0 ${interactive ? "" : "pointer-events-none"}`}
 					>
 						<MapViewportGate
-							forceMount={mode === "edit" || interactive}
+							forceMount={interactive}
 							placeholder={
 								<div
 									aria-hidden="true"
