@@ -19,12 +19,12 @@ import Loading from "@grabbin/ui/components/loading";
 import { Marquee } from "@grabbin/ui/components/marquee";
 import { cn } from "@grabbin/ui/lib/utils";
 import { useQuery } from "@tanstack/react-query";
+import { Globe } from "lucide-react";
 import { AnimatePresence, motion, useReducedMotion } from "motion/react";
 import { useRouter } from "next/navigation";
 import { type FormEvent, useEffect, useState } from "react";
 import { CheckCircle } from "reicon-react/icons/CheckCircle";
 import { CloseCircle } from "reicon-react/icons/CloseCircle";
-import { Globe } from "reicon-react/icons/globe";
 import { Loader } from "reicon-react/icons/Loader";
 import * as v from "valibot";
 
@@ -234,7 +234,7 @@ export function PageHandleForm({
 						</FieldLabel>
 						<div className="flex items-center gap-2">
 							<div className="smooth-shadow-xs flex aspect-square size-11 items-center justify-center rounded-lg border">
-								<Globe className="-rotate-z-12 text-foreground" />
+								<Globe className="-rotate-z-12 stroke-[2] text-foreground" />
 							</div>
 							<InputGroup
 								className={cn(
