@@ -509,15 +509,17 @@ export function MapItem({
 								) : null}
 							</div>
 						</MapViewportGate>
-						<div
-							aria-hidden="true"
-							className="pointer-events-none absolute inset-0 z-10 flex items-center justify-center"
-						>
-							<span className="animation-duration-[2.5s] absolute size-12 animate-ping rounded-full bg-brand/35" />
-							<span className="beautiful-shadow smooth-ring-neutral-300/40! relative size-7 rounded-full bg-white p-1 drop-shadow-lg">
-								<span className="block size-full rounded-full bg-brand" />
-							</span>
-						</div>
+						{mapReady ? (
+							<div
+								aria-hidden="true"
+								className="pointer-events-none absolute inset-0 z-10 flex items-center justify-center"
+							>
+								<span className="animation-duration-[2.5s] absolute size-12 animate-ping rounded-full bg-brand/35" />
+								<span className="beautiful-shadow smooth-ring-neutral-300/40! relative size-7 rounded-full bg-white p-1 drop-shadow-lg">
+									<span className="block size-full rounded-full bg-brand" />
+								</span>
+							</div>
+						) : null}
 					</div>
 				)}
 			</div>
