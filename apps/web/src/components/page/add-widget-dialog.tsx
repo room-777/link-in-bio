@@ -219,6 +219,14 @@ export default function AddWidgetDialog({
 }) {
 	const isMobile = useIsMobile();
 	const [open, setOpen] = useState(false);
+	const handleItemAdd = (itemType: ItemType, url?: string) => {
+		onItemAdd(itemType, url);
+		setOpen(false);
+	};
+	const handleMediaSelect = (file: File) => {
+		onMediaSelect(file);
+		setOpen(false);
+	};
 
 	return (
 		<>
@@ -240,14 +248,8 @@ export default function AddWidgetDialog({
 						<div className="flex flex-col gap-6 p-5">
 							<AddWidgetContent
 								isOpen={open}
-								onMediaSelect={(file) => {
-									onMediaSelect(file);
-									setOpen(false);
-								}}
-								onItemAdd={(itemType, url) => {
-									onItemAdd(itemType, url);
-									setOpen(false);
-								}}
+								onMediaSelect={handleMediaSelect}
+								onItemAdd={handleItemAdd}
 							/>
 						</div>
 					</DrawerContent>
@@ -266,14 +268,8 @@ export default function AddWidgetDialog({
 						</DialogHeader>
 						<AddWidgetContent
 							isOpen={open}
-							onMediaSelect={(file) => {
-								onMediaSelect(file);
-								setOpen(false);
-							}}
-							onItemAdd={(itemType, url) => {
-								onItemAdd(itemType, url);
-								setOpen(false);
-							}}
+							onMediaSelect={handleMediaSelect}
+							onItemAdd={handleItemAdd}
 						/>
 					</DialogContent>
 				</Dialog>

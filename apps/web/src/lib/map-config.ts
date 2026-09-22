@@ -17,3 +17,50 @@ export const MAPBOX_STYLE_CONFIG = {
 		showRoadLabels: false,
 	},
 } as const;
+
+export const MAP_ZOOM_MIN = 0;
+export const MAP_ZOOM_MAX = 22;
+export const DEFAULT_MAP_ZOOM = 12;
+
+export type MapCamera = {
+	latitude: number;
+	longitude: number;
+	zoom: number;
+};
+
+export function normalizeMapCamera(data: {
+	latitude: number;
+	longitude: number;
+	zoom?: number;
+}): MapCamera {
+	return {
+		latitude: data.latitude,
+		longitude: data.longitude,
+		zoom:
+			typeof data.zoom === "number" &&
+			Number.isFinite(data.zoom) &&
+			data.zoom >= MAP_ZOOM_MIN &&
+			data.zoom <= MAP_ZOOM_MAX
+				? data.zoom
+				: DEFAULT_MAP_ZOOM,
+	};
+}
+
+export function sanitizeMapCamera(data: {
+	latitude: number;
+	longitude: number;
+	zoom: number;
+}): MapCamera | undefined {
+	if (
+		!Number.isFinite(data.latitude) ||
+		!Number.isFinite(data.longitude) ||
+		!Number.isFinite(data.zoom)
+	)
+		return undefined;
+
+	return {
+		latitude: data.latitude,
+		longitude: data.longitude,
+		zoom: Math.min(MAP_ZOOM_MAX, Math.max(MAP_ZOOM_MIN, data.zoom)),
+	};
+}

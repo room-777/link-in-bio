@@ -1,8 +1,7 @@
 import {
+	applyPresetToLayoutMap,
 	getAllowedPresets,
 	getColumns,
-	getPresetGeometry,
-	placeAtFirstAvailable,
 	validateBentoLayout,
 } from "@grabbin/bento-layout";
 
@@ -78,35 +77,26 @@ export function reduceBentoItems(
 		return undefined;
 	}
 
-	const columns = getColumns(command.breakpoint);
-	const otherLayouts = Object.fromEntries(
-		items
-			.filter((item) => item.id !== target.id)
-			.map((item) => [item.id, item.layouts[command.breakpoint]]),
+	const layouts = Object.fromEntries(
+		items.map((item) => [item.id, item.layouts[command.breakpoint]]),
 	);
-	const geometry = getPresetGeometry(command.preset, command.breakpoint);
-	const currentLayout = target.layouts[command.breakpoint];
-	const positionedLayout = {
-		...geometry,
-		x: currentLayout.x,
-		y: currentLayout.y,
-	};
-	const nextLayout = validateBentoLayout(
-		{ ...otherLayouts, [target.id]: positionedLayout },
-		columns,
-	)
-		? positionedLayout
-		: placeAtFirstAvailable(otherLayouts, geometry, columns);
+	const nextLayout = applyPresetToLayoutMap({
+		layouts,
+		itemId: target.id,
+		itemType: target.type,
+		preset: command.preset,
+		breakpoint: command.breakpoint,
+	});
 
 	return {
 		items: items.map((item) =>
-			item.id === target.id
+			nextLayout[item.id]
 				? {
 						...item,
-						preset: command.preset,
+						preset: item.id === target.id ? command.preset : item.preset,
 						layouts: {
 							...item.layouts,
-							[command.breakpoint]: nextLayout,
+							[command.breakpoint]: nextLayout[item.id],
 						},
 					}
 				: item,

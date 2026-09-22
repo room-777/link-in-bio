@@ -85,18 +85,6 @@ export function createBentoBatch(
 	};
 }
 
-export function restoreEmptyBentoItems(
-	items: readonly BentoItem[],
-	persisted: readonly BentoItem[],
-) {
-	const persistedById = new Map(persisted.map((item) => [item.id, item]));
-	return items.flatMap((item) => {
-		if (hasPageItemContent(toBatchItem(item))) return [item];
-		const persistedItem = persistedById.get(item.id);
-		return persistedItem ? [persistedItem] : [];
-	});
-}
-
 export function hasBentoBatchChanges(batch: PageItemBatchRequest) {
 	return batch.upserts.length > 0 || batch.deletes.length > 0;
 }

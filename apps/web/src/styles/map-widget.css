@@ -14,6 +14,20 @@
 	animation: map-widget-marker-ping 3s cubic-bezier(0, 0, 0.2, 1) infinite;
 }
 
+.mapboxgl-map .mapboxgl-ctrl-logo {
+	display: none;
+}
+
+[data-bento-map-location-editing="true"] .mapboxgl-canvas-container,
+[data-bento-map-location-editing="true"] .mapboxgl-canvas {
+	cursor: grab !important;
+}
+
+[data-bento-map-location-editing="true"] .mapboxgl-canvas-container:active,
+[data-bento-map-location-editing="true"] .mapboxgl-canvas:active {
+	cursor: grabbing !important;
+}
+
 @media (prefers-reduced-motion: reduce) {
 	.map-widget-marker-ping {
 		animation: none;

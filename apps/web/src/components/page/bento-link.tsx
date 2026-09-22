@@ -1,6 +1,7 @@
 import type { PageItemLinkPresentation, PageItemResponse } from "@grabbin/api";
 import type { PresetName } from "@grabbin/bento-layout";
 import { Button } from "@grabbin/ui/components/button";
+import { Textarea } from "@grabbin/ui/components/textarea";
 import { TriangleIcon } from "lucide-react";
 import { AnimatePresence, motion } from "motion/react";
 import {
@@ -10,6 +11,7 @@ import {
 	useRef,
 	useState,
 } from "react";
+import type { BentoCommand } from "@/lib/bento/bento-types";
 
 function LinkAction({
 	href,
@@ -257,7 +259,9 @@ function LinkBadge({
 }) {
 	const faviconUrl = item.data.metadata?.faviconUrl;
 	const providerLabel = presentation?.providerLabel ?? "Link";
-	return faviconUrl ? (
+	const [failedFaviconUrl, setFailedFaviconUrl] = useState<string>();
+	const faviconFailed = failedFaviconUrl === faviconUrl;
+	return faviconUrl && !faviconFailed ? (
 		<a
 			href={item.data.url}
 			target="_blank"
@@ -265,7 +269,12 @@ function LinkBadge({
 			aria-label={`Open ${providerLabel}`}
 			className="inline-flex size-8 shrink-0 cursor-pointer! items-center justify-center rounded-md bg-muted/30 p-0.5 transition-transform hover:scale-105 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/60"
 		>
-			<img src={faviconUrl} alt="" className="size-full object-contain" />
+			<img
+				src={faviconUrl}
+				alt=""
+				className="size-full object-contain"
+				onError={() => setFailedFaviconUrl(faviconUrl)}
+			/>
 		</a>
 	) : (
 		<a
@@ -280,25 +289,66 @@ function LinkBadge({
 					: undefined
 			}
 		>
+			<span aria-hidden="true">{providerLabel.slice(0, 1).toUpperCase()}</span>
 			<span className="sr-only">Open {providerLabel}</span>
 		</a>
 	);
 }
 
-function LinkTitle({ title, preset }: { title: string; preset: PresetName }) {
+function LinkTitle({
+	title,
+	preset,
+	mode,
+	onCommit,
+}: {
+	title: string;
+	preset: PresetName;
+	mode: "view" | "edit";
+	onCommit: (value: string) => void;
+}) {
 	const isHalfBanner = preset === "halfBanner";
 	const isLandscape = preset === "landscape";
 	const isSquareSmall = preset === "squareSmall";
 	const isTall = preset === "squareLarge" || preset === "portrait";
+	const [value, setValue] = useState(title);
+	useEffect(() => setValue(title), [title]);
+	const titleClassName = `field-sizing-fixed block min-h-0 w-full min-w-24 max-w-full rounded-sm px-1 py-0 font-medium text-foreground text-sm ${
+		isHalfBanner
+			? "h-8 max-h-8 overflow-hidden whitespace-nowrap leading-8"
+			: isTall
+				? "h-20 max-h-20 leading-5"
+				: "max-h-full leading-5"
+	} ${isLandscape || isSquareSmall || isTall ? "flex-1" : ""}`;
+	if (mode === "edit") {
+		return (
+			<Textarea
+				aria-label="Link title"
+				rows={1}
+				value={value}
+				wrap={isHalfBanner ? "off" : "soft"}
+				onChange={(event) => setValue(event.target.value)}
+				onBlur={(event) => {
+					event.currentTarget.scrollTo({
+						top: 0,
+						left: 0,
+						behavior: "smooth",
+					});
+					const nextValue = value.trim();
+					if (nextValue) onCommit(nextValue);
+				}}
+				className={`link-title-input cursor-text! resize-none border-0 bg-transparent text-current outline-none focus-visible:ring-0 ${titleClassName} overflow-y-auto overflow-x-hidden hover:bg-secondary! focus-visible:bg-secondary!`}
+			/>
+		);
+	}
 	return (
 		<div
-			className={`field-sizing-fixed wrap-break-word block min-h-0 w-full min-w-24 max-w-full rounded-sm px-1 py-0 font-medium text-foreground text-sm ${
+			className={`wrap-break-word cursor-grab! ${titleClassName} ${
 				isHalfBanner
-					? "h-8 max-h-8 overflow-hidden whitespace-nowrap leading-8"
-					: isTall
-						? "h-20 max-h-20 leading-5"
-						: "max-h-full leading-5"
-			} ${isLandscape || isSquareSmall || isTall ? "no-scrollbar flex-1 overflow-y-auto whitespace-pre-line" : "truncate"}`}
+					? "truncate"
+					: isLandscape || isSquareSmall || isTall
+						? "no-scrollbar overflow-y-auto whitespace-pre-line"
+						: "truncate"
+			}`}
 		>
 			{title}
 		</div>
@@ -308,9 +358,13 @@ function LinkTitle({ title, preset }: { title: string; preset: PresetName }) {
 export function LinkItem({
 	item,
 	preset,
+	mode = "view",
+	onCommand,
 }: {
 	item: Extract<PageItemResponse, { type: "link" }>;
 	preset: PresetName;
+	mode?: "view" | "edit";
+	onCommand?: (command: BentoCommand) => void;
 }) {
 	const metadata = item.data.metadata;
 	const presentation = metadata?.presentation;
@@ -336,6 +390,15 @@ export function LinkItem({
 		Boolean(githubGraph);
 	const shouldShowLinkAction = Boolean(presentation?.actionLabel);
 	const isProductHuntUpvote = presentation?.actionIcon === "upvote";
+	const updateTitle = (value: string) =>
+		onCommand?.({
+			type: "update-data",
+			itemId: item.id,
+			data: {
+				...item.data,
+				metadata: { ...item.data.metadata, title: value },
+			},
+		});
 	const linkActionProps = {
 		label: presentation?.actionLabel ?? "Open",
 		detail: presentation?.actionDetail,
@@ -365,7 +428,12 @@ export function LinkItem({
 				}`}
 			>
 				<LinkBadge item={item} presentation={presentation} />
-				<LinkTitle title={title} preset={preset} />
+				<LinkTitle
+					title={title}
+					preset={preset}
+					mode={mode}
+					onCommit={updateTitle}
+				/>
 			</div>
 			{shouldShowLinkAction ? (
 				<LinkAction href={item.data.url} {...linkActionProps} />
@@ -383,7 +451,12 @@ export function LinkItem({
 					<div className="flex min-h-0 w-full flex-1 flex-col gap-1">
 						<LinkBadge item={item} presentation={presentation} />
 						<div className="flex min-h-0 min-w-0 flex-1 flex-col">
-							<LinkTitle title={title} preset={preset} />
+							<LinkTitle
+								title={title}
+								preset={preset}
+								mode={mode}
+								onCommit={updateTitle}
+							/>
 						</div>
 					</div>
 					{shouldShowLinkAction ? (
@@ -402,7 +475,12 @@ export function LinkItem({
 					<div className="flex min-w-0 flex-1 items-center gap-1">
 						<LinkBadge item={item} presentation={presentation} />
 						<div className="min-h-0 min-w-0 flex-1">
-							<LinkTitle title={title} preset={preset} />
+							<LinkTitle
+								title={title}
+								preset={preset}
+								mode={mode}
+								onCommit={updateTitle}
+							/>
 						</div>
 					</div>
 					{shouldShowLinkAction ? (

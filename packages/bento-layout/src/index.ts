@@ -106,10 +106,127 @@ export function placeAtFirstAvailable(
 	}
 	for (let y = 0; ; y += 1) {
 		for (let x = 0; x <= cols - itemSize.w; x += 1) {
-			const candidate = { x, y, ...itemSize };
+			const candidate = { x, y, w: itemSize.w, h: itemSize.h };
 			if (isLegal(candidate, layouts, cols)) return candidate;
 		}
 	}
+}
+
+export function compactWithGravity(
+	layouts: BentoLayoutMap,
+	cols: number,
+	protectedId?: string,
+): BentoLayoutMap {
+	const result = Object.fromEntries(
+		Object.entries(layouts).map(([id, layout]) => [id, { ...layout }]),
+	) as BentoLayoutMap;
+	const orderedIds = Object.keys(result).sort((a, b) => {
+		const first = result[a];
+		const second = result[b];
+		if (!first || !second) return a.localeCompare(b);
+		return first.y - second.y || first.x - second.x || a.localeCompare(b);
+	});
+
+	for (const id of orderedIds) {
+		const current = result[id];
+		if (!current) continue;
+		if (id === protectedId) continue;
+		const others = Object.fromEntries(
+			Object.entries(result).filter(([otherId]) => otherId !== id),
+		) as BentoLayoutMap;
+		let next = { ...current };
+		while (next.y > 0) {
+			const candidate = { ...next, y: next.y - 1 };
+			if (!isLegal(candidate, others, cols)) break;
+			next = candidate;
+		}
+		result[id] = next;
+	}
+
+	if (!validateBentoLayout(result, cols)) {
+		throw new Error("Unable to compact the Bento layout.");
+	}
+	return result;
+}
+
+function pushCollisionsDown(
+	layouts: BentoLayoutMap,
+	protectedId: string,
+): BentoLayoutMap {
+	// ponytail: O(n²) is enough for small Bento layouts; use spatial indexing if that changes.
+	const result = Object.fromEntries(
+		Object.entries(layouts).map(([id, layout]) => [id, { ...layout }]),
+	) as BentoLayoutMap;
+	const protectedLayout = result[protectedId];
+	if (!protectedLayout) return result;
+
+	const pending = [protectedId];
+	while (pending.length > 0) {
+		const id = pending.shift();
+		if (!id) continue;
+		const current = result[id];
+		if (!current) continue;
+		const collision = Object.entries(result).find(
+			([otherId, other]) => otherId !== id && overlaps(current, other),
+		);
+		if (!collision) continue;
+
+		const [collisionId, collisionLayout] = collision;
+		if (collisionId === protectedId) {
+			result[id] = { ...current, y: current.y + 1 };
+			pending.unshift(id);
+			continue;
+		}
+		result[collisionId] = {
+			...collisionLayout,
+			y: collisionLayout.y + 1,
+		};
+		pending.push(id, collisionId);
+	}
+	return result;
+}
+
+export function applyPresetToLayoutMap({
+	layouts,
+	itemId,
+	itemType,
+	preset,
+	breakpoint,
+}: {
+	layouts: BentoLayoutMap;
+	itemId: string;
+	itemType: ItemType;
+	preset: PresetName;
+	breakpoint: BentoBreakpoint;
+}): BentoLayoutMap {
+	const current = layouts[itemId];
+	if (!current) throw new Error(`Unknown item ${itemId}.`);
+	if (!allowedPresets[itemType].includes(preset)) {
+		throw new Error(`${preset} is not allowed for ${itemType}.`);
+	}
+
+	const cols = getColumns(breakpoint);
+	const nextSize = getPresetGeometry(preset, breakpoint);
+	const distanceToLeft = current.x;
+	const distanceToRight = cols - (current.x + current.w);
+	const nextX =
+		distanceToRight < distanceToLeft
+			? current.x + current.w - nextSize.w
+			: current.x;
+	const candidate = {
+		...nextSize,
+		x: Math.min(Math.max(nextX, 0), cols - nextSize.w),
+		y: current.y,
+	};
+
+	const others = Object.fromEntries(
+		Object.entries(layouts).filter(([id]) => id !== itemId),
+	) as BentoLayoutMap;
+	return compactWithGravity(
+		pushCollisionsDown({ ...others, [itemId]: candidate }, itemId),
+		cols,
+		itemId,
+	);
 }
 
 export function validateBentoLayout(layouts: BentoLayoutMap, cols: number) {

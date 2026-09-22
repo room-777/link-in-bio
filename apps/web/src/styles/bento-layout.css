@@ -1,10 +1,42 @@
-.bento-layout .react-grid-item:has([data-bento-item-shell]:hover),
-.bento-layout .react-grid-item:has([data-bento-item-shell]:focus-within) {
-	z-index: 9999 !important;
-}
-
 .bento-layout .react-grid-item:has([data-bento-item-crop-open="true"]) {
 	z-index: 10000 !important;
+}
+
+.bento-layout .react-grid-item:has([data-bento-item-shell]:hover),
+.bento-layout .react-grid-item:has([data-bento-item-shell]:focus-within),
+.bento-layout .react-grid-item:has([data-bento-item-controls-open="true"]),
+.bento-layout .react-grid-item:has([data-bento-item-controls="true"]:hover),
+.bento-layout
+	.react-grid-item:has([data-bento-item-controls="true"]:focus-within),
+.bento-layout
+	.react-grid-item:has(
+		[data-bento-item-controls="true"] button[aria-expanded="true"]
+	) {
+	z-index: 100001 !important;
+}
+
+.bento-layout
+	[data-bento-item-shell][data-bento-item-controls-open="true"]
+	[data-bento-item-controls="true"] {
+	opacity: 1;
+	pointer-events: auto;
+}
+
+.bento-layout
+	.react-grid-item:has([data-bento-item-crop-open="true"])
+	[data-bento-item-controls="true"],
+.bento-layout
+	.react-grid-item:has([data-bento-map-location-editing="true"])
+	[data-bento-item-controls="true"] {
+	opacity: 1;
+	pointer-events: auto;
+}
+
+.bento-layout
+	.react-grid-item:has([data-bento-item-crop-open="true"])
+	[data-bento-item-delete-control="true"] {
+	opacity: 0 !important;
+	pointer-events: none !important;
 }
 
 .bento-layout .react-grid-item:not(.react-grid-placeholder) {
@@ -18,6 +50,32 @@
 .bento-section-shell,
 .bento-layout {
 	overflow: visible !important;
+}
+
+.bento-page-scroll:has([data-bento-item-crop-open="true"]),
+.bento-editor:has([data-bento-item-crop-open="true"]),
+.bento-page-scroll:has([data-page-image-crop-open="true"]) {
+	overflow: visible !important;
+}
+
+main:has([data-page-image-crop-open="true"]) {
+	overflow: visible !important;
+}
+
+.bento-page-scroll {
+	scrollbar-width: none;
+	-ms-overflow-style: none;
+}
+
+.bento-page-scroll::-webkit-scrollbar {
+	display: none;
+}
+
+.bento-text-input:hover,
+.bento-text-input:focus,
+.link-title-input:hover,
+.link-title-input:focus {
+	background-color: color-mix(in oklch, white 8%, transparent) !important;
 }
 
 .page-scroll-container {

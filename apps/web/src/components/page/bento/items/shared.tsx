@@ -46,13 +46,13 @@ export function ExternalAction({
 			target="_blank"
 			rel="noreferrer"
 			aria-label={label}
-			className="group inline-flex size-7 shrink-0 cursor-pointer! items-center justify-center rounded-full bg-white/60 font-medium text-white text-xs transition-colors hover:bg-white"
+			className="group inline-flex size-7 shrink-0 cursor-pointer! items-center justify-center rounded-full bg-white font-medium text-black text-xs shadow-md backdrop-blur-sm transition-colors hover:bg-white/60"
 		>
 			<CircleArrowRightUp
 				aria-hidden="true"
 				size={28}
 				weight="Filled"
-				className="text-black/60! group-hover:text-black!"
+				className="text-black!"
 			/>
 		</a>
 	);
@@ -61,10 +61,12 @@ export function ExternalAction({
 export function MediaCaption({
 	value,
 	mode = "view",
+	className,
 	onChange,
 }: {
 	value: string | undefined;
 	mode?: "view" | "edit";
+	className?: string;
 	onChange?: (value: string) => void;
 }) {
 	const caption = value?.trim();
@@ -75,13 +77,15 @@ export function MediaCaption({
 				value={value ?? ""}
 				placeholder="Caption"
 				aria-label="Media caption"
-				className={`pointer-events-auto min-w-24 truncate ${mediaCaptionClassName}`}
+				className={`pointer-events-auto min-w-24 truncate ${mediaCaptionClassName} ${className ?? ""}`}
 				onChange={(event) => onChange?.(event.target.value)}
 			/>
 		);
 	}
 	return caption ? (
-		<p className={`${mediaCaptionClassName} flex min-w-0 items-center`}>
+		<p
+			className={`${mediaCaptionClassName} flex min-w-0 items-center ${className ?? ""}`}
+		>
 			<span className="block min-w-0 flex-1 truncate">{caption}</span>
 		</p>
 	) : null;
@@ -90,15 +94,17 @@ export function MediaCaption({
 export function MapViewportGate({
 	children,
 	placeholder,
+	forceMount = false,
 }: {
 	children: ReactNode;
 	placeholder: ReactNode;
+	forceMount?: boolean;
 }) {
 	const containerRef = useRef<HTMLDivElement>(null);
 	const [hasMounted, setHasMounted] = useState(false);
 
 	useEffect(() => {
-		if (hasMounted) return;
+		if (hasMounted || forceMount) return;
 		const container = containerRef.current;
 		if (!container || typeof IntersectionObserver === "undefined") {
 			setHasMounted(true);
@@ -113,11 +119,11 @@ export function MapViewportGate({
 		);
 		observer.observe(container);
 		return () => observer.disconnect();
-	}, [hasMounted]);
+	}, [forceMount, hasMounted]);
 
 	return (
 		<div ref={containerRef} className="relative size-full min-h-0">
-			{hasMounted ? children : placeholder}
+			{hasMounted || forceMount ? children : placeholder}
 		</div>
 	);
 }

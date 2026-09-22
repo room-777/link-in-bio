@@ -244,7 +244,7 @@ export default function PageFooter({
 	isSaving?: boolean;
 }) {
 	return (
-		<footer className="-mx-4 mb-4 flex min-h-10 items-center justify-start pt-8 min-[90rem]:-mx-2">
+		<footer className="-mx-4 mb-4 flex min-h-10 items-center justify-start pt-8 min-[90rem]:fixed min-[90rem]:bottom-4 min-[90rem]:left-16 min-[90rem]:z-30 min-[90rem]:-mx-2">
 			{isOwner ? (
 				<OwnerFooter
 					handle={handle}

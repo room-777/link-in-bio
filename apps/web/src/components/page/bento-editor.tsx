@@ -2,12 +2,9 @@
 
 import type { ItemType, PageByHandleResponse } from "@grabbin/api";
 import type { BentoBreakpoint } from "@grabbin/bento-layout";
-import { Button } from "@grabbin/ui/components/button";
 import { toast } from "@grabbin/ui/components/toast";
-import { cn } from "@grabbin/ui/lib/utils";
-import { Monitor, Smartphone } from "lucide-react";
 import dynamic from "next/dynamic";
-import { useState } from "react";
+import { useEffect } from "react";
 import { useBentoStore } from "@/lib/bento/bento-store";
 import AddWidgetDialog from "./add-widget-dialog";
 
@@ -16,12 +13,18 @@ const BentoSection = dynamic(() => import("./bento-section"), { ssr: false });
 export default function BentoEditor({
 	items,
 	handle,
+	breakpoint,
+	onGridSavingChange,
 }: {
 	items: PageByHandleResponse["items"];
 	handle: string;
+	breakpoint: BentoBreakpoint;
+	onGridSavingChange?: (isSaving: boolean) => void;
 }) {
 	const store = useBentoStore({ initialItems: items, handle });
-	const [breakpoint, setBreakpoint] = useState<BentoBreakpoint>("compact");
+	useEffect(() => {
+		onGridSavingChange?.(store.status === "dirty" || store.status === "saving");
+	}, [onGridSavingChange, store.status]);
 
 	const addItem = (itemType: ItemType, url?: string) => {
 		if (itemType === "link") {
@@ -34,8 +37,19 @@ export default function BentoEditor({
 				return;
 			}
 		}
-		store.dispatchCommand({ type: "add-item", itemType, url });
+		const addedItem = store.dispatchCommand({
+			type: "add-item",
+			itemType,
+			url,
+		});
+		if (itemType === "link" && addedItem?.type === "link") {
+			void store.refreshLinkMetadata(addedItem.id).catch(() => {});
+		}
 	};
+	const editorClassName =
+		breakpoint === "compact"
+			? "relative flex w-full max-w-lg shrink-0 flex-col overflow-visible bg-background px-6 min-[90rem]:pt-12 pb-32 no-scrollbar"
+			: "relative flex min-h-0 min-w-0 flex-1 flex-col overflow-visible bg-background px-6 pt-12 pb-32 no-scrollbar min-[90rem]:h-dvh min-[90rem]:w-4xl min-[90rem]:max-w-none min-[90rem]:flex-none min-[90rem]:pt-16";
 
 	const selectMedia = async (file: File) => {
 		if (!/^(image|video)\//i.test(file.type)) {
@@ -54,48 +68,7 @@ export default function BentoEditor({
 	};
 
 	return (
-		<section className="relative flex min-h-dvh min-w-0 flex-1 flex-col items-center overflow-y-auto bg-background px-6 pt-12 pb-32 min-[90rem]:pt-16">
-			<div className="mb-4 flex min-h-5 items-center justify-between gap-3">
-				<div
-					className={cn(
-						"text-muted-foreground/80 text-xs",
-						store.status === "error" && "text-destructive",
-					)}
-					role="status"
-					aria-live="polite"
-				>
-					{store.status === "saving"
-						? "Saving..."
-						: store.status === "error"
-							? (store.errorMessage ?? "Unable to save.")
-							: null}
-				</div>
-				<fieldset className="flex items-center gap-1 rounded-lg border p-1">
-					<legend className="sr-only">Editing layout breakpoint</legend>
-					<Button
-						type="button"
-						size="sm"
-						variant={breakpoint === "compact" ? "secondary" : "ghost"}
-						aria-pressed={breakpoint === "compact"}
-						aria-label="Edit compact layout"
-						onClick={() => setBreakpoint("compact")}
-					>
-						<Smartphone aria-hidden="true" />
-						<span className="sr-only">Compact</span>
-					</Button>
-					<Button
-						type="button"
-						size="sm"
-						variant={breakpoint === "wide" ? "secondary" : "ghost"}
-						aria-pressed={breakpoint === "wide"}
-						aria-label="Edit wide layout"
-						onClick={() => setBreakpoint("wide")}
-					>
-						<Monitor aria-hidden="true" />
-						<span className="sr-only">Wide</span>
-					</Button>
-				</fieldset>
-			</div>
+		<section className={`bento-editor ${editorClassName}`}>
 			<BentoSection
 				items={store.items}
 				mode="edit"
@@ -103,7 +76,6 @@ export default function BentoEditor({
 				autoFocusItemId={store.autoFocusItemId}
 				onAutoFocus={store.clearAutoFocusItem}
 				onCommand={store.dispatchCommand}
-				isItemUploading={store.isMediaUploading}
 				onRefreshLinkMetadata={store.refreshLinkMetadata}
 			/>
 			<AddWidgetDialog onItemAdd={addItem} onMediaSelect={selectMedia} />

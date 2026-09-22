@@ -13,7 +13,6 @@ import {
 	hasBentoBatchChanges,
 	mergeAcknowledgedBentoItems,
 	mergeBentoItems,
-	restoreEmptyBentoItems,
 	toBentoItem,
 } from "./bento-batch";
 import { createBentoItem } from "./bento-factory";
@@ -60,7 +59,6 @@ export function useBentoStore({
 	const stateVersionRef = useRef(0);
 	const previewUrlsRef = useRef(new Set<string>());
 	const mediaUploadsRef = useRef(new Map<string, MediaUploadTask>());
-	const [uploadingMediaIds, setUploadingMediaIds] = useState<string[]>([]);
 
 	useEffect(() => {
 		const nextItems = initialItems.map(toBentoItem);
@@ -209,26 +207,22 @@ export function useBentoStore({
 
 	const commitItems = useCallback(
 		(nextItems: BentoItem[]) => {
-			const normalizedItems = restoreEmptyBentoItems(
-				nextItems,
-				persistedRef.current,
-			);
 			if (
-				draftRef.current.length === normalizedItems.length &&
-				draftRef.current.every((item, index) => item === normalizedItems[index])
+				draftRef.current.length === nextItems.length &&
+				draftRef.current.every((item, index) => item === nextItems[index])
 			) {
 				return;
 			}
 			stateVersionRef.current += 1;
-			draftRef.current = normalizedItems;
-			setItems(normalizedItems);
+			draftRef.current = nextItems;
+			setItems(nextItems);
 			if (!persistItems) {
 				setStatus("saved");
 				setErrorMessage(null);
 				return;
 			}
 			const nextBatch = createBentoBatch(
-				normalizedItems,
+				nextItems,
 				persistedRef.current,
 				deletedIdsRef.current,
 			);
@@ -249,9 +243,6 @@ export function useBentoStore({
 				if (task) {
 					task.controller.abort();
 					mediaUploadsRef.current.delete(command.itemId);
-					setUploadingMediaIds((current) =>
-						current.filter((itemId) => itemId !== command.itemId),
-					);
 					if (task.objectKey) {
 						void cancelBentoMediaUpload(handle, task.objectKey).catch(() => {});
 					}
@@ -331,7 +322,6 @@ export function useBentoStore({
 				controller: new AbortController(),
 			};
 			mediaUploadsRef.current.set(itemId, task);
-			setUploadingMediaIds((current) => [...current, itemId]);
 
 			try {
 				const upload = await uploadBentoMedia(handle, file, {
@@ -343,9 +333,6 @@ export function useBentoStore({
 				if (task.controller.signal.aborted) return;
 				if (mediaUploadsRef.current.get(itemId) !== task) return;
 				mediaUploadsRef.current.delete(itemId);
-				setUploadingMediaIds((current) =>
-					current.filter((currentItemId) => currentItemId !== itemId),
-				);
 				updateMediaUpload({
 					itemId,
 					objectKey: upload.objectKey,
@@ -354,9 +341,6 @@ export function useBentoStore({
 			} catch (error) {
 				if (mediaUploadsRef.current.get(itemId) === task) {
 					mediaUploadsRef.current.delete(itemId);
-					setUploadingMediaIds((current) =>
-						current.filter((currentItemId) => currentItemId !== itemId),
-					);
 					if (task.objectKey) {
 						void cancelBentoMediaUpload(handle, task.objectKey).catch(() => {});
 					}
@@ -456,7 +440,6 @@ export function useBentoStore({
 		errorMessage,
 		dispatchCommand,
 		addMediaUpload,
-		isMediaUploading: (itemId: string) => uploadingMediaIds.includes(itemId),
 		refreshLinkMetadata,
 		flushPendingChanges,
 	};

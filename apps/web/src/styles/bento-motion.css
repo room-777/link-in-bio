@@ -120,42 +120,108 @@
 
 /* Drag feedback. RGL's parent keeps the item's grid position; this card appears lifted. */
 .bento-item-card {
+	border: 0 solid transparent;
 	transform: perspective(800px) translateY(0) scale(1)
 		rotateX(var(--bento-drag-rotate-x)) rotateZ(var(--bento-drag-rotate-z));
 	transform-origin: center;
 	transition:
 		transform var(--bento-drag-lift-duration) var(--bento-drag-lift-ease),
 		scale var(--bento-drag-lift-duration) var(--bento-drag-lift-ease),
-		box-shadow var(--bento-drag-lift-duration) var(--bento-drag-lift-ease);
+		box-shadow var(--bento-drag-lift-duration) var(--bento-drag-lift-ease),
+		border-color var(--bento-drag-lift-duration) var(--bento-drag-lift-ease);
 	backface-visibility: hidden;
 }
 
-/* Map editing and media cropping are deliberate toggles, so their lift settles gently. */
-.bento-item-card.map-item-interaction {
-	transition:
-		transform var(--bento-drag-lift-duration) var(--bento-drag-lift-ease),
-		scale var(--bento-drag-lift-duration) var(--bento-drag-lift-ease),
-		box-shadow var(--bento-drag-lift-duration) var(--bento-drag-lift-ease);
-}
-
 .react-grid-item.react-draggable-dragging .bento-item-card {
-	@apply smooth-shadow-ring-sm transition-all;
+	box-shadow:
+		var(--smooth-shadow-xl),
+		0 0 0 1px rgb(212 212 212 / 30%);
 	transition-duration: var(--bento-drag-lift-duration);
 	transition-timing-function: var(--bento-drag-lift-ease);
-	transform: perspective(800px) translateY(-8px) scale(1.035)
+	transform: perspective(800px) translateY(-8px) scale(1)
 		rotateX(calc(1deg + var(--bento-drag-rotate-x)))
 		rotateZ(calc(0.35deg + var(--bento-drag-rotate-z)));
 	will-change: transform;
 }
 
-.bento-item-card.map-item-location-editing,
-.bento-item-card.media-crop-interaction {
-	@apply smooth-shadow-ring-sm;
+.bento-layout
+	.react-grid-item:has([data-bento-item-crop-open="true"])
+	[data-bento-item-card] {
+	overflow: visible !important;
+}
+
+.bento-layout
+	.react-grid-item:has([data-bento-item-crop-open="true"])
+	[data-media-frame="true"] {
+	overflow: visible !important;
+}
+
+.bento-layout
+	.react-grid-item:has([data-bento-map-location-editing="true"])
+	.mapboxgl-canvas-container.mapboxgl-interactive {
+	cursor: grab;
+}
+
+.bento-layout
+	.react-grid-item:has([data-bento-map-location-editing="true"])
+	.mapboxgl-canvas-container.mapboxgl-interactive:active {
+	cursor: grabbing;
+}
+
+.bento-layout
+	.react-grid-item:has([data-bento-map-location-editing="true"])
+	[data-bento-item-card],
+.bento-layout
+	.react-grid-item:has([data-bento-item-crop-open="true"])
+	[data-bento-item-card] {
+	--tw-shadow: var(--smooth-shadow-lg);
+	box-shadow:
+		var(--tw-inset-shadow), var(--tw-inset-ring-shadow),
+		var(--tw-ring-offset-shadow), var(--tw-ring-shadow), var(--tw-shadow) !important;
 	transition-duration: var(--bento-drag-lift-duration);
 	transition-timing-function: var(--bento-drag-lift-ease);
-	transform: perspective(800px) translateY(-8px) scale(1)
+}
+
+.bento-layout
+	.react-grid-item:has([data-bento-map-location-editing="true"])
+	[data-bento-item-card] {
+	@apply ring-3 ring-black;
+}
+
+.bento-layout
+	.react-grid-item:has([data-bento-map-location-editing="true"])
+	[data-bento-item-card],
+.bento-layout
+	.react-grid-item:has([data-bento-item-crop-open="true"])
+	[data-bento-item-card] {
+	transform: perspective(800px) translateY(-8px) scale(1.02)
 		rotateX(var(--bento-drag-rotate-x)) rotateZ(var(--bento-drag-rotate-z));
-	will-change: transform;
+}
+
+.bento-layout
+	.react-grid-item:has([data-bento-item-crop-open="true"])
+	[data-bento-item-card] {
+	--tw-ring-offset-shadow: 0 0 #0000;
+	--tw-ring-shadow: 0 0 #0000;
+	--smooth-ring-color: transparent;
+}
+
+.bento-layout
+	.react-grid-item:not(.react-draggable-dragging)
+	[data-bento-item-type="section"]
+	[data-bento-item-card] {
+	box-shadow: none !important;
+}
+
+@media (hover: hover) and (pointer: fine) {
+	.bento-layout.is-edit-mode:not(
+			:has(.react-grid-item.react-draggable-dragging)
+		)
+		.react-grid-item:not(.react-draggable-dragging)
+		[data-bento-item-type="section"]:hover
+		[data-bento-item-card] {
+		@apply smooth-shadow-ring-sm!;
+	}
 }
 
 .react-grid-item.react-draggable-dragging

@@ -2,13 +2,25 @@
 
 import { env } from "@grabbin/env/web";
 import { buttonVariants } from "@grabbin/ui/components/button";
-import { MoveIcon } from "lucide-react";
-import MapboxMap from "react-map-gl/mapbox";
+import MapboxMap, {
+	GeolocateControl,
+	type GeolocateControlInstance,
+	type MapRef,
+} from "react-map-gl/mapbox";
 import "mapbox-gl/dist/mapbox-gl.css";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 
 import type { BentoCommand, BentoItem } from "@/lib/bento/bento-types";
-import { MAPBOX_STYLE_CONFIG, MAPBOX_STYLE_URL } from "@/lib/map-config";
+import {
+	MAP_ZOOM_MAX,
+	MAP_ZOOM_MIN,
+	MAPBOX_STYLE_CONFIG,
+	MAPBOX_STYLE_URL,
+	normalizeMapCamera,
+	sanitizeMapCamera,
+} from "@/lib/map-config";
+import type { MapSearchResult } from "@/lib/mapbox-geocoding";
+import { useMapItemInteraction } from "./map-item-interaction-context";
 import {
 	ExternalAction,
 	MapViewportGate,
@@ -16,6 +28,39 @@ import {
 	mapboxLib,
 	removeMapboxControls,
 } from "./shared";
+
+type MapboxInteractionHandler = {
+	disable(): void;
+	enable(): void;
+};
+
+type MapboxMapWithHandlers = {
+	dragPan?: MapboxInteractionHandler;
+	scrollZoom?: MapboxInteractionHandler;
+	boxZoom?: MapboxInteractionHandler;
+	doubleClickZoom?: MapboxInteractionHandler;
+	keyboard?: MapboxInteractionHandler;
+	touchZoomRotate?: MapboxInteractionHandler & {
+		disableRotation(): void;
+	};
+};
+
+type MapMoveSource = "user" | "ignore" | "persist";
+
+function setMapInteractions(map: MapboxMapWithHandlers, enabled: boolean) {
+	for (const handler of [
+		map.dragPan,
+		map.scrollZoom,
+		map.boxZoom,
+		map.doubleClickZoom,
+		map.keyboard,
+		map.touchZoomRotate,
+	]) {
+		if (enabled) handler?.enable();
+		else handler?.disable();
+	}
+	map.touchZoomRotate?.disableRotation();
+}
 
 export function MapItem({
 	item,
@@ -26,24 +71,139 @@ export function MapItem({
 	mode: "view" | "edit";
 	onCommand?: (command: BentoCommand) => void;
 }) {
-	const mapsUrl = `https://www.google.com/maps/search/?api=1&query=${item.data.latitude},${item.data.longitude}`;
+	const { isLocationEditing, setLocationEditing, registerController } =
+		useMapItemInteraction();
+	const mapsUrl = `https://www.google.com/maps?q=${item.data.latitude.toFixed(6)},${item.data.longitude.toFixed(6)}`;
 	const accessToken = env.NEXT_PUBLIC_MAPBOX_ACCESS_TOKEN?.trim();
 	const [mapError, setMapError] = useState(false);
-	const [mapReady, setMapReady] = useState(false);
 	const [mapRevision, setMapRevision] = useState(0);
-	const [isLocationEditing, setIsLocationEditing] = useState(false);
+	const [mapReady, setMapReady] = useState(false);
+	const [geolocationError, setGeolocationError] = useState(false);
+	const mapFrameRef = useRef<HTMLDivElement>(null);
+	const mapRef = useRef<MapRef>(null);
+	const geolocateRef = useRef<GeolocateControlInstance>(null);
+	const mapLoadedRef = useRef(false);
+	const mapInteractionsSuspendedRef = useRef(false);
+	const mapMoveSourceRef = useRef<MapMoveSource | null>(null);
+	const resizeTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+	const [isContainerSized, setIsContainerSized] = useState(false);
 	const interactive = mode === "edit" && isLocationEditing;
-	useEffect(() => {
-		if (mode !== "edit") setIsLocationEditing(false);
-	}, [mode]);
 	const showMapFallback = !accessToken || mapError;
+	const camera = normalizeMapCamera(item.data);
+	useEffect(() => {
+		const releaseMapInteractions = () => {
+			if (!mapInteractionsSuspendedRef.current) return;
+			const map = mapRef.current?.getMap() as MapboxMapWithHandlers | undefined;
+			if (map) setMapInteractions(map, interactive);
+			mapInteractionsSuspendedRef.current = false;
+		};
+
+		window.addEventListener("mouseup", releaseMapInteractions, true);
+		window.addEventListener("pointerup", releaseMapInteractions, true);
+		window.addEventListener("pointercancel", releaseMapInteractions, true);
+		window.addEventListener("blur", releaseMapInteractions);
+		return () => {
+			window.removeEventListener("mouseup", releaseMapInteractions, true);
+			window.removeEventListener("pointerup", releaseMapInteractions, true);
+			window.removeEventListener("pointercancel", releaseMapInteractions, true);
+			window.removeEventListener("blur", releaseMapInteractions);
+			releaseMapInteractions();
+		};
+	}, [interactive]);
+	const handleGridDragStart = (event: React.PointerEvent<HTMLDivElement>) => {
+		if (!interactive || !(event.target instanceof Element)) return;
+		if (
+			event.target.closest(
+				"a,button,input,textarea,select,video,[contenteditable='true'],[data-bento-item-drag-cancel='true']",
+			)
+		)
+			return;
+		const map = mapRef.current?.getMap() as MapboxMapWithHandlers | undefined;
+		if (!map) return;
+		setMapInteractions(map, false);
+		mapInteractionsSuspendedRef.current = true;
+	};
+	useEffect(() => {
+		registerController({
+			zoomIn: () => {
+				const map = mapRef.current?.getMap();
+				if (!map) return;
+				mapMoveSourceRef.current = "persist";
+				map.zoomIn();
+			},
+			zoomOut: () => {
+				const map = mapRef.current?.getMap();
+				if (!map) return;
+				mapMoveSourceRef.current = "persist";
+				map.zoomOut();
+			},
+			locate: () => {
+				mapMoveSourceRef.current = "ignore";
+				geolocateRef.current?.trigger();
+			},
+			selectLocation: (result: MapSearchResult) => {
+				if (!onCommand) return;
+				setGeolocationError(false);
+				mapMoveSourceRef.current = "ignore";
+				const nextData = {
+					...item.data,
+					latitude: result.latitude,
+					longitude: result.longitude,
+					caption: item.data.caption?.trim() ? item.data.caption : result.name,
+				};
+				onCommand({ type: "update-data", itemId: item.id, data: nextData });
+				mapRef.current?.getMap().flyTo({
+					center: [result.longitude, result.latitude],
+					zoom: nextData.zoom ?? 12,
+					duration: 450,
+				});
+			},
+		});
+		return () => registerController(null);
+	}, [item.data, item.id, onCommand, registerController]);
+	useEffect(() => {
+		if (mode !== "edit") setLocationEditing(false);
+	}, [mode, setLocationEditing]);
+	useEffect(() => {
+		const container = mapFrameRef.current;
+		if (!container) return;
+		if (typeof ResizeObserver === "undefined") {
+			setIsContainerSized(true);
+			return;
+		}
+		const updateSize = (width: number, height: number) => {
+			setIsContainerSized(width > 0 && height > 0);
+		};
+		const initialRect = container.getBoundingClientRect();
+		updateSize(initialRect.width, initialRect.height);
+		const observer = new ResizeObserver(([entry]) => {
+			const width = entry?.contentRect.width ?? 0;
+			const height = entry?.contentRect.height ?? 0;
+			updateSize(width, height);
+			if (width <= 0 || height <= 0) return;
+			if (resizeTimeoutRef.current) clearTimeout(resizeTimeoutRef.current);
+			resizeTimeoutRef.current = setTimeout(() => {
+				resizeTimeoutRef.current = null;
+				mapRef.current?.resize();
+			}, 120);
+		});
+		observer.observe(container);
+		return () => {
+			observer.disconnect();
+			if (resizeTimeoutRef.current) clearTimeout(resizeTimeoutRef.current);
+			resizeTimeoutRef.current = null;
+		};
+	}, []);
 	return (
 		<div
-			className={`relative size-full overflow-hidden rounded-[inherit] bg-muted/30 ${mapReady && !mapError ? "surface-line" : ""}`}
+			ref={mapFrameRef}
+			onPointerDownCapture={handleGridDragStart}
+			className={`relative size-full overflow-hidden rounded-[inherit] bg-secondary ${mapReady ? "surface-line" : ""} ${interactive ? "grid-action cursor-grab" : ""}`}
+			data-bento-map-location-editing={interactive ? "true" : undefined}
 		>
 			<div className="absolute inset-0">
 				{showMapFallback ? (
-					<div className="flex size-full min-h-0 items-center justify-center bg-muted/30 p-4 text-center">
+					<div className="flex size-full min-h-0 items-center justify-center bg-secondary p-4 text-center">
 						<div className="flex max-w-xs flex-col items-center gap-3">
 							<div className="space-y-1">
 								<p className="font-semibold text-foreground text-sm">
@@ -67,6 +227,7 @@ export function MapItem({
 									onClick={() => {
 										setMapError(false);
 										setMapReady(false);
+										mapLoadedRef.current = false;
 										setMapRevision((revision) => revision + 1);
 									}}
 								>
@@ -81,55 +242,123 @@ export function MapItem({
 						className={`absolute inset-0 ${interactive ? "" : "pointer-events-none"}`}
 					>
 						<MapViewportGate
+							forceMount={mode === "edit" || interactive}
 							placeholder={
 								<div
 									aria-hidden="true"
-									className="size-full min-h-0 bg-muted/30"
+									className="size-full min-h-0 bg-secondary"
 								/>
 							}
 						>
-							<div className="relative size-full min-h-0">
-								<MapboxMap
-									key={mapRevision}
-									mapLib={mapboxLib}
-									{...({ config: MAPBOX_STYLE_CONFIG } as const)}
-									mapboxAccessToken={accessToken}
-									mapStyle={MAPBOX_STYLE_URL}
-									initialViewState={{
-										latitude: item.data.latitude,
-										longitude: item.data.longitude,
-										zoom: item.data.zoom ?? 12,
-									}}
-									attributionControl={false}
-									interactive={interactive}
-									projection="mercator"
-									pitch={0}
-									maxPitch={0}
-									bearing={0}
-									dragRotate={false}
-									touchPitch={false}
-									minZoom={0}
-									maxZoom={22}
-									style={{ height: "100%", width: "100%" }}
-									onMoveEnd={(event) => {
-										if (!interactive || !onCommand) return;
-										onCommand({
-											type: "update-data",
-											itemId: item.id,
-											data: {
-												...item.data,
-												latitude: event.viewState.latitude,
-												longitude: event.viewState.longitude,
-												zoom: event.viewState.zoom,
-											},
-										});
-									}}
-									onLoad={(event) => {
-										removeMapboxControls(event.target);
-										setMapReady(true);
-									}}
-									onError={() => setMapError(true)}
-								/>
+							<div
+								className="relative size-full min-h-0"
+								data-bento-item-drag-cancel={interactive ? "true" : undefined}
+							>
+								{isContainerSized ? (
+									<MapboxMap
+										key={mapRevision}
+										ref={mapRef}
+										mapLib={mapboxLib}
+										{...({ config: MAPBOX_STYLE_CONFIG } as const)}
+										mapboxAccessToken={accessToken}
+										mapStyle={MAPBOX_STYLE_URL}
+										initialViewState={{
+											latitude: camera.latitude,
+											longitude: camera.longitude,
+											zoom: camera.zoom,
+										}}
+										attributionControl={false}
+										interactive={interactive}
+										dragPan={interactive}
+										scrollZoom={interactive}
+										boxZoom={interactive}
+										doubleClickZoom={interactive}
+										keyboard={interactive}
+										touchZoomRotate={interactive}
+										projection="mercator"
+										pitch={0}
+										maxPitch={0}
+										bearing={0}
+										dragRotate={false}
+										touchPitch={false}
+										minZoom={MAP_ZOOM_MIN}
+										maxZoom={MAP_ZOOM_MAX}
+										style={{ height: "100%", width: "100%" }}
+										onMoveStart={(event) => {
+											if ("originalEvent" in event && event.originalEvent) {
+												mapMoveSourceRef.current = "user";
+											} else if (mapMoveSourceRef.current === null) {
+												mapMoveSourceRef.current = "ignore";
+											}
+										}}
+										onMoveEnd={(event) => {
+											const moveSource = mapMoveSourceRef.current;
+											mapMoveSourceRef.current = null;
+											if (
+												!interactive ||
+												!onCommand ||
+												(moveSource !== "user" && moveSource !== "persist")
+											)
+												return;
+											const nextCamera = sanitizeMapCamera(event.viewState);
+											if (!nextCamera) return;
+											setGeolocationError(false);
+											onCommand({
+												type: "update-data",
+												itemId: item.id,
+												data: {
+													...item.data,
+													latitude: nextCamera.latitude,
+													longitude: nextCamera.longitude,
+													zoom: nextCamera.zoom,
+												},
+											});
+										}}
+										onLoad={(event) => {
+											removeMapboxControls(event.target);
+											window.requestAnimationFrame(() =>
+												removeMapboxControls(event.target),
+											);
+											setMapInteractions(
+												event.target as MapboxMapWithHandlers,
+												interactive,
+											);
+											mapLoadedRef.current = true;
+											setMapReady(true);
+										}}
+										onError={() => {
+											if (mapLoadedRef.current) return;
+											setMapReady(false);
+											setMapError(true);
+										}}
+									>
+										{interactive ? (
+											<GeolocateControl
+												ref={geolocateRef}
+												position="top-right"
+												showButton={false}
+												showUserLocation={false}
+												showAccuracyCircle={false}
+												trackUserLocation={false}
+												onGeolocate={(event) => {
+													if (!onCommand) return;
+													setGeolocationError(false);
+													onCommand({
+														type: "update-data",
+														itemId: item.id,
+														data: {
+															...item.data,
+															latitude: event.coords.latitude,
+															longitude: event.coords.longitude,
+															zoom: mapRef.current?.getZoom() ?? camera.zoom,
+														},
+													});
+												}}
+												onError={() => setGeolocationError(true)}
+											/>
+										) : null}
+									</MapboxMap>
+								) : null}
 							</div>
 						</MapViewportGate>
 						<div
@@ -144,23 +373,33 @@ export function MapItem({
 					</div>
 				)}
 			</div>
-			{mode === "edit" && !showMapFallback ? (
-				<button
-					type="button"
-					data-bento-item-drag-cancel="true"
-					aria-label={
-						isLocationEditing ? "Stop editing location" : "Edit location"
-					}
-					aria-pressed={isLocationEditing}
-					className={`absolute top-3 right-3 z-20 inline-flex size-8 items-center justify-center rounded-lg bg-black/70 text-white shadow-lg transition-colors hover:bg-black ${isLocationEditing ? "bg-brand hover:bg-brand" : ""}`}
-					onClick={() => setIsLocationEditing((current) => !current)}
-				>
-					<MoveIcon className="size-4" aria-hidden="true" />
-				</button>
-			) : null}
 			<div className="pointer-events-none relative size-full" />
+			{geolocationError ? (
+				<output
+					aria-live="polite"
+					className="pointer-events-auto absolute inset-x-0 top-4 z-20 mx-4 rounded-full bg-background/90 px-3 py-1 text-center font-medium text-destructive text-xs shadow-sm"
+				>
+					Couldn’t determine your location. Try again.
+				</output>
+			) : null}
 			<div className="pointer-events-none absolute inset-x-0 bottom-0 flex min-w-0 items-center justify-between gap-3 p-4 text-white">
-				<MediaCaption value={item.data.caption} />
+				<MediaCaption
+					value={item.data.caption}
+					mode={mode}
+					className="max-w-[calc(100%-4.5rem)]"
+					onChange={(caption) =>
+						onCommand?.({
+							type: "update-data",
+							itemId: item.id,
+							data: { ...item.data, caption: caption.trim() || undefined },
+						})
+					}
+				/>
+			</div>
+			<div className="pointer-events-none absolute right-3 bottom-4 z-20">
+				<div className="pointer-events-auto flex h-fit items-center">
+					<ExternalAction href={mapsUrl} label="Open location in Google Maps" />
+				</div>
 			</div>
 		</div>
 	);
