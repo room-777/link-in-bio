@@ -336,7 +336,7 @@ function LinkTitle({
 					const nextValue = value.trim();
 					if (nextValue) onCommit(nextValue);
 				}}
-				className={`link-title-input cursor-text! resize-none border-0 bg-transparent text-current outline-none focus-visible:ring-0 ${titleClassName} overflow-y-auto overflow-x-hidden hover:bg-secondary! focus-visible:bg-secondary!`}
+				className={`link-title-input cursor-text! resize-none border-0 bg-transparent text-current outline-none focus-visible:ring-0 ${titleClassName} overflow-y-auto overflow-x-hidden`}
 			/>
 		);
 	}
