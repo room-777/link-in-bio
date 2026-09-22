@@ -66,6 +66,21 @@ export default function BentoEditor({
 			});
 		}
 	};
+	const selectLinkImage = async (itemId: string, file: File) => {
+		if (!/^image\//i.test(file.type)) {
+			toast({ message: "Choose an image file.", state: "error" });
+			return;
+		}
+		try {
+			await store.replaceLinkImage(itemId, file);
+		} catch (error) {
+			toast({
+				message:
+					error instanceof Error ? error.message : "The image upload failed.",
+				state: "error",
+			});
+		}
+	};
 	return (
 		<section className={`bento-editor ${editorClassName}`}>
 			<BentoSection
@@ -76,6 +91,7 @@ export default function BentoEditor({
 				onAutoFocus={store.clearAutoFocusItem}
 				onCommand={store.dispatchCommand}
 				onRefreshLinkMetadata={store.refreshLinkMetadata}
+				onLinkImageSelect={selectLinkImage}
 			/>
 			<AddWidgetDialog onItemAdd={addItem} onMediaSelect={selectMedia} />
 		</section>

@@ -22,6 +22,7 @@ type ItemRendererOptions = {
 	isAnyItemDragging: boolean;
 	onAutoFocus?: () => void;
 	onCommand?: (command: BentoCommand) => void;
+	onLinkImageSelect?: (itemId: string, file: File) => void | Promise<void>;
 };
 
 type ItemRenderer = (input: {
@@ -71,6 +72,12 @@ function renderLink({ item, preset, options }: Parameters<ItemRenderer>[0]) {
 			preset={preset}
 			mode={options.mode}
 			onCommand={options.onCommand}
+			isAnyItemDragging={options.isAnyItemDragging}
+			onImageSelect={
+				options.onLinkImageSelect
+					? (file) => options.onLinkImageSelect?.(item.id, file)
+					: undefined
+			}
 		/>
 	);
 }

@@ -192,7 +192,10 @@ describe("page item service", () => {
 								providerData: {
 									subscriberCount: 1200,
 									recentVideoThumbnailUrls: [
-										"https://cdn.example.com/video.png",
+										"https://cdn.example.com/video-1.png",
+										"https://cdn.example.com/video-2.png",
+										"https://cdn.example.com/video-3.png",
+										"https://cdn.example.com/video-4.png",
 									],
 								},
 							},
@@ -219,7 +222,12 @@ describe("page item service", () => {
 			actionLabel: "Watch",
 			actionVariant: "solid",
 			actionDetail: "1.2K",
-			imageUrls: ["https://cdn.example.com/video.png"],
+			imageUrls: [
+				"https://cdn.example.com/video-1.png",
+				"https://cdn.example.com/video-2.png",
+				"https://cdn.example.com/video-3.png",
+				"https://cdn.example.com/video-4.png",
+			],
 		});
 	});
 

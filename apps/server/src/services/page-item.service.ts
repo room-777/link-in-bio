@@ -57,16 +57,16 @@ export function mapPageItemResponse(
 			typeof imageKey === "string"
 				? getPublicPageItemMediaUrl(publicBaseUrl, imageKey)
 				: undefined;
+		const hasMultipleImages =
+			(linkMetadata.presentation?.imageUrls?.length ?? 0) > 1;
 		data.metadata = {
 			...linkMetadata,
-			...(imageUrl
-				? {
-						presentation: {
-							...linkMetadata.presentation,
-							imageUrls: [imageUrl],
-						},
-					}
-				: {}),
+			presentation:
+				imageKey === null && !hasMultipleImages
+					? { ...linkMetadata.presentation, imageUrls: [] }
+					: imageUrl
+						? { ...linkMetadata.presentation, imageUrls: [imageUrl] }
+						: linkMetadata.presentation,
 		};
 	}
 	if (item.type === "media" && typeof data.objectKey === "string") {

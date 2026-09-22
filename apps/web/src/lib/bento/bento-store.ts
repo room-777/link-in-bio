@@ -35,6 +35,8 @@ const SAVE_DELAY = 700;
 type MediaUploadTask = {
 	controller: AbortController;
 	objectKey?: string;
+	itemId?: string;
+	kind?: "link-image";
 };
 
 export function useBentoStore({
@@ -355,6 +357,70 @@ export function useBentoStore({
 		[addPendingMedia, commitItems, enabled, handle, updateMediaUpload],
 	);
 
+	const replaceLinkImage = useCallback(
+		async (itemId: string, file: File) => {
+			if (!enabled || !/^image\//i.test(file.type)) return;
+			const item = draftRef.current.find(
+				(candidate) => candidate.id === itemId,
+			);
+			if (item?.type !== "link") return;
+
+			const previousTask = mediaUploadsRef.current.get(itemId);
+			if (previousTask) {
+				previousTask.controller.abort();
+				mediaUploadsRef.current.delete(itemId);
+				if (previousTask.objectKey) {
+					void cancelBentoMediaUpload(
+						handle,
+						previousTask.objectKey,
+						previousTask,
+					).catch(() => {});
+				}
+			}
+
+			const task: MediaUploadTask = {
+				controller: new AbortController(),
+				itemId,
+				kind: "link-image",
+			};
+			mediaUploadsRef.current.set(itemId, task);
+			try {
+				const upload = await uploadBentoMedia(handle, file, {
+					signal: task.controller.signal,
+					itemId,
+					kind: "link-image",
+					onUploadCreated: (createdUpload) => {
+						task.objectKey = createdUpload.objectKey;
+					},
+				});
+				if (task.controller.signal.aborted) return;
+				if (mediaUploadsRef.current.get(itemId) !== task) return;
+				mediaUploadsRef.current.delete(itemId);
+				const nextItems = draftRef.current.map((current) =>
+					current.id === itemId && current.type === "link"
+						? {
+								...current,
+								data: { ...current.data, imageKey: upload.objectKey },
+							}
+						: current,
+				);
+				commitItems(nextItems);
+			} catch (error) {
+				if (mediaUploadsRef.current.get(itemId) === task) {
+					mediaUploadsRef.current.delete(itemId);
+					if (task.objectKey) {
+						void cancelBentoMediaUpload(handle, task.objectKey, task).catch(
+							() => {},
+						);
+					}
+				}
+				if (task.controller.signal.aborted) return;
+				throw error;
+			}
+		},
+		[commitItems, enabled, handle],
+	);
+
 	const flushPendingChanges = useCallback(async () => {
 		while (
 			saveInFlightRef.current ||
@@ -440,6 +506,7 @@ export function useBentoStore({
 		errorMessage,
 		dispatchCommand,
 		addMediaUpload,
+		replaceLinkImage,
 		refreshLinkMetadata,
 		flushPendingChanges,
 	};
