@@ -78,6 +78,16 @@ main:has([data-page-image-crop-open="true"]) {
 	background-color: color-mix(in oklch, white 8%, transparent) !important;
 }
 
+.link-card-themed .link-title-input:is(:hover, :focus-visible) {
+	background-color: oklch(from var(--link-card-background) calc(l - 0.04) c h);
+}
+
+.bento-item-card.link-card-themed {
+	--smooth-ring-color: oklch(
+		from var(--link-card-background) calc(l - 0.06) c h
+	);
+}
+
 .page-scroll-container {
 	overflow-anchor: none;
 }

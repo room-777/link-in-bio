@@ -100,6 +100,11 @@ export function BentoItemShell({
 		backgroundColor:
 			getBackgroundColor(item.style.backgroundColor) ??
 			linkTheme?.cardBackground,
+		...(linkTheme
+			? ({
+					"--link-card-background": linkTheme.cardBackground,
+				} as CSSProperties)
+			: {}),
 		color:
 			item.type === "text"
 				? getForegroundColor(item.style.backgroundColor)
