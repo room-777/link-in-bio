@@ -62,7 +62,13 @@ export default function BentoSection({
 	const cols = getColumns(breakpoint);
 	const bentoWidth = getBentoWidth(cols);
 	const bottomPaddingClass =
-		mode === "edit" ? "pb-32" : breakpoint === "compact" ? "pb-32" : "";
+		mode === "edit"
+			? breakpoint === "wide"
+				? "pb-80"
+				: "pb-64"
+			: breakpoint === "compact"
+				? "pb-64"
+				: "";
 	const dragStartLayoutRef = useRef<ReturnType<typeof toBentoLayoutMap> | null>(
 		null,
 	);

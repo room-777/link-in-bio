@@ -3,7 +3,8 @@
 import type { PageByHandleResponse } from "@grabbin/api";
 import type { BentoBreakpoint } from "@grabbin/bento-layout";
 import { Button } from "@grabbin/ui/components/button";
-import { Monitor, Smartphone } from "lucide-react";
+import { Laptop, Smartphone } from "lucide-react";
+import { motion, useReducedMotion } from "motion/react";
 import { useEffect, useState } from "react";
 
 import FloatPreview from "@/components/layout/float-preview";
@@ -27,6 +28,10 @@ export default function OwnerPage({
 	const [viewportBreakpoint, setViewportBreakpoint] =
 		useState<BentoBreakpoint>("compact");
 	const [isViewportReady, setIsViewportReady] = useState(false);
+	const reduceMotion = useReducedMotion();
+	const layoutTransition = reduceMotion
+		? { duration: 0 }
+		: { type: "spring" as const, stiffness: 560, damping: 32, mass: 0.8 };
 
 	useEffect(() => {
 		const mediaQuery = window.matchMedia("(min-width: 90rem)");
@@ -54,7 +59,7 @@ export default function OwnerPage({
 	const effectiveBreakpoint = isViewportCompact ? "compact" : layoutBreakpoint;
 	const isCompactPageLayout = effectiveBreakpoint === "compact";
 	const desktopMainClassName =
-		"mx-auto flex min-h-svh w-full max-w-md flex-col justify-between gap-8 overflow-y-auto p-6 px-6 pt-12 min-[90rem]:mx-0 min-[90rem]:h-dvh min-[90rem]:min-h-0 min-[90rem]:w-2xl min-[90rem]:max-w-none min-[90rem]:overscroll-y-contain min-[90rem]:px-16 min-[90rem]:pt-16";
+		"page-profile mx-auto flex min-h-svh w-full max-w-md flex-col justify-between gap-8 p-6 px-6 pt-12 min-[90rem]:mx-0 min-[90rem]:sticky min-[90rem]:top-0 min-[90rem]:min-h-dvh min-[90rem]:w-2xl min-[90rem]:max-w-none min-[90rem]:flex-none min-[90rem]:self-start min-[90rem]:px-16 min-[90rem]:pt-16";
 	const mainClassName = isCompactPageLayout
 		? "flex w-full max-w-lg shrink-0 flex-col justify-start overflow-visible p-6 px-6 pt-12"
 		: desktopMainClassName;
@@ -72,7 +77,7 @@ export default function OwnerPage({
 			className={
 				isCompactPageLayout
 					? "bento-page-scroll relative flex min-h-svh w-full flex-col items-center overflow-visible"
-					: "bento-page-scroll flex min-h-svh w-full flex-col min-[90rem]:h-dvh min-[90rem]:min-h-0 min-[90rem]:flex-row min-[90rem]:items-stretch min-[90rem]:justify-around min-[90rem]:overflow-visible"
+					: "bento-page-scroll flex min-h-svh w-full flex-col min-[90rem]:flex-row min-[90rem]:items-start min-[90rem]:justify-around min-[90rem]:overflow-visible"
 			}
 		>
 			<main className={mainClassName}>
@@ -107,7 +112,7 @@ export default function OwnerPage({
 				<>
 					{isViewportReady ? pageFooter : null}
 					{!isViewportCompact ? (
-						<div className="smooth-shadow-ring-sm pointer-events-none fixed bottom-10 left-1/2 z-30 flex -translate-x-1/2 items-center gap-3 rounded-lg bg-background">
+						<div className="smooth-shadow-ring-sm smooth-ring-neutral-300/20 pointer-events-none fixed bottom-10 left-1/2 z-[100003] flex -translate-x-1/2 items-center gap-3 rounded-lg bg-background">
 							{isGridSaving ? (
 								<div
 									className="text-muted-foreground/80 text-xs"
@@ -117,30 +122,51 @@ export default function OwnerPage({
 									Saving...
 								</div>
 							) : null}
-							<fieldset className="pointer-events-auto flex items-center gap-1 p-1">
+							<fieldset className="pointer-events-auto relative flex items-center gap-1 p-1">
 								<legend className="sr-only">Editing layout breakpoint</legend>
 								<Button
 									type="button"
-									size="sm"
-									variant={
-										layoutBreakpoint === "compact" ? "secondary" : "ghost"
-									}
+									size="default"
+									variant="ghost"
 									aria-pressed={layoutBreakpoint === "compact"}
 									aria-label="Edit compact layout"
 									onClick={() => setLayoutBreakpoint("compact")}
+									className="relative z-10 px-5 text-foreground hover:bg-transparent aria-pressed:text-primary-foreground aria-pressed:hover:text-primary-foreground"
 								>
-									<Smartphone aria-hidden="true" />
+									{layoutBreakpoint === "compact" ? (
+										<motion.span
+											layoutId="owner-page-layout-breakpoint-selection"
+											initial={false}
+											transition={layoutTransition}
+											aria-hidden="true"
+											className="smooth-shadow-xs surface-line pointer-events-none absolute inset-0 rounded-lg bg-primary"
+										/>
+									) : null}
+									<Smartphone
+										className="relative z-10 size-5"
+										aria-hidden="true"
+									/>
 									<span className="sr-only">Compact</span>
 								</Button>
 								<Button
 									type="button"
-									size="sm"
-									variant={layoutBreakpoint === "wide" ? "secondary" : "ghost"}
+									size="default"
+									variant="ghost"
 									aria-pressed={layoutBreakpoint === "wide"}
 									aria-label="Edit wide layout"
 									onClick={() => setLayoutBreakpoint("wide")}
+									className="relative z-10 px-5 text-foreground hover:bg-transparent aria-pressed:text-primary-foreground aria-pressed:hover:text-primary-foreground"
 								>
-									<Monitor aria-hidden="true" />
+									{layoutBreakpoint === "wide" ? (
+										<motion.span
+											layoutId="owner-page-layout-breakpoint-selection"
+											initial={false}
+											transition={layoutTransition}
+											aria-hidden="true"
+											className="smooth-shadow-xs surface-line pointer-events-none absolute inset-0 rounded-lg bg-primary"
+										/>
+									) : null}
+									<Laptop className="relative z-10 size-5" aria-hidden="true" />
 									<span className="sr-only">Wide</span>
 								</Button>
 							</fieldset>

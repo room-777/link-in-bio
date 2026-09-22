@@ -3,7 +3,10 @@
 }
 
 .bento-layout .react-grid-item:has([data-bento-item-shell]:hover),
-.bento-layout .react-grid-item:has([data-bento-item-shell]:focus-within),
+.bento-layout .react-grid-item:has([data-bento-item-shell]:focus-within) {
+	z-index: 100001 !important;
+}
+
 .bento-layout .react-grid-item:has([data-bento-item-controls-open="true"]),
 .bento-layout .react-grid-item:has([data-bento-item-controls="true"]:hover),
 .bento-layout
@@ -12,7 +15,7 @@
 	.react-grid-item:has(
 		[data-bento-item-controls="true"] button[aria-expanded="true"]
 	) {
-	z-index: 100001 !important;
+	z-index: 100002 !important;
 }
 
 .bento-layout
@@ -63,6 +66,7 @@ main:has([data-page-image-crop-open="true"]) {
 }
 
 .bento-page-scroll {
+	overflow-anchor: none;
 	scrollbar-width: none;
 	-ms-overflow-style: none;
 }
@@ -76,6 +80,12 @@ main:has([data-page-image-crop-open="true"]) {
 .link-title-input:hover,
 .link-title-input:focus {
 	background-color: color-mix(in oklch, white 8%, transparent) !important;
+}
+
+.bento-text-input:is(:hover, :focus) {
+	background-color: oklch(
+		from var(--text-card-background, var(--background)) calc(l - 0.04) c h
+	) !important;
 }
 
 .link-card-themed .link-title-input:is(:hover, :focus-visible) {
@@ -119,5 +129,5 @@ main:has([data-page-image-crop-open="true"]) {
 }
 
 .bento-layout .react-grid-item.react-draggable-dragging {
-	z-index: 100000 !important;
+	z-index: 100004 !important;
 }

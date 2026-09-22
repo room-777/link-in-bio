@@ -96,10 +96,15 @@ export function BentoItemShell({
 	const linkTheme = linkPresentation?.cardBackground
 		? linkPresentation
 		: undefined;
+	const cardBackground =
+		getBackgroundColor(item.style.backgroundColor) ?? linkTheme?.cardBackground;
 	const cardStyle: CSSProperties = {
-		backgroundColor:
-			getBackgroundColor(item.style.backgroundColor) ??
-			linkTheme?.cardBackground,
+		backgroundColor: cardBackground,
+		...(item.type === "text"
+			? ({
+					"--text-card-background": cardBackground ?? "var(--background)",
+				} as CSSProperties)
+			: {}),
 		...(linkTheme
 			? ({
 					"--link-card-background": linkTheme.cardBackground,
