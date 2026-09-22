@@ -66,7 +66,7 @@ export default function PageLayoutPreset({
 							initial={false}
 							transition={layoutTransition}
 							aria-hidden="true"
-							className="smooth-shadow-xs pointer-events-none absolute inset-0 rounded-lg bg-primary"
+							className="smooth-shadow-xs pointer-events-none absolute inset-0 rounded-lg bg-primary drop-shadow-lg!"
 						/>
 					) : null}
 					<Smartphone className="relative z-10 size-5" aria-hidden="true" />
@@ -87,7 +87,7 @@ export default function PageLayoutPreset({
 							initial={false}
 							transition={layoutTransition}
 							aria-hidden="true"
-							className="smooth-shadow-xs pointer-events-none absolute inset-0 rounded-lg bg-primary"
+							className="smooth-shadow-xs pointer-events-none absolute inset-0 rounded-lg bg-primary drop-shadow-lg!"
 						/>
 					) : null}
 					<Laptop className="relative z-10 size-5" aria-hidden="true" />
