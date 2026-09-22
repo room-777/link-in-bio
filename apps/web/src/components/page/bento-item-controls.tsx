@@ -14,7 +14,6 @@ import {
 } from "@grabbin/ui/components/popover";
 import { RadioGroup, RadioGroupItem } from "@grabbin/ui/components/radio-group";
 import { Separator } from "@grabbin/ui/components/separator";
-import { toast } from "@grabbin/ui/components/toast";
 import { cn } from "@grabbin/ui/lib/utils";
 import {
 	AlignCenter,
@@ -35,11 +34,15 @@ import {
 	Unlink,
 } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
+import { useEmailOtpShake } from "@/hooks/use-email-otp-shake";
 import type { BentoCommand, BentoItem } from "@/lib/bento/bento-types";
+import { normalizeHttpsUrl } from "@/lib/normalize-https-url";
 import { useMapItemInteraction } from "./bento/items/map-item-interaction-context";
 import { MapLocationSearch } from "./bento/items/map-location-search";
 import { useOptionalMediaCrop } from "./bento/items/media-crop-context";
 import BentoPresetIcon from "./bento-preset-icon";
+
+import "@grabbin/ui/styles/email-otp-form.css";
 
 const presetLabels = {
 	fullBanner: "Full banner",
@@ -104,16 +107,22 @@ function LinkControl({
 	onRefresh,
 	isRefreshing = false,
 	ariaLabel,
+	allowEmpty = true,
 }: {
 	value: string;
 	onCommit: (value: string) => void;
 	onRefresh?: () => void | Promise<void>;
 	isRefreshing?: boolean;
 	ariaLabel: string;
+	allowEmpty?: boolean;
 }) {
 	const [open, setOpen] = useState(false);
 	const [draftUrl, setDraftUrl] = useState(value);
+	const [linkError, setLinkError] = useState(false);
+	const [shakeKey, setShakeKey] = useState(0);
 	const inputRef = useRef<HTMLInputElement>(null);
+	const invalidRef = useRef(false);
+	const shakeRef = useEmailOtpShake(shakeKey);
 	const hasUrl = value.trim().length > 0;
 
 	useEffect(() => {
@@ -129,8 +138,46 @@ function LinkControl({
 		return () => cancelAnimationFrame(frame);
 	}, [draftUrl.length, open]);
 
+	const markInvalid = () => {
+		invalidRef.current = true;
+		setLinkError(true);
+		setShakeKey((key) => key + 1);
+		requestAnimationFrame(() => {
+			const input = inputRef.current;
+			if (!input) return;
+			input.focus();
+			input.setSelectionRange(input.value.length, input.value.length);
+		});
+	};
+	const commitDraftUrl = (rawValue: string) => {
+		const valueToCommit = rawValue.trim();
+		if (!valueToCommit && allowEmpty) {
+			invalidRef.current = false;
+			setLinkError(false);
+			onCommit("");
+			return;
+		}
+
+		const normalizedUrl = normalizeHttpsUrl(valueToCommit);
+		if (!normalizedUrl) {
+			markInvalid();
+			return;
+		}
+
+		invalidRef.current = false;
+		setLinkError(false);
+		setDraftUrl(normalizedUrl);
+		onCommit(normalizedUrl);
+	};
+
 	return (
-		<Popover open={open} onOpenChange={setOpen}>
+		<Popover
+			open={open}
+			onOpenChange={(nextOpen) => {
+				if (!nextOpen && invalidRef.current) return;
+				setOpen(nextOpen);
+			}}
+		>
 			<PopoverTrigger
 				render={
 					<Button
@@ -159,24 +206,49 @@ function LinkControl({
 				positionerClassName="z-[100003]"
 				className="grid-action z-50 flex h-10 w-64 flex-row items-center gap-1 rounded-[0.45rem] border-0 bg-foreground/95 p-1 shadow-lg ring-0 backdrop-blur-sm [--smooth-ring-width:0px]"
 			>
-				<Input
-					ref={inputRef}
-					aria-label="Link URL"
-					value={draftUrl}
-					placeholder="Add link..."
-					className="h-8 min-w-0 flex-1 border-0 bg-black/25 text-primary-foreground placeholder:text-primary-foreground/45 hover:border-white/10 focus-visible:border-white/10 focus-visible:ring-0"
-					onChange={(event) => setDraftUrl(event.target.value)}
-					onBlur={() => onCommit(draftUrl)}
-					onKeyDown={(event) => {
-						if (event.key === "Enter") event.currentTarget.blur();
-						if (event.key === "Escape") {
+				<div
+					ref={shakeRef}
+					className={cn("t-input min-w-0 flex-1", linkError && "is-error")}
+				>
+					<Input
+						ref={inputRef}
+						aria-label="Link URL"
+						aria-invalid={linkError}
+						value={draftUrl}
+						placeholder="Add link..."
+						className="h-8 w-full border-0 bg-black/25 text-primary-foreground placeholder:text-primary-foreground/45 hover:border-white/10 focus-visible:border-white/10 focus-visible:ring-0"
+						onChange={(event) => {
+							setDraftUrl(event.target.value);
+							invalidRef.current = false;
+							setLinkError(false);
+						}}
+						onPaste={(event) => {
+							const pastedValue = event.clipboardData.getData("text");
+							if (!pastedValue) return;
+
 							event.preventDefault();
-							setDraftUrl(value);
-							setOpen(false);
-						}
-					}}
-					autoComplete="off"
-				/>
+							const input = event.currentTarget;
+							const start = input.selectionStart ?? draftUrl.length;
+							const end = input.selectionEnd ?? draftUrl.length;
+							const nextValue = `${draftUrl.slice(0, start)}${pastedValue}${draftUrl.slice(end)}`;
+							setDraftUrl(nextValue);
+							commitDraftUrl(nextValue);
+						}}
+						onBlur={() => commitDraftUrl(draftUrl)}
+						onKeyDown={(event) => {
+							if (event.key === "Enter") event.currentTarget.blur();
+							if (event.key === "Escape") {
+								event.preventDefault();
+								invalidRef.current = false;
+								setLinkError(false);
+								setDraftUrl(value);
+								setOpen(false);
+							}
+						}}
+						autoComplete="url"
+						inputMode="url"
+					/>
+				</div>
 				{onRefresh ? (
 					<Button
 						type="button"
@@ -617,17 +689,12 @@ export default function BentoItemControls({
 	const commitLink = (nextUrl: string) => {
 		const value = nextUrl.trim();
 		if (item.type === "link") {
-			try {
-				if (new URL(value).protocol !== "https:") throw new Error();
-			} catch {
-				toast({ message: "Enter a valid HTTPS link.", state: "error" });
-				return;
-			}
-			if (value === item.data.url) return;
+			const normalizedUrl = normalizeHttpsUrl(value);
+			if (!normalizedUrl || normalizedUrl === item.data.url) return;
 			onCommand({
 				type: "update-data",
 				itemId: item.id,
-				data: { url: value },
+				data: { url: normalizedUrl },
 			});
 			return;
 		}
@@ -641,17 +708,12 @@ export default function BentoItemControls({
 			});
 			return;
 		}
-		try {
-			if (new URL(value).protocol !== "https:") throw new Error();
-		} catch {
-			toast({ message: "Enter a valid HTTPS link.", state: "error" });
-			return;
-		}
-		if (value === item.data.link) return;
+		const normalizedUrl = normalizeHttpsUrl(value);
+		if (!normalizedUrl || normalizedUrl === item.data.link) return;
 		onCommand({
 			type: "update-data",
 			itemId: item.id,
-			data: { ...item.data, link: value },
+			data: { ...item.data, link: normalizedUrl },
 		});
 	};
 
@@ -739,6 +801,7 @@ export default function BentoItemControls({
 								? "Edit media link"
 								: "Add media link"
 					}
+					allowEmpty={item.type !== "link"}
 					onRefresh={
 						item.type === "link" && onRefreshLinkMetadata
 							? refreshMetadata

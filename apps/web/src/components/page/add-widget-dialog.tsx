@@ -25,6 +25,7 @@ import { Link2, Plus } from "lucide-react";
 import dynamic from "next/dynamic";
 import { useRef, useState } from "react";
 import { useEmailOtpShake } from "@/hooks/use-email-otp-shake";
+import { normalizeHttpsUrl } from "@/lib/normalize-https-url";
 
 import "@grabbin/ui/styles/email-otp-form.css";
 
@@ -35,30 +36,6 @@ const MapWidgetPreview = dynamic(
 		})),
 	{ ssr: false },
 );
-
-function normalizeHttpsUrl(value: string) {
-	const trimmedValue = value.trim();
-	if (!trimmedValue || /\s/.test(trimmedValue)) return;
-
-	try {
-		const parsedUrl = new URL(trimmedValue);
-		return parsedUrl.protocol === "https:" &&
-			parsedUrl.hostname &&
-			!parsedUrl.hostname.includes("%")
-			? parsedUrl.toString()
-			: undefined;
-	} catch {
-		if (/^[a-z][a-z\d+.-]*:/i.test(trimmedValue)) return;
-		try {
-			const parsedUrl = new URL(`https://${trimmedValue}`);
-			return parsedUrl.hostname && !parsedUrl.hostname.includes("%")
-				? parsedUrl.toString()
-				: undefined;
-		} catch {
-			return undefined;
-		}
-	}
-}
 
 function AddWidgetContent({
 	isOpen,
