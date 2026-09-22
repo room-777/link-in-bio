@@ -680,7 +680,10 @@ export default function BentoItemControls({
 				title={mediaCrop.isOpen ? "Apply media crop" : "Crop media"}
 				aria-pressed={mediaCrop.isOpen}
 				disabled={mediaCrop.isOpen && !mediaCrop.canApply}
-				className="cursor-pointer! rounded-md text-white hover:bg-white/20 hover:text-white"
+				className={cn(
+					"cursor-pointer! rounded-md text-white hover:bg-white/20 hover:text-white",
+					mediaCrop.isOpen && "bg-brand-green! hover:bg-brand-green!",
+				)}
 				onClick={mediaCrop.isOpen ? mediaCrop.apply : mediaCrop.open}
 			>
 				<Crop className="size-5 stroke-2" />
