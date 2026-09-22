@@ -24,6 +24,9 @@ import { useIsMobile } from "@grabbin/ui/components/use-mobile";
 import { Link2, Plus } from "lucide-react";
 import dynamic from "next/dynamic";
 import { useRef, useState } from "react";
+import { useEmailOtpShake } from "@/hooks/use-email-otp-shake";
+
+import "@grabbin/ui/styles/email-otp-form.css";
 
 const MapWidgetPreview = dynamic(
 	() =>
@@ -32,6 +35,30 @@ const MapWidgetPreview = dynamic(
 		})),
 	{ ssr: false },
 );
+
+function normalizeHttpsUrl(value: string) {
+	const trimmedValue = value.trim();
+	if (!trimmedValue || /\s/.test(trimmedValue)) return;
+
+	try {
+		const parsedUrl = new URL(trimmedValue);
+		return parsedUrl.protocol === "https:" &&
+			parsedUrl.hostname &&
+			!parsedUrl.hostname.includes("%")
+			? parsedUrl.toString()
+			: undefined;
+	} catch {
+		if (/^[a-z][a-z\d+.-]*:/i.test(trimmedValue)) return;
+		try {
+			const parsedUrl = new URL(`https://${trimmedValue}`);
+			return parsedUrl.hostname && !parsedUrl.hostname.includes("%")
+				? parsedUrl.toString()
+				: undefined;
+		} catch {
+			return undefined;
+		}
+	}
+}
 
 function AddWidgetContent({
 	isOpen,
@@ -43,6 +70,24 @@ function AddWidgetContent({
 	onMediaSelect: (file: File) => void;
 }) {
 	const fileInputRef = useRef<HTMLInputElement>(null);
+	const [linkValue, setLinkValue] = useState("");
+	const [linkError, setLinkError] = useState(false);
+	const [shakeKey, setShakeKey] = useState(0);
+	const linkInputGroupRef = useEmailOtpShake(shakeKey);
+
+	const addLink = (value: string) => {
+		const normalizedUrl = normalizeHttpsUrl(value);
+		if (!normalizedUrl) {
+			setLinkError(true);
+			setShakeKey((key) => key + 1);
+			return;
+		}
+
+		setLinkError(false);
+		setLinkValue("");
+		onItemAdd("link", normalizedUrl);
+	};
+
 	return (
 		<>
 			<input
@@ -166,17 +211,13 @@ function AddWidgetContent({
 				</Button>
 			</div>
 			<form
+				noValidate
 				onSubmit={(event) => {
 					event.preventDefault();
-					const form = event.currentTarget;
-					const value = new FormData(form).get("widget-link");
-					if (typeof value === "string" && value.trim()) {
-						onItemAdd("link", value);
-						form.reset();
-					}
+					addLink(linkValue);
 				}}
 			>
-				<Field>
+				<Field data-invalid={linkError}>
 					<div className="flex items-center gap-2">
 						<div className="smooth-shadow-xs flex aspect-square size-11 items-center justify-center rounded-lg border">
 							<Link2
@@ -184,12 +225,35 @@ function AddWidgetContent({
 								aria-hidden="true"
 							/>
 						</div>
-						<InputGroup className="h-11 max-w-full grow rounded-lg bg-secondary font-medium text-base">
+						<InputGroup
+							ref={linkInputGroupRef}
+							className="t-input h-11 max-w-full grow rounded-lg bg-secondary font-medium text-base"
+						>
 							<InputGroupInput
+								id="widget-link"
 								name="widget-link"
 								aria-label="Link URL"
+								aria-invalid={linkError}
 								autoComplete="url"
+								inputMode="url"
 								placeholder="Add link..."
+								value={linkValue}
+								onChange={(event) => {
+									setLinkValue(event.target.value);
+									setLinkError(false);
+								}}
+								onPaste={(event) => {
+									const pastedValue = event.clipboardData.getData("text");
+									if (!pastedValue) return;
+
+									event.preventDefault();
+									const input = event.currentTarget;
+									const start = input.selectionStart ?? linkValue.length;
+									const end = input.selectionEnd ?? linkValue.length;
+									const nextValue = `${linkValue.slice(0, start)}${pastedValue}${linkValue.slice(end)}`;
+									setLinkValue(nextValue);
+									addLink(nextValue);
+								}}
 								className="text-sm"
 							/>
 							<InputGroupAddon align="inline-end" className="pr-2">

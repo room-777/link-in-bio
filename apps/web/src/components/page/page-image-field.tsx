@@ -270,7 +270,7 @@ export default function PageImageField({
 						}
 						disabled={isUploading || !sourceSize.width}
 						onClick={cropOpen ? closeCrop : openCrop}
-						className={`smooth-shadow-ring-sm absolute top-0 left-0 z-30 inline-flex size-10 items-center justify-center rounded-full border-0! bg-background opacity-0 transition-[opacity,transform,scale,background-color,color] duration-150 focus-visible:scale-100 focus-visible:opacity-100 group-hover/image:scale-100 group-hover/image:opacity-100 ${isWide ? "min-[90rem]:top-2" : ""} ${cropOpen ? "bg-brand-green text-white! opacity-100 hover:bg-brand-green/80" : ""}`}
+						className={`smooth-shadow-ring-sm absolute top-0 left-0 z-30 inline-flex size-10 items-center justify-center rounded-full border-0! bg-background opacity-0 transition-[opacity,transform,scale,background-color,color] duration-150 focus-visible:scale-100 focus-visible:opacity-100 group-hover/image:scale-100 group-hover/image:opacity-100 ${isWide ? "min-[90rem]:top-2 min-[90rem]:left-2" : ""} ${cropOpen ? "bg-brand-green text-white! opacity-100 hover:bg-brand-green/80" : ""}`}
 					>
 						<Crop className="size-5 stroke-[2.5px]" />
 					</Button>
