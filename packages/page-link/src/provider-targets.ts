@@ -133,7 +133,7 @@ export function getDiscordTarget(url: URL): LinkTargetMatch | undefined {
 export function getChzzkTarget(url: URL): LinkTargetMatch | undefined {
 	if (url.hostname.toLowerCase() !== "chzzk.naver.com") return undefined;
 	const segments = url.pathname.split("/").filter(Boolean);
-	if (segments.length === 1 && /^[a-f\d]{32}$/i.test(segments[0] ?? "")) {
+	if (/^[a-f\d]{32}$/i.test(segments[0] ?? "")) {
 		return { kind: "channel", params: { channelId: segments[0] as string } };
 	}
 	if (

@@ -155,6 +155,13 @@ export const providerDefinitions = [
 				: {},
 	},
 	{
+		id: "facebook",
+		hosts: ["facebook.com"],
+		label: "Facebook",
+		faviconUrl: providerIconUrl("facebook"),
+		theme: { faviconBackground: "#1877F2" },
+	},
+	{
 		id: "x",
 		hosts: ["twitter.com", "x.com"],
 		label: "X",

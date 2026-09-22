@@ -97,7 +97,7 @@ function createFetch() {
 			return json({
 				content: [
 					{
-						channelId: "0123456789abcdef0123456789abcdef",
+						channelId: "a6c4ddb09cdb160478996007bff35296",
 						channelName: "Grabbin Live",
 						followerCount: 77,
 						channelImageUrl: "https://chzzk.example.com/channel.png",
@@ -221,7 +221,7 @@ describe("link provider metadata", () => {
 			},
 			{
 				name: "CHZZK",
-				url: "https://chzzk.naver.com/0123456789abcdef0123456789abcdef",
+				url: "https://chzzk.naver.com/a6c4ddb09cdb160478996007bff35296/clips?filterType=ALL&orderType=POPULAR",
 				provider: "chzzk",
 				key: "followerCount",
 				expected: 77,
@@ -279,6 +279,7 @@ describe("link provider metadata", () => {
 			["youtube-music", "https://music.youtube.com/watch?v=dQw4w9WgXcQ"],
 			["discord", "https://discord.gg/grabbin"],
 			["github", "https://github.com/kinwooky"],
+			["facebook", "https://www.facebook.com/grabbin"],
 			["x", "https://x.com/kinwooky"],
 			["spotify", "https://open.spotify.com/artist/0"],
 			["app-store", "https://apps.apple.com/us/app/grabbin/id1"],
