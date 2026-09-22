@@ -120,14 +120,15 @@ If you want to add app-specific blocks instead of shared primitives, run the sha
 
 - Target: web on Cloudflare + server on Cloudflare
 - Configure provider login: `cd packages/infra && bunx alchemy login --configure`
-- Dev: bun run dev
+- Dev: bun run dev (Alchemy manages the web Worker, server Worker, and bindings)
 - Deploy: bun run deploy (source maps are uploaded to Sentry and removed from deployment files)
 - Destroy: bun run destroy
 
-The production web Worker is deployed through `packages/infra` and Alchemy.
-Alchemy injects the server Worker as the `SERVER` Service Binding; the
-standalone `apps/web/wrangler.jsonc` intentionally does not declare that
-binding. Use the standalone Vinext/Wrangler commands only for local preview.
+The production web Worker and the local development web Worker are managed
+through `packages/infra` and Alchemy. Alchemy injects the server Worker as the
+`SERVER` Service Binding and the shared R2 bucket as `R2_BUCKET`. The
+standalone `apps/web/wrangler.jsonc` is only a local preview config and does
+not manage application bindings.
 
 `alchemy login --configure` stores the selected Cloudflare provider profile
 under `~/.alchemy`; no provider-specific setup command is required by this
@@ -164,9 +165,9 @@ grabbin/
 
 ## Available Scripts
 
-- `bun run dev`: Start all applications in development mode
+- `bun run dev`: Start the infra-managed web and server Workers
 - `bun run build`: Build all applications
-- `bun run dev:web`: Start only the web application
+- `bun run dev:web`: Start the infra-managed web and server Workers
 - `bun run dev:server`: Start only the server
 - `bun run check-types`: Check TypeScript types across all apps
 - `bun run db:generate`: Generate database client/types

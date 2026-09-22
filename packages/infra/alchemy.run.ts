@@ -1,5 +1,6 @@
 import * as Alchemy from "alchemy";
 import * as Cloudflare from "alchemy/Cloudflare";
+import * as Command from "alchemy/Command";
 import { config } from "dotenv";
 import * as Config from "effect/Config";
 import * as Effect from "effect/Effect";
@@ -179,6 +180,13 @@ export default Alchemy.Stack(
 	Effect.gen(function* () {
 		const serverWorker = yield* server;
 		if (isAlchemyDev) {
+			yield* Command.Dev("web-dev", {
+				command: "bun run dev:bare",
+				cwd: "../../apps/web",
+				env: {
+					NEXT_PUBLIC_SERVER_URL: serverWorker.url.as<string>(),
+				},
+			});
 			return {
 				web: new URL("http://localhost:3000"),
 				server: serverWorker.url,
@@ -189,9 +197,7 @@ export default Alchemy.Stack(
 			// Uncomment the custom domain setting below to configure a custom domain.
 			// domain: "app.example.com",
 			rootDir: "../../apps/web",
-			dev: {
-				port: 3000,
-			},
+			dev: { port: 3000 },
 			viteEnvironments: {
 				entry: "rsc",
 				children: ["ssr"],
