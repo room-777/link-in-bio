@@ -53,6 +53,7 @@ type MapMountRequest = {
 
 type MapMountLease = {
 	cancel(): void;
+	prioritize(): void;
 	release(): void;
 };
 
@@ -147,6 +148,13 @@ function enqueueMapMount(start: () => void, priority: boolean): MapMountLease {
 			release();
 			scheduleMapMountDrain();
 		},
+		prioritize: () => {
+			if (request.cancelled || activeMapMount === request) return;
+			const requestIndex = pendingMapMounts.indexOf(request);
+			if (requestIndex <= 0) return;
+			pendingMapMounts.splice(requestIndex, 1);
+			pendingMapMounts.unshift(request);
+		},
 		release,
 	};
 }
@@ -172,13 +180,20 @@ function DeferredMapboxMap({
 }) {
 	const [isMountAllowed, setIsMountAllowed] = useState(false);
 	const leaseRef = useRef<MapMountLease | null>(null);
+	const initialPriority = useRef(priority).current;
 	useEffect(() => {
-		const lease = enqueueMapMount(() => setIsMountAllowed(true), priority);
+		const lease = enqueueMapMount(
+			() => setIsMountAllowed(true),
+			initialPriority,
+		);
 		leaseRef.current = lease;
 		return () => {
 			lease.cancel();
 			leaseRef.current = null;
 		};
+	}, [initialPriority]);
+	useEffect(() => {
+		if (priority) leaseRef.current?.prioritize();
 	}, [priority]);
 	const mapLib = useMemo(
 		() => (isMountAllowed ? loadMapboxLib() : null),
