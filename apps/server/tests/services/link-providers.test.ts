@@ -62,6 +62,41 @@ function createFetch() {
 			});
 		}
 		if (requestUrl.hostname === "www.googleapis.com") {
+			if (requestUrl.pathname === "/youtube/v3/channels") {
+				return json({
+					items: [
+						{
+							contentDetails: {
+								relatedPlaylists: { uploads: "uploads-playlist" },
+							},
+							snippet: {
+								title: "Grabbin",
+								description: "A product video",
+								thumbnails: {
+									high: { url: "https://img.youtube.com/channel.jpg" },
+								},
+							},
+							statistics: {
+								subscriberCount: "1234",
+								viewCount: "5000",
+							},
+						},
+					],
+				});
+			}
+			if (requestUrl.pathname === "/youtube/v3/playlistItems") {
+				return json({
+					items: [1, 2, 3, 4].map((index) => ({
+						snippet: {
+							thumbnails: {
+								high: {
+									url: `https://img.youtube.com/video-${index}.jpg`,
+								},
+							},
+						},
+					})),
+				});
+			}
 			return json({
 				items: [
 					{
@@ -263,6 +298,20 @@ describe("link provider metadata", () => {
 				testCase.name,
 			);
 		}
+	});
+
+	it("LINK-PROVIDERS-003 loads four recent YouTube channel thumbnails", async () => {
+		const metadata = await enrichLinkProvider(
+			new URL("https://youtube.com/@kinwooky"),
+			{ fetch: createFetch(), env: { YOUTUBE_API_KEY: "test-key" } },
+		);
+
+		assert.deepEqual(metadata.providerData?.recentVideoThumbnailUrls, [
+			"https://img.youtube.com/video-1.jpg",
+			"https://img.youtube.com/video-2.jpg",
+			"https://img.youtube.com/video-3.jpg",
+			"https://img.youtube.com/video-4.jpg",
+		]);
 	});
 
 	/**
