@@ -135,7 +135,7 @@
 .react-grid-item.react-draggable-dragging .bento-item-card {
 	box-shadow:
 		var(--smooth-shadow-xl),
-		0 0 0 1px rgb(212 212 212 / 30%);
+		0 0 0 1px var(--smooth-ring-color, rgb(212 212 212 / 30%));
 	transition-duration: var(--bento-drag-lift-duration);
 	transition-timing-function: var(--bento-drag-lift-ease);
 	transform: perspective(800px) translateY(-8px) scale(1)
