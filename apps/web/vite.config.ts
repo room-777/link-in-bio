@@ -17,7 +17,7 @@ if (
 	);
 }
 
-export default defineConfig({
+export default defineConfig(({ command }) => ({
 	server: {
 		port: 3000,
 		strictPort: true,
@@ -56,7 +56,7 @@ export default defineConfig({
 	},
 	plugins: [
 		vinext({
-			cache: { cdn: cdnAdapter() },
+			...(command === "build" ? { cache: { cdn: cdnAdapter() } } : {}),
 			images: { optimizer: imagesOptimizer() },
 		}),
 		process.env.ALCHEMY_CLOUDFLARE_VITE_INJECTED === "1"
@@ -78,4 +78,4 @@ export default defineConfig({
 				})
 			: undefined,
 	],
-});
+}));
