@@ -8,7 +8,7 @@ import MapboxMap, {
 	type MapRef,
 } from "react-map-gl/mapbox";
 import "mapbox-gl/dist/mapbox-gl.css";
-import { useEffect, useRef, useState } from "react";
+import { type ReactNode, useEffect, useMemo, useRef, useState } from "react";
 
 import type { BentoCommand, BentoItem } from "@/lib/bento/bento-types";
 import {
@@ -25,7 +25,6 @@ import {
 	ExternalAction,
 	MapViewportGate,
 	MediaCaption,
-	mapboxLib,
 	removeMapboxControls,
 } from "./shared";
 
@@ -46,6 +45,148 @@ type MapboxMapWithHandlers = {
 };
 
 type MapMoveSource = "user" | "ignore" | "persist";
+
+type MapMountRequest = {
+	cancelled: boolean;
+	start: () => void;
+};
+
+type MapMountLease = {
+	cancel(): void;
+	release(): void;
+};
+
+const pendingMapMounts: MapMountRequest[] = [];
+let activeMapMount: MapMountRequest | null = null;
+let mapMountDrainFrame: number | null = null;
+let mapMountDrainTimer: number | null = null;
+let lastMapScrollAt = Number.NEGATIVE_INFINITY;
+let mapScrollTrackingStarted = false;
+let mapboxLibPromise: Promise<typeof import("mapbox-gl")> | null = null;
+const MAP_MOUNT_SCROLL_IDLE_DELAY = 160;
+
+function cancelMapMountDrain() {
+	if (mapMountDrainFrame !== null) {
+		window.cancelAnimationFrame(mapMountDrainFrame);
+		mapMountDrainFrame = null;
+	}
+	if (mapMountDrainTimer !== null) {
+		window.clearTimeout(mapMountDrainTimer);
+		mapMountDrainTimer = null;
+	}
+}
+
+function scheduleMapMountDrain() {
+	if (
+		activeMapMount ||
+		pendingMapMounts.length === 0 ||
+		mapMountDrainFrame !== null ||
+		mapMountDrainTimer !== null
+	)
+		return;
+
+	const remainingScrollTime =
+		MAP_MOUNT_SCROLL_IDLE_DELAY - (Date.now() - lastMapScrollAt);
+	if (remainingScrollTime > 0) {
+		mapMountDrainTimer = window.setTimeout(() => {
+			mapMountDrainTimer = null;
+			scheduleMapMountDrain();
+		}, remainingScrollTime);
+		return;
+	}
+
+	const drain = () => {
+		mapMountDrainFrame = null;
+		const remainingScrollTime =
+			MAP_MOUNT_SCROLL_IDLE_DELAY - (Date.now() - lastMapScrollAt);
+		if (remainingScrollTime > 0) {
+			scheduleMapMountDrain();
+			return;
+		}
+		while (pendingMapMounts[0]?.cancelled) pendingMapMounts.shift();
+		const next = pendingMapMounts.shift();
+		if (!next) return;
+		activeMapMount = next;
+		next.start();
+	};
+	mapMountDrainFrame = window.requestAnimationFrame
+		? window.requestAnimationFrame(drain)
+		: window.setTimeout(drain, 0);
+}
+
+function handleMapScroll() {
+	lastMapScrollAt = Date.now();
+	cancelMapMountDrain();
+	scheduleMapMountDrain();
+}
+
+function startMapScrollTracking() {
+	if (mapScrollTrackingStarted) return;
+	mapScrollTrackingStarted = true;
+	window.addEventListener("scroll", handleMapScroll, {
+		capture: true,
+		passive: true,
+	});
+}
+
+function enqueueMapMount(start: () => void, priority: boolean): MapMountLease {
+	const request: MapMountRequest = { cancelled: false, start };
+	if (priority) pendingMapMounts.unshift(request);
+	else pendingMapMounts.push(request);
+	startMapScrollTracking();
+	scheduleMapMountDrain();
+
+	const release = () => {
+		if (activeMapMount !== request) return;
+		activeMapMount = null;
+		scheduleMapMountDrain();
+	};
+	return {
+		cancel: () => {
+			request.cancelled = true;
+			release();
+			scheduleMapMountDrain();
+		},
+		release,
+	};
+}
+
+function loadMapboxLib() {
+	if (mapboxLibPromise) return mapboxLibPromise;
+	mapboxLibPromise = import("mapbox-gl").then((module) => {
+		module.default.prewarm();
+		return module;
+	});
+	return mapboxLibPromise;
+}
+
+function DeferredMapboxMap({
+	children,
+	priority = false,
+}: {
+	children: (
+		mapLib: Promise<typeof import("mapbox-gl")>,
+		releaseMapMount: () => void,
+	) => ReactNode;
+	priority?: boolean;
+}) {
+	const [isMountAllowed, setIsMountAllowed] = useState(false);
+	const leaseRef = useRef<MapMountLease | null>(null);
+	useEffect(() => {
+		const lease = enqueueMapMount(() => setIsMountAllowed(true), priority);
+		leaseRef.current = lease;
+		return () => {
+			lease.cancel();
+			leaseRef.current = null;
+		};
+	}, [priority]);
+	const mapLib = useMemo(
+		() => (isMountAllowed ? loadMapboxLib() : null),
+		[isMountAllowed],
+	);
+	if (!mapLib) return null;
+	return children(mapLib, () => leaseRef.current?.release());
+}
 
 function setMapInteractions(map: MapboxMapWithHandlers, enabled: boolean) {
 	for (const handler of [
@@ -255,109 +396,116 @@ export function MapItem({
 								data-bento-item-drag-cancel={interactive ? "true" : undefined}
 							>
 								{isContainerSized ? (
-									<MapboxMap
-										key={mapRevision}
-										ref={mapRef}
-										mapLib={mapboxLib}
-										{...({ config: MAPBOX_STYLE_CONFIG } as const)}
-										mapboxAccessToken={accessToken}
-										mapStyle={MAPBOX_STYLE_URL}
-										initialViewState={{
-											latitude: camera.latitude,
-											longitude: camera.longitude,
-											zoom: camera.zoom,
-										}}
-										attributionControl={false}
-										interactive={interactive}
-										dragPan={interactive}
-										scrollZoom={interactive}
-										boxZoom={interactive}
-										doubleClickZoom={interactive}
-										keyboard={interactive}
-										touchZoomRotate={interactive}
-										projection="mercator"
-										pitch={0}
-										maxPitch={0}
-										bearing={0}
-										dragRotate={false}
-										touchPitch={false}
-										minZoom={MAP_ZOOM_MIN}
-										maxZoom={MAP_ZOOM_MAX}
-										style={{ height: "100%", width: "100%" }}
-										onMoveStart={(event) => {
-											if ("originalEvent" in event && event.originalEvent) {
-												mapMoveSourceRef.current = "user";
-											} else if (mapMoveSourceRef.current === null) {
-												mapMoveSourceRef.current = "ignore";
-											}
-										}}
-										onMoveEnd={(event) => {
-											const moveSource = mapMoveSourceRef.current;
-											mapMoveSourceRef.current = null;
-											if (
-												!interactive ||
-												!onCommand ||
-												(moveSource !== "user" && moveSource !== "persist")
-											)
-												return;
-											const nextCamera = sanitizeMapCamera(event.viewState);
-											if (!nextCamera) return;
-											setGeolocationError(false);
-											onCommand({
-												type: "update-data",
-												itemId: item.id,
-												data: {
-													...item.data,
-													latitude: nextCamera.latitude,
-													longitude: nextCamera.longitude,
-													zoom: nextCamera.zoom,
-												},
-											});
-										}}
-										onLoad={(event) => {
-											removeMapboxControls(event.target);
-											window.requestAnimationFrame(() =>
-												removeMapboxControls(event.target),
-											);
-											setMapInteractions(
-												event.target as MapboxMapWithHandlers,
-												interactive,
-											);
-											mapLoadedRef.current = true;
-											setMapReady(true);
-										}}
-										onError={() => {
-											if (mapLoadedRef.current) return;
-											setMapReady(false);
-											setMapError(true);
-										}}
-									>
-										{interactive ? (
-											<GeolocateControl
-												ref={geolocateRef}
-												position="top-right"
-												showButton={false}
-												showUserLocation={false}
-												showAccuracyCircle={false}
-												trackUserLocation={false}
-												onGeolocate={(event) => {
-													if (!onCommand) return;
+									<DeferredMapboxMap priority={interactive}>
+										{(mapLib, releaseMapMount) => (
+											<MapboxMap
+												key={mapRevision}
+												ref={mapRef}
+												mapLib={mapLib}
+												{...({ config: MAPBOX_STYLE_CONFIG } as const)}
+												mapboxAccessToken={accessToken}
+												mapStyle={MAPBOX_STYLE_URL}
+												initialViewState={{
+													latitude: camera.latitude,
+													longitude: camera.longitude,
+													zoom: camera.zoom,
+												}}
+												attributionControl={false}
+												interactive={interactive}
+												dragPan={interactive}
+												scrollZoom={interactive}
+												boxZoom={interactive}
+												doubleClickZoom={interactive}
+												keyboard={interactive}
+												touchZoomRotate={interactive}
+												projection="mercator"
+												pitch={0}
+												maxPitch={0}
+												bearing={0}
+												dragRotate={false}
+												touchPitch={false}
+												minZoom={MAP_ZOOM_MIN}
+												maxZoom={MAP_ZOOM_MAX}
+												style={{ height: "100%", width: "100%" }}
+												onMoveStart={(event) => {
+													if ("originalEvent" in event && event.originalEvent) {
+														mapMoveSourceRef.current = "user";
+													} else if (mapMoveSourceRef.current === null) {
+														mapMoveSourceRef.current = "ignore";
+													}
+												}}
+												onMoveEnd={(event) => {
+													const moveSource = mapMoveSourceRef.current;
+													mapMoveSourceRef.current = null;
+													if (
+														!interactive ||
+														!onCommand ||
+														(moveSource !== "user" && moveSource !== "persist")
+													)
+														return;
+													const nextCamera = sanitizeMapCamera(event.viewState);
+													if (!nextCamera) return;
 													setGeolocationError(false);
 													onCommand({
 														type: "update-data",
 														itemId: item.id,
 														data: {
 															...item.data,
-															latitude: event.coords.latitude,
-															longitude: event.coords.longitude,
-															zoom: mapRef.current?.getZoom() ?? camera.zoom,
+															latitude: nextCamera.latitude,
+															longitude: nextCamera.longitude,
+															zoom: nextCamera.zoom,
 														},
 													});
 												}}
-												onError={() => setGeolocationError(true)}
-											/>
-										) : null}
-									</MapboxMap>
+												onLoad={(event) => {
+													removeMapboxControls(event.target);
+													window.requestAnimationFrame(() =>
+														removeMapboxControls(event.target),
+													);
+													setMapInteractions(
+														event.target as MapboxMapWithHandlers,
+														interactive,
+													);
+													mapLoadedRef.current = true;
+													setMapReady(true);
+													releaseMapMount();
+												}}
+												onError={() => {
+													if (mapLoadedRef.current) return;
+													releaseMapMount();
+													setMapReady(false);
+													setMapError(true);
+												}}
+											>
+												{interactive ? (
+													<GeolocateControl
+														ref={geolocateRef}
+														position="top-right"
+														showButton={false}
+														showUserLocation={false}
+														showAccuracyCircle={false}
+														trackUserLocation={false}
+														onGeolocate={(event) => {
+															if (!onCommand) return;
+															setGeolocationError(false);
+															onCommand({
+																type: "update-data",
+																itemId: item.id,
+																data: {
+																	...item.data,
+																	latitude: event.coords.latitude,
+																	longitude: event.coords.longitude,
+																	zoom:
+																		mapRef.current?.getZoom() ?? camera.zoom,
+																},
+															});
+														}}
+														onError={() => setGeolocationError(true)}
+													/>
+												) : null}
+											</MapboxMap>
+										)}
+									</DeferredMapboxMap>
 								) : null}
 							</div>
 						</MapViewportGate>
