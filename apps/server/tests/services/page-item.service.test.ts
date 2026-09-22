@@ -186,6 +186,7 @@ describe("page item service", () => {
 						type: "link",
 						data: {
 							url: "https://www.youtube.com/@grabbin",
+							imageKey: null,
 							metadata: {
 								title: "Grabbin",
 								providerData: {

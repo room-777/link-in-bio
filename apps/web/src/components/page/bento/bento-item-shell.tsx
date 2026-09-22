@@ -71,7 +71,6 @@ export function BentoItemShell({
 	onAutoFocus,
 	onCommand,
 	onRefreshLinkMetadata,
-	onLinkImageSelect,
 	isAnyItemDragging = false,
 	isEntering = false,
 	isExiting = false,
@@ -83,7 +82,6 @@ export function BentoItemShell({
 	onAutoFocus?: () => void;
 	onCommand?: (command: BentoCommand) => void;
 	onRefreshLinkMetadata?: (itemId: string) => Promise<void>;
-	onLinkImageSelect?: (itemId: string, file: File) => void | Promise<void>;
 	isAnyItemDragging?: boolean;
 	isEntering?: boolean;
 	isExiting?: boolean;
@@ -174,7 +172,6 @@ export function BentoItemShell({
 							autoFocus,
 							onAutoFocus,
 							onCommand,
-							onLinkImageSelect,
 							isAnyItemDragging,
 						})
 					) : (

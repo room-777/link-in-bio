@@ -59,12 +59,14 @@ export function mapPageItemResponse(
 				: undefined;
 		data.metadata = {
 			...linkMetadata,
-			presentation:
-				imageKey === null
-					? { ...linkMetadata.presentation, imageUrls: [] }
-					: imageUrl
-						? { ...linkMetadata.presentation, imageUrls: [imageUrl] }
-						: linkMetadata.presentation,
+			...(imageUrl
+				? {
+						presentation: {
+							...linkMetadata.presentation,
+							imageUrls: [imageUrl],
+						},
+					}
+				: {}),
 		};
 	}
 	if (item.type === "media" && typeof data.objectKey === "string") {
