@@ -250,7 +250,7 @@ function InputOTPSlot({
 			data-active={isActive}
 			data-index={index}
 			className={cn(
-				"relative flex aspect-square w-full min-w-0 max-w-full items-center justify-center rounded-(--otp-radius) bg-foreground/[0.06] font-semibold text-2xl tabular-nums outline-none ring-1 ring-foreground/8 transition-[background-color,color] duration-150 ease-out [container-type:inline-size] *:text-[min(1.5rem,43cqi)] data-[active=true]:z-10 data-[active=true]:bg-foreground/10 motion-reduce:transition-none",
+				"relative flex aspect-square w-full min-w-0 max-w-full items-center justify-center rounded-(--otp-radius) bg-foreground/[0.06] font-semibold text-2xl tabular-nums outline-none ring-0 ring-foreground/8 transition-[background-color,color,ring] duration-150 ease-out [container-type:inline-size] *:text-[min(1.5rem,43cqi)] data-[active=true]:z-10 data-[active=true]:bg-foreground/10 motion-reduce:transition-none",
 				swept && sweep?.tone === "success" && "otp-bounce",
 				invalid && "ring-2 ring-destructive/80",
 				className,
