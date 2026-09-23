@@ -75,6 +75,7 @@
 	"packageManager": "bun@1.4.0",
 	"overrides": {
 		"effect": "4.0.0-rc.112",
-		"@effect/platform-node-shared": "4.0.0-rc.112"
+		"@effect/platform-node-shared": "4.0.0-rc.112",
+		"qr": "0.5.5"
 	}
 }

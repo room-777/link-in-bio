@@ -27,6 +27,7 @@
 		"@vinext/cloudflare": "^1.0.0-beta.7",
 		"babel-plugin-react-compiler": "^1.0.0",
 		"better-auth": "catalog:auth",
+		"cuer": "^0.0.3",
 		"dotenv": "catalog:runtime",
 		"hono": "catalog:runtime",
 		"lucide-react": "catalog:ui",

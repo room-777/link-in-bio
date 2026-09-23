@@ -7,6 +7,7 @@ import {
 	getColumns,
 } from "@grabbin/bento-layout";
 import { useCallback, useEffect, useState } from "react";
+import { getPageImageUrl } from "@/lib/page-image-url";
 
 import BentoEditor from "./bento-editor";
 import PageFooter from "./page-footer";
@@ -126,6 +127,10 @@ export default function OwnerPage({
 					value={layoutBreakpoint}
 					onChange={handleLayoutBreakpointChange}
 					isAutoSaving={isAutoSaving}
+					profileImageUrl={getPageImageUrl(
+						currentPage.imageSource ?? currentPage.imageKey,
+						{ width: 256, height: 256, format: "auto", fit: "cover" },
+					)}
 				/>
 			) : null}
 		</div>
