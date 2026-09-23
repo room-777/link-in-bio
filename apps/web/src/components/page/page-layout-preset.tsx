@@ -144,7 +144,7 @@ export default function PageLayoutPreset({
 						)}
 					</Button>
 					<DialogContent
-						className="gap-5 p-5"
+						className="aspect-square gap-5 p-5"
 						aria-describedby="share-qr-description"
 					>
 						<DialogTitle className="sr-only">Share your page</DialogTitle>
