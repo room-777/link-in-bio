@@ -20,10 +20,12 @@ export default function PageProfileForm({
 	page,
 	breakpoint = "wide",
 	onSavingChange,
+	onEntryComplete,
 }: {
 	page: PageData;
 	breakpoint?: BentoBreakpoint;
 	onSavingChange?: (isSaving: boolean) => void;
+	onEntryComplete?: () => void;
 }) {
 	const reduceMotion = useReducedMotion();
 	const [imageUrl, setImageUrl] = useState(
@@ -78,6 +80,10 @@ export default function PageProfileForm({
 	useEffect(() => {
 		onSavingChange?.(isSaving);
 	}, [isSaving, onSavingChange]);
+
+	useEffect(() => {
+		if (reduceMotion) onEntryComplete?.();
+	}, [onEntryComplete, reduceMotion]);
 
 	useEffect(() => {
 		if (!autoSaveError) return;
@@ -185,6 +191,7 @@ export default function PageProfileForm({
 				initial={reduceMotion ? false : { opacity: 0, y: 16 }}
 				animate={{ opacity: 1, y: 0 }}
 				transition={transition}
+				onAnimationComplete={onEntryComplete}
 				className="w-full"
 			>
 				<div className="mb-4 flex flex-col gap-8">

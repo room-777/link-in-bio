@@ -4,6 +4,7 @@ import type { PageByHandleResponse } from "@grabbin/api";
 import { motion, useReducedMotion } from "motion/react";
 import dynamic from "next/dynamic";
 import Image from "next/image";
+import { useState } from "react";
 import { toBentoItem } from "@/lib/bento/bento-batch";
 import { getMediaCropStyle } from "@/lib/bento/media-crop";
 import { getPageImageUrl } from "@/lib/page-image-url";
@@ -11,6 +12,9 @@ import PageFooter from "./page-footer";
 
 const BentoSection = dynamic(() => import("./bento-section"), { ssr: false });
 const MotionImage = motion.create(Image);
+const PROFILE_ENTER_DURATION_SECONDS = 0.85;
+const PROFILE_TITLE_ENTER_DELAY_SECONDS = 0.08;
+const PROFILE_BIO_ENTER_DELAY_SECONDS = 0.16;
 
 export default function HandlePage({
 	pageResponse,
@@ -19,6 +23,7 @@ export default function HandlePage({
 }) {
 	const { page } = pageResponse;
 	const title = page.name?.trim() || `@${page.handle}`;
+	const bio = page.bio?.trim();
 	const imageUrl = getPageImageUrl(page.imageSource ?? page.imageKey, {
 		width: 1024,
 		height: 1024,
@@ -31,7 +36,11 @@ export default function HandlePage({
 	const reduceMotion = useReducedMotion();
 	const enterTransition = reduceMotion
 		? { duration: 0 }
-		: { duration: 0.85, ease: [0.22, 1, 0.36, 1] as const };
+		: {
+				duration: PROFILE_ENTER_DURATION_SECONDS,
+				ease: [0.22, 1, 0.36, 1] as const,
+			};
+	const [profileEntryComplete, setProfileEntryComplete] = useState(false);
 
 	return (
 		<main className="page-scroll-container no-scrollbar relative box-border flex min-h-dvh w-full flex-col items-center overflow-y-auto bg-background min-[90rem]:h-dvh min-[90rem]:items-start min-[90rem]:justify-center">
@@ -57,16 +66,26 @@ export default function HandlePage({
 							<motion.h1
 								initial={reduceMotion ? false : { opacity: 0, y: 10 }}
 								animate={{ opacity: 1, y: 0 }}
-								transition={{ ...enterTransition, delay: 0.08 }}
+								transition={{
+									...enterTransition,
+									delay: PROFILE_TITLE_ENTER_DELAY_SECONDS,
+								}}
+								onAnimationComplete={
+									bio ? undefined : () => setProfileEntryComplete(true)
+								}
 								className="font-bold text-3xl leading-tight tracking-tight min-[90rem]:text-[40px]"
 							>
 								{title}
 							</motion.h1>
-							{page.bio?.trim() && (
+							{bio && (
 								<motion.p
 									initial={reduceMotion ? false : { opacity: 0, y: 10 }}
 									animate={{ opacity: 1, y: 0 }}
-									transition={{ ...enterTransition, delay: 0.16 }}
+									transition={{
+										...enterTransition,
+										delay: PROFILE_BIO_ENTER_DELAY_SECONDS,
+									}}
+									onAnimationComplete={() => setProfileEntryComplete(true)}
 									className="whitespace-pre-wrap px-0.5 text-base text-primary/80 leading-6 min-[90rem]:text-xl min-[90rem]:leading-8"
 								>
 									{page.bio}
@@ -77,7 +96,10 @@ export default function HandlePage({
 				</div>
 				<section className="bento-content-scroll-shell no-scrollbar order-2 min-h-[calc(100dvh-3rem)] w-full overflow-visible p-0 pt-0 sm:max-w-md min-[90rem]:order-none min-[90rem]:h-full min-[90rem]:min-h-[calc(100dvh-4rem)] min-[90rem]:w-4xl min-[90rem]:max-w-none min-[90rem]:shrink-0 min-[90rem]:pt-16 min-[90rem]:pb-24">
 					<div className="flex flex-col gap-4">
-						<BentoSection items={pageResponse.items.map(toBentoItem)} />
+						<BentoSection
+							items={pageResponse.items.map(toBentoItem)}
+							entryReady={reduceMotion || profileEntryComplete}
+						/>
 					</div>
 				</section>
 			</div>

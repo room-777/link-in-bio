@@ -9,6 +9,7 @@ import {
 	getColumns,
 	validateBentoLayout,
 } from "@grabbin/bento-layout";
+import { motion, useReducedMotion } from "motion/react";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import ReactGridLayout, {
 	type EventCallback,
@@ -29,6 +30,8 @@ import { MapViewportGate } from "./bento/items/shared";
 
 type BentoSectionProps = {
 	items: readonly BentoItemData[];
+	entryReady?: boolean;
+	onEntryComplete?: () => void;
 	mode?: "view" | "edit";
 	breakpoint?: BentoBreakpoint;
 	autoFocusItemId?: string | null;
@@ -40,9 +43,23 @@ type BentoSectionProps = {
 
 const WIDE_CONTAINER_MIN_WIDTH = getBentoWidth(getColumns("wide"));
 const BENTO_ITEM_EXIT_DURATION = 180;
+const BENTO_SECTION_ENTRY_START = {
+	opacity: 0,
+	y: 24,
+};
+const BENTO_SECTION_ENTRY_END = {
+	opacity: 1,
+	y: 0,
+};
+const BENTO_SECTION_ENTRY_TRANSITION = {
+	duration: 0.7,
+	ease: [0.22, 0.61, 0.36, 1] as const,
+};
 
 export default function BentoSection({
 	items,
+	entryReady = true,
+	onEntryComplete,
 	mode = "view",
 	breakpoint: requestedBreakpoint,
 	autoFocusItemId = null,
@@ -92,6 +109,11 @@ export default function BentoSection({
 	const [layoutRevision, setLayoutRevision] = useState(0);
 	const [draggingItemId, setDraggingItemId] = useState<string | null>(null);
 	const dragMotion = useBentoDragMotion();
+	const reduceMotion = useReducedMotion();
+	const sectionEntryTarget =
+		reduceMotion || entryReady
+			? BENTO_SECTION_ENTRY_END
+			: BENTO_SECTION_ENTRY_START;
 	const displayItems = useMemo(() => {
 		const itemIds = new Set(items.map((item) => item.id));
 		return [
@@ -268,8 +290,15 @@ export default function BentoSection({
 	);
 
 	return (
-		<section
+		<motion.section
 			ref={containerRef}
+			initial={reduceMotion ? false : BENTO_SECTION_ENTRY_START}
+			whileInView={sectionEntryTarget}
+			viewport={{ once: true, amount: "some" }}
+			transition={BENTO_SECTION_ENTRY_TRANSITION}
+			onAnimationComplete={() => {
+				if (reduceMotion || entryReady) onEntryComplete?.();
+			}}
 			className={`bento-section-shell flex min-w-full max-w-full shrink-0 justify-center overflow-visible ${bottomPaddingClass}`}
 			style={mounted ? { width: bentoWidth } : undefined}
 			aria-label="Page content"
@@ -296,7 +325,7 @@ export default function BentoSection({
 						enabled: mode === "edit",
 						bounded: false,
 						cancel:
-							"input, textarea, button, a, [data-bento-item-drag-cancel='true']",
+							"input, textarea, button, a, [role='radio'], [data-bento-item-drag-cancel='true']",
 					}}
 					resizeConfig={{ enabled: false }}
 					autoSize
@@ -347,6 +376,6 @@ export default function BentoSection({
 					})}
 				</ReactGridLayout>
 			) : null}
-		</section>
+		</motion.section>
 	);
 }

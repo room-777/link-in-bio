@@ -14,11 +14,15 @@ export default function BentoEditor({
 	items,
 	handle,
 	breakpoint,
+	entryReady,
+	onEntryComplete,
 	onGridSavingChange,
 }: {
 	items: PageByHandleResponse["items"];
 	handle: string;
 	breakpoint: BentoBreakpoint;
+	entryReady: boolean;
+	onEntryComplete?: () => void;
 	onGridSavingChange?: (isSaving: boolean) => void;
 }) {
 	const store = useBentoStore({ initialItems: items, handle });
@@ -87,6 +91,8 @@ export default function BentoEditor({
 				items={store.items}
 				mode="edit"
 				breakpoint={breakpoint}
+				entryReady={entryReady}
+				onEntryComplete={onEntryComplete}
 				autoFocusItemId={store.autoFocusItemId}
 				onAutoFocus={store.clearAutoFocusItem}
 				onCommand={store.dispatchCommand}

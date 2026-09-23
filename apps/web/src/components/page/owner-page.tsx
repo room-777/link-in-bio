@@ -2,7 +2,7 @@
 
 import type { PageByHandleResponse } from "@grabbin/api";
 import type { BentoBreakpoint } from "@grabbin/bento-layout";
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 
 import BentoEditor from "./bento-editor";
 import PageFooter from "./page-footer";
@@ -18,6 +18,8 @@ export default function OwnerPage({
 	const [currentPage, setCurrentPage] = useState(page);
 	const [isSaving, setIsSaving] = useState(false);
 	const [isGridSaving, setIsGridSaving] = useState(false);
+	const [profileEntryComplete, setProfileEntryComplete] = useState(false);
+	const [bentoEntryComplete, setBentoEntryComplete] = useState(false);
 	const [layoutBreakpoint, setLayoutBreakpoint] =
 		useState<BentoBreakpoint>("wide");
 	const [viewportBreakpoint, setViewportBreakpoint] =
@@ -45,6 +47,14 @@ export default function OwnerPage({
 		setCurrentPage((page) => ({ ...page, handle }));
 		window.history.replaceState(null, "", `/${encodeURIComponent(handle)}`);
 	};
+	const handleProfileEntryComplete = useCallback(
+		() => setProfileEntryComplete(true),
+		[],
+	);
+	const handleBentoEntryComplete = useCallback(
+		() => setBentoEntryComplete(true),
+		[],
+	);
 	const isAutoSaving = isSaving || isGridSaving;
 	const isViewportCompact = viewportBreakpoint === "compact";
 	const effectiveBreakpoint = isViewportCompact ? "compact" : layoutBreakpoint;
@@ -75,6 +85,7 @@ export default function OwnerPage({
 				<PageProfileForm
 					page={currentPage}
 					breakpoint={effectiveBreakpoint}
+					onEntryComplete={handleProfileEntryComplete}
 					onSavingChange={setIsSaving}
 				/>
 			</main>
@@ -82,10 +93,12 @@ export default function OwnerPage({
 				items={pageResponse.items}
 				handle={currentPage.handle}
 				breakpoint={effectiveBreakpoint}
+				entryReady={profileEntryComplete}
+				onEntryComplete={handleBentoEntryComplete}
 				onGridSavingChange={setIsGridSaving}
 			/>
 			{isViewportReady ? pageFooter : null}
-			{!isViewportCompact ? (
+			{!isViewportCompact && bentoEntryComplete ? (
 				<PageLayoutPreset
 					value={layoutBreakpoint}
 					onChange={setLayoutBreakpoint}

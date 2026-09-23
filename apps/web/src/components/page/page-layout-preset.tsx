@@ -31,7 +31,16 @@ export default function PageLayoutPreset({
 	};
 
 	return (
-		<div className="smooth-shadow-ring-lg smooth-ring-neutral-200/40 pointer-events-none fixed bottom-10 left-1/2 z-[100003] flex -translate-x-1/2 items-center gap-3 rounded-xl bg-background p-1 shadow-neutral-900">
+		<motion.div
+			initial={reduceMotion ? false : { opacity: 0.2, y: 12, x: "-50%" }}
+			animate={{ opacity: 1, y: 0, x: "-50%" }}
+			transition={
+				reduceMotion
+					? { duration: 0 }
+					: { duration: 0.45, ease: [0.22, 0.61, 0.36, 1] }
+			}
+			className="smooth-shadow-ring-lg smooth-ring-neutral-200/40 pointer-events-none fixed bottom-10 left-1/2 z-[100003] flex items-center gap-3 rounded-xl bg-background p-1 shadow-neutral-900"
+		>
 			<fieldset className="pointer-events-auto flex items-center gap-1 p-1">
 				<legend className="sr-only">Editing layout breakpoint</legend>
 				<Button
@@ -88,6 +97,6 @@ export default function PageLayoutPreset({
 					</Button>
 				</div>
 			</fieldset>
-		</div>
+		</motion.div>
 	);
 }
