@@ -238,7 +238,7 @@ function LinkPreview({
 				{imageUrls.map((imageUrl) => (
 					<div
 						key={imageUrl}
-						className="min-h-0 min-w-0 overflow-hidden rounded-md bg-muted/30 outline-depth"
+						className="min-h-0 min-w-0 overflow-hidden rounded-md bg-muted/30"
 					>
 						<LinkPreviewImage key={imageUrl} imageUrl={imageUrl} />
 					</div>
@@ -248,7 +248,7 @@ function LinkPreview({
 	}
 	const imageUrl = imageUrls[0];
 	return imageUrl ? (
-		<div className="size-full overflow-hidden">
+		<div className="size-full overflow-hidden rounded-[inherit]">
 			<LinkPreviewImage
 				key={`${imageUrl}:${imagePlaceholderDataUrl ?? ""}`}
 				imageUrl={imageUrl}
@@ -300,7 +300,7 @@ function LinkPreviewImage({
 	return (
 		<div
 			ref={imageRef}
-			className="relative size-full overflow-hidden bg-muted/30"
+			className="relative size-full overflow-hidden rounded-[inherit] bg-muted/30"
 		>
 			{placeholderUrl && !placeholderFailed ? (
 				<img
@@ -314,7 +314,7 @@ function LinkPreviewImage({
 			{hasEnteredViewport ? (
 				<img
 					alt=""
-					className={`absolute inset-0 size-full object-cover transition-opacity ${!placeholderUrl || placeholderFailed || imageLoaded ? "opacity-100" : "opacity-0"}`}
+					className={`absolute inset-0 size-full object-cover outline-depth transition-opacity ${!placeholderUrl || placeholderFailed || imageLoaded ? "opacity-100" : "opacity-0"}`}
 					src={imageSrc}
 					onLoad={() => setImageLoaded(true)}
 					onError={() => {
@@ -413,9 +413,7 @@ function LinkImageArea({
 		<div
 			className={`group/link-image relative min-h-0 min-w-0 ${flexClassName}`}
 		>
-			<div
-				className={`size-full min-h-0 overflow-hidden rounded-lg bg-muted/30 ${imageUrls.length === 1 ? "outline-depth" : ""}`}
-			>
+			<div className="size-full min-h-0 overflow-hidden rounded-lg bg-muted/30">
 				<LinkPreview
 					imageUrls={imageUrls}
 					imagePlaceholderDataUrl={imagePlaceholderDataUrl}
@@ -523,7 +521,7 @@ function LinkTitle({
 					const nextValue = value.trim();
 					if (nextValue) onCommit(nextValue);
 				}}
-				className={`link-title-input ${isHalfBanner ? "" : "-ml-1"} cursor-text! resize-none border-0 bg-transparent text-current outline-none focus-visible:ring-0 ${titleClassName} overflow-y-auto overflow-x-hidden`}
+				className={`link-title-input ${isHalfBanner ? "" : "-ml-1"} cursor-text! resize-none border-0 bg-transparent text-current outline-none focus-visible:ring-0 ${titleClassName} overflow-y-auto overflow-x-hidden overscroll-y-contain`}
 				style={isHalfBanner ? { width: "100%", maxWidth: "100%" } : undefined}
 			/>
 		);
@@ -534,7 +532,7 @@ function LinkTitle({
 				isHalfBanner
 					? "truncate"
 					: isLandscape || isSquareSmall || isTall
-						? "no-scrollbar overflow-y-auto whitespace-pre-line"
+						? "no-scrollbar overflow-y-auto overscroll-y-contain whitespace-pre-line"
 						: "truncate"
 			}`}
 		>

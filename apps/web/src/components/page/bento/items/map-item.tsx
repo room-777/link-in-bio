@@ -538,7 +538,7 @@ export function MapItem({
 					</div>
 				)}
 			</div>
-			<div className="pointer-events-none relative size-full" />
+			<div className="pointer-events-none relative z-10 size-full rounded-[inherit] outline-depth" />
 			{geolocationError ? (
 				<output
 					aria-live="polite"

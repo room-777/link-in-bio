@@ -134,6 +134,10 @@
 	outline: 1px solid rgba(0, 0, 0, 0.1) !important;
 	outline-offset: -1px !important;
 
+	&:is(img, video) {
+		border-radius: inherit !important;
+	}
+
 	@variant dark {
 		outline-color: rgba(255, 255, 255, 0.1) !important;
 	}

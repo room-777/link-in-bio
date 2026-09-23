@@ -71,6 +71,11 @@ main:has([data-page-image-crop-open="true"]) {
 	-ms-overflow-style: none;
 }
 
+html:has(.bento-page-scroll, .page-scroll-container),
+html:has(.bento-page-scroll, .page-scroll-container) body {
+	overscroll-behavior-y: none;
+}
+
 .bento-page-scroll::-webkit-scrollbar {
 	display: none;
 }

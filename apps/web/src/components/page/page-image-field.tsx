@@ -221,7 +221,7 @@ export default function PageImageField({
 											? { duration: 0 }
 											: { duration: 0.85, ease: [0.22, 1, 0.36, 1] as const }
 									}
-									className={`size-full outline-depth ${cropOpen ? "rounded-md" : "rounded-full object-cover"}`}
+									className={`size-full ${cropOpen ? "rounded-md" : "rounded-full object-cover"}`}
 									onLoad={handleImageLoad}
 								/>
 								{cropOpen && renderedCrop ? (
@@ -259,7 +259,7 @@ export default function PageImageField({
 										? { duration: 0 }
 										: { duration: 0.85, ease: [0.22, 1, 0.36, 1] as const }
 								}
-								className={`size-full object-cover outline-depth ${cropOpen ? "rounded-md" : "rounded-full"}`}
+								className={`size-full object-cover ${cropOpen ? "rounded-md" : "rounded-full"}`}
 								onLoad={handleImageLoad}
 							/>
 						)
@@ -268,6 +268,12 @@ export default function PageImageField({
 							className={`size-6 ${isWide ? "min-[90rem]:size-9" : ""}`}
 							strokeWidth={2.5}
 							aria-hidden="true"
+						/>
+					)}
+					{value && (
+						<span
+							aria-hidden="true"
+							className="pointer-events-none absolute inset-0 z-10 rounded-full outline-depth"
 						/>
 					)}
 				</span>
