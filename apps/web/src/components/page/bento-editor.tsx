@@ -14,6 +14,7 @@ export default function BentoEditor({
 	items,
 	handle,
 	breakpoint,
+	entryAnimationRevision,
 	entryReady,
 	onEntryComplete,
 	onGridSavingChange,
@@ -21,6 +22,7 @@ export default function BentoEditor({
 	items: PageByHandleResponse["items"];
 	handle: string;
 	breakpoint: BentoBreakpoint;
+	entryAnimationRevision: number;
 	entryReady: boolean;
 	onEntryComplete?: () => void;
 	onGridSavingChange?: (isSaving: boolean) => void;
@@ -52,8 +54,8 @@ export default function BentoEditor({
 	};
 	const editorClassName =
 		breakpoint === "compact"
-			? "relative flex w-full max-w-lg shrink-0 flex-col overflow-visible bg-background px-6 min-[90rem]:pt-12 pb-0 no-scrollbar"
-			: "relative flex min-w-0 flex-1 flex-col overflow-visible bg-background px-6 pt-12 pb-0 no-scrollbar min-[100rem]:w-4xl min-[100rem]:max-w-none min-[100rem]:flex-none min-[100rem]:pt-16";
+			? "relative flex w-full max-w-lg shrink-0 flex-col overflow-visible bg-background px-6 pb-0 no-scrollbar"
+			: "relative flex min-w-0 flex-1 flex-col overflow-visible bg-background px-6 pt-12 pb-0 no-scrollbar min-[90rem]:w-4xl min-[90rem]:max-w-none min-[90rem]:flex-none min-[90rem]:pt-16";
 
 	const selectMedia = async (file: File) => {
 		if (!/^(image|video)\//i.test(file.type)) {
@@ -91,6 +93,7 @@ export default function BentoEditor({
 				items={store.items}
 				mode="edit"
 				breakpoint={breakpoint}
+				entryAnimationRevision={entryAnimationRevision}
 				entryReady={entryReady}
 				onEntryComplete={onEntryComplete}
 				autoFocusItemId={store.autoFocusItemId}

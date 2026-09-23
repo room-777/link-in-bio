@@ -1,7 +1,11 @@
 "use client";
 
 import type { PageByHandleResponse } from "@grabbin/api";
-import type { BentoBreakpoint } from "@grabbin/bento-layout";
+import {
+	type BentoBreakpoint,
+	getBentoWidth,
+	getColumns,
+} from "@grabbin/bento-layout";
 import { useCallback, useEffect, useState } from "react";
 
 import BentoEditor from "./bento-editor";
@@ -20,6 +24,7 @@ export default function OwnerPage({
 	const [isGridSaving, setIsGridSaving] = useState(false);
 	const [profileEntryComplete, setProfileEntryComplete] = useState(false);
 	const [bentoEntryComplete, setBentoEntryComplete] = useState(false);
+	const [entryAnimationRevision, setEntryAnimationRevision] = useState(0);
 	const [layoutBreakpoint, setLayoutBreakpoint] =
 		useState<BentoBreakpoint>("wide");
 	const [viewportBreakpoint, setViewportBreakpoint] =
@@ -27,7 +32,7 @@ export default function OwnerPage({
 	const [isViewportReady, setIsViewportReady] = useState(false);
 
 	useEffect(() => {
-		const mediaQuery = window.matchMedia("(min-width: 100rem)");
+		const mediaQuery = window.matchMedia("(min-width: 90rem)");
 		const syncViewportBreakpoint = () => {
 			const nextBreakpoint = mediaQuery.matches ? "wide" : "compact";
 			setViewportBreakpoint(nextBreakpoint);
@@ -55,14 +60,23 @@ export default function OwnerPage({
 		() => setBentoEntryComplete(true),
 		[],
 	);
+	const handleLayoutBreakpointChange = useCallback(
+		(breakpoint: BentoBreakpoint) => {
+			setProfileEntryComplete(false);
+			setLayoutBreakpoint(breakpoint);
+			setEntryAnimationRevision((revision) => revision + 1);
+		},
+		[],
+	);
 	const isAutoSaving = isSaving || isGridSaving;
 	const isViewportCompact = viewportBreakpoint === "compact";
 	const effectiveBreakpoint = isViewportCompact ? "compact" : layoutBreakpoint;
 	const isCompactPageLayout = effectiveBreakpoint === "compact";
+	const compactProfileMaxWidth = `calc(${getBentoWidth(getColumns("compact"))}px + 3rem)`;
 	const desktopMainClassName =
-		"page-profile mx-auto flex min-h-svh w-full max-w-md flex-col justify-between gap-8 p-6 px-6 pt-12 min-[100rem]:mx-0 min-[100rem]:sticky min-[100rem]:top-0 min-[100rem]:min-h-dvh min-[100rem]:w-2xl min-[100rem]:max-w-none min-[100rem]:flex-none min-[100rem]:self-start min-[100rem]:px-16 min-[100rem]:pt-16";
+		"page-profile mx-auto flex min-h-svh w-full max-w-md min-w-0 flex-col justify-between gap-8 p-6 px-6 pt-12 min-[90rem]:mx-0 min-[90rem]:sticky min-[90rem]:top-0 min-[90rem]:min-h-dvh min-[90rem]:w-2xl min-[90rem]:max-w-none min-[90rem]:self-start min-[90rem]:px-16 min-[90rem]:pt-16";
 	const mainClassName = isCompactPageLayout
-		? "flex w-full max-w-lg shrink-0 flex-col justify-start overflow-visible p-6 px-6 pt-12"
+		? "flex w-full max-w-lg shrink-0 flex-col items-center justify-start overflow-visible p-6 px-6 pt-12"
 		: desktopMainClassName;
 	const pageFooter = (
 		<PageFooter
@@ -78,21 +92,30 @@ export default function OwnerPage({
 			className={
 				isCompactPageLayout
 					? "bento-page-scroll relative isolate flex min-h-svh w-full flex-col items-center overflow-visible"
-					: "bento-page-scroll isolate flex min-h-svh w-full flex-col min-[100rem]:flex-row min-[100rem]:items-start min-[100rem]:justify-around min-[100rem]:overflow-visible"
+					: "bento-page-scroll isolate flex min-h-svh w-full flex-col min-[90rem]:flex-row min-[90rem]:items-start min-[90rem]:justify-around min-[90rem]:overflow-visible"
 			}
 		>
-			<main className={mainClassName}>
-				<PageProfileForm
-					page={currentPage}
-					breakpoint={effectiveBreakpoint}
-					onEntryComplete={handleProfileEntryComplete}
-					onSavingChange={setIsSaving}
-				/>
+			<main
+				className={mainClassName}
+				style={
+					isCompactPageLayout ? { maxWidth: compactProfileMaxWidth } : undefined
+				}
+			>
+				<div className="w-full min-w-0">
+					<PageProfileForm
+						page={currentPage}
+						breakpoint={effectiveBreakpoint}
+						entryAnimationRevision={entryAnimationRevision}
+						onEntryComplete={handleProfileEntryComplete}
+						onSavingChange={setIsSaving}
+					/>
+				</div>
 			</main>
 			<BentoEditor
 				items={pageResponse.items}
 				handle={currentPage.handle}
 				breakpoint={effectiveBreakpoint}
+				entryAnimationRevision={entryAnimationRevision}
 				entryReady={profileEntryComplete}
 				onEntryComplete={handleBentoEntryComplete}
 				onGridSavingChange={setIsGridSaving}
@@ -101,7 +124,7 @@ export default function OwnerPage({
 			{!isViewportCompact && bentoEntryComplete ? (
 				<PageLayoutPreset
 					value={layoutBreakpoint}
-					onChange={setLayoutBreakpoint}
+					onChange={handleLayoutBreakpointChange}
 					isAutoSaving={isAutoSaving}
 				/>
 			) : null}

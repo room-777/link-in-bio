@@ -7,8 +7,14 @@ import {
 } from "@grabbin/api";
 import type { BentoBreakpoint } from "@grabbin/bento-layout";
 import { toast } from "@grabbin/ui/components/toast";
-import { motion, useReducedMotion } from "motion/react";
-import { useCallback, useEffect, useRef, useState } from "react";
+import { motion, useAnimationControls, useReducedMotion } from "motion/react";
+import {
+	useCallback,
+	useEffect,
+	useLayoutEffect,
+	useRef,
+	useState,
+} from "react";
 import * as v from "valibot";
 
 import { usePageAutoSave } from "@/hooks/use-page-auto-save";
@@ -16,18 +22,30 @@ import { apiClient, getApiErrorMessage } from "@/lib/api-client";
 import { getPageImageUrl } from "@/lib/page-image-url";
 import PageProfileFields from "./page-profile-fields";
 
+const PROFILE_ENTRY_START = { opacity: 0, y: 16 };
+const PROFILE_ENTRY_END = { opacity: 1, y: 0 };
+const PROFILE_ENTRY_TRANSITION = {
+	type: "spring" as const,
+	duration: 0.55,
+	bounce: 0.15,
+};
+const REDUCED_MOTION_TRANSITION = { duration: 0 };
+
 export default function PageProfileForm({
 	page,
 	breakpoint = "wide",
+	entryAnimationRevision = 0,
 	onSavingChange,
 	onEntryComplete,
 }: {
 	page: PageData;
 	breakpoint?: BentoBreakpoint;
+	entryAnimationRevision?: number;
 	onSavingChange?: (isSaving: boolean) => void;
 	onEntryComplete?: () => void;
 }) {
 	const reduceMotion = useReducedMotion();
+	const entryAnimation = useAnimationControls();
 	const [imageUrl, setImageUrl] = useState(
 		getPageImageUrl(page.imageSource ?? page.imageKey, {
 			width: 1024,
@@ -110,8 +128,31 @@ export default function PageProfileForm({
 	}, [draft.imageKey, isImageUploading, page.imageKey, page.imageSource]);
 
 	const transition = reduceMotion
-		? { duration: 0 }
-		: { type: "spring" as const, duration: 0.55, bounce: 0.15 };
+		? REDUCED_MOTION_TRANSITION
+		: PROFILE_ENTRY_TRANSITION;
+	useLayoutEffect(() => {
+		entryAnimation.stop();
+		if (reduceMotion) {
+			entryAnimation.set(PROFILE_ENTRY_END);
+			if (entryAnimationRevision > 0) onEntryComplete?.();
+			return;
+		}
+
+		entryAnimation.set(PROFILE_ENTRY_START);
+		const frame = window.requestAnimationFrame(() => {
+			void entryAnimation.start(PROFILE_ENTRY_END, transition);
+		});
+		return () => {
+			window.cancelAnimationFrame(frame);
+			entryAnimation.stop();
+		};
+	}, [
+		entryAnimationRevision,
+		entryAnimation,
+		onEntryComplete,
+		reduceMotion,
+		transition,
+	]);
 	const handleImageSelect = async (file: File) => {
 		const parsed = v.safeParse(pageImageUploadSchema, {
 			contentType: file.type,
@@ -188,8 +229,8 @@ export default function PageProfileForm({
 	return (
 		<div className="w-full">
 			<motion.div
-				initial={reduceMotion ? false : { opacity: 0, y: 16 }}
-				animate={{ opacity: 1, y: 0 }}
+				initial={reduceMotion ? false : PROFILE_ENTRY_START}
+				animate={entryAnimation}
 				transition={transition}
 				onAnimationComplete={onEntryComplete}
 				className="w-full"

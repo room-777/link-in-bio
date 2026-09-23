@@ -6,6 +6,7 @@ import Loading from "@grabbin/ui/components/loading";
 import { Separator } from "@grabbin/ui/components/separator";
 import { Laptop, Smartphone } from "lucide-react";
 import { motion, useReducedMotion } from "motion/react";
+import { startTransition, useEffect, useState } from "react";
 
 type PageLayoutPresetProps = {
 	value: BentoBreakpoint;
@@ -19,9 +20,18 @@ export default function PageLayoutPreset({
 	isAutoSaving,
 }: PageLayoutPresetProps) {
 	const reduceMotion = useReducedMotion();
+	const [activeBreakpoint, setActiveBreakpoint] = useState(value);
 	const layoutTransition = reduceMotion
 		? { duration: 0 }
 		: { type: "spring" as const, stiffness: 560, damping: 32, mass: 0.8 };
+
+	useEffect(() => setActiveBreakpoint(value), [value]);
+
+	const selectBreakpoint = (breakpoint: BentoBreakpoint) => {
+		if (breakpoint === activeBreakpoint) return;
+		setActiveBreakpoint(breakpoint);
+		startTransition(() => onChange(breakpoint));
+	};
 
 	const handleShareLink = async () => {
 		try {
@@ -50,7 +60,7 @@ export default function PageLayoutPreset({
 					variant="ghost"
 					disabled={isAutoSaving}
 					onClick={handleShareLink}
-					className="smooth-shadow-md relative z-10 h-9 w-28 border-brand-green bg-brand-green! px-3 text-white! outline-depth hover:bg-brand-green/80! hover:text-white!"
+					className="relative z-10 h-9 w-28 border-brand-green bg-brand-green! px-3 text-white! hover:bg-brand-green/80! hover:text-white!"
 				>
 					{isAutoSaving ? (
 						<>
@@ -63,26 +73,26 @@ export default function PageLayoutPreset({
 				</Button>
 				<Separator
 					orientation="vertical"
-					className="rounded-lg data-vertical:my-2 data-vertical:w-[2.5px]"
+					className="mx-2 rounded-lg data-vertical:my-2 data-vertical:w-[2.5px]"
 				/>
 				<div className="relative grid shrink-0 grid-cols-2 gap-1">
 					<motion.span
 						initial={false}
 						animate={{
-							x: value === "compact" ? 0 : "calc(100% + 0.25rem)",
+							x: activeBreakpoint === "compact" ? 0 : "calc(100% + 0.25rem)",
 						}}
 						transition={layoutTransition}
 						aria-hidden="true"
-						className="smooth-shadow-xs pointer-events-none absolute inset-y-0 left-0 z-0 rounded-lg bg-primary drop-shadow-lg!"
+						className="smooth-shadow-xs pointer-events-none absolute inset-y-0 left-0 z-0 rounded-lg bg-primary"
 						style={{ width: "calc(50% - 0.125rem)" }}
 					/>
 					<Button
 						type="button"
 						size="default"
 						variant="ghost"
-						aria-pressed={value === "compact"}
+						aria-pressed={activeBreakpoint === "compact"}
 						aria-label="Edit compact layout"
-						onClick={() => onChange("compact")}
+						onClick={() => selectBreakpoint("compact")}
 						className="relative z-10 w-full px-5 text-foreground hover:bg-transparent aria-pressed:text-primary-foreground aria-pressed:hover:text-primary-foreground"
 					>
 						<Smartphone className="relative z-10 size-5" aria-hidden="true" />
@@ -92,9 +102,9 @@ export default function PageLayoutPreset({
 						type="button"
 						size="default"
 						variant="ghost"
-						aria-pressed={value === "wide"}
+						aria-pressed={activeBreakpoint === "wide"}
 						aria-label="Edit wide layout"
-						onClick={() => onChange("wide")}
+						onClick={() => selectBreakpoint("wide")}
 						className="relative z-10 w-full px-5 text-foreground hover:bg-transparent aria-pressed:text-primary-foreground aria-pressed:hover:text-primary-foreground"
 					>
 						<Laptop className="relative z-10 size-5" aria-hidden="true" />

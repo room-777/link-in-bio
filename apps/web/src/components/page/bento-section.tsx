@@ -9,8 +9,15 @@ import {
 	getColumns,
 	validateBentoLayout,
 } from "@grabbin/bento-layout";
-import { motion, useReducedMotion } from "motion/react";
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { motion, useAnimationControls, useReducedMotion } from "motion/react";
+import {
+	useCallback,
+	useEffect,
+	useLayoutEffect,
+	useMemo,
+	useRef,
+	useState,
+} from "react";
 import ReactGridLayout, {
 	type EventCallback,
 	useContainerWidth,
@@ -30,6 +37,7 @@ import { MapViewportGate } from "./bento/items/shared";
 
 type BentoSectionProps = {
 	items: readonly BentoItemData[];
+	entryAnimationRevision?: number;
 	entryReady?: boolean;
 	onEntryComplete?: () => void;
 	mode?: "view" | "edit";
@@ -55,9 +63,11 @@ const BENTO_SECTION_ENTRY_TRANSITION = {
 	duration: 0.7,
 	ease: [0.22, 0.61, 0.36, 1] as const,
 };
+const REDUCED_MOTION_TRANSITION = { duration: 0 };
 
 export default function BentoSection({
 	items,
+	entryAnimationRevision = 0,
 	entryReady = true,
 	onEntryComplete,
 	mode = "view",
@@ -110,10 +120,35 @@ export default function BentoSection({
 	const [draggingItemId, setDraggingItemId] = useState<string | null>(null);
 	const dragMotion = useBentoDragMotion();
 	const reduceMotion = useReducedMotion();
+	const entryAnimation = useAnimationControls();
+	const previousEntryAnimationRevisionRef = useRef(entryAnimationRevision);
 	const sectionEntryTarget =
-		reduceMotion || entryReady
+		reduceMotion || entryReady || entryAnimationRevision > 0
 			? BENTO_SECTION_ENTRY_END
 			: BENTO_SECTION_ENTRY_START;
+	useLayoutEffect(() => {
+		if (previousEntryAnimationRevisionRef.current === entryAnimationRevision) {
+			return;
+		}
+		previousEntryAnimationRevisionRef.current = entryAnimationRevision;
+		entryAnimation.stop();
+		if (reduceMotion) {
+			entryAnimation.set(BENTO_SECTION_ENTRY_END);
+			return;
+		}
+
+		entryAnimation.set(BENTO_SECTION_ENTRY_START);
+	}, [entryAnimationRevision, entryAnimation, reduceMotion]);
+	useEffect(() => {
+		if (entryAnimationRevision === 0 || !entryReady || reduceMotion) return;
+		void entryAnimation.start(
+			BENTO_SECTION_ENTRY_END,
+			BENTO_SECTION_ENTRY_TRANSITION,
+		);
+	}, [entryAnimationRevision, entryAnimation, entryReady, reduceMotion]);
+	useEffect(() => {
+		if (reduceMotion && entryReady) onEntryComplete?.();
+	}, [entryReady, onEntryComplete, reduceMotion]);
 	const displayItems = useMemo(() => {
 		const itemIds = new Set(items.map((item) => item.id));
 		return [
@@ -289,13 +324,17 @@ export default function BentoSection({
 		[breakpoint, cols, dragMotion, handleBentoCommand, layout],
 	);
 
-	return (
+	const section = (
 		<motion.section
 			ref={containerRef}
 			initial={reduceMotion ? false : BENTO_SECTION_ENTRY_START}
 			whileInView={sectionEntryTarget}
 			viewport={{ once: true, amount: "some" }}
-			transition={BENTO_SECTION_ENTRY_TRANSITION}
+			transition={
+				reduceMotion
+					? REDUCED_MOTION_TRANSITION
+					: BENTO_SECTION_ENTRY_TRANSITION
+			}
 			onAnimationComplete={() => {
 				if (reduceMotion || entryReady) onEntryComplete?.();
 			}}
@@ -305,7 +344,7 @@ export default function BentoSection({
 		>
 			{mounted ? (
 				<ReactGridLayout
-					key={layoutRevision}
+					key={`${breakpoint}-${layoutRevision}`}
 					className={[
 						"bento-layout max-w-full overflow-visible",
 						mode === "edit" ? "is-edit-mode" : null,
@@ -377,5 +416,14 @@ export default function BentoSection({
 				</ReactGridLayout>
 			) : null}
 		</motion.section>
+	);
+	return (
+		<motion.div
+			initial={false}
+			animate={mode === "edit" ? entryAnimation : undefined}
+			className={mode === "edit" ? "w-full min-w-0 shrink-0" : "contents"}
+		>
+			{section}
+		</motion.div>
 	);
 }
