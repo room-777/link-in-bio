@@ -523,7 +523,7 @@ function TextStyleControls({
 					</fieldset>
 					<Separator
 						orientation="vertical"
-						className="my-2 w-[2px] rounded-lg bg-background/30"
+						className="rounded-lg bg-background/30 data-vertical:my-2 data-vertical:w-[2.5px]"
 					/>
 					<fieldset
 						className="flex items-center gap-1 border-0 p-0"
@@ -576,7 +576,7 @@ function TextStyleControls({
 					</fieldset>
 					<Separator
 						orientation="vertical"
-						className="my-2 w-[2px] rounded-lg bg-background/30"
+						className="rounded-lg bg-background/30 data-vertical:my-2 data-vertical:w-[2.5px]"
 					/>
 					<Button
 						type="button"
@@ -598,7 +598,7 @@ function TextStyleControls({
 					</Button>
 					<Separator
 						orientation="vertical"
-						className="my-2 w-[2px] rounded-lg bg-background/30"
+						className="rounded-lg bg-background/30 data-vertical:my-2 data-vertical:w-[2.5px]"
 					/>
 					<LinkControl
 						value={item.data.link ?? ""}

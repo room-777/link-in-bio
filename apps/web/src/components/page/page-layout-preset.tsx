@@ -3,6 +3,7 @@
 import type { BentoBreakpoint } from "@grabbin/bento-layout";
 import { Button } from "@grabbin/ui/components/button";
 import Loading from "@grabbin/ui/components/loading";
+import { Separator } from "@grabbin/ui/components/separator";
 import { Laptop, Smartphone } from "lucide-react";
 import { motion, useReducedMotion } from "motion/react";
 
@@ -60,6 +61,10 @@ export default function PageLayoutPreset({
 						"Share Link"
 					)}
 				</Button>
+				<Separator
+					orientation="vertical"
+					className="rounded-lg data-vertical:my-2 data-vertical:w-[2.5px]"
+				/>
 				<div className="relative grid shrink-0 grid-cols-2 gap-1">
 					<motion.span
 						initial={false}
