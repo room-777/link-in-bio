@@ -70,7 +70,7 @@ export default function BentoSection({
 				: "pb-64"
 			: breakpoint === "compact"
 				? "pb-64"
-				: "";
+				: "pb-24";
 	const dragStartLayoutRef = useRef<ReturnType<typeof toBentoLayoutMap> | null>(
 		null,
 	);

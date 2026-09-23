@@ -44,7 +44,9 @@ export function TextItem({
 		top: "justify-start",
 	}[item.style.verticalAlign ?? "top"];
 	return (
-		<div className="grid-action relative flex size-full min-h-0 cursor-grab flex-col gap-3 overflow-hidden rounded-lg p-3">
+		<div
+			className={`grid-action relative flex size-full min-h-0 flex-col gap-3 overflow-hidden rounded-lg p-3 ${mode === "edit" ? "cursor-grab" : ""}`}
+		>
 			<div className="relative z-10 flex min-h-0 flex-1 items-stretch justify-between gap-3">
 				<div
 					className={`flex min-h-0 min-w-0 flex-1 flex-col ${verticalAlignClass}`}

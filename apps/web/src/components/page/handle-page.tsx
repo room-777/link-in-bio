@@ -32,10 +32,10 @@ export default function HandlePage({
 		: { duration: 0.85, ease: [0.22, 1, 0.36, 1] as const };
 
 	return (
-		<main className="page-scroll-container no-scrollbar relative box-border min-h-dvh w-full overflow-y-auto bg-background min-[90rem]:flex min-[90rem]:h-dvh min-[90rem]:items-start min-[90rem]:justify-center">
+		<main className="page-scroll-container no-scrollbar relative box-border flex min-h-dvh w-full flex-col items-center overflow-y-auto bg-background min-[90rem]:h-dvh min-[90rem]:items-start min-[90rem]:justify-center">
 			<div className="flex w-full flex-col items-center gap-8 min-[90rem]:min-h-dvh min-[90rem]:flex-row min-[90rem]:items-stretch min-[90rem]:justify-around">
 				<div className="contents w-full min-w-0 max-w-md min-[90rem]:flex min-[90rem]:min-h-0 min-[90rem]:w-2xl min-[90rem]:max-w-none min-[90rem]:flex-col">
-					<article className="order-1 flex min-h-0 w-full max-w-md flex-1 flex-col gap-8 p-6 px-12 pt-12 min-[90rem]:sticky min-[90rem]:top-0 min-[90rem]:min-h-dvh min-[90rem]:max-w-none min-[90rem]:flex-none min-[90rem]:self-start min-[90rem]:pt-16">
+					<article className="order-1 flex min-h-0 w-full max-w-md flex-1 flex-col gap-8 p-6 px-12 pt-12 min-[90rem]:fixed min-[90rem]:top-0 min-[90rem]:min-h-dvh min-[90rem]:max-w-none min-[90rem]:flex-none min-[90rem]:self-start min-[90rem]:pt-16">
 						<div className="relative flex size-28 items-center justify-center overflow-hidden rounded-full sm:size-32 min-[90rem]:size-46">
 							{imageUrl && (
 								<motion.img
@@ -44,7 +44,7 @@ export default function HandlePage({
 									initial={reduceMotion ? false : { opacity: 0, rotate: -8 }}
 									animate={{ opacity: 1, rotate: 0 }}
 									transition={enterTransition}
-									className="size-full rounded-lg object-cover"
+									className="size-full rounded-lg object-cover outline-depth"
 									style={imageStyle}
 								/>
 							)}

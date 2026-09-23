@@ -450,7 +450,7 @@ function LinkTitle({
 	}
 	return (
 		<div
-			className={`wrap-break-word cursor-grab! ${titleClassName} ${
+			className={`wrap-break-word ${titleClassName} ${
 				isHalfBanner
 					? "truncate"
 					: isLandscape || isSquareSmall || isTall

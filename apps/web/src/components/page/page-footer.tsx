@@ -247,7 +247,7 @@ function ViewerFooter({ handle }: { handle?: string }) {
 
 	useEffect(() => setIsHydrated(true), []);
 
-	if (!isHydrated || isPending) return <Skeleton className="h-10 w-24" />;
+	if (!isHydrated || isPending) return <Skeleton className="h-8 w-16" />;
 
 	if (!session) {
 		return (
@@ -276,23 +276,28 @@ function ViewerFooter({ handle }: { handle?: string }) {
 		: "/create";
 
 	return (
-		<Link
-			href={pageHref}
-			className={cn(
-				buttonVariants({ variant: "ghost", size: "lg" }),
-				"max-w-full justify-start gap-2 px-2",
-			)}
-		>
-			<Avatar size="sm" className={"data-[size=sm]:size-5"}>
-				<AvatarImage
-					src={session.user.image ?? undefined}
-					alt=""
-					className={"outline-depth"}
-				/>
-				<AvatarFallback />
-			</Avatar>
-			<span className="truncate text-muted-foreground/80 text-sm">{name}</span>
-		</Link>
+		<div className="flex items-center gap-1">
+			<Link
+				href={pageHref}
+				className={cn(
+					buttonVariants({ variant: "ghost", size: "lg" }),
+					"max-w-full justify-start gap-2 px-2",
+				)}
+			>
+				<Avatar size="sm" className={"data-[size=sm]:size-5"}>
+					<AvatarImage
+						src={session.user.image ?? undefined}
+						alt=""
+						className={"outline-depth"}
+					/>
+					<AvatarFallback />
+				</Avatar>
+				<span className="truncate text-muted-foreground/80 text-sm">
+					{name}
+				</span>
+			</Link>
+			<DiscordTooltip />
+		</div>
 	);
 }
 
