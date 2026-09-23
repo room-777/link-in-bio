@@ -88,6 +88,17 @@ export default function PageImageField({
 		sourceSize.width > 0 && frameSize.width > 0
 			? getCenteredMediaCrop(sourceSize, frameSize)
 			: undefined;
+	const profileImageControlSize = Math.max(
+		32,
+		Math.min(
+			40,
+			Math.round(Math.min(frameSize.width, frameSize.height) * 0.25),
+		),
+	);
+	const profileImageControlIconSize = Math.max(
+		18,
+		Math.round(profileImageControlSize / 2),
+	);
 	const renderedCrop = cropOpen
 		? (draftCrop ?? centeredCrop)
 		: crop && isCropCompatible(crop, sourceSize, frameSize)
@@ -283,9 +294,19 @@ export default function PageImageField({
 						}
 						disabled={isUploading || !sourceSize.width}
 						onClick={cropOpen ? closeCrop : openCrop}
-						className={`smooth-shadow-ring-sm absolute top-0 left-0 z-30 inline-flex size-10 items-center justify-center rounded-full border-0! bg-background opacity-0 transition-[opacity,transform,scale,background-color,color] duration-150 focus-visible:scale-100 focus-visible:opacity-100 group-hover/image:scale-100 group-hover/image:opacity-100 ${isWide ? "min-[90rem]:top-2 min-[90rem]:left-2" : ""} ${cropOpen ? "bg-brand-green text-white! opacity-100 hover:bg-brand-green/80" : ""}`}
+						className={`smooth-shadow-xs absolute top-0 left-0 z-30 inline-flex items-center justify-center rounded-full border-0! bg-background opacity-0 outline-depth transition-[opacity,transform,scale,background-color,color] duration-150 ease-[cubic-bezier(0.23,1,0.32,1)] focus-visible:scale-100 focus-visible:opacity-100 group-hover/image:scale-100 group-hover/image:opacity-100 ${isWide ? "min-[90rem]:top-2 min-[90rem]:left-2" : ""} ${cropOpen ? "bg-brand-green text-white! opacity-100 hover:bg-brand-green/80" : ""}`}
+						style={{
+							width: profileImageControlSize,
+							height: profileImageControlSize,
+						}}
 					>
-						<Crop className="size-5 stroke-[2.5px]" />
+						<Crop
+							className="stroke-[2.5px]"
+							style={{
+								width: profileImageControlIconSize,
+								height: profileImageControlIconSize,
+							}}
+						/>
 					</Button>
 					<Button
 						type="button"
@@ -294,9 +315,19 @@ export default function PageImageField({
 						aria-label="Remove profile image"
 						disabled={isUploading || cropOpen}
 						onClick={onRemove}
-						className={`smooth-shadow-xs absolute z-30 inline-flex size-10 items-center justify-center rounded-full border-0! bg-background opacity-0 outline-depth transition-[opacity,transform,scale,background-color,color] duration-150 ease-[cubic-bezier(0.23,1,0.32,1)] focus-visible:scale-100 focus-visible:opacity-100 group-hover/image:scale-100 group-hover/image:opacity-100 ${isWide ? "top-0 right-0 min-[90rem]:top-2 min-[90rem]:right-2" : "top-0 right-0"}`}
+						className={`smooth-shadow-xs absolute z-30 inline-flex items-center justify-center rounded-full border-0! bg-background opacity-0 outline-depth transition-[opacity,transform,scale,background-color,color] duration-150 ease-[cubic-bezier(0.23,1,0.32,1)] focus-visible:scale-100 focus-visible:opacity-100 group-hover/image:scale-100 group-hover/image:opacity-100 ${isWide ? "top-0 right-0 min-[90rem]:top-2 min-[90rem]:right-2" : "top-0 right-0"}`}
+						style={{
+							width: profileImageControlSize,
+							height: profileImageControlSize,
+						}}
 					>
-						<Trash className="size-5 stroke-[2.5px]" />
+						<Trash
+							className="stroke-[2.5px]"
+							style={{
+								width: profileImageControlIconSize,
+								height: profileImageControlIconSize,
+							}}
+						/>
 					</Button>
 				</>
 			) : null}
