@@ -18,6 +18,7 @@ import {
 import { createBentoItem } from "./bento-factory";
 import { reduceBentoItems } from "./bento-reducer";
 import type { BentoCommand, BentoItem } from "./bento-types";
+import { createMediaPlaceholderDataUrl } from "./media-placeholder";
 
 export type BentoStoreStatus = "saved" | "dirty" | "saving" | "error";
 
@@ -30,7 +31,7 @@ type UseBentoStoreOptions = {
 	persistItems?: boolean;
 };
 
-const SAVE_DELAY = 700;
+const SAVE_DELAY = 1000;
 
 type MediaUploadTask = {
 	controller: AbortController;
@@ -292,14 +293,36 @@ export function useBentoStore({
 			itemId,
 			objectKey,
 			mimeType,
+			placeholderDataUrl,
 		}: {
 			itemId: string;
 			objectKey: string;
 			mimeType: string;
+			placeholderDataUrl?: string;
 		}) => {
 			const nextItems = draftRef.current.map((item) =>
 				item.id === itemId && item.type === "media"
-					? { ...item, data: { ...item.data, objectKey, mimeType } }
+					? {
+							...item,
+							data: {
+								...item.data,
+								objectKey,
+								mimeType,
+								...(placeholderDataUrl ? { placeholderDataUrl } : {}),
+							},
+						}
+					: item,
+			);
+			commitItems(nextItems);
+		},
+		[commitItems],
+	);
+
+	const updateMediaPlaceholder = useCallback(
+		(itemId: string, placeholderDataUrl: string) => {
+			const nextItems = draftRef.current.map((item) =>
+				item.id === itemId && item.type === "media"
+					? { ...item, data: { ...item.data, placeholderDataUrl } }
 					: item,
 			);
 			commitItems(nextItems);
@@ -326,12 +349,23 @@ export function useBentoStore({
 			mediaUploadsRef.current.set(itemId, task);
 
 			try {
+				const placeholderPromise = createMediaPlaceholderDataUrl(file);
+				void placeholderPromise.then((placeholderDataUrl) => {
+					if (
+						placeholderDataUrl &&
+						!task.controller.signal.aborted &&
+						mediaUploadsRef.current.get(itemId) === task
+					) {
+						updateMediaPlaceholder(itemId, placeholderDataUrl);
+					}
+				});
 				const upload = await uploadBentoMedia(handle, file, {
 					signal: task.controller.signal,
 					onUploadCreated: (createdUpload) => {
 						task.objectKey = createdUpload.objectKey;
 					},
 				});
+				const placeholderDataUrl = await placeholderPromise;
 				if (task.controller.signal.aborted) return;
 				if (mediaUploadsRef.current.get(itemId) !== task) return;
 				mediaUploadsRef.current.delete(itemId);
@@ -339,6 +373,7 @@ export function useBentoStore({
 					itemId,
 					objectKey: upload.objectKey,
 					mimeType: upload.mimeType,
+					placeholderDataUrl,
 				});
 			} catch (error) {
 				if (mediaUploadsRef.current.get(itemId) === task) {
@@ -354,7 +389,14 @@ export function useBentoStore({
 				throw error;
 			}
 		},
-		[addPendingMedia, commitItems, enabled, handle, updateMediaUpload],
+		[
+			addPendingMedia,
+			commitItems,
+			enabled,
+			handle,
+			updateMediaPlaceholder,
+			updateMediaUpload,
+		],
 	);
 
 	const replaceLinkImage = useCallback(
@@ -385,14 +427,17 @@ export function useBentoStore({
 			};
 			mediaUploadsRef.current.set(itemId, task);
 			try {
-				const upload = await uploadBentoMedia(handle, file, {
-					signal: task.controller.signal,
-					itemId,
-					kind: "link-image",
-					onUploadCreated: (createdUpload) => {
-						task.objectKey = createdUpload.objectKey;
-					},
-				});
+				const [upload, imagePlaceholderDataUrl] = await Promise.all([
+					uploadBentoMedia(handle, file, {
+						signal: task.controller.signal,
+						itemId,
+						kind: "link-image",
+						onUploadCreated: (createdUpload) => {
+							task.objectKey = createdUpload.objectKey;
+						},
+					}),
+					createMediaPlaceholderDataUrl(file),
+				]);
 				if (task.controller.signal.aborted) return;
 				if (mediaUploadsRef.current.get(itemId) !== task) return;
 				mediaUploadsRef.current.delete(itemId);
@@ -400,7 +445,11 @@ export function useBentoStore({
 					current.id === itemId && current.type === "link"
 						? {
 								...current,
-								data: { ...current.data, imageKey: upload.objectKey },
+								data: {
+									...current.data,
+									imageKey: upload.objectKey,
+									imagePlaceholderDataUrl,
+								},
 							}
 						: current,
 				);

@@ -209,7 +209,7 @@ export function MapViewportGate({
 const MAP_SCROLL_IDLE_DELAY = 160;
 const MAP_IDLE_TIMEOUT = 1000;
 
-function getScrollTarget(element: HTMLElement): HTMLElement | Window {
+export function getScrollTarget(element: HTMLElement): HTMLElement | Window {
 	let current = element.parentElement;
 	while (current) {
 		const { overflowY } = window.getComputedStyle(current);

@@ -13,6 +13,10 @@ import {
 } from "react";
 import type { BentoCommand } from "@/lib/bento/bento-types";
 import { getPageImageUrl } from "@/lib/page-image-url";
+import {
+	getPageImagePlaceholderUrl,
+	getPageMediaUrl,
+} from "@/lib/page-media-url";
 
 function LinkAction({
 	href,
@@ -221,9 +225,11 @@ function GithubContributionGraph({
 
 function LinkPreview({
 	imageUrls,
+	imagePlaceholderDataUrl,
 	backgroundColor,
 }: {
 	imageUrls: readonly string[];
+	imagePlaceholderDataUrl?: string;
 	backgroundColor?: string;
 }) {
 	if (imageUrls.length > 1) {
@@ -234,7 +240,7 @@ function LinkPreview({
 						key={imageUrl}
 						className="min-h-0 min-w-0 overflow-hidden rounded-md bg-muted/30 outline-depth"
 					>
-						<img src={imageUrl} alt="" className="size-full object-cover" />
+						<LinkPreviewImage key={imageUrl} imageUrl={imageUrl} />
 					</div>
 				))}
 			</div>
@@ -243,13 +249,80 @@ function LinkPreview({
 	const imageUrl = imageUrls[0];
 	return imageUrl ? (
 		<div className="size-full overflow-hidden">
-			<img src={imageUrl} alt="" className="size-full object-cover" />
+			<LinkPreviewImage
+				key={`${imageUrl}:${imagePlaceholderDataUrl ?? ""}`}
+				imageUrl={imageUrl}
+				imagePlaceholderDataUrl={imagePlaceholderDataUrl}
+			/>
 		</div>
 	) : (
 		<div
 			className="link-image-placeholder flex size-full items-center justify-center px-4 text-center font-semibold text-lg tracking-tight"
 			style={{ backgroundColor }}
 		/>
+	);
+}
+
+function LinkPreviewImage({
+	imageUrl,
+	imagePlaceholderDataUrl,
+}: {
+	imageUrl: string;
+	imagePlaceholderDataUrl?: string;
+}) {
+	const imageRef = useRef<HTMLDivElement>(null);
+	const [hasEnteredViewport, setHasEnteredViewport] = useState(false);
+	const [imageLoaded, setImageLoaded] = useState(false);
+	const [placeholderFailed, setPlaceholderFailed] = useState(false);
+	const [transformedImageFailed, setTransformedImageFailed] = useState(false);
+	const transformedImageUrl = getPageMediaUrl(imageUrl, "image");
+	const imageSrc = transformedImageFailed ? imageUrl : transformedImageUrl;
+	const placeholderUrl = imagePlaceholderDataUrl
+		? imagePlaceholderDataUrl
+		: hasEnteredViewport
+			? getPageImagePlaceholderUrl(imageUrl)
+			: undefined;
+
+	useEffect(() => {
+		const image = imageRef.current;
+		if (!image || typeof IntersectionObserver === "undefined") {
+			setHasEnteredViewport(true);
+			return;
+		}
+
+		const observer = new IntersectionObserver(([entry]) => {
+			if (entry?.isIntersecting) setHasEnteredViewport(true);
+		});
+		observer.observe(image);
+		return () => observer.disconnect();
+	}, []);
+
+	return (
+		<div
+			ref={imageRef}
+			className="relative size-full overflow-hidden bg-muted/30"
+		>
+			{placeholderUrl && !placeholderFailed ? (
+				<img
+					alt=""
+					aria-hidden="true"
+					className="pointer-events-none absolute inset-0 size-full scale-110 object-cover blur-md"
+					src={placeholderUrl}
+					onError={() => setPlaceholderFailed(true)}
+				/>
+			) : null}
+			{hasEnteredViewport ? (
+				<img
+					alt=""
+					className={`absolute inset-0 size-full object-cover transition-opacity ${!placeholderUrl || placeholderFailed || imageLoaded ? "opacity-100" : "opacity-0"}`}
+					src={imageSrc}
+					onLoad={() => setImageLoaded(true)}
+					onError={() => {
+						if (imageSrc !== imageUrl) setTransformedImageFailed(true);
+					}}
+				/>
+			) : null}
+		</div>
 	);
 }
 
@@ -317,6 +390,7 @@ function LinkImageControls({
 
 function LinkImageArea({
 	imageUrls,
+	imagePlaceholderDataUrl,
 	backgroundColor,
 	flexClassName,
 	mode,
@@ -326,6 +400,7 @@ function LinkImageArea({
 	onDelete,
 }: {
 	imageUrls: readonly string[];
+	imagePlaceholderDataUrl?: string;
 	backgroundColor?: string;
 	flexClassName: string;
 	mode: "view" | "edit";
@@ -341,7 +416,11 @@ function LinkImageArea({
 			<div
 				className={`size-full min-h-0 overflow-hidden rounded-lg bg-muted/30 ${imageUrls.length === 1 ? "outline-depth" : ""}`}
 			>
-				<LinkPreview imageUrls={imageUrls} backgroundColor={backgroundColor} />
+				<LinkPreview
+					imageUrls={imageUrls}
+					imagePlaceholderDataUrl={imagePlaceholderDataUrl}
+					backgroundColor={backgroundColor}
+				/>
 			</div>
 			{mode === "edit" && imageUrls.length <= 1 ? (
 				<LinkImageControls
@@ -444,7 +523,8 @@ function LinkTitle({
 					const nextValue = value.trim();
 					if (nextValue) onCommit(nextValue);
 				}}
-				className={`link-title-input -ml-1 cursor-text! resize-none border-0 bg-transparent text-current outline-none focus-visible:ring-0 ${titleClassName} overflow-y-auto overflow-x-hidden`}
+				className={`link-title-input ${isHalfBanner ? "" : "-ml-1"} cursor-text! resize-none border-0 bg-transparent text-current outline-none focus-visible:ring-0 ${titleClassName} overflow-y-auto overflow-x-hidden`}
+				style={isHalfBanner ? { width: "100%", maxWidth: "100%" } : undefined}
 			/>
 		);
 	}
@@ -501,6 +581,9 @@ export function LinkItem({
 			? []
 			: (presentation?.imageUrls ??
 				(metadata?.imageUrl ? [metadata.imageUrl] : []));
+	const imagePlaceholderDataUrl = ownedImageUrl
+		? item.data.imagePlaceholderDataUrl
+		: undefined;
 	const hasImage = imageUrls.length > 0;
 	const githubGraph = parseGithubContributionGraph(
 		presentation?.githubContributionGraph,
@@ -521,12 +604,17 @@ export function LinkItem({
 				metadata: { ...item.data.metadata, title: value },
 			},
 		});
-	const removeImage = () =>
+	const removeImage = () => {
 		onCommand?.({
 			type: "update-data",
 			itemId: item.id,
-			data: { ...item.data, imageKey: null },
+			data: {
+				...item.data,
+				imageKey: null,
+				imagePlaceholderDataUrl: undefined,
+			},
 		});
+	};
 	const linkActionProps = {
 		label: presentation?.actionLabel ?? "Open",
 		detail: presentation?.actionDetail,
@@ -636,6 +724,7 @@ export function LinkItem({
 				) : isLandscape ? (
 					<LinkImageArea
 						imageUrls={imageUrls}
+						imagePlaceholderDataUrl={imagePlaceholderDataUrl}
 						backgroundColor={presentation?.cardBackground}
 						flexClassName="flex-4"
 						mode={mode}
@@ -656,6 +745,7 @@ export function LinkItem({
 				) : !isLandscape ? (
 					<LinkImageArea
 						imageUrls={imageUrls}
+						imagePlaceholderDataUrl={imagePlaceholderDataUrl}
 						backgroundColor={presentation?.cardBackground}
 						flexClassName="flex-3"
 						mode={mode}

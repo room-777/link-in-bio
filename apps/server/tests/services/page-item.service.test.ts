@@ -59,10 +59,10 @@ describe("page item service", () => {
 
 	/**
 	 * Case ID: PAGE-ITEM-SERVICE-002
-	 * Given: an owner submits a valid item and an empty text item.
+	 * Given: an owner submits valid text and media items plus an empty text item.
 	 * When: persistPageItemBatch saves the batch.
-	 * Then: the valid item is inserted atomically and the empty item is omitted.
-	 * Evidence: captured insert values and returned item response.
+	 * Then: valid items are inserted atomically, the empty item is omitted, and the media placeholder is returned.
+	 * Evidence: captured insert values and returned media response.
 	 * Result: Pass | Fail | Blocked | Not Run
 	 */
 	it("PAGE-ITEM-SERVICE-002 persists valid items and skips empty text", async () => {
@@ -82,11 +82,13 @@ describe("page item service", () => {
 				return insertQuery;
 			},
 			onConflictDoUpdate: async () => {
-				savedItems.push({
-					...inserted[0],
-					createdAt: now,
-					updatedAt: now,
-				});
+				savedItems.push(
+					...inserted.map((item) => ({
+						...item,
+						createdAt: now,
+						updatedAt: now,
+					})),
+				);
 			},
 		};
 		const tx = {
@@ -105,6 +107,7 @@ describe("page item service", () => {
 			db,
 			handle: "jane",
 			userId: "user-1",
+			publicBaseUrl: "https://cdn.example.com",
 			batch: {
 				upserts: [
 					{
@@ -121,14 +124,42 @@ describe("page item service", () => {
 						style: { textAlign: "center" },
 						layouts: { wide: layout, compact: layout },
 					},
+					{
+						id: "media-1",
+						type: "media",
+						data: {
+							objectKey: "users/user-1/pages/page-1/items/photo.jpg",
+							mimeType: "image/jpeg",
+							placeholderDataUrl: "data:image/jpeg;base64,AA==",
+						},
+						style: {},
+						layouts: {
+							wide: { ...layout, x: 1 },
+							compact: { ...layout, x: 1 },
+						},
+					},
 				],
 				deletes: [],
 			},
 		});
 
-		assert.equal(inserted.length, 1);
+		assert.equal(inserted.length, 2);
 		assert.equal(inserted[0]?.id, "item-1");
-		assert.equal(result.items[0]?.id, "item-1");
+		assert.equal(inserted[1]?.id, "media-1");
+		const insertedMedia = inserted[1];
+		assert.ok(insertedMedia);
+		const insertedMediaData = insertedMedia.data as Record<string, unknown>;
+		assert.equal(
+			insertedMediaData.placeholderDataUrl,
+			"data:image/jpeg;base64,AA==",
+		);
+		assert.deepEqual(result.items.find((item) => item.type === "media")?.data, {
+			objectKey: "users/user-1/pages/page-1/items/photo.jpg",
+			mimeType: "image/jpeg",
+			placeholderDataUrl: "data:image/jpeg;base64,AA==",
+			mediaUrl:
+				"https://cdn.example.com/users/user-1/pages/page-1/items/photo.jpg",
+		});
 	});
 
 	/**
@@ -187,6 +218,7 @@ describe("page item service", () => {
 						data: {
 							url: "https://www.youtube.com/@grabbin",
 							imageKey: null,
+							imagePlaceholderDataUrl: "data:image/jpeg;base64,AA==",
 							metadata: {
 								title: "Grabbin",
 								providerData: {
@@ -211,6 +243,10 @@ describe("page item service", () => {
 		const link = result.items[0];
 		assert.equal(link?.type, "link");
 		if (link?.type !== "link") return;
+		assert.equal(
+			link.data.imagePlaceholderDataUrl,
+			"data:image/jpeg;base64,AA==",
+		);
 		assert.equal(link.data.metadata?.provider, "youtube");
 		assert.deepEqual(link.data.metadata?.presentation, {
 			provider: "youtube",

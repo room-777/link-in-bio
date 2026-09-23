@@ -1,9 +1,18 @@
 "use client";
 
 import type { PresetName } from "@grabbin/bento-layout";
+import Image from "next/image";
+import {
+	type SyntheticEvent,
+	useCallback,
+	useEffect,
+	useRef,
+	useState,
+} from "react";
 
 import type { BentoCommand, BentoItem } from "@/lib/bento/bento-types";
-import { ExternalAction, MediaCaption } from "./shared";
+import { getPageMediaUrl } from "@/lib/page-media-url";
+import { ExternalAction, getScrollTarget, MediaCaption } from "./shared";
 import { useMediaCropEditor } from "./use-media-crop-editor";
 
 export function MediaItem({
@@ -18,6 +27,14 @@ export function MediaItem({
 	onCommand?: (command: BentoCommand) => void;
 }) {
 	const isVideo = item.data.mimeType.startsWith("video/");
+	const [hasEnteredViewport, setHasEnteredViewport] = useState(false);
+	const [isInViewport, setIsInViewport] = useState(false);
+	const [imageLoaded, setImageLoaded] = useState(false);
+	const [videoLoaded, setVideoLoaded] = useState(false);
+	const [imageTransformFailed, setImageTransformFailed] = useState(false);
+	const [videoTransformFailed, setVideoTransformFailed] = useState(false);
+	const loadedVideoSourceRef = useRef<string | undefined>(undefined);
+	const previousMediaUrlRef = useRef(item.data.mediaUrl);
 	const {
 		frameRef,
 		imageRef,
@@ -33,30 +50,143 @@ export function MediaItem({
 		handleCropPointerMove,
 		handleCropPointerEnd,
 	} = useMediaCropEditor({ item, mode, onCommand });
+	const isLocalPreview = item.data.mediaUrl?.startsWith("blob:") ?? false;
+	const originalMediaUrl = isLocalPreview ? undefined : item.data.mediaUrl;
+	const transformedMediaUrl = originalMediaUrl
+		? getPageMediaUrl(originalMediaUrl, isVideo ? "video" : "image")
+		: undefined;
+	const imageSrc =
+		imageTransformFailed && originalMediaUrl
+			? originalMediaUrl
+			: transformedMediaUrl;
+	const videoSrc =
+		videoTransformFailed && originalMediaUrl
+			? originalMediaUrl
+			: transformedMediaUrl;
 
-	const media = !item.data.mediaUrl ? null : isVideo ? (
-		<video
-			ref={videoRef}
-			autoPlay
-			loop
-			muted
-			playsInline
-			preload="metadata"
-			src={item.data.mediaUrl}
-			onLoadedMetadata={handleVideoLoadedMetadata}
-			className={`pointer-events-none absolute inset-0 ${cropStyle ? "size-full" : "size-full object-cover"}`}
-		/>
-	) : (
-		<img
-			ref={imageRef}
-			alt={item.data.caption ?? "Media item"}
-			className={`pointer-events-none absolute inset-0 ${cropStyle ? "size-full" : "size-full object-cover"}`}
-			decoding="async"
-			fetchPriority="low"
-			loading="lazy"
-			src={item.data.mediaUrl}
-			onLoad={handleImageLoad}
-		/>
+	useEffect(() => {
+		const frame = frameRef.current;
+		if (!frame || typeof IntersectionObserver === "undefined") {
+			setHasEnteredViewport(true);
+			setIsInViewport(true);
+			return;
+		}
+
+		const scrollTarget = getScrollTarget(frame);
+		const observer = new IntersectionObserver(
+			([entry]) => {
+				const isIntersecting = Boolean(entry?.isIntersecting);
+				setIsInViewport(isIntersecting);
+				if (isIntersecting) setHasEnteredViewport(true);
+			},
+			{ root: scrollTarget instanceof HTMLElement ? scrollTarget : null },
+		);
+		observer.observe(frame);
+		return () => observer.disconnect();
+	}, [frameRef]);
+
+	useEffect(() => {
+		if (previousMediaUrlRef.current === originalMediaUrl) return;
+		previousMediaUrlRef.current = originalMediaUrl;
+		setImageLoaded(false);
+		setVideoLoaded(false);
+		setImageTransformFailed(false);
+		setVideoTransformFailed(false);
+		loadedVideoSourceRef.current = undefined;
+		setHasEnteredViewport(isInViewport);
+	}, [isInViewport, originalMediaUrl]);
+
+	useEffect(() => {
+		const video = videoRef.current;
+		if (!video || !hasEnteredViewport || !videoSrc) return;
+		if (loadedVideoSourceRef.current === videoSrc) return;
+		loadedVideoSourceRef.current = videoSrc;
+		video.load();
+	}, [hasEnteredViewport, videoSrc, videoRef]);
+
+	useEffect(() => {
+		const video = videoRef.current;
+		if (!video) return;
+		if (!hasEnteredViewport || !isInViewport) {
+			video.pause();
+			return;
+		}
+		void video.play().catch(() => {});
+	}, [hasEnteredViewport, isInViewport, videoRef]);
+
+	const handleImageLoadAndMeasure = useCallback(
+		(event: SyntheticEvent<HTMLImageElement>) => {
+			setImageLoaded(true);
+			handleImageLoad(event);
+		},
+		[handleImageLoad],
+	);
+	const handleVideoLoadAndMeasure = useCallback(
+		(event: SyntheticEvent<HTMLVideoElement>) => {
+			handleVideoLoadedMetadata(event);
+		},
+		[handleVideoLoadedMetadata],
+	);
+
+	const isMediaLoaded = isVideo ? videoLoaded : imageLoaded;
+	const media = !item.data.mediaUrl ? null : (
+		<>
+			{item.data.placeholderDataUrl && !isMediaLoaded ? (
+				<img
+					alt=""
+					aria-hidden="true"
+					className="pointer-events-none absolute inset-0 size-full scale-110 object-cover blur-md"
+					src={item.data.placeholderDataUrl}
+				/>
+			) : null}
+			{isVideo ? (
+				<video
+					ref={videoRef}
+					autoPlay={isInViewport}
+					loop
+					muted
+					playsInline
+					preload={hasEnteredViewport ? "metadata" : "none"}
+					onLoadedData={() => setVideoLoaded(true)}
+					onLoadedMetadata={handleVideoLoadAndMeasure}
+					onError={() => {
+						if (videoSrc !== originalMediaUrl) {
+							setVideoTransformFailed(true);
+						}
+					}}
+					className={`pointer-events-none absolute inset-0 transition-opacity ${cropStyle ? "size-full" : "size-full object-cover"} ${videoLoaded || !item.data.placeholderDataUrl ? "opacity-100" : "opacity-0"}`}
+				>
+					{hasEnteredViewport && videoSrc ? (
+						<source
+							key={videoSrc}
+							src={videoSrc}
+							type={
+								videoSrc === originalMediaUrl ? item.data.mimeType : "video/mp4"
+							}
+						/>
+					) : null}
+				</video>
+			) : hasEnteredViewport && imageSrc ? (
+				<Image
+					ref={imageRef}
+					fill
+					alt={item.data.caption ?? "Media item"}
+					className={`pointer-events-none absolute inset-0 transition-opacity ${cropStyle ? "size-full" : "size-full object-cover"} ${imageLoaded || !item.data.placeholderDataUrl ? "opacity-100" : "opacity-0"}`}
+					decoding="async"
+					fetchPriority="low"
+					loading="lazy"
+					sizes="(min-width: 90rem) 20vw, 50vw"
+					src={imageSrc}
+					unoptimized
+					onLoad={handleImageLoadAndMeasure}
+					onError={() => {
+						if (imageSrc !== originalMediaUrl) {
+							setImageTransformFailed(true);
+						}
+					}}
+				/>
+			) : null}
+		</>
 	);
 
 	return (

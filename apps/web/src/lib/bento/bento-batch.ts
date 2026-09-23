@@ -35,6 +35,9 @@ export function toBatchItem(item: BentoItem): BentoBatchItem {
 				data: {
 					objectKey: item.data.objectKey,
 					mimeType: item.data.mimeType,
+					...(item.data.placeholderDataUrl
+						? { placeholderDataUrl: item.data.placeholderDataUrl }
+						: {}),
 					...(item.data.crop ? { crop: item.data.crop } : {}),
 					...(item.data.caption !== undefined
 						? { caption: item.data.caption }
@@ -53,6 +56,9 @@ export function toBatchItem(item: BentoItem): BentoBatchItem {
 				type: item.type,
 				data: {
 					url: item.data.url,
+					...(item.data.imagePlaceholderDataUrl
+						? { imagePlaceholderDataUrl: item.data.imagePlaceholderDataUrl }
+						: {}),
 					...(item.data.imageKey !== undefined
 						? { imageKey: item.data.imageKey }
 						: {}),

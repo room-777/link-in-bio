@@ -110,12 +110,24 @@ export const pageItemTextDataSchema = v.object({
 	link: optionalTrimmedLinkSchema,
 });
 
+const pageItemImagePlaceholderSchema = v.optional(
+	v.pipe(
+		v.string(),
+		v.maxLength(8_192),
+		v.regex(
+			/^data:image\/jpeg;base64,[A-Za-z0-9+/]+={0,2}$/,
+			"Media placeholder must be a small JPEG data URL.",
+		),
+	),
+);
+
 export const pageItemMediaDataSchema = v.object({
 	objectKey: v.pipe(v.string(), v.minLength(1)),
 	mimeType: v.pipe(
 		v.string(),
 		v.regex(/^(image|video)\/[a-z0-9.+-]+$/i, "Media MIME type required."),
 	),
+	placeholderDataUrl: pageItemImagePlaceholderSchema,
 	caption: v.optional(v.string()),
 	link: optionalTrimmedLinkSchema,
 	crop: v.optional(pageItemMediaCropSchema),
@@ -196,12 +208,14 @@ export const pageItemLinkResponseMetadataSchema = v.object({
 export const pageItemLinkResponseDataSchema = v.object({
 	url: pageItemLinkUrlSchema,
 	imageKey: v.optional(v.nullable(v.pipe(v.string(), v.maxLength(512)))),
+	imagePlaceholderDataUrl: pageItemImagePlaceholderSchema,
 	metadata: v.optional(pageItemLinkResponseMetadataSchema),
 });
 
 export const pageItemLinkDataSchema = v.object({
 	url: pageItemLinkUrlSchema,
 	imageKey: v.optional(v.nullable(v.pipe(v.string(), v.maxLength(512)))),
+	imagePlaceholderDataUrl: pageItemImagePlaceholderSchema,
 	metadata: v.optional(pageItemLinkMetadataSchema),
 });
 
