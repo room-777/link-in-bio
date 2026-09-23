@@ -1,7 +1,7 @@
 import { redirect } from "next/navigation";
 
 import LoginForm from "@/components/auth/login-form";
-import FloatPreview from "@/components/layout/float-preview";
+import BentoPreview from "@/components/page/bento-preview";
 import { sanitizeAuthRedirect } from "@/lib/auth-redirect";
 import { getPrimaryPagePath, getServerSession } from "@/lib/server/session";
 
@@ -17,9 +17,9 @@ export default async function LoginPage({
 	if (session) redirect(returnTo ?? getPrimaryPagePath(session));
 
 	return (
-		<main className="grid min-h-svh w-full grid-cols-1 lg:grid-cols-2">
+		<main className="grid min-h-svh w-full grid-cols-1 xl:grid-cols-[minmax(0,1fr)_796px]">
 			<LoginForm returnTo={returnTo} />
-			<FloatPreview />
+			<BentoPreview />
 		</main>
 	);
 }

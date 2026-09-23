@@ -1,6 +1,6 @@
 import { redirect } from "next/navigation";
 
-import FloatPreview from "@/components/layout/float-preview";
+import BentoPreview from "@/components/page/bento-preview";
 import CreatePageForm from "@/components/page/create-page-form";
 import { getPrimaryPagePath, getServerSession } from "@/lib/server/session";
 
@@ -14,7 +14,7 @@ export default async function CreatePage() {
 	return (
 		<div className="grid min-h-svh w-full grid-cols-1 lg:grid-cols-2">
 			<CreatePageForm />
-			<FloatPreview />
+			<BentoPreview />
 		</div>
 	);
 }

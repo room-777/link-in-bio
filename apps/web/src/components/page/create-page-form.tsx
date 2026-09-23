@@ -19,10 +19,11 @@ import Loading from "@grabbin/ui/components/loading";
 import { Marquee } from "@grabbin/ui/components/marquee";
 import { cn } from "@grabbin/ui/lib/utils";
 import { useQuery } from "@tanstack/react-query";
-import { Globe } from "lucide-react";
+import { Check, Copy, Globe } from "lucide-react";
 import { AnimatePresence, motion, useReducedMotion } from "motion/react";
 import { useRouter } from "next/navigation";
-import { type FormEvent, useEffect, useState } from "react";
+import { Activity, type FormEvent, useEffect, useState } from "react";
+import Confetti from "react-confetti";
 import { CheckCircle } from "reicon-react/icons/CheckCircle";
 import { CloseCircle } from "reicon-react/icons/CloseCircle";
 import { Loader } from "reicon-react/icons/Loader";
@@ -188,15 +189,17 @@ export function PageHandleForm({
 				>
 					{title}
 				</Title>
-				<Description
-					className={
-						compact
-							? "text-balance md:text-pretty"
-							: "text-wrap text-base text-primary/80"
-					}
-				>
-					{description}
-				</Description>
+				{description && (
+					<Description
+						className={
+							compact
+								? "text-balance md:text-pretty"
+								: "text-wrap text-base text-primary/80"
+						}
+					>
+						{description}
+					</Description>
+				)}
 			</header>
 
 			<Marquee
@@ -303,8 +306,12 @@ export function PageHandleForm({
 export default function CreatePageForm() {
 	const router = useRouter();
 	const reduceMotion = useReducedMotion();
-	const [isExiting, setIsExiting] = useState(false);
-	const [redirectPath, setRedirectPath] = useState<string | null>(null);
+	const [activity, setActivity] = useState<"create" | "exiting" | "complete">(
+		"create",
+	);
+	const [createdPage, setCreatedPage] = useState<{ handle: string } | null>(
+		null,
+	);
 	const entryTransition = reduceMotion
 		? { duration: 0 }
 		: { type: "spring" as const, duration: 0.55, bounce: 0.1 };
@@ -313,25 +320,30 @@ export default function CreatePageForm() {
 		: { duration: 0.42, ease: [0.23, 1, 0.32, 1] as const };
 
 	return (
-		<div className="min-w-0">
-			<AnimatePresence
-				mode="wait"
-				onExitComplete={() => {
-					if (redirectPath) router.replace(redirectPath);
-				}}
-			>
-				{!isExiting && (
-					<motion.main
-						key="create-page"
-						initial={reduceMotion ? false : { opacity: 0, y: 16 }}
-						animate={{ opacity: 1, y: 0 }}
-						exit={{ opacity: 0, y: -16, transition: exitTransition }}
-						transition={entryTransition}
-						className="mx-auto flex min-h-svh w-full max-w-md flex-col justify-start gap-8 p-6 px-6 pt-12 min-[90rem]:mx-0 min-[90rem]:min-h-dvh min-[90rem]:max-w-2xl min-[90rem]:px-16 min-[90rem]:pt-16"
-					>
+		<div className="relative min-w-0">
+			<Activity mode={activity === "complete" ? "hidden" : "visible"}>
+				<motion.main
+					initial={reduceMotion ? false : { opacity: 0, y: 16 }}
+					animate={
+						activity === "create"
+							? { opacity: 1, y: 0 }
+							: { opacity: 0, y: -16 }
+					}
+					transition={activity === "create" ? entryTransition : exitTransition}
+					onAnimationComplete={() => {
+						if (activity === "exiting") setActivity("complete");
+					}}
+					aria-hidden={activity !== "create"}
+					inert={activity !== "create"}
+					className={cn(
+						"mx-auto flex min-h-svh w-full max-w-md flex-col justify-start gap-8 p-6 px-6 pt-12 min-[90rem]:mx-0 min-[90rem]:min-h-dvh min-[90rem]:max-w-2xl min-[90rem]:px-16 min-[90rem]:pt-16",
+						activity === "complete" && "pointer-events-none absolute inset-0",
+					)}
+				>
+					<div className="min-[90rem]:max-w-sm">
 						<PageHandleForm
-							title="Choose your handle"
-							description="Pick a unique handle for your page."
+							title="Choose a unique handle for your page"
+							description=""
 							submitLabel="Grab it"
 							onSubmit={async (handle) => {
 								const response = await apiClient.pages.$post({
@@ -345,13 +357,161 @@ export default function CreatePageForm() {
 								if (!("page" in body) || !body.page) {
 									throw new Error("Please try again.");
 								}
-								setRedirectPath(`/${body.page.handle}`);
-								setIsExiting(true);
+								setCreatedPage({ handle: body.page.handle });
+								setActivity("exiting");
 							}}
 						/>
-					</motion.main>
+					</div>
+				</motion.main>
+			</Activity>
+			<Activity mode={activity === "complete" ? "visible" : "hidden"}>
+				{activity === "complete" && createdPage && (
+					<>
+						<Confetti
+							numberOfPieces={240}
+							recycle={false}
+							style={{
+								position: "fixed",
+								inset: 0,
+								zIndex: 50,
+								pointerEvents: "none",
+							}}
+						/>
+						<motion.main
+							initial={reduceMotion ? false : { opacity: 0, y: 16 }}
+							animate={{ opacity: 1, y: 0 }}
+							transition={entryTransition}
+							className="mx-auto flex min-h-svh w-full max-w-md flex-col justify-start gap-8 p-6 px-6 pt-12 min-[90rem]:mx-0 min-[90rem]:min-h-dvh min-[90rem]:max-w-2xl min-[90rem]:px-16 min-[90rem]:pt-16"
+						>
+							<PageOnboardingComplete
+								page={createdPage}
+								onGoToProfile={() =>
+									router.replace(`/${encodeURIComponent(createdPage.handle)}`)
+								}
+							/>
+						</motion.main>
+					</>
 				)}
-			</AnimatePresence>
+			</Activity>
 		</div>
+	);
+}
+
+function PageOnboardingComplete({
+	page,
+	onGoToProfile,
+}: {
+	page: { handle: string };
+	onGoToProfile: () => void;
+}) {
+	const [isShown, setIsShown] = useState(false);
+	const [isCopied, setIsCopied] = useState(false);
+	const reduceMotion = useReducedMotion();
+	const domain = env.NEXT_PUBLIC_PAGE_DOMAIN ?? "grabbin.me";
+
+	useEffect(() => {
+		setIsShown(true);
+	}, []);
+
+	useEffect(() => {
+		if (!isCopied) return;
+		const timeout = window.setTimeout(() => setIsCopied(false), 1800);
+		return () => window.clearTimeout(timeout);
+	}, [isCopied]);
+
+	const handleCopy = async () => {
+		try {
+			await navigator.clipboard.writeText(
+				new URL(`/${page.handle}`, window.location.origin).toString(),
+			);
+			setIsCopied(true);
+		} catch {
+			setIsCopied(false);
+		}
+	};
+
+	return (
+		<section className="flex w-full max-w-sm flex-col gap-12">
+			<header
+				className={`t-stagger mb-4 flex w-full flex-col gap-0.5 ${isShown ? "is-shown" : ""}`}
+			>
+				<span
+					className="t-success-check mb-4 self-start"
+					data-state="in"
+					aria-hidden="true"
+				>
+					<CheckCircle weight="Filled" className="size-12 text-brand-green" />
+				</span>
+				<h1 className="t-stagger-line t-stagger-line--1 font-semibold text-2xl">
+					Looking good!
+				</h1>
+				<p className="t-stagger-line t-stagger-line--2 text-base text-primary/80">
+					Now you can customize your profile and share it!
+				</p>
+			</header>
+
+			<div className="space-y-2">
+				<div className="flex h-12 items-center justify-between gap-2 rounded-lg bg-secondary p-1.5 pl-3 font-medium text-base">
+					<span className="truncate text-muted-foreground">
+						{domain}/<span className="text-foreground">{page.handle}</span>
+					</span>
+					<Button
+						type="button"
+						variant="outline"
+						size="icon-lg"
+						aria-label={isCopied ? "Copied" : "Copy link"}
+						onClick={handleCopy}
+						className="rounded-md hover:bg-background"
+					>
+						<span className="relative inline-grid place-items-center">
+							<AnimatePresence initial={false} mode="popLayout">
+								<motion.span
+									key={isCopied ? "copied" : "copy-link"}
+									initial={
+										reduceMotion
+											? false
+											: {
+													opacity: 0,
+													scale: 0.25,
+													filter: "blur(4px)",
+												}
+									}
+									animate={{
+										opacity: 1,
+										scale: 1,
+										filter: "blur(0px)",
+									}}
+									exit={{
+										opacity: 0,
+										scale: 0.25,
+										filter: "blur(4px)",
+									}}
+									transition={{
+										type: "spring",
+										duration: 0.3,
+										bounce: 0,
+									}}
+									className="col-start-1 row-start-1 inline-flex items-center gap-1.5"
+								>
+									{isCopied ? (
+										<Check className="size-4" aria-hidden={true} />
+									) : (
+										<Copy className="size-4" aria-hidden={true} />
+									)}
+								</motion.span>
+							</AnimatePresence>
+						</span>
+					</Button>
+				</div>
+				<Button
+					type="button"
+					size="xl"
+					className="smooth-shadow-xs mt-0 h-12 w-full text-base"
+					onClick={onGoToProfile}
+				>
+					Go to profile
+				</Button>
+			</div>
+		</section>
 	);
 }
