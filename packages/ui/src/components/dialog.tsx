@@ -65,13 +65,13 @@ function DialogContent({
 						data-slot="dialog-close"
 						render={
 							<Button
-								variant="ghost"
-								className="absolute top-2 right-2"
-								size="icon-sm"
+								variant="secondary"
+								className="absolute top-2 right-2 rounded-full"
+								size="icon-lg"
 							/>
 						}
 					>
-						<XIcon />
+						<XIcon className="size-5 stroke-[2.5] text-muted-foreground/80" />
 						<span className="sr-only">Close</span>
 					</DialogPrimitive.Close>
 				)}

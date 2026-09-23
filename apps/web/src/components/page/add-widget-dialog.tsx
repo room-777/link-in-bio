@@ -284,7 +284,9 @@ export default function AddWidgetDialog({
 				<Drawer open={open} onOpenChange={setOpen} showSwipeHandle>
 					<DrawerContent keepMounted className="max-h-[calc(100dvh-2rem)]">
 						<DrawerHeader className="p-5 pb-0 text-left">
-							<DrawerTitle>Add Widget</DrawerTitle>
+							<DrawerTitle className={"font-medium text-base!"}>
+								Add Widget
+							</DrawerTitle>
 						</DrawerHeader>
 						<div className="flex flex-col gap-6 p-5">
 							<AddWidgetContent
@@ -303,7 +305,7 @@ export default function AddWidgetDialog({
 						className="gap-6 rounded-[2.2rem] p-6"
 					>
 						<DialogHeader className="p-0 pl-2">
-							<DialogTitle className={"font-bold text-xl!"}>
+							<DialogTitle className={"font-medium text-base!"}>
 								Add Widget
 							</DialogTitle>
 						</DialogHeader>
