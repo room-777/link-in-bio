@@ -258,7 +258,7 @@ export const pagesController = new Hono<AppEnv>()
 		if (!parsed.success) {
 			return jsonApiError(c, {
 				status: 422,
-				detail: "Enter a valid name.",
+				detail: "Enter valid profile details.",
 			});
 		}
 

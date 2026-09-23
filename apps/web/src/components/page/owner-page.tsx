@@ -4,11 +4,9 @@ import type { PageByHandleResponse } from "@grabbin/api";
 import type { BentoBreakpoint } from "@grabbin/bento-layout";
 import { useEffect, useState } from "react";
 
-import FloatPreview from "@/components/layout/float-preview";
 import BentoEditor from "./bento-editor";
 import PageFooter from "./page-footer";
 import PageLayoutPreset from "./page-layout-preset";
-import PageOnboardingForm from "./page-onboarding-form";
 import PageProfileForm from "./page-profile-form";
 
 export default function OwnerPage({
@@ -18,7 +16,6 @@ export default function OwnerPage({
 }) {
 	const { page } = pageResponse;
 	const [currentPage, setCurrentPage] = useState(page);
-	const [isFloatVisible, setIsFloatVisible] = useState(!page.onboarding);
 	const [isSaving, setIsSaving] = useState(false);
 	const [isGridSaving, setIsGridSaving] = useState(false);
 	const [layoutBreakpoint, setLayoutBreakpoint] =
@@ -49,7 +46,6 @@ export default function OwnerPage({
 		window.history.replaceState(null, "", `/${encodeURIComponent(handle)}`);
 	};
 	const isAutoSaving = isSaving || isGridSaving;
-	const hasCompletedOnboarding = currentPage.onboarding;
 	const isViewportCompact = viewportBreakpoint === "compact";
 	const effectiveBreakpoint = isViewportCompact ? "compact" : layoutBreakpoint;
 	const isCompactPageLayout = effectiveBreakpoint === "compact";
@@ -76,44 +72,25 @@ export default function OwnerPage({
 			}
 		>
 			<main className={mainClassName}>
-				{currentPage.onboarding ? (
-					<PageProfileForm
-						page={currentPage}
-						mode="edit"
-						breakpoint={effectiveBreakpoint}
-						onSavingChange={setIsSaving}
-					/>
-				) : (
-					<PageOnboardingForm
-						page={currentPage}
-						breakpoint={effectiveBreakpoint}
-						onOnboardingComplete={(stage) =>
-							setIsFloatVisible(stage === "complete")
-						}
-					/>
-				)}
-			</main>
-			{hasCompletedOnboarding ? (
-				<BentoEditor
-					items={pageResponse.items}
-					handle={currentPage.handle}
+				<PageProfileForm
+					page={currentPage}
 					breakpoint={effectiveBreakpoint}
-					onGridSavingChange={setIsGridSaving}
+					onSavingChange={setIsSaving}
 				/>
-			) : (
-				<FloatPreview visible={isFloatVisible} wideOnly />
-			)}
-			{hasCompletedOnboarding ? (
-				<>
-					{isViewportReady ? pageFooter : null}
-					{!isViewportCompact ? (
-						<PageLayoutPreset
-							value={layoutBreakpoint}
-							onChange={setLayoutBreakpoint}
-							isAutoSaving={isAutoSaving}
-						/>
-					) : null}
-				</>
+			</main>
+			<BentoEditor
+				items={pageResponse.items}
+				handle={currentPage.handle}
+				breakpoint={effectiveBreakpoint}
+				onGridSavingChange={setIsGridSaving}
+			/>
+			{isViewportReady ? pageFooter : null}
+			{!isViewportCompact ? (
+				<PageLayoutPreset
+					value={layoutBreakpoint}
+					onChange={setLayoutBreakpoint}
+					isAutoSaving={isAutoSaving}
+				/>
 			) : null}
 		</div>
 	);

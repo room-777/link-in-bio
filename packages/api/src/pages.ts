@@ -46,18 +46,32 @@ export const pageByHandleResponseSchema = v.object({
 	items: v.array(pageItemResponseSchema),
 });
 
-export const updatePageDraftSchema = v.object({
-	imageKey: v.optional(v.nullable(v.pipe(v.string(), v.maxLength(512)))),
-	imageCrop: v.optional(v.nullable(pageImageCropSchema)),
-	name: v.pipe(v.string(), v.trim(), v.minLength(1), v.maxLength(80)),
-	bio: v.optional(v.nullable(v.pipe(v.string(), v.trim(), v.maxLength(280)))),
-});
+const pageNameSchema = v.pipe(v.string(), v.trim(), v.maxLength(80));
+
+export const updatePageDraftSchema = v.pipe(
+	v.object({
+		imageKey: v.optional(v.nullable(v.pipe(v.string(), v.maxLength(512)))),
+		imageCrop: v.optional(v.nullable(pageImageCropSchema)),
+		name: v.optional(v.nullable(pageNameSchema)),
+		bio: v.optional(v.nullable(v.pipe(v.string(), v.trim(), v.maxLength(280)))),
+	}),
+	v.check(
+		(draft) => Object.keys(draft).length > 0,
+		"At least one profile field is required.",
+	),
+);
 
 export type PageData = v.InferOutput<typeof pageDataSchema>;
 export type PageByHandleResponse = v.InferOutput<
 	typeof pageByHandleResponseSchema
 >;
 export type UpdatePageDraft = v.InferOutput<typeof updatePageDraftSchema>;
-export type PageProfile = UpdatePageDraft;
 
-export const pageProfileSchema = updatePageDraftSchema;
+export const pageProfileSchema = v.object({
+	imageKey: v.optional(v.nullable(v.pipe(v.string(), v.maxLength(512)))),
+	imageCrop: v.optional(v.nullable(pageImageCropSchema)),
+	name: v.pipe(v.string(), v.trim(), v.minLength(1), v.maxLength(80)),
+	bio: v.optional(v.nullable(v.pipe(v.string(), v.trim(), v.maxLength(280)))),
+});
+
+export type PageProfile = v.InferOutput<typeof pageProfileSchema>;

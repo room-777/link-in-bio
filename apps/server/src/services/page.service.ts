@@ -1,4 +1,8 @@
-import { type PageProfile, pageImageContentTypes } from "@grabbin/api";
+import {
+	type PageProfile,
+	pageImageContentTypes,
+	type UpdatePageDraft,
+} from "@grabbin/api";
 import type { DatabaseClient } from "@grabbin/db";
 import { pages, user } from "@grabbin/db/schema/index";
 import {
@@ -99,19 +103,20 @@ function updateOwnedPageDraft(
 	input: {
 		userId: string;
 		handle: string;
-		name: string;
+		name?: string | null;
 		bio?: string | null;
 		imageKey?: string | null;
 		imageCrop?: PageProfile["imageCrop"];
 	},
 ) {
 	const values: {
-		name: string;
+		name?: string | null;
 		bio?: string | null;
 		imageKey?: string | null;
 		imageSource?: string | null;
 		imageCrop?: PageProfile["imageCrop"];
-	} = { name: input.name };
+	} = {};
+	if ("name" in input) values.name = input.name;
 	if ("bio" in input) values.bio = input.bio;
 	if ("imageKey" in input) {
 		values.imageKey = input.imageKey;
@@ -325,7 +330,7 @@ export async function updatePageDraft({
 	bucket: R2Bucket;
 	userId: string;
 	handle: string;
-	draft: PageProfile;
+	draft: UpdatePageDraft;
 }) {
 	const handle = normalizePageHandle(rawHandle);
 	const existingPage = await db.query.pages.findFirst({
@@ -355,7 +360,7 @@ export async function updatePageDraft({
 	const [page] = await updateOwnedPageDraft(db, {
 		userId,
 		handle,
-		name: draft.name.trim(),
+		...("name" in draft ? { name: draft.name?.trim() || null } : {}),
 		...("bio" in draft ? { bio: draft.bio?.trim() || null } : {}),
 		...("imageKey" in draft ? { imageKey } : {}),
 		...("imageCrop" in draft && !("imageKey" in draft)

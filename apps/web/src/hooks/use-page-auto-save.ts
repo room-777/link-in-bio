@@ -39,8 +39,14 @@ function normalize(value: string | null | undefined) {
 }
 
 function getChangedFields(draft: PageDraft, saved: PageSnapshot) {
-	const changes: UpdatePageDraft = { name: draft.name };
-	let hasChanges = normalize(draft.name) !== normalize(saved.name);
+	const changes: UpdatePageDraft = {};
+	let hasChanges = false;
+
+	const name = normalize(draft.name);
+	if (name !== normalize(saved.name)) {
+		changes.name = name;
+		hasChanges = true;
+	}
 
 	const bio = normalize(draft.bio);
 	if (bio !== normalize(saved.bio)) {
@@ -114,11 +120,6 @@ export function usePageAutoSave({
 		if (!changes) {
 			setStatus("saved");
 			return true;
-		}
-		if (!snapshot.name.trim()) {
-			setStatus("error");
-			setError("Enter a valid name.");
-			return false;
 		}
 
 		const sentVersion = versionRef.current;
@@ -216,11 +217,6 @@ export function usePageAutoSave({
 			draftRef.current = nextDraft;
 			setDraft(nextDraft);
 			setError(null);
-			if (!nextDraft.name.trim()) {
-				setStatus("error");
-				setError("Enter a valid name.");
-				return;
-			}
 			setStatus(
 				getChangedFields(nextDraft, savedRef.current) ? "dirty" : "saved",
 			);

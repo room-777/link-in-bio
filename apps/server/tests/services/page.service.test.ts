@@ -390,6 +390,38 @@ describe("page service", () => {
 		assert.deepEqual(values, { name: "Jane", bio: "Hello" });
 	});
 
+	it("PAGE-SERVICE-011 saves a cleared page name as null", async () => {
+		let values: Record<string, unknown> | undefined;
+		const query = {
+			set(nextValues: Record<string, unknown>) {
+				values = nextValues;
+				return query;
+			},
+			where() {
+				return query;
+			},
+			returning: async () => [{ id: "page-1", name: null, bio: null }],
+		};
+		const db = {
+			query: {
+				pages: {
+					findFirst: async () => ({ id: "page-1", imageKey: null }),
+				},
+			},
+			update: () => query,
+		} as unknown as DatabaseClient;
+
+		await updatePageDraft({
+			db,
+			bucket: {} as R2Bucket,
+			userId: "user-1",
+			handle: "jane",
+			draft: { name: "  ", bio: "  " },
+		});
+
+		assert.deepEqual(values, { name: null, bio: null });
+	});
+
 	it("PAGE-SERVICE-008 saves a new draft image and removes the old image", async () => {
 		let values: Record<string, unknown> | undefined;
 		const oldImageKey = "users/user-1/pages/page-1/profile/old.webp";
