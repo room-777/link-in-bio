@@ -3,12 +3,14 @@
 import type { PageByHandleResponse } from "@grabbin/api";
 import { motion, useReducedMotion } from "motion/react";
 import dynamic from "next/dynamic";
+import Image from "next/image";
 import { toBentoItem } from "@/lib/bento/bento-batch";
 import { getMediaCropStyle } from "@/lib/bento/media-crop";
 import { getPageImageUrl } from "@/lib/page-image-url";
 import PageFooter from "./page-footer";
 
 const BentoSection = dynamic(() => import("./bento-section"), { ssr: false });
+const MotionImage = motion.create(Image);
 
 export default function HandlePage({
 	pageResponse,
@@ -38,9 +40,11 @@ export default function HandlePage({
 					<article className="order-1 flex min-h-0 w-full max-w-md flex-1 flex-col gap-8 p-6 px-12 pt-12 min-[90rem]:fixed min-[90rem]:top-0 min-[90rem]:min-h-dvh min-[90rem]:max-w-none min-[90rem]:flex-none min-[90rem]:self-start min-[90rem]:pt-16">
 						<div className="relative flex size-28 items-center justify-center overflow-hidden rounded-full sm:size-32 min-[90rem]:size-46">
 							{imageUrl && (
-								<motion.img
+								<MotionImage
+									fill
 									src={imageUrl}
 									alt={title}
+									sizes="(min-width: 90rem) 184px, 128px"
 									initial={reduceMotion ? false : { opacity: 0, rotate: -8 }}
 									animate={{ opacity: 1, rotate: 0 }}
 									transition={enterTransition}

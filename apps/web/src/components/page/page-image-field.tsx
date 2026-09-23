@@ -5,6 +5,7 @@ import type { BentoBreakpoint } from "@grabbin/bento-layout";
 import { Button } from "@grabbin/ui/components/button";
 import { CircleFadingArrowUp, Crop, Trash } from "lucide-react";
 import { motion, useReducedMotion } from "motion/react";
+import Image from "next/image";
 import {
 	type SyntheticEvent,
 	useCallback,
@@ -18,6 +19,8 @@ import {
 	isCropCompatible,
 	moveMediaCrop,
 } from "@/lib/bento/media-crop";
+
+const MotionImage = motion.create(Image);
 
 const maxImageSize = 5 * 1024 * 1024;
 
@@ -191,10 +194,15 @@ export default function PageImageField({
 								className={`absolute overflow-hidden ${cropOpen ? "smooth-shadow-lg rounded-md" : "rounded-full"}`}
 								style={cropStyle}
 							>
-								<motion.img
+								<MotionImage
 									ref={imageRef}
+									fill
 									src={value}
 									alt=""
+									sizes={isWide ? "(min-width: 90rem) 184px, 112px" : "112px"}
+									unoptimized={
+										value.startsWith("blob:") || value.startsWith("data:")
+									}
 									initial={reduceMotion ? false : { opacity: 0, rotate: -8 }}
 									animate={{ opacity: 1, rotate: 0 }}
 									transition={
@@ -224,10 +232,15 @@ export default function PageImageField({
 								) : null}
 							</div>
 						) : (
-							<motion.img
+							<MotionImage
 								ref={imageRef}
+								fill
 								src={value}
 								alt=""
+								sizes={isWide ? "(min-width: 90rem) 184px, 112px" : "112px"}
+								unoptimized={
+									value.startsWith("blob:") || value.startsWith("data:")
+								}
 								initial={reduceMotion ? false : { opacity: 0, rotate: -8 }}
 								animate={{ opacity: 1, rotate: 0 }}
 								transition={
