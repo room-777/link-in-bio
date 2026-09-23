@@ -58,7 +58,7 @@ export default function HandlePage({
 		return () => mediaQuery.removeEventListener("change", syncBreakpoint);
 	}, []);
 	return (
-		<main className="page-scroll-container no-scrollbar relative box-border flex min-h-dvh w-full flex-col items-center overflow-y-auto overscroll-y-none bg-background min-[90rem]:h-dvh min-[90rem]:items-start min-[90rem]:justify-center">
+		<main className="page-scroll-container no-scrollbar relative box-border flex h-dvh min-h-0 w-full flex-col items-center overflow-y-auto overscroll-y-none bg-background min-[90rem]:items-start min-[90rem]:justify-center">
 			<div className="flex w-full flex-col items-center gap-8 min-[90rem]:min-h-dvh min-[90rem]:flex-row min-[90rem]:items-stretch min-[90rem]:justify-around">
 				<div className="contents w-full min-w-0 max-w-md min-[90rem]:flex min-[90rem]:min-h-0 min-[90rem]:w-2xl min-[90rem]:max-w-none min-[90rem]:flex-col">
 					<article
