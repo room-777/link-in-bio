@@ -25,6 +25,7 @@ import type {
 	BentoItem as BentoItemData,
 } from "@/lib/bento/bento-types";
 import { BentoItemShell } from "./bento/bento-item-shell";
+import { MapViewportGate } from "./bento/items/shared";
 
 type BentoSectionProps = {
 	items: readonly BentoItemData[];
@@ -304,8 +305,8 @@ export default function BentoSection({
 					onDrag={mode === "edit" ? handleDrag : undefined}
 					onDragStop={mode === "edit" ? handleDragStop : undefined}
 				>
-					{displayItems.map((item) => (
-						<div key={item.id}>
+					{displayItems.map((item) => {
+						const itemShell = (
 							<BentoItemShell
 								item={item}
 								breakpoint={breakpoint}
@@ -323,8 +324,27 @@ export default function BentoSection({
 								onRefreshLinkMetadata={onRefreshLinkMetadata}
 								onLinkImageSelect={onLinkImageSelect}
 							/>
-						</div>
-					))}
+						);
+
+						return (
+							<div key={item.id}>
+								{mode === "view" && item.type === "map" ? (
+									<MapViewportGate
+										placeholder={
+											<div
+												aria-hidden="true"
+												className="size-full rounded-2xl bg-secondary"
+											/>
+										}
+									>
+										{itemShell}
+									</MapViewportGate>
+								) : (
+									itemShell
+								)}
+							</div>
+						);
+					})}
 				</ReactGridLayout>
 			) : null}
 		</section>
