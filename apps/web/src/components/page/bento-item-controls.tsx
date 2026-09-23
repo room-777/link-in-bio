@@ -630,6 +630,7 @@ function TextStyleControls({
 										"size-7 shrink-0 cursor-pointer rounded-full border border-white/20 shadow-none transition-[transform,opacity] focus-visible:ring-2 focus-visible:ring-ring/50 data-checked:ring-2 data-checked:ring-white/90 [&_[data-slot=radio-group-indicator]]:hidden",
 										option.className,
 									)}
+									style={{ backgroundColor: option.value }}
 								/>
 							))}
 						</RadioGroup>

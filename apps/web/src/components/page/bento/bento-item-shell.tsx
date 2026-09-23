@@ -118,8 +118,12 @@ export function BentoItemShell({
 				: undefined,
 	};
 	const cardRadiusClass = "rounded-2xl";
+	const backgroundColor = item.style.backgroundColor?.toLowerCase();
+	const isWhiteBackground =
+		backgroundColor === "bg-white" ||
+		/^#(?:f{3}|f{4}|f{6}|f{8})$/.test(backgroundColor ?? "");
 	const hasTextSurface =
-		item.type === "text" && Boolean(item.style.backgroundColor);
+		item.type === "text" && Boolean(backgroundColor) && !isWhiteBackground;
 	const showControls =
 		mode === "edit" && onCommand && item.type !== "section" && !isExiting;
 	const shellRef = useRef<HTMLDivElement>(null);

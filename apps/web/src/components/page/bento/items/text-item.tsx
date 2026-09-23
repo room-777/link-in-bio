@@ -51,33 +51,22 @@ export function TextItem({
 				<div
 					className={`flex min-h-0 min-w-0 flex-1 flex-col ${verticalAlignClass}`}
 				>
-					{mode === "edit" ? (
-						<textarea
-							ref={textAreaRef}
-							value={item.data.text}
-							placeholder="Add note..."
-							aria-label="Text content"
-							className={`bento-text-input grid-action field-sizing-content max-h-full min-h-0 w-full cursor-text! resize-none overflow-y-auto overscroll-contain whitespace-pre-wrap break-all rounded-lg border-0 bg-transparent p-1 px-2 text-current outline-none placeholder:text-current/45 focus-visible:ring-0 ${textSizeClassByPreset[preset]}`}
-							style={{ textAlign: item.style.textAlign ?? "left" }}
-							onBlur={(event) =>
-								event.currentTarget.scrollTo({ top: 0, behavior: "smooth" })
-							}
-							onChange={(event) =>
-								onCommand?.({
-									type: "update-data",
-									itemId: item.id,
-									data: { ...item.data, text: event.target.value },
-								})
-							}
-						/>
-					) : (
-						<p
-							className={`w-full whitespace-pre-wrap break-all p-1 text-current ${textSizeClassByPreset[preset]}`}
-							style={{ textAlign: item.style.textAlign ?? "left" }}
-						>
-							{item.data.text}
-						</p>
-					)}
+					<textarea
+						ref={textAreaRef}
+						value={item.data.text}
+						placeholder={mode === "edit" ? "Add note..." : undefined}
+						aria-label="Text content"
+						readOnly={mode === "view"}
+						className={`bento-text-input grid-action field-sizing-content max-h-full min-h-0 w-full cursor-text! resize-none overflow-y-auto overscroll-contain whitespace-pre-wrap break-all rounded-lg border-0 bg-transparent p-1 px-2 text-current outline-none placeholder:text-current/45 focus-visible:ring-0 ${textSizeClassByPreset[preset]}`}
+						style={{ textAlign: item.style.textAlign ?? "left" }}
+						onChange={(event) =>
+							onCommand?.({
+								type: "update-data",
+								itemId: item.id,
+								data: { ...item.data, text: event.target.value },
+							})
+						}
+					/>
 				</div>
 			</div>
 			{item.data.link ? (
