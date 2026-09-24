@@ -10,6 +10,8 @@ import { type BetterAuthOptions, betterAuth } from "better-auth";
 import { drizzleAdapter } from "better-auth/adapters/drizzle";
 import { emailOTP } from "better-auth/plugins";
 
+import { getCookieAttributes } from "./cookie-attributes";
+
 const socialProviders: BetterAuthOptions["socialProviders"] = {
 	...(env.GOOGLE_CLIENT_ID
 		? {
@@ -119,8 +121,7 @@ const authOptions: BetterAuthOptions = {
 	baseURL: env.BETTER_AUTH_URL,
 	advanced: {
 		defaultCookieAttributes: {
-			sameSite: "none",
-			secure: true,
+			...getCookieAttributes(env.BETTER_AUTH_URL),
 			httpOnly: true,
 		},
 		// uncomment crossSubDomainCookies setting when ready to deploy and replace <your-workers-subdomain> with your actual workers subdomain
