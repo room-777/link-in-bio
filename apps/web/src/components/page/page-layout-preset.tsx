@@ -11,6 +11,7 @@ import {
 } from "@grabbin/ui/components/dialog";
 import Loading from "@grabbin/ui/components/loading";
 import { Separator } from "@grabbin/ui/components/separator";
+import { Tabs, TabsList, TabsTrigger } from "@grabbin/ui/components/tabs";
 // ponytail: Keep qr at 0.5.5 until Cuer stops passing border=0 to newer encoders.
 import { Cuer } from "cuer";
 import { Laptop, Smartphone } from "lucide-react";
@@ -41,10 +42,6 @@ export default function PageLayoutPreset({
 	const labelRef = useRef<HTMLSpanElement>(null);
 	const swapTimerRef = useRef<number | null>(null);
 	const resetTimerRef = useRef<number | null>(null);
-	const layoutTransition = reduceMotion
-		? { duration: 0 }
-		: { type: "spring" as const, stiffness: 560, damping: 32, mass: 0.8 };
-
 	useEffect(() => setActiveBreakpoint(value), [value]);
 	useEffect(
 		() => () => {
@@ -192,42 +189,33 @@ export default function PageLayoutPreset({
 					orientation="vertical"
 					className="mx-2 rounded-lg data-vertical:my-2 data-vertical:w-[2.5px]"
 				/>
-				<div className="relative grid shrink-0 grid-cols-2 gap-1">
-					<motion.span
-						initial={false}
-						animate={{
-							x: activeBreakpoint === "compact" ? 0 : "calc(100% + 0.25rem)",
-						}}
-						transition={layoutTransition}
-						aria-hidden="true"
-						className="smooth-shadow-xs pointer-events-none absolute inset-y-0 left-0 z-0 rounded-lg bg-primary"
-						style={{ width: "calc(50% - 0.125rem)" }}
-					/>
-					<Button
-						type="button"
-						size="default"
-						variant="ghost"
-						aria-pressed={activeBreakpoint === "compact"}
-						aria-label="Edit compact layout"
-						onClick={() => selectBreakpoint("compact")}
-						className="relative z-10 w-full px-5 text-foreground hover:bg-transparent aria-pressed:text-primary-foreground aria-pressed:hover:text-primary-foreground"
-					>
-						<Smartphone className="relative z-10 size-5" aria-hidden="true" />
-						<span className="sr-only">Compact</span>
-					</Button>
-					<Button
-						type="button"
-						size="default"
-						variant="ghost"
-						aria-pressed={activeBreakpoint === "wide"}
-						aria-label="Edit wide layout"
-						onClick={() => selectBreakpoint("wide")}
-						className="relative z-10 w-full px-5 text-foreground hover:bg-transparent aria-pressed:text-primary-foreground aria-pressed:hover:text-primary-foreground"
-					>
-						<Laptop className="relative z-10 size-5" aria-hidden="true" />
-						<span className="sr-only">Wide</span>
-					</Button>
-				</div>
+				<Tabs
+					value={activeBreakpoint}
+					onValueChange={(breakpoint) => {
+						if (breakpoint === "compact" || breakpoint === "wide")
+							selectBreakpoint(breakpoint);
+					}}
+					className="shrink-0"
+				>
+					<TabsList size="default" className="grid grid-cols-2 gap-1 p-0.5">
+						<TabsTrigger
+							value="compact"
+							aria-label="Edit compact layout"
+							className="h-full w-12 px-0"
+						>
+							<Smartphone className="size-5" aria-hidden="true" />
+							<span className="sr-only">Compact</span>
+						</TabsTrigger>
+						<TabsTrigger
+							value="wide"
+							aria-label="Edit wide layout"
+							className="h-full w-12 px-0"
+						>
+							<Laptop className="size-5" aria-hidden="true" />
+							<span className="sr-only">Wide</span>
+						</TabsTrigger>
+					</TabsList>
+				</Tabs>
 			</fieldset>
 		</motion.div>
 	);
