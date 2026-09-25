@@ -1,18 +1,15 @@
 "use client";
 
 import { Button } from "@grabbin/ui/components/button";
-import { useQueryErrorResetBoundary } from "@tanstack/react-query";
 import { useEffect } from "react";
 
-export default function RouteError({
+export default function RootError({
 	error,
 	reset,
 }: {
 	error: Error & { digest?: string };
 	reset: () => void;
 }) {
-	const { reset: resetQuery } = useQueryErrorResetBoundary();
-
 	useEffect(() => {
 		console.error(error);
 	}, [error]);
@@ -30,10 +27,7 @@ export default function RouteError({
 					className="mt-6 text-muted-foreground"
 					variant="secondary"
 					size="default"
-					onClick={() => {
-						resetQuery();
-						reset();
-					}}
+					onClick={reset}
 				>
 					Try again
 				</Button>
