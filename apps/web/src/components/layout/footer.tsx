@@ -43,7 +43,7 @@ export default function Footer() {
 								places—made to feel like you.
 							</p>
 						</div>
-						<div className="flex flex-col gap-0 font-medium text-lg">
+						<div className="flex flex-col gap-0 font-normal text-base">
 							<p>Designed for everyone, made with 🔥</p>
 							<p>
 								built by{" "}
