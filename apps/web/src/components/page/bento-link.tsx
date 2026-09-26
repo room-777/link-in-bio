@@ -307,6 +307,7 @@ function LinkPreviewImage({
 					alt=""
 					aria-hidden="true"
 					className="pointer-events-none absolute inset-0 size-full scale-110 object-cover blur-md"
+					loading="lazy"
 					src={placeholderUrl}
 					onError={() => setPlaceholderFailed(true)}
 				/>
@@ -315,6 +316,7 @@ function LinkPreviewImage({
 				<img
 					alt=""
 					className={`absolute inset-0 size-full object-cover outline-depth transition-opacity ${!placeholderUrl || placeholderFailed || imageLoaded ? "opacity-100" : "opacity-0"}`}
+					loading="lazy"
 					src={imageSrc}
 					onLoad={() => setImageLoaded(true)}
 					onError={() => {
