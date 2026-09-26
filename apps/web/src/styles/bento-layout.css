@@ -76,6 +76,11 @@ html:has(.bento-page-scroll, .page-scroll-container) body {
 	overscroll-behavior-y: none;
 }
 
+html:has(.landing-page),
+html:has(.landing-page) body {
+	overscroll-behavior-y: none;
+}
+
 .bento-page-scroll::-webkit-scrollbar {
 	display: none;
 }

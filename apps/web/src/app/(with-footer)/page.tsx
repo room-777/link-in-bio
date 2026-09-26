@@ -4,10 +4,12 @@ import Footer from "@/components/layout/footer";
 
 export default function Home() {
 	return (
-		<main className="flex flex-col items-center justify-center font-aspekta">
-			<LandingHeader />
-			<HeroSection />
+		<>
+			<main className="landing-page flex flex-col items-center justify-center font-aspekta">
+				<LandingHeader />
+				<HeroSection />
+			</main>
 			<Footer />
-		</main>
+		</>
 	);
 }

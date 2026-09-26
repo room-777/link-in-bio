@@ -13,7 +13,7 @@ function Logo({ className }: { className?: string }) {
 
 export default function LandingHeader() {
 	return (
-		<header className="fixed inset-x-0 top-0 z-[100003] w-full bg-background px-3 py-4 after:pointer-events-none after:absolute after:inset-x-0 after:top-full after:h-8 after:bg-gradient-to-b after:from-background after:to-transparent after:content-[''] sm:px-6 sm:py-4">
+		<header className="fixed inset-x-0 top-0 z-[100003] w-full bg-transparent px-3 py-4 sm:px-6 sm:py-4">
 			<div className="mx-auto flex w-full max-w-7xl items-center justify-between">
 				<Logo className="shrink-0" />
 				<div className="flex justify-end">
