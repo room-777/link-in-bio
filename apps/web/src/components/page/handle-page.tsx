@@ -71,15 +71,20 @@ export default function HandlePage({
 								: { maxWidth: compactProfileMaxWidth }
 						}
 					>
-						<div className="relative flex size-28 items-center justify-center overflow-hidden rounded-full sm:size-32 min-[90rem]:size-46">
+						<motion.div
+							initial={imageUrl && !reduceMotion ? { rotate: -8 } : false}
+							animate={{ rotate: 0 }}
+							transition={enterTransition}
+							className="relative flex size-28 items-center justify-center overflow-hidden rounded-full sm:size-32 min-[90rem]:size-46"
+						>
 							{imageUrl && (
 								<MotionImage
 									fill
 									src={imageUrl}
 									alt={title}
 									sizes="(min-width: 90rem) 184px, 128px"
-									initial={reduceMotion ? false : { opacity: 0, rotate: -8 }}
-									animate={{ opacity: 1, rotate: 0 }}
+									initial={reduceMotion ? false : { opacity: 0 }}
+									animate={{ opacity: 1 }}
 									transition={enterTransition}
 									className="size-full rounded-lg object-cover"
 									style={imageStyle}
@@ -91,7 +96,7 @@ export default function HandlePage({
 									className="pointer-events-none absolute inset-0 z-10 rounded-full outline-depth"
 								/>
 							)}
-						</div>
+						</motion.div>
 						<div className="flex min-w-0 flex-col gap-2">
 							<motion.h1
 								initial={reduceMotion ? false : { opacity: 0, y: 10 }}
