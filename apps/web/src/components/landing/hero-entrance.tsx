@@ -14,7 +14,7 @@ export default function HeroEntrance({
 }) {
 	const reduceMotion = useReducedMotion();
 	const transition = {
-		duration: reduceMotion ? 0 : 0.55,
+		duration: reduceMotion ? 0 : 0.9,
 		ease: [0.22, 1, 0.36, 1] as const,
 	};
 	const initial = reduceMotion
@@ -30,14 +30,14 @@ export default function HeroEntrance({
 			<motion.div
 				animate={animate}
 				initial={initial}
-				transition={{ ...transition, delay: 0.1 }}
+				transition={{ ...transition, delay: 0.15 }}
 			>
 				{description}
 			</motion.div>
 			<motion.div
 				animate={animate}
 				initial={initial}
-				transition={{ ...transition, delay: 0.2 }}
+				transition={{ ...transition, delay: 0.3 }}
 			>
 				{preview}
 			</motion.div>
