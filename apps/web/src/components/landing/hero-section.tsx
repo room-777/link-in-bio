@@ -10,7 +10,10 @@ const playfairDisplay = Playfair_Display({
 
 export default function HeroSection() {
 	return (
-		<section className="relative isolate flex min-h-svh w-full flex-col px-6 pt-24 pb-20 sm:px-10">
+		<section
+			id="hero"
+			className="relative isolate flex min-h-svh w-full flex-col px-6 pt-24 pb-20 sm:px-10"
+		>
 			<HeroImage />
 			<div
 				aria-hidden="true"
