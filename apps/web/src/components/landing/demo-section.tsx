@@ -21,7 +21,7 @@ export default function DemoSection() {
 		>
 			<div className="mx-auto flex w-full max-w-7xl flex-col items-center gap-10 sm:gap-14">
 				<motion.h2
-					className="text-pretty text-center font-medium text-3xl text-foreground leading-tight tracking-[-0.065em] sm:text-4xl md:text-5xl"
+					className="text-pretty text-center font-medium text-3xl text-foreground leading-tight tracking-[-0.065em] sm:text-4xl lg:text-5xl"
 					id="landing-demo-title"
 					initial={initial}
 					whileInView={animate}

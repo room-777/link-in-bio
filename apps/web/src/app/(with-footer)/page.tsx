@@ -2,6 +2,7 @@ import CtaSection from "@/components/landing/cta-section";
 import DemoSection from "@/components/landing/demo-section";
 import HeroSection from "@/components/landing/hero-section";
 import LandingHeader from "@/components/landing/landing-header";
+import WidgetTypesSection from "@/components/landing/widget-types-section";
 import Footer from "@/components/layout/footer";
 
 export default function Home() {
@@ -11,6 +12,7 @@ export default function Home() {
 				<LandingHeader />
 				<HeroSection />
 				<DemoSection />
+				<WidgetTypesSection />
 				<CtaSection />
 			</main>
 			<Footer />
