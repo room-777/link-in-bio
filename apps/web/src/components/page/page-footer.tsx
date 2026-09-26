@@ -69,13 +69,10 @@ const DiscordLink = forwardRef<HTMLAnchorElement, DiscordLinkProps>(
 	},
 );
 
-function DiscordTooltip({ className }: { className?: string }) {
+function DiscordTooltip() {
 	return (
 		<Tooltip>
-			<TooltipTrigger
-				delay={0}
-				render={<DiscordLink className={className} />}
-			/>
+			<TooltipTrigger delay={0} render={<DiscordLink />} />
 			<TooltipContent>community</TooltipContent>
 		</Tooltip>
 	);
@@ -94,7 +91,7 @@ function PublicViews({ handle }: { handle?: string }) {
 
 	if (!handle) return null;
 	if (timezone === null || isPending) {
-		return <Skeleton aria-busy="true" className="ml-1 h-8 w-28 rounded-md" />;
+		return <Skeleton aria-busy="true" className="h-8 w-28 rounded-md" />;
 	}
 	if (isError || !data) return null;
 
@@ -165,112 +162,128 @@ function OwnerFooter({
 
 	return (
 		<>
-			<Popover
-				open={isOpen}
-				onOpenChange={(open) => {
-					setIsOpen(open);
-				}}
-			>
-				<Tooltip>
-					<TooltipTrigger
-						delay={0}
-						render={
-							<PopoverTrigger
-								render={
-									<Button
-										variant="ghost"
-										size="icon-lg"
-										className="text-muted-foreground/80"
-										aria-label="Open page options"
-									>
-										<SlidersHorizontal className="stroke-[2.5px]" />
-									</Button>
-								}
-							/>
-						}
-					/>
-					<TooltipContent>setting</TooltipContent>
-				</Tooltip>
-				<PopoverContent
-					align="start"
-					side="top"
-					sideOffset={8}
-					initialFocus={false}
-					className="relative w-60 gap-1 rounded-2xl p-2"
-					onPointerLeave={() => setIsItemActive(false)}
+			<div className="flex items-center gap-1">
+				<Popover
+					open={isOpen}
+					onOpenChange={(open) => {
+						setIsOpen(open);
+					}}
 				>
-					<PopoverTitle className="sr-only">Page options</PopoverTitle>
-					{activeItem !== null && (
-						<motion.div
-							aria-hidden="true"
-							initial={false}
-							data-active={isItemActive || undefined}
-							className="pointer-events-none absolute top-2 right-2 left-2 z-0 h-16 rounded-lg bg-muted/80 opacity-0 transition-opacity duration-150 data-[active=true]:opacity-100 motion-reduce:transition-none"
-							animate={{ y: activeItem * 68 }}
-							transition={hoverTransition}
+					<Tooltip>
+						<TooltipTrigger
+							delay={0}
+							render={
+								<PopoverTrigger
+									render={
+										<Button
+											variant="ghost"
+											size="icon-lg"
+											className="text-muted-foreground/80"
+											aria-label="Open page options"
+										>
+											<SlidersHorizontal className="stroke-[2.5px]" />
+										</Button>
+									}
+								/>
+							}
 						/>
-					)}
-					<Button
-						variant="ghost"
-						className="relative z-10 h-16 w-full justify-start px-5 hover:bg-transparent"
-						onClick={() => {
-							setIsOpen(false);
-							setIsHandleDialogOpen(true);
-						}}
-						onPointerEnter={() => {
-							setActiveItem(0);
-							setIsItemActive(true);
-						}}
-						onFocus={() => {
-							setActiveItem(0);
-							setIsItemActive(true);
-						}}
+						<TooltipContent>setting</TooltipContent>
+					</Tooltip>
+					<PopoverContent
+						align="start"
+						side="top"
+						sideOffset={8}
+						initialFocus={false}
+						className="relative w-60 gap-1 rounded-2xl p-2"
+						onPointerLeave={() => setIsItemActive(false)}
 					>
-						<span className="flex flex-col items-start gap-0.5 text-left">
-							<span>Change handle</span>
-							<span className="w-full min-w-0 break-all text-muted-foreground/80 text-sm">
-								{handle ? `/${handle}` : null}
+						<PopoverTitle className="sr-only">Page options</PopoverTitle>
+						{activeItem !== null && (
+							<motion.div
+								aria-hidden="true"
+								initial={false}
+								data-active={isItemActive || undefined}
+								className="pointer-events-none absolute top-2 right-2 left-2 z-0 h-16 rounded-lg bg-muted/80 opacity-0 transition-opacity duration-150 data-[active=true]:opacity-100 motion-reduce:transition-none"
+								animate={{ y: activeItem * 68 }}
+								transition={hoverTransition}
+							/>
+						)}
+						<Button
+							variant="ghost"
+							className="relative z-10 h-16 w-full justify-start px-5 hover:bg-transparent"
+							onClick={() => {
+								setIsOpen(false);
+								setIsHandleDialogOpen(true);
+							}}
+							onPointerEnter={() => {
+								setActiveItem(0);
+								setIsItemActive(true);
+							}}
+							onFocus={() => {
+								setActiveItem(0);
+								setIsItemActive(true);
+							}}
+						>
+							<span className="flex flex-col items-start gap-0.5 text-left">
+								<span>Change handle</span>
+								<span className="w-full min-w-0 break-all text-muted-foreground/80 text-sm">
+									{handle ? `/${handle}` : null}
+								</span>
 							</span>
-						</span>
-					</Button>
-					<Button
-						variant="ghost"
-						className="relative z-10 h-16 w-full justify-start px-5 hover:bg-transparent"
-						disabled={isSigningOut}
-						onClick={handleSignOut}
-						onPointerEnter={() => {
-							setActiveItem(1);
-							setIsItemActive(true);
-						}}
-						onFocus={() => {
-							setActiveItem(1);
-							setIsItemActive(true);
-						}}
-					>
-						{isSigningOut ? "Logging out..." : "Log out"}
-					</Button>
-					<Button
-						variant="ghost"
-						className="relative z-10 h-16 w-full justify-start px-5 text-primary hover:bg-transparent"
-						onClick={() => {
-							setIsOpen(false);
-							setIsDeleteDialogOpen(true);
-						}}
-						onPointerEnter={() => {
-							setActiveItem(2);
-							setIsItemActive(true);
-						}}
-						onFocus={() => {
-							setActiveItem(2);
-							setIsItemActive(true);
-						}}
-					>
-						Delete account
-					</Button>
-				</PopoverContent>
-			</Popover>
-			<DiscordTooltip className="ml-1" />
-			<PublicViews handle={handle} />
+						</Button>
+						<Button
+							variant="ghost"
+							className="relative z-10 h-16 w-full justify-start px-5 hover:bg-transparent"
+							onPointerEnter={() => {
+								setActiveItem(1);
+								setIsItemActive(true);
+							}}
+							onFocus={() => {
+								setActiveItem(1);
+								setIsItemActive(true);
+							}}
+						>
+							Manage pages
+						</Button>
+						<Button
+							variant="ghost"
+							className="relative z-10 h-16 w-full justify-start px-5 hover:bg-transparent"
+							disabled={isSigningOut}
+							onClick={handleSignOut}
+							onPointerEnter={() => {
+								setActiveItem(2);
+								setIsItemActive(true);
+							}}
+							onFocus={() => {
+								setActiveItem(2);
+								setIsItemActive(true);
+							}}
+						>
+							{isSigningOut ? "Logging out..." : "Log out"}
+						</Button>
+						<Button
+							variant="ghost"
+							className="relative z-10 h-16 w-full justify-start px-5 text-primary hover:bg-transparent"
+							onClick={() => {
+								setIsOpen(false);
+								setIsDeleteDialogOpen(true);
+							}}
+							onPointerEnter={() => {
+								setActiveItem(3);
+								setIsItemActive(true);
+							}}
+							onFocus={() => {
+								setActiveItem(3);
+								setIsItemActive(true);
+							}}
+						>
+							Delete account
+						</Button>
+					</PopoverContent>
+				</Popover>
+				<DiscordTooltip />
+				<PublicViews handle={handle} />
+			</div>
 			{isSaving && (
 				<span
 					className="ml-2 flex items-center gap-2 text-muted-foreground/80 text-xs"
@@ -357,6 +370,16 @@ function ViewerFooter({ handle }: { handle?: string }) {
 	);
 }
 
+export function MadeWithGrabbinBadge() {
+	return (
+		<span className="cursor-pointer rounded-sm bg-brand-black px-3 py-1.5 font-medium text-primary-foreground text-sm outline-depth">
+			<span className="shimmer shimmer-color-blue-500/60 shimmer-duration-5500">
+				made with grabbin
+			</span>
+		</span>
+	);
+}
+
 export default function PageFooter({
 	handle,
 	isOwner,
@@ -369,16 +392,21 @@ export default function PageFooter({
 	isSaving?: boolean;
 }) {
 	return (
-		<footer className="-mx-4 mb-4 flex min-h-10 items-center justify-start py-12 min-[90rem]:fixed min-[90rem]:bottom-6 min-[90rem]:left-16 min-[90rem]:z-30 min-[90rem]:-mx-2 min-[90rem]:py-0">
-			{isOwner ? (
-				<OwnerFooter
-					handle={handle}
-					onHandleChange={onHandleChange}
-					isSaving={isSaving}
-				/>
-			) : (
-				<ViewerFooter handle={handle} />
-			)}
+		<footer className="-mx-4 mb-4 flex min-h-10 w-full flex-col items-center justify-start gap-2 py-12 min-[90rem]:fixed min-[90rem]:bottom-6 min-[90rem]:left-16 min-[90rem]:z-30 min-[90rem]:-mx-2 min-[90rem]:w-auto min-[90rem]:items-start min-[90rem]:py-0">
+			<div className="hidden min-[90rem]:block">
+				<MadeWithGrabbinBadge />
+			</div>
+			<div className="flex min-h-10 items-center justify-start">
+				{isOwner ? (
+					<OwnerFooter
+						handle={handle}
+						onHandleChange={onHandleChange}
+						isSaving={isSaving}
+					/>
+				) : (
+					<ViewerFooter handle={handle} />
+				)}
+			</div>
 		</footer>
 	);
 }

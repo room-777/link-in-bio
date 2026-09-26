@@ -70,6 +70,10 @@ export default function OwnerPage({
 		[],
 	);
 	const isAutoSaving = isSaving || isGridSaving;
+	const profileImageUrl = getPageImageUrl(
+		currentPage.imageSource ?? currentPage.imageKey,
+		{ width: 256, height: 256, format: "auto", fit: "cover" },
+	);
 	const isViewportCompact = viewportBreakpoint === "compact";
 	const effectiveBreakpoint = isViewportCompact ? "compact" : layoutBreakpoint;
 	const isCompactContentLayout = effectiveBreakpoint === "compact";
@@ -131,6 +135,8 @@ export default function OwnerPage({
 					items={pageResponse.items}
 					handle={currentPage.handle}
 					breakpoint={effectiveBreakpoint}
+					isAutoSaving={isAutoSaving}
+					profileImageUrl={profileImageUrl}
 					entryAnimationRevision={entryAnimationRevision}
 					entryReady={profileEntryComplete}
 					onEntryComplete={handleBentoEntryComplete}
@@ -144,10 +150,7 @@ export default function OwnerPage({
 					value={layoutBreakpoint}
 					onChange={handleLayoutBreakpointChange}
 					isAutoSaving={isAutoSaving}
-					profileImageUrl={getPageImageUrl(
-						currentPage.imageSource ?? currentPage.imageKey,
-						{ width: 256, height: 256, format: "auto", fit: "cover" },
-					)}
+					profileImageUrl={profileImageUrl}
 				/>
 			) : null}
 		</div>

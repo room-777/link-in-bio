@@ -13,7 +13,8 @@ import { useEffect, useState } from "react";
 import { toBentoItem } from "@/lib/bento/bento-batch";
 import { getMediaCropStyle } from "@/lib/bento/media-crop";
 import { getPageImageUrl } from "@/lib/page-image-url";
-import PageFooter from "./page-footer";
+import PageFooter, { MadeWithGrabbinBadge } from "./page-footer";
+import PublicShareLinkButton from "./public-share-link-button";
 import SimpleAnalyticsTracker from "./simple-analytics-tracker";
 
 const BentoSection = dynamic(() => import("./bento-section"), { ssr: false });
@@ -60,6 +61,7 @@ export default function HandlePage({
 	}, []);
 	return (
 		<main className="page-scroll-container no-scrollbar relative box-border flex h-dvh min-h-0 w-full flex-col items-center overflow-y-auto overscroll-y-none bg-background min-[90rem]:items-start min-[90rem]:justify-center">
+			<PublicShareLinkButton profileImageUrl={imageUrl} />
 			<SimpleAnalyticsTracker pageId={page.id} />
 			<div className="flex w-full flex-col items-center gap-8 min-[90rem]:min-h-dvh min-[90rem]:flex-row min-[90rem]:items-stretch min-[90rem]:justify-around">
 				<div className="contents w-full min-w-0 max-w-md min-[90rem]:flex min-[90rem]:min-h-0 min-[90rem]:w-2xl min-[90rem]:max-w-none min-[90rem]:flex-col">
@@ -71,32 +73,37 @@ export default function HandlePage({
 								: { maxWidth: compactProfileMaxWidth }
 						}
 					>
-						<motion.div
-							initial={imageUrl && !reduceMotion ? { rotate: -8 } : false}
-							animate={{ rotate: 0 }}
-							transition={enterTransition}
-							className="relative flex size-28 items-center justify-center overflow-hidden rounded-full sm:size-32 min-[90rem]:size-46"
-						>
-							{imageUrl && (
-								<MotionImage
-									fill
-									src={imageUrl}
-									alt={title}
-									sizes="(min-width: 90rem) 184px, 128px"
-									initial={reduceMotion ? false : { opacity: 0 }}
-									animate={{ opacity: 1 }}
-									transition={enterTransition}
-									className="size-full rounded-lg object-cover"
-									style={imageStyle}
-								/>
-							)}
-							{imageUrl && (
-								<span
-									aria-hidden="true"
-									className="pointer-events-none absolute inset-0 z-10 rounded-full outline-depth"
-								/>
-							)}
-						</motion.div>
+						<div className="flex w-full items-center justify-between min-[90rem]:justify-start">
+							<motion.div
+								initial={imageUrl && !reduceMotion ? { rotate: -8 } : false}
+								animate={{ rotate: 0 }}
+								transition={enterTransition}
+								className="relative flex size-28 items-center justify-center overflow-hidden rounded-full sm:size-32 min-[90rem]:size-46"
+							>
+								{imageUrl && (
+									<MotionImage
+										fill
+										src={imageUrl}
+										alt={title}
+										sizes="(min-width: 90rem) 184px, 128px"
+										initial={reduceMotion ? false : { opacity: 0 }}
+										animate={{ opacity: 1 }}
+										transition={enterTransition}
+										className="size-full rounded-lg object-cover"
+										style={imageStyle}
+									/>
+								)}
+								{imageUrl && (
+									<span
+										aria-hidden="true"
+										className="pointer-events-none absolute inset-0 z-10 rounded-full outline-depth"
+									/>
+								)}
+							</motion.div>
+							<div className="min-[90rem]:hidden">
+								<MadeWithGrabbinBadge />
+							</div>
+						</div>
 						<div className="flex min-w-0 flex-col gap-2">
 							<motion.h1
 								initial={reduceMotion ? false : { opacity: 0, y: 10 }}

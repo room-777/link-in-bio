@@ -2,12 +2,13 @@
 
 import type { PageImageCrop } from "@grabbin/api";
 import type { BentoBreakpoint } from "@grabbin/bento-layout";
-import { Field, FieldError, FieldGroup } from "@grabbin/ui/components/field";
+import { Field, FieldGroup } from "@grabbin/ui/components/field";
 import {
 	InputGroup,
 	InputGroupTextarea,
 } from "@grabbin/ui/components/input-group";
 
+import { MadeWithGrabbinBadge } from "./page-footer";
 import PageImageField from "./page-image-field";
 
 export default function PageProfileFields({
@@ -45,16 +46,21 @@ export default function PageProfileFields({
 	return (
 		<FieldGroup className="gap-8">
 			<Field data-invalid={!!error} className="gap-8">
-				<PageImageField
-					value={imageUrl}
-					isUploading={isImageUploading}
-					onSelect={onSelectImage}
-					onRemove={onRemoveImage}
-					onError={onImageError}
-					crop={imageCrop}
-					onCropChange={onImageCropChange}
-					breakpoint={breakpoint}
-				/>
+				<div className="flex w-full items-center justify-between min-[90rem]:justify-start">
+					<PageImageField
+						value={imageUrl}
+						isUploading={isImageUploading}
+						onSelect={onSelectImage}
+						onRemove={onRemoveImage}
+						onError={onImageError}
+						crop={imageCrop}
+						onCropChange={onImageCropChange}
+						breakpoint={breakpoint}
+					/>
+					<div className="min-[90rem]:hidden">
+						<MadeWithGrabbinBadge />
+					</div>
+				</div>
 				<div className="flex min-w-0 flex-col gap-2">
 					<InputGroup className="h-auto rounded-none bg-transparent focus-within:ring-0! has-[[data-slot=input-group-control][aria-invalid=true]]:ring-0!">
 						<InputGroupTextarea

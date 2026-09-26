@@ -7,6 +7,7 @@ import dynamic from "next/dynamic";
 import { useEffect } from "react";
 import { useBentoStore } from "@/lib/bento/bento-store";
 import AddWidgetDialog from "./add-widget-dialog";
+import EditMobileShareLinkButton from "./edit-mobile-share-link-button";
 
 const BentoSection = dynamic(() => import("./bento-section"), { ssr: false });
 
@@ -14,6 +15,8 @@ export default function BentoEditor({
 	items,
 	handle,
 	breakpoint,
+	isAutoSaving,
+	profileImageUrl,
 	entryAnimationRevision,
 	entryReady,
 	onEntryComplete,
@@ -22,6 +25,8 @@ export default function BentoEditor({
 	items: PageByHandleResponse["items"];
 	handle: string;
 	breakpoint: BentoBreakpoint;
+	isAutoSaving: boolean;
+	profileImageUrl: string | null;
 	entryAnimationRevision: number;
 	entryReady: boolean;
 	onEntryComplete?: () => void;
@@ -101,6 +106,10 @@ export default function BentoEditor({
 				onCommand={store.dispatchCommand}
 				onRefreshLinkMetadata={store.refreshLinkMetadata}
 				onLinkImageSelect={selectLinkImage}
+			/>
+			<EditMobileShareLinkButton
+				isAutoSaving={isAutoSaving}
+				profileImageUrl={profileImageUrl}
 			/>
 			<AddWidgetDialog onItemAdd={addItem} onMediaSelect={selectMedia} />
 		</section>
