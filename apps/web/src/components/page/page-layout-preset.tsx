@@ -153,7 +153,7 @@ export default function PageLayoutPreset({
 								value={window.location.href}
 								color="#171717"
 								className="size-48"
-								arena={profileImageUrl ?? "/favicon.svg"}
+								arena={profileImageUrl}
 								aria-label="QR code for your page"
 							/>
 						</div>
