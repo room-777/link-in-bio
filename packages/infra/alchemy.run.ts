@@ -163,6 +163,12 @@ export const server = Cloudflare.Worker("server", {
 		PRODUCT_HUNT_TOKEN: Config.redacted("PRODUCT_HUNT_TOKEN").pipe(
 			Config.withDefault(""),
 		),
+		SIMPLE_ANALYTICS_API_KEY: Config.redacted("SIMPLE_ANALYTICS_API_KEY").pipe(
+			Config.withDefault(""),
+		),
+		NEXT_PUBLIC_PAGE_DOMAIN: Config.string("NEXT_PUBLIC_PAGE_DOMAIN").pipe(
+			Config.withDefault("grabbin.me"),
+		),
 	},
 	dev: {
 		port: 3001,

@@ -14,6 +14,7 @@ import { toBentoItem } from "@/lib/bento/bento-batch";
 import { getMediaCropStyle } from "@/lib/bento/media-crop";
 import { getPageImageUrl } from "@/lib/page-image-url";
 import PageFooter from "./page-footer";
+import SimpleAnalyticsTracker from "./simple-analytics-tracker";
 
 const BentoSection = dynamic(() => import("./bento-section"), { ssr: false });
 const MotionImage = motion.create(Image);
@@ -59,6 +60,7 @@ export default function HandlePage({
 	}, []);
 	return (
 		<main className="page-scroll-container no-scrollbar relative box-border flex h-dvh min-h-0 w-full flex-col items-center overflow-y-auto overscroll-y-none bg-background min-[90rem]:items-start min-[90rem]:justify-center">
+			<SimpleAnalyticsTracker pageId={page.id} />
 			<div className="flex w-full flex-col items-center gap-8 min-[90rem]:min-h-dvh min-[90rem]:flex-row min-[90rem]:items-stretch min-[90rem]:justify-around">
 				<div className="contents w-full min-w-0 max-w-md min-[90rem]:flex min-[90rem]:min-h-0 min-[90rem]:w-2xl min-[90rem]:max-w-none min-[90rem]:flex-col">
 					<article

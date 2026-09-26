@@ -31,6 +31,7 @@ import {
 } from "../services/page.service";
 import { checkPageHandle } from "../services/page-handle.service";
 import { listPageItems } from "../services/page-item.service";
+import { getPublicViews } from "../services/public-views.service";
 import type { AppEnv } from "../types";
 
 const pageErrorDetails = {
@@ -68,13 +69,26 @@ export const pagesController = new Hono<AppEnv>()
 			}),
 		);
 	})
+	.get("/:handle/views", async (c) => {
+		const page = await getPage(await createDb(), c.req.param("handle"));
+		if (!page) {
+			return jsonApiError(c, { status: 404, detail: "Page not found." });
+		}
+
+		const timezone = c.req.query("timezone") ?? "UTC";
+		if (timezone.length > 100) {
+			return jsonApiError(c, { status: 400, detail: "Invalid timezone." });
+		}
+		c.header("Cache-Control", "private, no-store");
+		return c.json(await getPublicViews(page.id, timezone));
+	})
 	.get("/:handle", optionalSession, async (c) => {
 		const page = await getPage(c.var.db, c.req.param("handle"));
 		if (!page) {
 			return jsonApiError(c, { status: 404, detail: "Page not found." });
 		}
 
-		const { id: _id, userId, ...publicPage } = page;
+		const { userId, ...publicPage } = page;
 		const canEdit = c.var.session?.user.id === userId;
 		const hasCookie = Boolean(c.req.header("cookie"));
 		c.header(

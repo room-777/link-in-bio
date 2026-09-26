@@ -30,6 +30,7 @@ export const pageImageKeySchema = v.object({
 });
 
 export const pageDataSchema = v.object({
+	id: v.string(),
 	handle: v.string(),
 	onboarding: v.boolean(),
 	imageKey: v.nullable(v.string()),
@@ -44,6 +45,11 @@ export const pageDataSchema = v.object({
 export const pageByHandleResponseSchema = v.object({
 	page: pageDataSchema,
 	items: v.array(pageItemResponseSchema),
+});
+
+export const publicViewsResponseSchema = v.object({
+	todayViews: v.nullable(v.number()),
+	yesterdayViews: v.nullable(v.number()),
 });
 
 const pageNameSchema = v.pipe(v.string(), v.trim(), v.maxLength(80));
@@ -64,6 +70,9 @@ export const updatePageDraftSchema = v.pipe(
 export type PageData = v.InferOutput<typeof pageDataSchema>;
 export type PageByHandleResponse = v.InferOutput<
 	typeof pageByHandleResponseSchema
+>;
+export type PublicViewsResponse = v.InferOutput<
+	typeof publicViewsResponseSchema
 >;
 export type UpdatePageDraft = v.InferOutput<typeof updatePageDraftSchema>;
 

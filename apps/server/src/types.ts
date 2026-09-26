@@ -24,6 +24,8 @@ export type AppEnv = EvlogVariables & {
 		TWITCH_USER_ACCESS_TOKEN: string;
 		GITHUB_TOKEN: string;
 		PRODUCT_HUNT_TOKEN: string;
+		SIMPLE_ANALYTICS_API_KEY: string;
+		NEXT_PUBLIC_PAGE_DOMAIN: string;
 	};
 	Variables: {
 		db: DatabaseClient;

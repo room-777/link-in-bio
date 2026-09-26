@@ -21,6 +21,7 @@ import {
 	TooltipTrigger,
 } from "@grabbin/ui/components/tooltip";
 import { cn } from "@grabbin/ui/lib/utils";
+import { useQuery } from "@tanstack/react-query";
 import { SlidersHorizontal } from "lucide-react";
 import { motion, useReducedMotion } from "motion/react";
 import Link from "next/link";
@@ -29,8 +30,10 @@ import type { ComponentPropsWithoutRef } from "react";
 import { forwardRef, useEffect, useState } from "react";
 import { authClient, getAuthErrorMessage } from "@/lib/auth-client";
 import { getSignInHref } from "@/lib/auth-redirect";
+import { getPublicViewsQueryOptions } from "@/lib/public-views-api";
 import ChangeHandleDialog from "./change-handle-dialog";
 import DeleteAccountDialog from "./delete-account-dialog";
+import SpinningCounter from "./spinning-counter";
 
 type DiscordLinkProps = ComponentPropsWithoutRef<"a">;
 
@@ -74,6 +77,56 @@ function DiscordTooltip({ className }: { className?: string }) {
 				render={<DiscordLink className={className} />}
 			/>
 			<TooltipContent>community</TooltipContent>
+		</Tooltip>
+	);
+}
+
+function PublicViews({ handle }: { handle?: string }) {
+	const [timezone, setTimezone] = useState<string | null>(null);
+	useEffect(() => {
+		setTimezone(Intl.DateTimeFormat().resolvedOptions().timeZone || "UTC");
+	}, []);
+
+	const { data, isPending, isError } = useQuery({
+		...getPublicViewsQueryOptions(handle ?? "", timezone ?? "UTC"),
+		enabled: Boolean(handle && timezone),
+	});
+
+	if (!handle) return null;
+	if (timezone === null || isPending) {
+		return <Skeleton aria-busy="true" className="ml-1 h-8 w-28 rounded-md" />;
+	}
+	if (isError || !data) return null;
+
+	const todayViews = data.todayViews ?? 0;
+	const yesterdayViews = data.yesterdayViews ?? 0;
+	const formatViews = (views: number) => {
+		if (views >= 1_000_000)
+			return { value: Math.floor(views / 1_000_000), unit: "M" };
+		if (views >= 1_000) return { value: Math.floor(views / 1_000), unit: "K" };
+		return { value: views, unit: "" };
+	};
+	const today = formatViews(todayViews);
+	const yesterday = formatViews(yesterdayViews);
+
+	return (
+		<Tooltip>
+			<TooltipTrigger
+				delay={0}
+				render={
+					<Button
+						variant="ghost"
+						size="lg"
+						className="px-2 text-muted-foreground/80"
+						aria-label={`${todayViews} views today`}
+					/>
+				}
+			>
+				<SpinningCounter value={today.value} />
+				{today.unit}
+				<span className="ml-0">views today</span>
+			</TooltipTrigger>
+			<TooltipContent>{`${yesterday.value}${yesterday.unit} views yesterday`}</TooltipContent>
 		</Tooltip>
 	);
 }
@@ -217,6 +270,7 @@ function OwnerFooter({
 				</PopoverContent>
 			</Popover>
 			<DiscordTooltip className="ml-1" />
+			<PublicViews handle={handle} />
 			{isSaving && (
 				<span
 					className="ml-2 flex items-center gap-2 text-muted-foreground/80 text-xs"
@@ -263,6 +317,7 @@ function ViewerFooter({ handle }: { handle?: string }) {
 					Sign in
 				</Link>
 				<DiscordTooltip />
+				<PublicViews handle={handle} />
 			</div>
 		);
 	}
@@ -297,6 +352,7 @@ function ViewerFooter({ handle }: { handle?: string }) {
 				</span>
 			</Link>
 			<DiscordTooltip />
+			<PublicViews handle={handle} />
 		</div>
 	);
 }
