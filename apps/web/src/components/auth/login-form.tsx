@@ -32,6 +32,34 @@ export default function LoginForm({ returnTo }: { returnTo?: string | null }) {
 		<div className="mx-auto flex w-full max-w-sm flex-col items-center justify-center p-6 lg:min-h-svh">
 			<Activity mode={otpEmail ? "hidden" : "visible"}>
 				<header className="mb-8 flex w-full flex-col gap-0.5">
+					<svg
+						viewBox="0 0 48 48"
+						role="img"
+						aria-label="Grabbin"
+						className="mb-6 size-10 self-center"
+						fill="white"
+						stroke="currentColor"
+						strokeWidth="2"
+						strokeLinejoin="round"
+					>
+						<rect
+							x="5"
+							y="9"
+							width="23"
+							height="31"
+							rx="3"
+							transform="rotate(-24 16.5 24.5)"
+						/>
+						<rect
+							x="20"
+							y="9"
+							width="23"
+							height="31"
+							rx="3"
+							transform="rotate(24 31.5 24.5)"
+						/>
+						<rect x="13" y="5" width="23" height="31" rx="3" />
+					</svg>
 					<h1 className="font-medium text-xl">Good to see you again.</h1>
 					<p className="text-muted-foreground text-sm">
 						Create your page in seconds

@@ -1,7 +1,7 @@
+import Image from "next/image";
 import { redirect } from "next/navigation";
 
 import LoginForm from "@/components/auth/login-form";
-import BentoPreview from "@/components/page/bento-preview";
 import { sanitizeAuthRedirect } from "@/lib/auth-redirect";
 import { getPrimaryPagePath, getServerSession } from "@/lib/server/session";
 
@@ -17,9 +17,19 @@ export default async function LoginPage({
 	if (session) redirect(returnTo ?? getPrimaryPagePath(session));
 
 	return (
-		<main className="grid min-h-svh w-full grid-cols-1 xl:grid-cols-[minmax(0,1fr)_796px]">
+		<main className="relative grid min-h-svh w-full place-items-center">
 			<LoginForm returnTo={returnTo} />
-			<BentoPreview />
+			<div className="pointer-events-none absolute inset-x-0 bottom-0 aspect-[1.25/1] w-full overflow-hidden sm:aspect-[5/1]">
+				<Image
+					alt=""
+					aria-hidden="true"
+					fill
+					sizes="100vw"
+					src="/images/footer-doodles-bf164e2b806327c8.png"
+					unoptimized
+					className="-z-10 select-none object-cover object-bottom"
+				/>
+			</div>
 		</main>
 	);
 }
