@@ -724,7 +724,7 @@ export default function BentoItemControls({
 		try {
 			await onRefreshLinkMetadata(item.id);
 		} catch {
-			// The store exposes the save/refresh error in the editor status.
+			// The store reports refresh failures with a toast.
 		} finally {
 			setIsRefreshing(false);
 		}

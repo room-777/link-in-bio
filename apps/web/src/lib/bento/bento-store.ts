@@ -1,6 +1,7 @@
 "use client";
 
 import type { PageItemBatchRequest, PageItemResponse } from "@grabbin/api";
+import { toast } from "@grabbin/ui/components/toast";
 import { useCallback, useEffect, useRef, useState } from "react";
 import {
 	cancelBentoMediaUpload,
@@ -50,7 +51,6 @@ export function useBentoStore({
 		initialItems.map(toBentoItem),
 	);
 	const [status, setStatus] = useState<BentoStoreStatus>("saved");
-	const [errorMessage, setErrorMessage] = useState<string | null>(null);
 	const [autoFocusItemId, setAutoFocusItemId] = useState<string | null>(null);
 	const draftRef = useRef(items);
 	const persistedRef = useRef(items);
@@ -73,7 +73,6 @@ export function useBentoStore({
 		setItems(nextItems);
 		setAutoFocusItemId(null);
 		setStatus("saved");
-		setErrorMessage(null);
 	}, [initialItems]);
 
 	useEffect(
@@ -124,7 +123,6 @@ export function useBentoStore({
 
 		const stateVersion = stateVersionRef.current;
 		setStatus("saving");
-		setErrorMessage(null);
 
 		let request: Promise<SaveResult> | null = null;
 		request = (async () => {
@@ -180,8 +178,8 @@ export function useBentoStore({
 					error instanceof Error
 						? error
 						: new Error("Unable to save bento items.");
-				setErrorMessage(saveError.message);
 				setStatus("error");
+				toast({ message: saveError.message, state: "error" });
 				shouldScheduleFollowUp = false;
 				return { ok: false, error: saveError };
 			} finally {
@@ -221,7 +219,6 @@ export function useBentoStore({
 			setItems(nextItems);
 			if (!persistItems) {
 				setStatus("saved");
-				setErrorMessage(null);
 				return;
 			}
 			const nextBatch = createBentoBatch(
@@ -232,7 +229,6 @@ export function useBentoStore({
 			pendingRef.current = nextBatch;
 			const hasChanges = hasBentoBatchChanges(nextBatch);
 			setStatus(hasChanges ? "dirty" : "saved");
-			setErrorMessage(null);
 			if (hasChanges) scheduleSave();
 		},
 		[persistItems, scheduleSave],
@@ -529,14 +525,13 @@ export function useBentoStore({
 				);
 				setItems(nextDraft);
 				setStatus(hasBentoBatchChanges(pendingRef.current) ? "dirty" : "saved");
-				setErrorMessage(null);
 			} catch (error) {
 				const message =
 					error instanceof Error
 						? error.message
 						: "Unable to refresh link metadata.";
-				setErrorMessage(message);
 				setStatus("error");
+				toast({ message, state: "error" });
 				throw error;
 			}
 		},
@@ -552,7 +547,6 @@ export function useBentoStore({
 		autoFocusItemId,
 		clearAutoFocusItem,
 		status,
-		errorMessage,
 		dispatchCommand,
 		addMediaUpload,
 		replaceLinkImage,
