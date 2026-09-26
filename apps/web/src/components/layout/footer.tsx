@@ -57,21 +57,46 @@ export default function Footer() {
 								</a>
 							</p>
 						</div>
-						<a
-							href="https://ko-fi.com/I3Z525CTG8"
-							target="_blank"
-							rel="noreferrer"
-							aria-label="Support on Ko-fi"
-							className="block rounded-xl outline-depth"
-						>
-							<img
-								src="/images/kofi-support.png"
-								alt=""
-								aria-hidden="true"
-								className="h-auto w-40 rounded-xl"
-							/>
-							<span className="sr-only">Support on Ko-fi</span>
-						</a>
+						<div className="mt-12 flex flex-col items-start gap-3">
+							<a
+								href="https://ko-fi.com/I3Z525CTG8"
+								target="_blank"
+								rel="noreferrer"
+								aria-label="Support on Ko-fi"
+								className="block rounded-xl"
+							>
+								<img
+									src="/images/kofi-support-6a92ee94.png"
+									alt=""
+									aria-hidden="true"
+									className="h-auto w-40 rounded-xl"
+								/>
+								<span className="sr-only">Support on Ko-fi</span>
+							</a>
+							<a
+								href="https://dashboard.simpleanalytics.com/grabbin.me?utm_source=grabbin.me&amp;utm_content=badge&amp;affiliate=tudup"
+								target="_blank"
+								rel="noopener"
+								referrerPolicy="origin"
+								aria-label="View Grabbin analytics on Simple Analytics"
+								className="block rounded-xl"
+							>
+								<picture>
+									<source
+										srcSet="https://simpleanalyticsbadges.com/grabbin.me?mode=dark&amp;background=%23ffffff&amp;text=%23000000"
+										media="(prefers-color-scheme: dark)"
+									/>
+									<img
+										src="https://simpleanalyticsbadges.com/grabbin.me?mode=light&amp;background=%23ffffff&amp;text=%23000000"
+										alt="Simple Analytics badge"
+										loading="lazy"
+										referrerPolicy="no-referrer"
+										crossOrigin="anonymous"
+										className="h-auto w-44"
+									/>
+								</picture>
+							</a>
+						</div>
 					</div>
 					<nav aria-label="Footer">
 						<ul className="flex flex-col items-start gap-2 font-medium text-lg">
