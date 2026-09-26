@@ -5,6 +5,7 @@ import { cache } from "react";
 
 import HandlePage from "@/components/page/handle-page";
 import OwnerPage from "@/components/page/owner-page";
+import { getPageImageUrl } from "@/lib/page-image-url";
 import { fetchPage } from "@/lib/server/page-query";
 
 const getPageForRequest = cache((handle: string, cookie: string) =>
@@ -22,9 +23,27 @@ export async function generateMetadata({
 	);
 	if (!page) return {};
 	const { page: pageData } = page;
+	const icon = getPageImageUrl(pageData.imageSource ?? pageData.imageKey, {
+		width: 64,
+		height: 64,
+		format: "png",
+	});
+	const appleIcon = getPageImageUrl(pageData.imageSource ?? pageData.imageKey, {
+		width: 180,
+		height: 180,
+		format: "png",
+	});
 
 	return {
 		title: pageData.name ?? pageData.handle,
+		icons: icon
+			? {
+					icon: { url: icon, type: "image/png", sizes: "64x64" },
+					apple: appleIcon
+						? { url: appleIcon, type: "image/png", sizes: "180x180" }
+						: undefined,
+				}
+			: undefined,
 	};
 }
 
