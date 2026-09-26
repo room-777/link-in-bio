@@ -3,6 +3,7 @@
 @import "./styles/bento-motion.css";
 @import "./styles/bento-layout.css";
 @import "./styles/map-widget.css";
+@import "./styles/legal.css";
 
 @font-face {
 	font-family: "Aspekta Variable";

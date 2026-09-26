@@ -1,0 +1,102 @@
+@layer utilities {
+	.legal-document {
+		font-family: "Inter Variable", "Inter", sans-serif;
+		letter-spacing: -0.02em;
+	}
+
+	.legal-markdown {
+		color: var(--muted-foreground);
+		font-size: 1rem;
+		line-height: 1.5rem;
+	}
+
+	.legal-markdown p {
+		margin: 0 !important;
+	}
+
+	.legal-markdown p + p {
+		margin-top: 0.75rem !important;
+	}
+
+	.legal-markdown h2 {
+		margin: 2rem 0 0 !important;
+		color: var(--foreground);
+		font-size: 1.25rem !important;
+		font-weight: 500;
+		line-height: 1.75rem !important;
+		letter-spacing: -0.025em;
+	}
+
+	.legal-markdown h2 + p,
+	.legal-markdown h3 + p {
+		margin-top: 0.75rem !important;
+	}
+
+	.legal-markdown h3 {
+		margin: 1.5rem 0 0 !important;
+		color: var(--foreground);
+		font-size: 1.125rem !important;
+		font-weight: 500;
+		line-height: 1.75rem !important;
+		letter-spacing: -0.025em;
+	}
+
+	.legal-markdown ul,
+	.legal-markdown ol {
+		margin: 0.75rem 0;
+		padding-left: 1.5rem;
+	}
+
+	.legal-markdown ul {
+		list-style: disc;
+	}
+
+	.legal-markdown ol {
+		list-style: decimal;
+	}
+
+	.legal-markdown li + li {
+		margin-top: 0.25rem;
+	}
+
+	.legal-markdown a {
+		color: var(--brand);
+		text-decoration: underline;
+	}
+
+	.legal-markdown a:hover {
+		text-decoration: none;
+	}
+
+	.legal-markdown h2 a,
+	.legal-markdown h3 a {
+		color: inherit;
+		text-decoration: none;
+	}
+
+	.legal-markdown strong {
+		color: var(--foreground);
+		font-weight: 500;
+	}
+
+	.legal-markdown table {
+		width: 100%;
+		margin-top: 0.75rem;
+		border-collapse: collapse;
+		font-size: 0.875rem;
+		line-height: 1.25rem;
+	}
+
+	.legal-markdown th,
+	.legal-markdown td {
+		border-bottom: 1px solid var(--border);
+		padding: 0.75rem 0;
+		text-align: left;
+		vertical-align: top;
+	}
+
+	.legal-markdown th {
+		color: var(--foreground);
+		font-weight: 500;
+	}
+}
