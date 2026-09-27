@@ -1,7 +1,8 @@
 import type { DatabaseClient } from "@grabbin/db";
 import { creemSubscription, pages, user } from "@grabbin/db/schema/index";
+import { isReservedPageHandle } from "@grabbin/page-handle";
 import { getPlanAccess, PAGE_GRACE_PERIOD_MS } from "@grabbin/plan";
-import { and, eq, isNotNull, lte, ne, sql } from "drizzle-orm";
+import { and, asc, eq, isNotNull, isNull, lte, ne, sql } from "drizzle-orm";
 
 import { PageServiceError } from "../exceptions/page.exception";
 import { getAccountPlan } from "./billing.service";
@@ -77,6 +78,17 @@ export async function listOwnedPages({
 			periodEnd: plan.periodEnd?.toISOString() ?? null,
 		},
 	};
+}
+
+export async function listSitemapHandles(db: DatabaseClient) {
+	const pagesForSitemap = await db.query.pages.findMany({
+		where: and(eq(pages.onboarding, true), isNull(pages.deletionScheduledAt)),
+		columns: { handle: true },
+		orderBy: asc(pages.handle),
+	});
+	return pagesForSitemap
+		.map(({ handle }) => handle)
+		.filter((handle) => !isReservedPageHandle(handle));
 }
 
 export async function changePrimaryPage({

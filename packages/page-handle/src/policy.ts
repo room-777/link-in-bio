@@ -6,6 +6,7 @@ export const reservedPageHandles = [
 	"auth",
 	"billing",
 	"check",
+	"create",
 	"demo",
 	"explore",
 	"favicon",

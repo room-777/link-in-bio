@@ -22,3 +22,14 @@ export async function fetchPage(
 	const body = await response.json();
 	return "page" in body ? v.parse(pageByHandleResponseSchema, body) : null;
 }
+
+export async function fetchSitemapHandles() {
+	try {
+		const client = getServerApiClient() ?? apiClient;
+		const response = await client.pages.sitemap.$get();
+		if (!response.ok) return [];
+		return (await response.json()).handles;
+	} catch {
+		return [];
+	}
+}

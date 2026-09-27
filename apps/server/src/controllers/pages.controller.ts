@@ -37,9 +37,11 @@ import {
 	changePrimaryPage,
 	deleteOwnedPage,
 	listOwnedPages,
+	listSitemapHandles,
 } from "../services/page-lifecycle.service";
 import { getPublicViews } from "../services/public-views.service";
 import type { AppEnv } from "../types";
+import { createSitemapController } from "./sitemap.controller";
 
 const pageErrorDetails = {
 	HANDLE_INVALID: "Choose a valid handle.",
@@ -101,6 +103,10 @@ async function pageWriteError(
 }
 
 export const pagesController = new Hono<AppEnv>()
+	.route(
+		"/sitemap",
+		createSitemapController(async () => listSitemapHandles(await createDb())),
+	)
 	.get("/owned", requiredSession, async (c) => {
 		const session = c.var.session;
 		if (!session) {

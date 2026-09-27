@@ -1,7 +1,10 @@
 import assert from "node:assert/strict";
 import { describe, it } from "node:test";
 import type { DatabaseClient } from "@grabbin/db";
-import { reconcileUserPageLifecycle } from "../../src/services/page-lifecycle.service";
+import {
+	listSitemapHandles,
+	reconcileUserPageLifecycle,
+} from "../../src/services/page-lifecycle.service";
 
 function makeDb(input: {
 	primaryPageHandle: string;
@@ -44,6 +47,37 @@ function makeDb(input: {
 }
 
 describe("page lifecycle service", () => {
+	/**
+	 * Case ID: PAGE-SITEMAP-SERVICE-001
+	 * Given: the query returns completed pages, including a reserved route handle.
+	 * When: sitemap handles are listed.
+	 * Then: reserved handles are omitted and results stay sorted.
+	 * Evidence: returned handles and captured Drizzle query options.
+	 * Result: Pass | Fail | Blocked | Not Run
+	 */
+	it("PAGE-SITEMAP-SERVICE-001 returns handles for completed pages", async () => {
+		let queryOptions: Record<string, unknown> | undefined;
+		const db = {
+			query: {
+				pages: {
+					findMany: async (options: Record<string, unknown>) => {
+						queryOptions = options;
+						return [
+							{ handle: "avery" },
+							{ handle: "create" },
+							{ handle: "jordan" },
+						];
+					},
+				},
+			},
+		} as unknown as DatabaseClient;
+
+		assert.deepEqual(await listSitemapHandles(db), ["avery", "jordan"]);
+		assert.deepEqual(queryOptions?.columns, { handle: true });
+		assert.ok(queryOptions?.where);
+		assert.ok(queryOptions?.orderBy);
+	});
+
 	/**
 	 * Case ID: PAGE-LIFECYCLE-001
 	 * Given: Pro expired and the account has a primary page.
