@@ -19,7 +19,7 @@ import Loading from "@grabbin/ui/components/loading";
 import { Marquee } from "@grabbin/ui/components/marquee";
 import { cn } from "@grabbin/ui/lib/utils";
 import { useQuery } from "@tanstack/react-query";
-import { Check, Copy, Globe } from "lucide-react";
+import { Check, ChevronLeft, Copy, Globe } from "lucide-react";
 import { AnimatePresence, motion, useReducedMotion } from "motion/react";
 import { useRouter } from "next/navigation";
 import { Activity, type FormEvent, useEffect, useState } from "react";
@@ -182,7 +182,9 @@ export function PageHandleForm({
 	return (
 		<div
 			className={
-				compact ? "flex h-full w-full flex-col" : "flex w-full flex-col gap-8"
+				compact
+					? "flex h-full w-full flex-col gap-6"
+					: "flex w-full flex-col gap-8"
 			}
 		>
 			<header className="flex w-full flex-col gap-0.5">
@@ -212,7 +214,7 @@ export function PageHandleForm({
 				aria-hidden="true"
 				className={
 					compact
-						? "my-auto w-full min-[90rem]:max-w-sm"
+						? "w-full min-[90rem]:max-w-sm"
 						: "my-6 w-full min-[90rem]:max-w-sm"
 				}
 			>
@@ -308,8 +310,17 @@ export function PageHandleForm({
 	);
 }
 
-export default function CreatePageForm() {
+export default function CreatePageForm({
+	presentation = "page",
+	onComplete,
+	onBack,
+}: {
+	presentation?: "page" | "dialog";
+	onComplete?: (handle: string) => void;
+	onBack?: () => void;
+}) {
 	const router = useRouter();
+	const isDialog = presentation === "dialog";
 	const reduceMotion = useReducedMotion();
 	const [activity, setActivity] = useState<"create" | "exiting" | "complete">(
 		"create",
@@ -325,7 +336,14 @@ export default function CreatePageForm() {
 		: { duration: 0.42, ease: [0.23, 1, 0.32, 1] as const };
 
 	return (
-		<div className="relative flex min-h-svh min-w-0 items-center justify-center">
+		<div
+			className={cn(
+				"relative flex min-w-0",
+				isDialog
+					? "h-full min-h-0 w-full"
+					: "min-h-svh items-center justify-center",
+			)}
+		>
 			<Activity mode={activity === "complete" ? "hidden" : "visible"}>
 				<motion.main
 					initial={reduceMotion ? false : { opacity: 0, y: 16 }}
@@ -341,12 +359,30 @@ export default function CreatePageForm() {
 					aria-hidden={activity !== "create"}
 					inert={activity !== "create"}
 					className={cn(
-						"mx-auto flex min-h-svh w-full max-w-md flex-col justify-center gap-8 p-6",
+						isDialog
+							? "flex h-full min-h-0 w-full flex-col gap-3 p-1"
+							: "mx-auto flex min-h-svh w-full max-w-md flex-col justify-center gap-8 p-6",
 						activity === "complete" && "pointer-events-none absolute inset-0",
 					)}
 				>
-					<div className="min-[90rem]:max-w-sm">
+					{isDialog && onBack && activity !== "complete" && (
+						<Button
+							variant="ghost"
+							size="icon-lg"
+							className="-ml-1 self-start rounded-full"
+							aria-label="Back to manage pages"
+							onClick={onBack}
+						>
+							<ChevronLeft
+								aria-hidden="true"
+								className="size-8"
+								strokeWidth={2}
+							/>
+						</Button>
+					)}
+					<div className={isDialog ? "min-h-0 flex-1" : "min-[90rem]:max-w-sm"}>
 						<PageHandleForm
+							compact={isDialog}
 							title="Choose a unique handle for your page"
 							description=""
 							submitLabel="Grab it"
@@ -388,13 +424,21 @@ export default function CreatePageForm() {
 							initial={reduceMotion ? false : { opacity: 0, y: 16 }}
 							animate={{ opacity: 1, y: 0 }}
 							transition={entryTransition}
-							className="mx-auto flex min-h-svh w-full max-w-md flex-col justify-center gap-8 p-6"
+							className={cn(
+								isDialog
+									? "flex h-full min-h-0 w-full flex-col justify-center gap-6 p-1"
+									: "mx-auto flex min-h-svh w-full max-w-md flex-col justify-center gap-8 p-6",
+							)}
 						>
 							<PageOnboardingComplete
 								page={createdPage}
-								onGoToProfile={() =>
-									router.replace(`/${encodeURIComponent(createdPage.handle)}`)
-								}
+								onGoToProfile={() => {
+									if (onComplete) onComplete(createdPage.handle);
+									else
+										router.replace(
+											`/${encodeURIComponent(createdPage.handle)}`,
+										);
+								}}
 							/>
 						</motion.main>
 					</>
@@ -407,9 +451,11 @@ export default function CreatePageForm() {
 function PageOnboardingComplete({
 	page,
 	onGoToProfile,
+	actionLabel = "Go to profile",
 }: {
 	page: { handle: string };
 	onGoToProfile: () => void;
+	actionLabel?: string;
 }) {
 	const [isShown, setIsShown] = useState(false);
 	const [isCopied, setIsCopied] = useState(false);
@@ -517,7 +563,7 @@ function PageOnboardingComplete({
 					className="smooth-shadow-xs mt-0 h-12 w-full text-base drop-shadow-md"
 					onClick={onGoToProfile}
 				>
-					Go to profile
+					{actionLabel}
 				</Button>
 			</div>
 		</section>

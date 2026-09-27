@@ -33,6 +33,7 @@ import { getSignInHref } from "@/lib/auth-redirect";
 import { getPublicViewsQueryOptions } from "@/lib/public-views-api";
 import ChangeHandleDialog from "./change-handle-dialog";
 import DeleteAccountDialog from "./delete-account-dialog";
+import ManagePagesDialog from "./manage-pages-dialog";
 import SpinningCounter from "./spinning-counter";
 
 type DiscordLinkProps = ComponentPropsWithoutRef<"a">;
@@ -142,6 +143,7 @@ function OwnerFooter({
 	const [activeItem, setActiveItem] = useState<number | null>(null);
 	const [isItemActive, setIsItemActive] = useState(false);
 	const [isHandleDialogOpen, setIsHandleDialogOpen] = useState(false);
+	const [isManagePagesOpen, setIsManagePagesOpen] = useState(false);
 	const [isOpen, setIsOpen] = useState(false);
 	const [isSigningOut, setIsSigningOut] = useState(false);
 	const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
@@ -234,6 +236,10 @@ function OwnerFooter({
 						<Button
 							variant="ghost"
 							className="relative z-10 h-16 w-full justify-start px-5 hover:bg-transparent"
+							onClick={() => {
+								setIsOpen(false);
+								setIsManagePagesOpen(true);
+							}}
 							onPointerEnter={() => {
 								setActiveItem(1);
 								setIsItemActive(true);
@@ -299,6 +305,10 @@ function OwnerFooter({
 				onHandleChange={onHandleChange}
 				onOpenChange={setIsHandleDialogOpen}
 				open={isHandleDialogOpen}
+			/>
+			<ManagePagesDialog
+				open={isManagePagesOpen}
+				onOpenChange={setIsManagePagesOpen}
 			/>
 			<DeleteAccountDialog
 				onOpenChange={setIsDeleteDialogOpen}

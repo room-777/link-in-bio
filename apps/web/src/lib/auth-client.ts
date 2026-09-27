@@ -3,6 +3,7 @@ import type { ApiError } from "@grabbin/api";
 import type { AuthOptions } from "@grabbin/auth";
 import { env } from "@grabbin/env/web";
 import {
+	customSessionClient,
 	emailOTPClient,
 	inferAdditionalFields,
 } from "better-auth/client/plugins";
@@ -51,6 +52,7 @@ export const authClient = createAuthClient({
 	).toString(),
 	plugins: [
 		creemClient(),
+		customSessionClient(),
 		emailOTPClient(),
 		inferAdditionalFields<AuthOptions>(),
 	],

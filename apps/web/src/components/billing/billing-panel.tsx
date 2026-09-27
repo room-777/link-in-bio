@@ -1,6 +1,5 @@
 "use client";
 
-import { env } from "@grabbin/env/web";
 import { Badge } from "@grabbin/ui/components/badge";
 import { Button } from "@grabbin/ui/components/button";
 import {
@@ -12,175 +11,118 @@ import {
 } from "@grabbin/ui/components/card";
 import { toast } from "@grabbin/ui/components/toast";
 import { useRouter } from "next/navigation";
-import { useCallback, useEffect, useState } from "react";
-import { authClient, getAuthErrorMessage } from "@/lib/auth-client";
+import { useEffect } from "react";
+import { apiClient, getApiErrorMessage } from "@/lib/api-client";
+import { authClient } from "@/lib/auth-client";
 import { getSignInHref } from "@/lib/auth-redirect";
-
-type Subscription = {
-	id: string;
-	status: string;
-	productId: string;
-	periodEnd?: Date | string;
-};
-
-type AccessState = {
-	hasAccessGranted: boolean;
-	message?: string;
-	subscription?: Subscription;
-};
-
-const productId = env.NEXT_PUBLIC_CREEM_PRODUCT_ID;
+import { PlanDialogButton } from "./plan-dialog";
 
 function statusLabel(status: string) {
 	const normalizedStatus = status.toLowerCase();
-	if (["active", "trialing", "paid"].includes(normalizedStatus)) {
-		return "이용 중";
-	}
-	if (normalizedStatus === "scheduled_cancel") return "기간 종료 후 취소 예정";
-	if (["past_due", "unpaid"].includes(normalizedStatus)) return "결제 확인 중";
-	return "이용할 수 없음";
+	if (["active", "trialing", "paid"].includes(normalizedStatus))
+		return "Active";
+	if (normalizedStatus === "scheduled_cancel") return "Cancels at period end";
+	if (normalizedStatus === "canceled") return "Canceled";
+	if (["past_due", "unpaid"].includes(normalizedStatus))
+		return "Payment pending";
+	return "Inactive";
 }
 
 export default function BillingPanel() {
 	const router = useRouter();
-	const { data: session, isPending: isSessionPending } =
-		authClient.useSession();
-	const [access, setAccess] = useState<AccessState | null>(null);
-	const [isLoading, setIsLoading] = useState(false);
-
-	const loadAccess = useCallback(async () => {
-		if (!session) {
-			setAccess(null);
-			return;
-		}
-
-		setIsLoading(true);
-		const { data, error } = await authClient.creem.hasAccessGranted();
-		setIsLoading(false);
-
-		if (error) {
-			toast({ message: getAuthErrorMessage(error), state: "error" });
-			return;
-		}
-		setAccess(data);
-	}, [session]);
+	const { data: session, isPending } = authClient.useSession();
 
 	useEffect(() => {
-		void loadAccess();
-	}, [loadAccess]);
+		if (!isPending && !session) router.replace(getSignInHref("/billing"));
+	}, [isPending, router, session]);
 
-	useEffect(() => {
-		if (!isSessionPending && !session) {
-			router.replace(getSignInHref("/billing"));
-		}
-	}, [isSessionPending, router, session]);
-
-	if (isSessionPending) return <p>로그인 상태를 확인하고 있습니다...</p>;
-
+	if (isPending) return <p>Checking your account...</p>;
 	if (!session) return null;
 
-	const subscription = access?.subscription;
-	const hasAccess = access?.hasAccessGranted === true;
+	const plan = (
+		session as typeof session & {
+			plan: {
+				hasAccess: boolean;
+				status: string | null;
+				periodEnd: string | null;
+				subscriptionId: string | null;
+			};
+		}
+	).plan;
+	const hasAccess = plan.hasAccess;
 	const canCancel =
-		hasAccess && subscription?.status.toLowerCase() !== "scheduled_cancel";
+		hasAccess &&
+		["active", "trialing", "paid"].includes(plan.status?.toLowerCase() ?? "");
 
-	const startCheckout = async () => {
-		if (!productId) {
+	const openPortal = async () => {
+		const { data, error } = await authClient.creem.createPortal();
+		if (error || !data?.url) {
 			toast({
-				message: "NEXT_PUBLIC_CREEM_PRODUCT_ID를 설정해 주세요.",
+				message: "Could not open billing management. Please try again.",
 				state: "error",
 			});
 			return;
 		}
-
-		const { data, error } = await authClient.creem.createCheckout({
-			productId,
-			successUrl: `${window.location.origin}/billing?checkout=success`,
-		});
-		if (error) {
-			toast({ message: getAuthErrorMessage(error), state: "error" });
-			return;
-		}
-		if (data?.url) window.location.assign(data.url);
-	};
-
-	const openPortal = async () => {
-		const { data, error } = await authClient.creem.createPortal();
-		if (error) {
-			toast({ message: getAuthErrorMessage(error), state: "error" });
-			return;
-		}
-		if (data?.url) window.location.assign(data.url);
+		window.location.assign(data.url);
 	};
 
 	const cancelSubscription = async () => {
-		if (!subscription) return;
-
-		const { error } = await authClient.creem.cancelSubscription({
-			id: subscription.id,
-		});
-		if (error) {
-			toast({ message: getAuthErrorMessage(error), state: "error" });
+		const response = await apiClient.billing["cancel-subscription"].$post();
+		if (!response.ok) {
+			toast({
+				message: await getApiErrorMessage(response),
+				state: "error",
+			});
 			return;
 		}
-		toast({ message: "구독 취소가 예약되었습니다.", state: "success" });
-		await loadAccess();
+		window.location.reload();
 	};
 
 	return (
 		<div className="grid gap-4">
 			<Card>
 				<CardHeader>
-					<CardTitle>구독 관리</CardTitle>
+					<CardTitle>Subscription</CardTitle>
 					<CardDescription>
-						Creem 웹훅이 결제와 구독 상태를 자동으로 동기화합니다.
+						Your plan and renewal status are synced from Creem.
 					</CardDescription>
 				</CardHeader>
 				<CardContent className="grid gap-4">
 					<div className="flex items-center gap-2">
 						<Badge variant={hasAccess ? "default" : "secondary"}>
-							{subscription ? statusLabel(subscription.status) : "구독 없음"}
+							{plan.status ? statusLabel(plan.status) : "No subscription"}
 						</Badge>
-						{subscription?.periodEnd && (
+						{plan.periodEnd && (
 							<span className="text-muted-foreground text-sm">
-								다음 변경일:{" "}
-								{new Date(subscription.periodEnd).toLocaleDateString("ko-KR")}
+								Period end:{" "}
+								{new Date(plan.periodEnd).toLocaleDateString("en-US")}
 							</span>
 						)}
 					</div>
-					{access?.message && (
-						<p className="text-muted-foreground text-sm">{access.message}</p>
-					)}
 					<div className="flex flex-wrap gap-2">
-						{!hasAccess && <Button onClick={startCheckout}>구독 시작</Button>}
+						{!hasAccess && <PlanDialogButton>View Pro plans</PlanDialogButton>}
 						{canCancel && (
 							<Button variant="outline" onClick={cancelSubscription}>
-								구독 취소
+								Cancel subscription
 							</Button>
 						)}
 						<Button variant="outline" onClick={openPortal}>
-							결제 관리
-						</Button>
-						<Button variant="ghost" disabled={isLoading} onClick={loadAccess}>
-							새로고침
+							Billing portal
 						</Button>
 					</div>
 				</CardContent>
 			</Card>
-
 			<Card>
 				<CardHeader>
-					<CardTitle>접근 권한 예시</CardTitle>
+					<CardTitle>Pro access</CardTitle>
 					<CardDescription>
-						활성, 체험, 결제 완료 상태이면 유료 기능을 사용할 수 있습니다.
+						Pro includes up to three pages per account.
 					</CardDescription>
 				</CardHeader>
 				<CardContent>
-					<p>
-						{hasAccess
-							? "유료 기능을 사용할 수 있습니다."
-							: "유료 기능은 구독 후 사용할 수 있습니다."}
-					</p>
+					{hasAccess
+						? "Pro features are available."
+						: "Choose a Pro plan to unlock more pages."}
 				</CardContent>
 			</Card>
 		</div>

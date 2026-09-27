@@ -17,14 +17,21 @@ export default function LoginForm({ returnTo }: { returnTo?: string | null }) {
 
 	const handleSocialSignIn = async (provider: SocialProvider) => {
 		const webOrigin = window.location.origin;
-		const { error } = await authClient.signIn.social({
-			provider,
-			callbackURL: new URL(signInHref, webOrigin).toString(),
-			newUserCallbackURL: new URL("/create", webOrigin).toString(),
-		});
+		try {
+			const { error } = await authClient.signIn.social({
+				provider,
+				callbackURL: new URL(signInHref, webOrigin).toString(),
+				newUserCallbackURL: new URL("/create", webOrigin).toString(),
+			});
 
-		if (error) {
-			toast({ message: getAuthErrorMessage(error), state: "error" });
+			if (error) {
+				toast({ message: getAuthErrorMessage(error), state: "error" });
+			}
+		} catch {
+			toast({
+				message: "Unable to reach the sign-in service. Please try again.",
+				state: "error",
+			});
 		}
 	};
 
