@@ -158,6 +158,7 @@ export default function OwnerPage({
 					onChange={handleLayoutBreakpointChange}
 					isAutoSaving={isAutoSaving}
 					profileImageUrl={profileImageUrl}
+					demoPreview={demoPreview}
 				/>
 			) : null}
 		</div>

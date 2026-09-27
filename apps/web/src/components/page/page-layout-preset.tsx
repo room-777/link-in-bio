@@ -21,6 +21,7 @@ type PageLayoutPresetProps = {
 	onChange: (breakpoint: BentoBreakpoint) => void;
 	isAutoSaving: boolean;
 	profileImageUrl: string | null;
+	demoPreview?: boolean;
 };
 
 export default function PageLayoutPreset({
@@ -28,10 +29,14 @@ export default function PageLayoutPreset({
 	onChange,
 	isAutoSaving,
 	profileImageUrl,
+	demoPreview = false,
 }: PageLayoutPresetProps) {
 	const reduceMotion = useReducedMotion();
 	const [activeBreakpoint, setActiveBreakpoint] = useState(value);
 	const [shareDialogOpen, setShareDialogOpen] = useState(false);
+	const [portalContainer, setPortalContainer] = useState<HTMLElement | null>(
+		null,
+	);
 	useEffect(() => setActiveBreakpoint(value), [value]);
 
 	const selectBreakpoint = (breakpoint: BentoBreakpoint) => {
@@ -63,7 +68,16 @@ export default function PageLayoutPreset({
 						size="default"
 						variant="ghost"
 						disabled={isAutoSaving}
-						onClick={() => setShareDialogOpen(true)}
+						onClick={() => {
+							if (demoPreview) {
+								setPortalContainer(
+									document.querySelector<HTMLElement>(
+										"[data-demo-preview-root]",
+									),
+								);
+							}
+							setShareDialogOpen(true);
+						}}
 						className="relative z-10 h-9 w-28 border-brand-green bg-brand-green! px-3 text-white! hover:bg-brand-green/80! hover:text-white!"
 					>
 						{isAutoSaving ? (
@@ -76,6 +90,7 @@ export default function PageLayoutPreset({
 						)}
 					</Button>
 					<DialogContent
+						portalContainer={demoPreview ? portalContainer : undefined}
 						className="aspect-square gap-5 p-5"
 						aria-describedby="share-qr-description"
 					>

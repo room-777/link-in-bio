@@ -3,10 +3,7 @@ import Link from "next/link";
 import UserMenu from "../auth/user-menu";
 
 export default function Header() {
-	const links = [
-		{ to: "/", label: "Home" },
-		{ to: "/billing", label: "Billing" },
-	] as const;
+	const links = [{ to: "/", label: "Home" }] as const;
 
 	return (
 		<header className="container mx-auto max-w-3xl p-3">

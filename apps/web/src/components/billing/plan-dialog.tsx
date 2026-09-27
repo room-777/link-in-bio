@@ -68,7 +68,7 @@ export function PlanPicker({
 
 			const { data, error } = await authClient.creem.createCheckout({
 				productId,
-				successUrl: `${window.location.origin}/billing?checkout=success`,
+				successUrl: window.location.origin,
 			});
 			if (error) {
 				toast({ message: getAuthErrorMessage(error), state: "error" });
