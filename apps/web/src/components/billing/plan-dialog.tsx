@@ -23,32 +23,49 @@ import {
 export function PlanPicker({
 	variant = "default",
 	className,
+	openBillingPortalOnChoose = false,
 }: {
 	variant?: PlanCardVariant;
 	className?: string;
+	openBillingPortalOnChoose?: boolean;
 }) {
 	const router = useRouter();
-	const { data: session } = authClient.useSession();
-	const [loadingPlan, setLoadingPlan] = useState<"monthly" | "yearly" | null>(
-		null,
-	);
+	const { data: session, isPending } = authClient.useSession();
+	const [isLoading, setIsLoading] = useState(false);
 
-	const startCheckout = async (plan: BillingPeriod) => {
+	const choosePlan = async (plan: BillingPeriod) => {
 		if (!session) {
 			router.push(getSignInHref(window.location.pathname));
 			return;
 		}
-		const productId =
-			plan === "monthly"
-				? env.NEXT_PUBLIC_CREEM_PRO_MONTHLY_PRODUCT_ID
-				: env.NEXT_PUBLIC_CREEM_PRO_YEARLY_PRODUCT_ID;
-		if (!productId) {
-			toast({ message: "This plan is not available yet.", state: "error" });
-			return;
-		}
 
-		setLoadingPlan(plan);
+		setIsLoading(true);
 		try {
+			if (openBillingPortalOnChoose) {
+				const { data, error } = await authClient.creem.createPortal();
+				if (error || !data?.url) {
+					toast({
+						message: "Could not open billing management. Please try again.",
+						state: "error",
+					});
+					return;
+				}
+				window.location.assign(data.url);
+				return;
+			}
+
+			const productId =
+				plan === "monthly"
+					? env.NEXT_PUBLIC_CREEM_PRO_MONTHLY_PRODUCT_ID
+					: env.NEXT_PUBLIC_CREEM_PRO_YEARLY_PRODUCT_ID;
+			if (!productId) {
+				toast({
+					message: "This plan is not available yet.",
+					state: "error",
+				});
+				return;
+			}
+
 			const { data, error } = await authClient.creem.createCheckout({
 				productId,
 				successUrl: `${window.location.origin}/billing?checkout=success`,
@@ -65,11 +82,13 @@ export function PlanPicker({
 				});
 		} catch {
 			toast({
-				message: "Could not start checkout. Please try again.",
+				message: openBillingPortalOnChoose
+					? "Could not open billing management. Please try again."
+					: "Could not start checkout. Please try again.",
 				state: "error",
 			});
 		} finally {
-			setLoadingPlan(null);
+			setIsLoading(false);
 		}
 	};
 
@@ -77,9 +96,8 @@ export function PlanPicker({
 		<PlanCard
 			variant={variant}
 			className={className}
-			loading={loadingPlan !== null}
-			loadingPeriod={loadingPlan}
-			onChoose={(plan) => void startCheckout(plan)}
+			loading={isPending || isLoading}
+			onChoose={(plan) => void choosePlan(plan)}
 		/>
 	);
 }

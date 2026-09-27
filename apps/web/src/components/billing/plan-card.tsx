@@ -2,6 +2,7 @@
 
 import { Badge } from "@grabbin/ui/components/badge";
 import { Button } from "@grabbin/ui/components/button";
+import Loading from "@grabbin/ui/components/loading";
 import { Tabs, TabsList, TabsTrigger } from "@grabbin/ui/components/tabs";
 import { cn } from "@grabbin/ui/lib/utils";
 import { BarChart3, Globe2, Sparkles } from "lucide-react";
@@ -117,13 +118,11 @@ export function PlanCard({
 	variant = "default",
 	className,
 	loading = false,
-	loadingPeriod,
 	onChoose,
 }: {
 	variant?: PlanCardVariant;
 	className?: string;
 	loading?: boolean;
-	loadingPeriod?: BillingPeriod | null;
 	onChoose: (period: BillingPeriod) => void;
 }) {
 	const reduceMotion = useReducedMotion() ?? false;
@@ -206,11 +205,12 @@ export function PlanCard({
 					<Button
 						type="button"
 						size="xl"
-						className="order-5 w-full"
+						variant="brandBlack"
+						className="order-5 h-12 w-full rounded-lg text-lg"
 						disabled={loading}
 						onClick={() => onChoose(period)}
 					>
-						{loadingPeriod === period ? "Loading..." : "Get Pro"}
+						{loading ? <Loading /> : "Get Pro"}
 					</Button>
 				</div>
 
@@ -231,7 +231,7 @@ export function PlanCard({
 					)}
 
 					<ul
-						className={`order-4 grid gap-2 ${isHorizontal ? "xl:grid-cols-2" : "pt-4"}`}
+						className={`order-4 grid gap-2 font-medium ${isHorizontal ? "xl:grid-cols-2" : "pt-4"}`}
 					>
 						<li className="flex items-center gap-2.5 text-sm">
 							<CheckCircle

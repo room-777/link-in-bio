@@ -1,4 +1,3 @@
-import { Button } from "@grabbin/ui/components/button";
 import JoinForFreeButton from "@/components/landing/join-for-free-button";
 
 export default function CtaSection() {
@@ -20,14 +19,6 @@ export default function CtaSection() {
 					size="lg"
 					className="h-10 w-auto shrink-0 px-4 text-sm sm:text-base"
 				/>
-				<Button
-					render={<a href="#demo" />}
-					variant="outline"
-					size="lg"
-					className="h-10 w-auto shrink-0 px-4 text-sm sm:text-base"
-				>
-					Try demo
-				</Button>
 			</div>
 		</section>
 	);
