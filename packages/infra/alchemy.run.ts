@@ -92,6 +92,7 @@ export const grabbinBucket = Cloudflare.R2.Bucket("grabbin", {
 
 export const server = Cloudflare.Worker("server", {
 	name: "grabbin-server",
+	placement: { region: "aws:ap-northeast-2" },
 	main: serverUsesUploadedBuild
 		? "../../apps/server/dist/index.mjs"
 		: "../../apps/server/src/index.ts",
@@ -212,6 +213,7 @@ export default Alchemy.Stack(
 
 		const webWorker = yield* Cloudflare.Website.Vite("web", {
 			name: "grabbin",
+			placement: { region: "aws:ap-northeast-2" },
 			domain: "grabbin.me",
 			rootDir: "../../apps/web",
 			dev: { port: 3000 },
