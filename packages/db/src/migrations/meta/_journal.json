@@ -36,6 +36,20 @@
 			"when": 1789734585914,
 			"tag": "0004_primary-page-handle",
 			"breakpoints": true
+		},
+		{
+			"idx": 5,
+			"version": "7",
+			"when": 1790475186927,
+			"tag": "0005_spotty_the_executioner",
+			"breakpoints": true
+		},
+		{
+			"idx": 6,
+			"version": "7",
+			"when": 1790476084616,
+			"tag": "0006_peaceful_groot",
+			"breakpoints": true
 		}
 	]
 }

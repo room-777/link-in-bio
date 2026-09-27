@@ -6,11 +6,109 @@ import {
 	sendVerificationOTP as sendVerificationOTPEmail,
 } from "@grabbin/email";
 import { env } from "@grabbin/env/server";
-import { type BetterAuthOptions, betterAuth } from "better-auth";
+import { getPlanAccess } from "@grabbin/plan";
+import {
+	type BetterAuthOptions,
+	type BetterAuthPlugin,
+	betterAuth,
+} from "better-auth";
 import { drizzleAdapter } from "better-auth/adapters/drizzle";
-import { emailOTP } from "better-auth/plugins";
+import { customSession, emailOTP } from "better-auth/plugins";
 
 import { getCookieAttributes } from "./cookie-attributes";
+import { createCreemClient, retrieveSubscription } from "./creem-server";
+import {
+	syncCreemCheckout,
+	syncCreemRefund,
+	syncCreemWebhook,
+} from "./creem-webhook";
+
+type CreemEventData = {
+	webhookId: string;
+	webhookCreatedAt: number;
+	id: string;
+	status: string;
+	product: { id: string };
+	customer?: { id: string } | null;
+	metadata?: Record<string, unknown> | null;
+	current_period_start_date?: Date | number | string | null;
+	current_period_end_date?: Date | number | string | null;
+	cancel_at_period_end?: boolean;
+	order?: { id: string } | string | null;
+};
+
+function createCreemPlugin(
+	db: DatabaseClient,
+	onSubscriptionChange?: (userId: string) => Promise<void>,
+): BetterAuthPlugin {
+	const syncEvent = async (event: CreemEventData) => {
+		const result = await syncCreemWebhook(db, event);
+		if (result) await onSubscriptionChange?.(result.userId);
+	};
+	return creem({
+		apiKey: env.CREEM_API_KEY,
+		webhookSecret: env.CREEM_WEBHOOK_SECRET,
+		testMode: env.CREEM_TEST_MODE === "true",
+		defaultSuccessUrl: env.CREEM_SUCCESS_URL,
+		persistSubscriptions: true,
+		onRefundCreated: async (data) => {
+			const result = await syncCreemRefund(db, data);
+			if (result) await onSubscriptionChange?.(result.userId);
+		},
+		onCheckoutCompleted: async (data) => {
+			const directResult = data.subscription
+				? await syncCreemWebhook(db, {
+						...data.subscription,
+						webhookId: data.webhookId,
+						webhookCreatedAt: data.webhookCreatedAt,
+						product: data.product,
+						customer: data.customer,
+						metadata: data.metadata,
+						order: data.order,
+					})
+				: null;
+			if (directResult) {
+				await onSubscriptionChange?.(directResult.userId);
+				return;
+			}
+			const result = await syncCreemCheckout(
+				db,
+				{
+					id: data.id,
+					webhookId: data.webhookId,
+					webhookCreatedAt: data.webhookCreatedAt,
+				},
+				(id) => {
+					const client = createCreemClient({
+						apiKey: env.CREEM_API_KEY,
+						testMode: env.CREEM_TEST_MODE === "true",
+					});
+					return client.checkouts.retrieve(id);
+				},
+				(id) => {
+					return retrieveSubscription(
+						{
+							apiKey: env.CREEM_API_KEY,
+							testMode: env.CREEM_TEST_MODE === "true",
+						},
+						id,
+					);
+				},
+			);
+			if (result) await onSubscriptionChange?.(result.userId);
+		},
+		onSubscriptionActive: syncEvent,
+		onSubscriptionTrialing: syncEvent,
+		onSubscriptionScheduledCancel: syncEvent,
+		onSubscriptionCanceled: syncEvent,
+		onSubscriptionPaid: syncEvent,
+		onSubscriptionExpired: syncEvent,
+		onSubscriptionUnpaid: syncEvent,
+		onSubscriptionUpdate: syncEvent,
+		onSubscriptionPastDue: syncEvent,
+		onSubscriptionPaused: syncEvent,
+	});
+}
 
 const socialProviders: BetterAuthOptions["socialProviders"] = {
 	...(env.GOOGLE_CLIENT_ID
@@ -85,29 +183,44 @@ const authOptions: BetterAuthOptions = {
 					type,
 				}),
 		}),
-		creem({
-			apiKey: env.CREEM_API_KEY,
-			webhookSecret: env.CREEM_WEBHOOK_SECRET,
-			testMode: env.CREEM_TEST_MODE === "true",
-			defaultSuccessUrl: env.CREEM_SUCCESS_URL,
-			persistSubscriptions: true,
-			onGrantAccess: async ({ reason, status }) => {
-				console.info("[creem] subscription access granted", {
-					reason,
-					status,
-				});
-			},
-			onRevokeAccess: async ({ reason, status }) => {
-				console.info("[creem] subscription access revoked", {
-					reason,
-					status,
-				});
-			},
-			onSubscriptionScheduledCancel: async ({ status }) => {
-				console.info("[creem] subscription scheduled for cancellation", {
-					status,
-				});
-			},
+		customSession(async ({ user, session }, context) => {
+			const subscriptions = (await context.context.adapter.findMany({
+				model: "creem_subscription",
+				where: [{ field: "referenceId", value: user.id }],
+			})) as Array<{
+				creemSubscriptionId: string | null;
+				productId: string;
+				status: string | null;
+				periodEnd: Date | null;
+				cancelAtPeriodEnd: boolean | null;
+			}>;
+			const access = getPlanAccess(
+				subscriptions.map((subscription) => ({
+					subscriptionId: subscription.creemSubscriptionId,
+					productId: subscription.productId,
+					status: subscription.status,
+					periodEnd: subscription.periodEnd
+						? new Date(subscription.periodEnd)
+						: null,
+					cancelAtPeriodEnd: subscription.cancelAtPeriodEnd,
+				})),
+				[
+					env.CREEM_PRO_MONTHLY_PRODUCT_ID,
+					env.CREEM_PRO_YEARLY_PRODUCT_ID,
+				].filter(Boolean),
+			);
+			return {
+				user,
+				session,
+				plan: {
+					tier: access.tier,
+					pageLimit: access.pageLimit,
+					hasAccess: access.hasAccess,
+					status: access.status,
+					periodEnd: access.periodEnd?.toISOString() ?? null,
+					cancelAtPeriodEnd: access.cancelAtPeriodEnd,
+				},
+			};
 		}),
 	],
 	// uncomment cookieCache setting when ready to deploy to Cloudflare using *.workers.dev domains
@@ -138,10 +251,18 @@ export type Session = ReturnType<
 	typeof betterAuth<AuthOptions>
 >["$Infer"]["Session"];
 
-export async function createAuth(database?: DatabaseClient) {
+export async function createAuth(
+	database?: DatabaseClient,
+	options?: { onSubscriptionChange?: (userId: string) => Promise<void> },
+) {
+	const resolvedDatabase = database ?? (await createDb());
 	return betterAuth({
 		...authOptions,
-		database: drizzleAdapter(database ?? (await createDb()), {
+		plugins: [
+			...(authOptions.plugins ?? []),
+			createCreemPlugin(resolvedDatabase, options?.onSubscriptionChange),
+		],
+		database: drizzleAdapter(resolvedDatabase, {
 			provider: "pg",
 			schema: {
 				...schema,

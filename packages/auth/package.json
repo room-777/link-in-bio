@@ -15,8 +15,10 @@
 		"@grabbin/db": "workspace:*",
 		"@grabbin/email": "workspace:*",
 		"@grabbin/env": "workspace:*",
+		"@grabbin/plan": "workspace:*",
 		"better-auth": "catalog:auth",
-		"dotenv": "catalog:runtime"
+		"dotenv": "catalog:runtime",
+		"drizzle-orm": "^0.45.2"
 	},
 	"devDependencies": {
 		"@grabbin/config": "workspace:*",

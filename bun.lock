@@ -26,6 +26,7 @@
         "@grabbin/env": "workspace:*",
         "@grabbin/page-handle": "workspace:*",
         "@grabbin/page-link": "workspace:*",
+        "@grabbin/plan": "workspace:*",
         "@sentry/cloudflare": "catalog:sentry",
         "@sentry/hono": "catalog:sentry",
         "aws4fetch": "^1.0.20",
@@ -41,6 +42,8 @@
         "@grabbin/config": "workspace:*",
         "@sentry/vite-plugin": "catalog:sentry",
         "@types/node": "catalog:tooling",
+        "@types/pg": "^8.15.6",
+        "pg": "^8.16.3",
         "tsdown": "^0.22.14",
         "typescript": "catalog:tooling",
       },
@@ -55,6 +58,7 @@
         "@grabbin/bento-layout": "workspace:*",
         "@grabbin/env": "workspace:*",
         "@grabbin/page-link": "workspace:*",
+        "@grabbin/plan": "workspace:*",
         "@grabbin/ui": "workspace:*",
         "@mdx-js/rollup": "^3.1.1",
         "@sentry/cloudflare": "catalog:sentry",
@@ -119,8 +123,10 @@
         "@grabbin/db": "workspace:*",
         "@grabbin/email": "workspace:*",
         "@grabbin/env": "workspace:*",
+        "@grabbin/plan": "workspace:*",
         "better-auth": "catalog:auth",
         "dotenv": "catalog:runtime",
+        "drizzle-orm": "^0.45.2",
       },
       "devDependencies": {
         "@grabbin/config": "workspace:*",
@@ -210,6 +216,14 @@
       "dependencies": {
         "@grabbin/api": "workspace:*",
       },
+      "devDependencies": {
+        "@grabbin/config": "workspace:*",
+        "typescript": "catalog:tooling",
+      },
+    },
+    "packages/plan": {
+      "name": "@grabbin/plan",
+      "version": "0.0.0",
       "devDependencies": {
         "@grabbin/config": "workspace:*",
         "typescript": "catalog:tooling",
@@ -604,6 +618,8 @@
     "@grabbin/page-handle": ["@grabbin/page-handle@workspace:packages/page-handle"],
 
     "@grabbin/page-link": ["@grabbin/page-link@workspace:packages/page-link"],
+
+    "@grabbin/plan": ["@grabbin/plan@workspace:packages/plan"],
 
     "@grabbin/ui": ["@grabbin/ui@workspace:packages/ui"],
 
