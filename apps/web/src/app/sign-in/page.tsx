@@ -1,9 +1,16 @@
+import type { Metadata } from "next";
 import Image from "next/image";
 import { redirect } from "next/navigation";
 
 import LoginForm from "@/components/auth/login-form";
 import { sanitizeAuthRedirect } from "@/lib/auth-redirect";
 import { getPrimaryPagePath, getServerSession } from "@/lib/server/session";
+
+export const metadata: Metadata = {
+	title: "Sign in to Grabbin",
+	description:
+		"Sign in to manage your page and bring your links, photos, social profiles, and favorite places together.",
+};
 
 export default async function LoginPage({
 	searchParams,

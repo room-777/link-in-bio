@@ -1,5 +1,6 @@
 import Image from "next/image";
 import Link from "next/link";
+import Logo from "@/components/logo";
 
 export default function Footer() {
 	return (
@@ -9,33 +10,7 @@ export default function Footer() {
 					<div className="flex flex-col items-start gap-8">
 						<div className="flex flex-col gap-2">
 							<div className="flex flex-row items-center gap-2 font-semibold tracking-tight">
-								<svg
-									viewBox="0 0 48 48"
-									aria-hidden="true"
-									className="size-10 shrink-0"
-									fill="white"
-									stroke="currentColor"
-									strokeWidth="2"
-									strokeLinejoin="round"
-								>
-									<rect
-										x="5"
-										y="9"
-										width="23"
-										height="31"
-										rx="3"
-										transform="rotate(-24 16.5 24.5)"
-									/>
-									<rect
-										x="20"
-										y="9"
-										width="23"
-										height="31"
-										rx="3"
-										transform="rotate(24 31.5 24.5)"
-									/>
-									<rect x="13" y="5" width="23" height="31" rx="3" />
-								</svg>
+								<Logo className="size-10 shrink-0" decorative />
 								<span className="text-xl">Grabbin</span>
 							</div>
 							<p className="max-w-md text-pretty text-base text-primary/90">

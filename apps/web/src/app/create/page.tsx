@@ -1,8 +1,15 @@
+import type { Metadata } from "next";
 import Image from "next/image";
 import { redirect } from "next/navigation";
 
 import CreatePageForm from "@/components/page/create-page-form";
 import { getPrimaryPagePath, getServerSession } from "@/lib/server/session";
+
+export const metadata: Metadata = {
+	title: "Create your Grabbin page",
+	description:
+		"Choose a handle and bring your links, photos, social profiles, and favorite places together.",
+};
 
 export default async function CreatePage() {
 	const session = await getServerSession();
