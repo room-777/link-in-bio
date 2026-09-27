@@ -3,6 +3,7 @@
 import { Badge } from "@grabbin/ui/components/badge";
 import { Button } from "@grabbin/ui/components/button";
 import { Tabs, TabsList, TabsTrigger } from "@grabbin/ui/components/tabs";
+import { cn } from "@grabbin/ui/lib/utils";
 import { BarChart3, Globe2, Sparkles } from "lucide-react";
 import { AnimatePresence, motion, useReducedMotion } from "motion/react";
 import { useState } from "react";
@@ -35,14 +36,18 @@ function SlidingNumber({
 						reduceMotion={reduceMotion}
 					/>
 				))}
-				<span>.</span>
-				{fraction.split("").map((digit, index) => (
-					<SlidingDigit
-						key={`fraction-${index}`}
-						digit={digit}
-						reduceMotion={reduceMotion}
-					/>
-				))}
+				{fraction !== undefined && (
+					<>
+						<span>.</span>
+						{fraction.split("").map((digit, index) => (
+							<SlidingDigit
+								key={`fraction-${index}`}
+								digit={digit}
+								reduceMotion={reduceMotion}
+							/>
+						))}
+					</>
+				)}
 			</span>
 		</span>
 	);
@@ -85,7 +90,7 @@ function SlidingText({
 	reduceMotion: boolean;
 }) {
 	return (
-		<span className="inline-grid h-[1.2em] overflow-hidden align-bottom">
+		<span className="inline-grid h-[1.5em] overflow-hidden align-bottom">
 			<AnimatePresence initial={false} mode="wait">
 				<motion.span
 					key={value}
@@ -106,113 +111,178 @@ function SlidingText({
 }
 
 export type BillingPeriod = "monthly" | "yearly";
+export type PlanCardVariant = "default" | "horizontal";
 
 export function PlanCard({
+	variant = "default",
+	className,
 	loading = false,
 	loadingPeriod,
 	onChoose,
 }: {
+	variant?: PlanCardVariant;
+	className?: string;
 	loading?: boolean;
 	loadingPeriod?: BillingPeriod | null;
 	onChoose: (period: BillingPeriod) => void;
 }) {
 	const reduceMotion = useReducedMotion() ?? false;
+	const isHorizontal = variant === "horizontal";
 	const [period, setPeriod] = useState<BillingPeriod>("monthly");
 	const isYearly = period === "yearly";
-	const price = isYearly ? "$76.80" : "$8.99";
+	const price = isYearly ? "$86" : "$9";
 
 	return (
-		<section className="smooth-shadow-ring-xs grid gap-4 rounded-2xl bg-card p-5">
-			<div className="flex items-start justify-between gap-3">
-				<div className="grid gap-1">
+		<section
+			className={cn(
+				isHorizontal && "smooth-shadow-ring-sm",
+				"grid gap-4 rounded-2xl bg-card p-5",
+				className,
+			)}
+		>
+			<div
+				className={
+					isHorizontal
+						? "flex flex-row items-center justify-between gap-4"
+						: "contents"
+				}
+			>
+				<div
+					className={
+						isHorizontal ? "grid gap-1" : "order-1 grid gap-1 text-center"
+					}
+				>
 					<h2 className="font-heading font-medium text-lg">Pro</h2>
 					<p className="text-muted-foreground text-sm">
 						Everything you need to grow your page.
 					</p>
 				</div>
-				<Badge variant="secondary">{isYearly ? "Save 20%" : "Pro plan"}</Badge>
-			</div>
-
-			<Tabs
-				value={period}
-				onValueChange={(value) => {
-					if (value === "monthly" || value === "yearly") setPeriod(value);
-				}}
-			>
-				<TabsList size="lg" className="grid w-full grid-cols-2">
-					<TabsTrigger value="monthly">Monthly</TabsTrigger>
-					<TabsTrigger value="yearly">Yearly</TabsTrigger>
-				</TabsList>
-			</Tabs>
-
-			<div className="grid gap-1" aria-live="polite">
-				<div className="flex items-baseline gap-2">
-					<span className="font-heading font-semibold text-4xl tabular-nums tracking-tight">
-						<SlidingNumber value={price} reduceMotion={reduceMotion} />
-					</span>
-					<span className="text-muted-foreground text-sm">
-						<SlidingText
-							value={isYearly ? "/ year" : "/ month"}
-							reduceMotion={reduceMotion}
-						/>
-					</span>
-				</div>
-				<div className="flex min-h-5 items-center gap-2 text-muted-foreground text-sm">
-					{isYearly && <span className="line-through">$96.00</span>}
-					<SlidingText
-						value={isYearly ? "Billed yearly" : "Billed monthly"}
-						reduceMotion={reduceMotion}
-					/>
-				</div>
-			</div>
-
-			<ul className="grid gap-2 pt-4">
-				<li className="flex items-center gap-2.5 text-sm">
-					<CheckCircle
-						aria-hidden="true"
-						weight="Filled"
-						className="size-5 shrink-0 text-brand-green"
-					/>
-					<span>All Free plan features included</span>
-				</li>
-				<li className="flex items-center gap-2.5 text-sm">
-					<CheckCircle
-						aria-hidden="true"
-						weight="Filled"
-						className="size-5 shrink-0 text-brand-green"
-					/>
-					<span>Up to 3 pages per account</span>
-				</li>
-				<li className="flex items-center gap-2.5 text-sm">
-					<CheckCircle
-						aria-hidden="true"
-						weight="Filled"
-						className="size-5 shrink-0 text-brand-green"
-					/>
-					<span>Remove watermark</span>
-				</li>
-				{upcomingFeatures.map(({ label, Icon }) => (
-					<li
-						key={label}
-						className="flex items-center gap-2.5 text-muted-foreground text-sm"
+				{isHorizontal && (
+					<Tabs
+						value={period}
+						onValueChange={(value) => {
+							if (value === "monthly" || value === "yearly") setPeriod(value);
+						}}
+						className="shrink-0"
 					>
-						<Icon aria-hidden="true" className="size-4 shrink-0" />
-						<span>{label}</span>
-						<Badge variant="outline" className="ml-auto rounded-sm text-xs">
-							Coming soon
-						</Badge>
-					</li>
-				))}
-			</ul>
+						<TabsList size="lg" className="grid grid-cols-2">
+							<TabsTrigger value="monthly">Monthly</TabsTrigger>
+							<TabsTrigger value="yearly">Yearly</TabsTrigger>
+						</TabsList>
+					</Tabs>
+				)}
+			</div>
 
-			<Button
-				type="button"
-				className="w-full"
-				disabled={loading}
-				onClick={() => onChoose(period)}
-			>
-				{loadingPeriod === period ? "Loading..." : "Get Pro"}
-			</Button>
+			<div className={isHorizontal ? "flex flex-row gap-8" : "contents"}>
+				<div
+					className={
+						isHorizontal ? "flex min-w-0 flex-1 flex-col gap-4" : "contents"
+					}
+				>
+					<div className="order-3 grid gap-1" aria-live="polite">
+						<div className="flex items-center justify-between gap-2">
+							<div className="flex items-baseline gap-2">
+								<span className="font-heading font-semibold text-4xl tabular-nums tracking-tight">
+									<SlidingNumber value={price} reduceMotion={reduceMotion} />
+								</span>
+								<span className="text-muted-foreground text-sm">
+									<SlidingText
+										value={isYearly ? "/ year" : "/ month"}
+										reduceMotion={reduceMotion}
+									/>
+								</span>
+							</div>
+							{isYearly && (
+								<Badge variant="secondary" className="shrink-0 rounded-sm">
+									Save 20%
+								</Badge>
+							)}
+						</div>
+						<div className="min-h-5 text-muted-foreground text-sm">
+							{isYearly && <span className="line-through">$108</span>}
+						</div>
+					</div>
+
+					<Button
+						type="button"
+						size="xl"
+						className="order-5 w-full"
+						disabled={loading}
+						onClick={() => onChoose(period)}
+					>
+						{loadingPeriod === period ? "Loading..." : "Get Pro"}
+					</Button>
+				</div>
+
+				<div className={isHorizontal ? "min-w-0 flex-1" : "contents"}>
+					{!isHorizontal && (
+						<Tabs
+							value={period}
+							onValueChange={(value) => {
+								if (value === "monthly" || value === "yearly") setPeriod(value);
+							}}
+							className="order-2"
+						>
+							<TabsList size="lg" className="grid w-full grid-cols-2">
+								<TabsTrigger value="monthly">Monthly</TabsTrigger>
+								<TabsTrigger value="yearly">Yearly</TabsTrigger>
+							</TabsList>
+						</Tabs>
+					)}
+
+					<ul
+						className={`order-4 grid gap-2 ${isHorizontal ? "xl:grid-cols-2" : "pt-4"}`}
+					>
+						<li className="flex items-center gap-2.5 text-sm">
+							<CheckCircle
+								aria-hidden="true"
+								weight="Filled"
+								className="size-5 shrink-0 text-brand-green"
+							/>
+							<span>All Free plan features included</span>
+						</li>
+						<li className="flex items-center gap-2.5 text-sm">
+							<CheckCircle
+								aria-hidden="true"
+								weight="Filled"
+								className="size-5 shrink-0 text-brand-green"
+							/>
+							<span>Up to 3 pages per account</span>
+						</li>
+						<li className="flex items-center gap-2.5 text-sm">
+							<CheckCircle
+								aria-hidden="true"
+								weight="Filled"
+								className="size-5 shrink-0 text-brand-green"
+							/>
+							<span>Remove watermark</span>
+						</li>
+						{!isHorizontal && (
+							<li className="flex items-center gap-3 pt-2 text-muted-foreground text-xs uppercase">
+								<span>Coming soon</span>
+								<span aria-hidden="true" className="h-px flex-1 bg-border" />
+							</li>
+						)}
+						{upcomingFeatures.map(({ label, Icon }) => (
+							<li
+								key={label}
+								className="flex items-center gap-2.5 text-muted-foreground text-sm"
+							>
+								<Icon aria-hidden="true" className="size-4 shrink-0" />
+								<span>{label}</span>
+								{isHorizontal && (
+									<Badge
+										variant="outline"
+										className="ml-auto rounded-sm text-xs"
+									>
+										Coming soon
+									</Badge>
+								)}
+							</li>
+						))}
+					</ul>
+				</div>
+			</div>
 		</section>
 	);
 }

@@ -14,10 +14,19 @@ import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { authClient, getAuthErrorMessage } from "@/lib/auth-client";
 import { getSignInHref } from "@/lib/auth-redirect";
-import { type BillingPeriod, PlanCard } from "./plan-card";
-import { ShaderBadge } from "./shader-badge/badge";
+import {
+	type BillingPeriod,
+	PlanCard,
+	type PlanCardVariant,
+} from "./plan-card";
 
-export function PlanPicker() {
+export function PlanPicker({
+	variant = "default",
+	className,
+}: {
+	variant?: PlanCardVariant;
+	className?: string;
+}) {
 	const router = useRouter();
 	const { data: session } = authClient.useSession();
 	const [loadingPlan, setLoadingPlan] = useState<"monthly" | "yearly" | null>(
@@ -66,6 +75,8 @@ export function PlanPicker() {
 
 	return (
 		<PlanCard
+			variant={variant}
+			className={className}
 			loading={loadingPlan !== null}
 			loadingPeriod={loadingPlan}
 			onChoose={(plan) => void startCheckout(plan)}
@@ -82,18 +93,14 @@ export function PlanDialog({
 }) {
 	return (
 		<Dialog open={open} onOpenChange={onOpenChange}>
-			<DialogContent className="max-h-[calc(100dvh-2rem)] overflow-y-auto p-5 sm:max-w-md">
-				<DialogHeader>
-					<DialogTitle>
-						<ShaderBadge preset="blur" tag="$8.99">
-							Unlock more features with Pro
-						</ShaderBadge>
-					</DialogTitle>
+			<DialogContent className="max-h-[calc(100dvh-2rem)] overflow-y-auto p-2 sm:max-w-sm">
+				<DialogHeader className="sr-only">
+					<DialogTitle className="sr-only">Upgrade to Pro</DialogTitle>
 					<DialogDescription className="sr-only">
 						Compare Pro billing options and choose a plan.
 					</DialogDescription>
 				</DialogHeader>
-				<PlanPicker />
+				<PlanPicker variant="default" />
 			</DialogContent>
 		</Dialog>
 	);
