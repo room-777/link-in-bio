@@ -15,7 +15,10 @@ import {
 import { drizzleAdapter } from "better-auth/adapters/drizzle";
 import { customSession, emailOTP } from "better-auth/plugins";
 
-import { getCookieAttributes } from "./cookie-attributes";
+import {
+	getCookieAttributes,
+	shouldEnableCrossSubDomainCookies,
+} from "./cookie-attributes";
 import { createCreemClient, retrieveSubscription } from "./creem-server";
 import {
 	syncCreemCheckout,
@@ -237,12 +240,10 @@ const authOptions = {
 			...getCookieAttributes(env.BETTER_AUTH_URL),
 			httpOnly: true,
 		},
-		// uncomment crossSubDomainCookies setting when ready to deploy and replace <your-workers-subdomain> with your actual workers subdomain
-		// https://developers.cloudflare.com/workers/wrangler/configuration/#workersdev
-		// crossSubDomainCookies: {
-		//   enabled: true,
-		//   domain: "<your-workers-subdomain>",
-		// },
+		crossSubDomainCookies: {
+			enabled: shouldEnableCrossSubDomainCookies(env.BETTER_AUTH_URL),
+			domain: "grabbin.me",
+		},
 	},
 } satisfies BetterAuthOptions;
 

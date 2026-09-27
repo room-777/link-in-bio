@@ -1,7 +1,10 @@
 import assert from "node:assert/strict";
 import { describe, it } from "node:test";
 
-import { getCookieAttributes } from "../src/cookie-attributes";
+import {
+	getCookieAttributes,
+	shouldEnableCrossSubDomainCookies,
+} from "../src/cookie-attributes";
 
 describe("auth cookie attributes", () => {
 	it("allows local HTTP to store cookies without HTTPS", () => {
@@ -16,5 +19,21 @@ describe("auth cookie attributes", () => {
 			sameSite: "none",
 			secure: true,
 		});
+	});
+
+	it("shares cookies across Grabbin subdomains only", () => {
+		assert.equal(shouldEnableCrossSubDomainCookies("https://grabbin.me"), true);
+		assert.equal(
+			shouldEnableCrossSubDomainCookies("https://api.grabbin.me"),
+			true,
+		);
+		assert.equal(
+			shouldEnableCrossSubDomainCookies("http://localhost:3001"),
+			false,
+		);
+		assert.equal(
+			shouldEnableCrossSubDomainCookies("https://preview.workers.dev"),
+			false,
+		);
 	});
 });
