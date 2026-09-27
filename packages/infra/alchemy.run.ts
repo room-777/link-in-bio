@@ -69,7 +69,11 @@ export const hyperdrive = Cloudflare.Hyperdrive.Connection(
 	"database",
 	databaseOrigin.pipe(
 		Effect.zip(databaseLocalOrigin),
-		Effect.map(([origin, dev]) => ({ origin, dev: dev ?? origin })),
+		Effect.map(([origin, dev]) => ({
+			name: "grabbin",
+			origin,
+			dev: dev ?? origin,
+		})),
 	),
 );
 
@@ -91,8 +95,7 @@ export const server = Cloudflare.Worker("server", {
 		? "../../apps/server/dist/index.mjs"
 		: "../../apps/server/src/index.ts",
 	bundle: !serverUsesUploadedBuild,
-	// Uncomment the custom domain setting below to configure a custom domain.
-	// domain: "api.example.com",
+	domain: "api.grabbin.me",
 	compatibility: {
 		flags: ["nodejs_compat"],
 	},
@@ -207,8 +210,7 @@ export default Alchemy.Stack(
 		}
 
 		const webWorker = yield* Cloudflare.Website.Vite("web", {
-			// Uncomment the custom domain setting below to configure a custom domain.
-			// domain: "app.example.com",
+			domain: "grabbin.me",
 			rootDir: "../../apps/web",
 			dev: { port: 3000 },
 			viteEnvironments: {
