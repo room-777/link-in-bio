@@ -5,6 +5,7 @@ import { cache } from "react";
 
 import HandlePage from "@/components/page/handle-page";
 import OwnerPage from "@/components/page/owner-page";
+import { DEMO_PAGE_RESPONSE } from "@/lib/demo-page";
 import { getPageImageUrl } from "@/lib/page-image-url";
 import { fetchPage } from "@/lib/server/page-query";
 
@@ -16,6 +17,17 @@ export async function generateMetadata({
 	params,
 }: PageProps<"/[handle]">): Promise<Metadata> {
 	const { handle } = await params;
+	if (handle === "demo") {
+		const image = getPageImageUrl(DEMO_PAGE_RESPONSE.page.imageSource, {
+			width: 64,
+			height: 64,
+			format: "png",
+		});
+		return {
+			title: DEMO_PAGE_RESPONSE.page.name ?? "demo",
+			icons: image ? { icon: image } : undefined,
+		};
+	}
 	const requestHeaders = await headers();
 	const page = await getPageForRequest(
 		handle,
@@ -49,6 +61,9 @@ export async function generateMetadata({
 
 export default async function Page({ params }: PageProps<"/[handle]">) {
 	const { handle } = await params;
+	if (handle === "demo") {
+		return <OwnerPage pageResponse={DEMO_PAGE_RESPONSE} demoMode />;
+	}
 	const requestHeaders = await headers();
 	const page = await getPageForRequest(
 		handle,

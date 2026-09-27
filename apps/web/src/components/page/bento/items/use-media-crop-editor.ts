@@ -113,6 +113,10 @@ export function useMediaCropEditor({
 			? persistedCrop
 			: centeredCrop;
 	}, [centeredCrop, frameSize, persistedCrop, sourceSize]);
+	useEffect(() => {
+		if (!isCropOpen || draftCrop || !centeredCrop) return;
+		setDraftCrop(getInitialCrop());
+	}, [centeredCrop, draftCrop, getInitialCrop, isCropOpen]);
 	const canApply = Boolean(isCropOpen && cropStyle && draftCrop && onCommand);
 	const actionsRef = useRef({
 		canApply,
@@ -188,7 +192,7 @@ export function useMediaCropEditor({
 		if (video && video.readyState >= 1) {
 			updateSourceSize(video.videoWidth, video.videoHeight);
 		}
-	}, [item.data.mediaUrl, item.data.mimeType, updateSourceSize]);
+	}, [updateSourceSize]);
 
 	const handleCropPointerDown = useCallback(
 		(event: ReactPointerEvent<HTMLButtonElement>) => {

@@ -16,8 +16,12 @@ import PageProfileForm from "./page-profile-form";
 
 export default function OwnerPage({
 	pageResponse,
+	demoMode = false,
+	demoPreview = false,
 }: {
 	pageResponse: PageByHandleResponse;
+	demoMode?: boolean;
+	demoPreview?: boolean;
 }) {
 	const { page } = pageResponse;
 	const [currentPage, setCurrentPage] = useState(page);
@@ -81,8 +85,7 @@ export default function OwnerPage({
 	const compactBentoWidth = getBentoWidth(getColumns("compact"));
 	const compactMockupMaxWidth = `calc(${compactBentoWidth}px + 5rem)`;
 	const compactProfileMaxWidth = `calc(${compactBentoWidth}px + 3rem)`;
-	const desktopMainClassName =
-		"page-profile mx-auto flex min-h-svh w-full max-w-md min-w-0 flex-col justify-between gap-8 p-6 px-6 pt-12 min-[90rem]:mx-0 min-[90rem]:sticky min-[90rem]:top-0 min-[90rem]:min-h-dvh min-[90rem]:w-2xl min-[90rem]:max-w-none min-[90rem]:self-start min-[90rem]:px-16 min-[90rem]:pt-16";
+	const desktopMainClassName = `page-profile mx-auto flex min-h-svh w-full max-w-md min-w-0 flex-col justify-between gap-8 p-6 px-6 pt-12 min-[90rem]:mx-0 min-[90rem]:sticky min-[90rem]:top-0 ${demoPreview ? "min-[90rem]:h-full min-[90rem]:min-h-0" : "min-[90rem]:min-h-dvh"} min-[90rem]:w-2xl min-[90rem]:max-w-none min-[90rem]:self-start min-[90rem]:px-16 min-[90rem]:pt-16`;
 	const mainClassName = isCompactContentLayout
 		? "flex w-full max-w-lg shrink-0 flex-col items-center justify-start overflow-visible p-6 px-6 pt-12"
 		: desktopMainClassName;
@@ -98,9 +101,11 @@ export default function OwnerPage({
 	return (
 		<div
 			className={
-				isCompactPageLayout
-					? "bento-page-scroll relative isolate flex h-svh min-h-0 w-full flex-col items-center overflow-hidden bg-muted"
-					: "bento-page-scroll isolate flex min-h-svh w-full flex-col items-center min-[90rem]:flex-row min-[90rem]:items-start min-[90rem]:justify-around min-[90rem]:overflow-visible"
+				demoPreview
+					? `bento-page-scroll no-scrollbar relative isolate flex h-full min-h-0 w-full flex-col items-center overflow-y-auto ${isCompactPageLayout ? "bg-muted" : "min-[90rem]:flex-row min-[90rem]:items-start min-[90rem]:justify-around"}`
+					: isCompactPageLayout
+						? "bento-page-scroll relative isolate flex h-svh min-h-0 w-full flex-col items-center overflow-hidden bg-muted"
+						: "bento-page-scroll isolate flex min-h-svh w-full flex-col items-center min-[90rem]:flex-row min-[90rem]:items-start min-[90rem]:justify-around min-[90rem]:overflow-visible"
 			}
 		>
 			<div
@@ -125,6 +130,7 @@ export default function OwnerPage({
 						<PageProfileForm
 							page={currentPage}
 							breakpoint={effectiveBreakpoint}
+							demoMode={demoMode}
 							entryAnimationRevision={entryAnimationRevision}
 							onEntryComplete={handleProfileEntryComplete}
 							onSavingChange={setIsSaving}
@@ -135,6 +141,7 @@ export default function OwnerPage({
 					items={pageResponse.items}
 					handle={currentPage.handle}
 					breakpoint={effectiveBreakpoint}
+					demoMode={demoMode}
 					isAutoSaving={isAutoSaving}
 					profileImageUrl={profileImageUrl}
 					entryAnimationRevision={entryAnimationRevision}
@@ -142,9 +149,9 @@ export default function OwnerPage({
 					onEntryComplete={handleBentoEntryComplete}
 					onGridSavingChange={setIsGridSaving}
 				/>
-				{isViewportCompact && isViewportReady ? pageFooter : null}
+				{!demoMode && isViewportCompact && isViewportReady ? pageFooter : null}
 			</div>
-			{!isViewportCompact && isViewportReady ? pageFooter : null}
+			{!demoMode && !isViewportCompact && isViewportReady ? pageFooter : null}
 			{!isViewportCompact && bentoEntryComplete ? (
 				<PageLayoutPreset
 					value={layoutBreakpoint}

@@ -16,6 +16,7 @@ export default function BentoEditor({
 	handle,
 	breakpoint,
 	isAutoSaving,
+	demoMode = false,
 	profileImageUrl,
 	entryAnimationRevision,
 	entryReady,
@@ -26,13 +27,18 @@ export default function BentoEditor({
 	handle: string;
 	breakpoint: BentoBreakpoint;
 	isAutoSaving: boolean;
+	demoMode?: boolean;
 	profileImageUrl: string | null;
 	entryAnimationRevision: number;
 	entryReady: boolean;
 	onEntryComplete?: () => void;
 	onGridSavingChange?: (isSaving: boolean) => void;
 }) {
-	const store = useBentoStore({ initialItems: items, handle });
+	const store = useBentoStore({
+		initialItems: items,
+		handle,
+		persistItems: !demoMode,
+	});
 	useEffect(() => {
 		onGridSavingChange?.(store.status === "dirty" || store.status === "saving");
 	}, [onGridSavingChange, store.status]);

@@ -260,6 +260,9 @@ export default function AddWidgetDialog({
 }) {
 	const isMobile = useIsMobile();
 	const [open, setOpen] = useState(false);
+	const [portalContainer, setPortalContainer] = useState<HTMLElement | null>(
+		null,
+	);
 	const handleItemAdd = (itemType: ItemType, url?: string) => {
 		onItemAdd(itemType, url);
 		setOpen(false);
@@ -274,9 +277,14 @@ export default function AddWidgetDialog({
 			<Button
 				variant="default"
 				size="icon-lg"
-				className="fixed right-6 bottom-10 z-50 size-13 rounded-full"
+				className={`fixed right-6 bottom-10 ${open ? "z-50" : "z-[100004]"} size-13 rounded-full`}
 				aria-label="Open add dialog"
-				onClick={() => setOpen(true)}
+				onClick={() => {
+					setPortalContainer(
+						document.querySelector<HTMLElement>("[data-demo-preview-root]"),
+					);
+					setOpen(true);
+				}}
 			>
 				<Plus className="size-6 stroke-[2.5]" />
 			</Button>
@@ -302,7 +310,8 @@ export default function AddWidgetDialog({
 					<DialogContent
 						keepMounted
 						showCloseButton={false}
-						className="gap-6 rounded-[2.2rem] p-6"
+						portalContainer={portalContainer}
+						className="z-[100003] gap-6 rounded-[2.2rem] p-6"
 					>
 						<DialogHeader className="p-0 pl-2">
 							<DialogTitle className={"font-medium text-base!"}>

@@ -1,6 +1,7 @@
 "use client";
 
 import type { PageItemBatchRequest, PageItemResponse } from "@grabbin/api";
+import { resolveLinkMetadata } from "@grabbin/page-link";
 import { toast } from "@grabbin/ui/components/toast";
 import { useCallback, useEffect, useRef, useState } from "react";
 import {
@@ -339,6 +340,7 @@ export function useBentoStore({
 				return;
 			}
 			previewUrlsRef.current.add(previewUrl);
+			if (!persistItems) return;
 			const task: MediaUploadTask = {
 				controller: new AbortController(),
 			};
@@ -390,6 +392,7 @@ export function useBentoStore({
 			commitItems,
 			enabled,
 			handle,
+			persistItems,
 			updateMediaPlaceholder,
 			updateMediaUpload,
 		],
@@ -402,6 +405,24 @@ export function useBentoStore({
 				(candidate) => candidate.id === itemId,
 			);
 			if (item?.type !== "link") return;
+			if (!persistItems) {
+				const imagePlaceholderDataUrl =
+					await createMediaPlaceholderDataUrl(file);
+				const nextItems = draftRef.current.map((current) =>
+					current.id === itemId && current.type === "link"
+						? {
+								...current,
+								data: {
+									...current.data,
+									imageKey: null,
+									imagePlaceholderDataUrl,
+								},
+							}
+						: current,
+				);
+				commitItems(nextItems);
+				return;
+			}
 
 			const previousTask = mediaUploadsRef.current.get(itemId);
 			if (previousTask) {
@@ -463,7 +484,7 @@ export function useBentoStore({
 				throw error;
 			}
 		},
-		[commitItems, enabled, handle],
+		[commitItems, enabled, handle, persistItems],
 	);
 
 	const flushPendingChanges = useCallback(async () => {
@@ -487,6 +508,25 @@ export function useBentoStore({
 			const requestedItem = draftRef.current.find((item) => item.id === itemId);
 			if (requestedItem?.type !== "link") return;
 			const requestedUrl = requestedItem.data.url;
+			if (!persistItems) {
+				const nextItems = draftRef.current.map((item) =>
+					item.id === itemId && item.type === "link"
+						? {
+								...item,
+								data: {
+									...item.data,
+									metadata: resolveLinkMetadata(
+										requestedUrl,
+										item.data.metadata,
+									),
+								},
+							}
+						: item,
+				);
+				draftRef.current = nextItems;
+				setItems(nextItems);
+				return;
+			}
 
 			try {
 				const response = await refreshBentoLinkMetadata(handle, {
@@ -535,7 +575,7 @@ export function useBentoStore({
 				throw error;
 			}
 		},
-		[flushPendingChanges, handle],
+		[flushPendingChanges, handle, persistItems],
 	);
 
 	const clearAutoFocusItem = useCallback((itemId: string) => {

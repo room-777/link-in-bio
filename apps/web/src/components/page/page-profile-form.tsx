@@ -33,12 +33,14 @@ const REDUCED_MOTION_TRANSITION = { duration: 0 };
 
 export default function PageProfileForm({
 	page,
+	demoMode = false,
 	breakpoint = "wide",
 	entryAnimationRevision = 0,
 	onSavingChange,
 	onEntryComplete,
 }: {
 	page: PageData;
+	demoMode?: boolean;
 	breakpoint?: BentoBreakpoint;
 	entryAnimationRevision?: number;
 	onSavingChange?: (isSaving: boolean) => void;
@@ -84,6 +86,7 @@ export default function PageProfileForm({
 	} = usePageAutoSave({
 		handle: page.handle,
 		page,
+		enabled: !demoMode,
 		onSaveFailure: (changes, discardedImageKey, savedImageKey) => {
 			const keys = new Set(
 				[changes.imageKey, discardedImageKey].filter((key): key is string =>
@@ -118,7 +121,7 @@ export default function PageProfileForm({
 		if (!isImageUploading) {
 			setImageUrl(
 				getPageImageUrl(
-					draft.imageKey === page.imageKey
+					draft.imageKey === (page.imageKey ?? "")
 						? (page.imageSource ?? page.imageKey)
 						: draft.imageKey,
 					{ width: 1024, height: 1024, format: "auto", fit: "scale-down" },
@@ -163,6 +166,10 @@ export default function PageProfileForm({
 				message: "Choose a supported image smaller than 5 MB.",
 				state: "error",
 			});
+			return;
+		}
+		if (demoMode) {
+			setImageUrl(URL.createObjectURL(file));
 			return;
 		}
 

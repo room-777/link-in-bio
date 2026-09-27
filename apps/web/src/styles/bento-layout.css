@@ -55,9 +55,8 @@
 	overflow: visible !important;
 }
 
-.bento-page-scroll:has([data-bento-item-crop-open="true"]),
 .bento-editor:has([data-bento-item-crop-open="true"]),
-.bento-page-scroll:has([data-page-image-crop-open="true"]) {
+.bento-editor:has([data-page-image-crop-open="true"]) {
 	overflow: visible !important;
 }
 
