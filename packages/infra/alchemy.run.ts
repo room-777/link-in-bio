@@ -91,6 +91,7 @@ export const grabbinBucket = Cloudflare.R2.Bucket("grabbin", {
 }).pipe(Alchemy.remote());
 
 export const server = Cloudflare.Worker("server", {
+	name: "grabbin-server",
 	main: serverUsesUploadedBuild
 		? "../../apps/server/dist/index.mjs"
 		: "../../apps/server/src/index.ts",
@@ -210,6 +211,7 @@ export default Alchemy.Stack(
 		}
 
 		const webWorker = yield* Cloudflare.Website.Vite("web", {
+			name: "grabbin",
 			domain: "grabbin.me",
 			rootDir: "../../apps/web",
 			dev: { port: 3000 },
