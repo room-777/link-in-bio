@@ -40,6 +40,7 @@ export const pageDataSchema = v.object({
 	bio: v.nullable(v.string()),
 	isOwner: v.boolean(),
 	canEdit: v.boolean(),
+	hasProAccess: v.boolean(),
 });
 
 export const pageByHandleResponseSchema = v.object({

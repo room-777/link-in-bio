@@ -26,6 +26,7 @@ import {
 	completePage,
 	createPage,
 	getPage,
+	getPublicPageWithPlan,
 	updatePageDraft,
 	updatePageHandle,
 } from "../services/page.service";
@@ -139,7 +140,11 @@ export const pagesController = new Hono<AppEnv>()
 		return c.json(await getPublicViews(page.id, timezone));
 	})
 	.get("/:handle", optionalSession, async (c) => {
-		const page = await getPage(c.var.db, c.req.param("handle"));
+		const page = await getPublicPageWithPlan(
+			c.var.db,
+			c.req.param("handle"),
+			proProductIds(c),
+		);
 		if (!page) {
 			return jsonApiError(c, { status: 404, detail: "Page not found." });
 		}
@@ -166,6 +171,7 @@ export const pagesController = new Hono<AppEnv>()
 					...publicPage,
 					isOwner: canEdit,
 					canEdit,
+					hasProAccess: page.hasProAccess,
 				},
 				items,
 			}),

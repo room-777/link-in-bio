@@ -10,7 +10,7 @@ import {
 	normalizePageHandle,
 } from "@grabbin/page-handle";
 import { FREE_PAGE_LIMIT, getPlanAccess, PRO_PAGE_LIMIT } from "@grabbin/plan";
-import { and, eq, sql } from "drizzle-orm";
+import { and, eq, inArray, sql } from "drizzle-orm";
 
 import { PageServiceError } from "../exceptions/page.exception";
 import { isOwnedPageMediaKey } from "./media.service";
@@ -419,6 +419,65 @@ export async function updatePageDraft({
 
 export async function getPage(db: DatabaseClient, rawHandle: string) {
 	return findPublicPageByHandle(db, normalizePageHandle(rawHandle));
+}
+
+export async function getPublicPageWithPlan(
+	db: DatabaseClient,
+	rawHandle: string,
+	proProductIds: readonly string[],
+) {
+	const rows = await db
+		.select({
+			page: {
+				id: pages.id,
+				userId: pages.userId,
+				handle: pages.handle,
+				onboarding: pages.onboarding,
+				imageKey: pages.imageKey,
+				imageSource: pages.imageSource,
+				imageCrop: pages.imageCrop,
+				name: pages.name,
+				bio: pages.bio,
+			},
+			subscription: {
+				productId: creemSubscription.productId,
+				creemSubscriptionId: creemSubscription.creemSubscriptionId,
+				status: creemSubscription.status,
+				periodEnd: creemSubscription.periodEnd,
+				cancelAtPeriodEnd: creemSubscription.cancelAtPeriodEnd,
+			},
+		})
+		.from(pages)
+		.leftJoin(
+			creemSubscription,
+			and(
+				eq(creemSubscription.referenceId, pages.userId),
+				inArray(creemSubscription.productId, [...proProductIds]),
+			),
+		)
+		.where(eq(pages.handle, normalizePageHandle(rawHandle)));
+
+	if (rows.length === 0) return null;
+	const subscriptions = rows.flatMap(({ subscription }) =>
+		subscription?.productId
+			? [
+					{
+						subscriptionId: subscription.creemSubscriptionId,
+						productId: subscription.productId,
+						status: subscription.status,
+						periodEnd: subscription.periodEnd,
+						cancelAtPeriodEnd: subscription.cancelAtPeriodEnd,
+					},
+				]
+			: [],
+	);
+	const page = rows[0]?.page;
+	if (!page) return null;
+
+	return {
+		...page,
+		hasProAccess: getPlanAccess(subscriptions, proProductIds).hasAccess,
+	};
 }
 
 export { assertPageWritable } from "./page-lifecycle.service";

@@ -101,7 +101,7 @@ export default function HandlePage({
 								)}
 							</motion.div>
 							<div className="min-[90rem]:hidden">
-								<MadeWithGrabbinBadge />
+								<MadeWithGrabbinBadge hasProAccess={page.hasProAccess} />
 							</div>
 						</div>
 						<div className="flex min-w-0 flex-col gap-2">
@@ -145,7 +145,11 @@ export default function HandlePage({
 					</div>
 				</section>
 			</div>
-			<PageFooter handle={page.handle} isOwner={page.isOwner} />
+			<PageFooter
+				handle={page.handle}
+				isOwner={page.isOwner}
+				hasProAccess={page.hasProAccess}
+			/>
 		</main>
 	);
 }

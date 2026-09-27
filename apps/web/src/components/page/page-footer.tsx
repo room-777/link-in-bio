@@ -380,9 +380,13 @@ function ViewerFooter({ handle }: { handle?: string }) {
 	);
 }
 
-export function MadeWithGrabbinBadge() {
+export function MadeWithGrabbinBadge({
+	hasProAccess,
+}: {
+	hasProAccess?: boolean;
+}) {
 	const { data: session, isPending } = authClient.useSession();
-	if (isPending || session?.plan.hasAccess) return null;
+	if (hasProAccess ?? (isPending || session?.plan.hasAccess)) return null;
 
 	return (
 		<span className="cursor-pointer rounded-sm bg-brand-black px-3 py-1.5 font-medium text-primary-foreground text-sm outline-depth">
@@ -398,16 +402,18 @@ export default function PageFooter({
 	isOwner,
 	onHandleChange,
 	isSaving,
+	hasProAccess,
 }: {
 	handle?: string;
 	isOwner: boolean;
 	onHandleChange?: (handle: string) => void;
 	isSaving?: boolean;
+	hasProAccess?: boolean;
 }) {
 	return (
 		<footer className="-mx-4 mb-4 flex min-h-10 w-full flex-col items-center justify-start gap-2 py-12 min-[90rem]:fixed min-[90rem]:bottom-6 min-[90rem]:left-16 min-[90rem]:z-30 min-[90rem]:-mx-2 min-[90rem]:w-auto min-[90rem]:items-start min-[90rem]:py-0">
 			<div className="hidden min-[90rem]:block">
-				<MadeWithGrabbinBadge />
+				<MadeWithGrabbinBadge hasProAccess={hasProAccess} />
 			</div>
 			<div className="flex min-h-10 items-center justify-start">
 				{isOwner ? (

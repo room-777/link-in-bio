@@ -8,6 +8,7 @@ import {
 	completePage,
 	createPage,
 	getOwnedPage,
+	getPublicPageWithPlan,
 	updatePageDraft,
 	updatePageHandle,
 } from "../../src/services/page.service";
@@ -26,6 +27,56 @@ function withPrimaryFreePlan(
 }
 
 describe("page service", () => {
+	/**
+	 * Case ID: PAGE-SERVICE-013
+	 * Given: a public page has an active Pro subscription.
+	 * When: the public page and plan are loaded together.
+	 * Then: the result marks Pro access using one DB query.
+	 * Evidence: hasProAccess=true and select was called once.
+	 * Result: Pass | Fail | Blocked | Not Run
+	 */
+	it("PAGE-SERVICE-013 loads public page and owner plan in one query", async () => {
+		let selectCount = 0;
+		const db = {
+			select: () => {
+				selectCount += 1;
+				return {
+					from: () => ({
+						leftJoin: () => ({
+							where: async () => [
+								{
+									page: {
+										id: "page-1",
+										userId: "user-1",
+										handle: "jane",
+										onboarding: true,
+										imageKey: null,
+										imageSource: null,
+										imageCrop: null,
+										name: "Jane",
+										bio: null,
+									},
+									subscription: {
+										productId: "pro-monthly",
+										creemSubscriptionId: "subscription-1",
+										status: "active",
+										periodEnd: new Date("2099-01-01T00:00:00.000Z"),
+										cancelAtPeriodEnd: false,
+									},
+								},
+							],
+						}),
+					}),
+				};
+			},
+		} as unknown as DatabaseClient;
+
+		const result = await getPublicPageWithPlan(db, "jane", ["pro-monthly"]);
+
+		assert.equal(result?.hasProAccess, true);
+		assert.equal(selectCount, 1);
+	});
+
 	/**
 	 * Case ID: PAGE-SERVICE-009
 	 * Given: a handle contains surrounding whitespace.
