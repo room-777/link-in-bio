@@ -137,7 +137,7 @@ const socialProviders: BetterAuthOptions["socialProviders"] = {
 		: {}),
 };
 
-const authOptions: BetterAuthOptions = {
+const authOptions = {
 	basePath: "/auth",
 	trustedOrigins: [env.CORS_ORIGIN],
 	user: {
@@ -244,7 +244,7 @@ const authOptions: BetterAuthOptions = {
 		//   domain: "<your-workers-subdomain>",
 		// },
 	},
-};
+} satisfies BetterAuthOptions;
 
 export type AuthOptions = typeof authOptions;
 export type Session = ReturnType<
@@ -271,3 +271,5 @@ export async function createAuth(
 		}),
 	});
 }
+
+export type Auth = Awaited<ReturnType<typeof createAuth>>;

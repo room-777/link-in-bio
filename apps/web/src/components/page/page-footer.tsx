@@ -381,6 +381,9 @@ function ViewerFooter({ handle }: { handle?: string }) {
 }
 
 export function MadeWithGrabbinBadge() {
+	const { data: session, isPending } = authClient.useSession();
+	if (isPending || session?.plan.hasAccess) return null;
+
 	return (
 		<span className="cursor-pointer rounded-sm bg-brand-black px-3 py-1.5 font-medium text-primary-foreground text-sm outline-depth">
 			<span className="shimmer shimmer-color-blue-500/60 shimmer-duration-5500">

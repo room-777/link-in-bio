@@ -1,6 +1,6 @@
 import { creemClient } from "@creem_io/better-auth/client";
 import type { ApiError } from "@grabbin/api";
-import type { AuthOptions } from "@grabbin/auth";
+import type { Auth, AuthOptions } from "@grabbin/auth";
 import { env } from "@grabbin/env/web";
 import {
 	customSessionClient,
@@ -52,7 +52,7 @@ export const authClient = createAuthClient({
 	).toString(),
 	plugins: [
 		creemClient(),
-		customSessionClient(),
+		customSessionClient<Auth>(),
 		emailOTPClient(),
 		inferAdditionalFields<AuthOptions>(),
 	],
