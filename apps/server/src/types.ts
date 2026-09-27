@@ -4,6 +4,7 @@ import type { EvlogVariables } from "evlog/hono";
 export type AppSession = {
 	user: {
 		id: string;
+		email: string;
 	};
 };
 
@@ -19,6 +20,11 @@ export type AppEnv = EvlogVariables & {
 		YOUTUBE_API_KEY: string;
 		CHZZK_CLIENT_ID: string;
 		CHZZK_CLIENT_SECRET: string;
+		CREEM_API_KEY: string;
+		CREEM_TEST_MODE: string;
+		CREEM_SUCCESS_URL: string;
+		CREEM_PRO_MONTHLY_PRODUCT_ID: string;
+		CREEM_PRO_YEARLY_PRODUCT_ID: string;
 		TWITCH_CLIENT_ID: string;
 		TWITCH_CLIENT_SECRET: string;
 		TWITCH_USER_ACCESS_TOKEN: string;

@@ -96,6 +96,7 @@ export const server = Cloudflare.Worker("server", {
 	compatibility: {
 		flags: ["nodejs_compat"],
 	},
+	crons: ["0 6 * * *"],
 	env: {
 		HYPERDRIVE: hyperdrive,
 		R2_BUCKET: grabbinBucket,
@@ -135,6 +136,12 @@ export const server = Cloudflare.Worker("server", {
 		CREEM_WEBHOOK_SECRET: Config.redacted("CREEM_WEBHOOK_SECRET"),
 		CREEM_TEST_MODE: Config.string("CREEM_TEST_MODE"),
 		CREEM_SUCCESS_URL: Config.string("CREEM_SUCCESS_URL"),
+		CREEM_PRO_MONTHLY_PRODUCT_ID: Config.string(
+			"CREEM_PRO_MONTHLY_PRODUCT_ID",
+		).pipe(Config.withDefault("")),
+		CREEM_PRO_YEARLY_PRODUCT_ID: Config.string(
+			"CREEM_PRO_YEARLY_PRODUCT_ID",
+		).pipe(Config.withDefault("")),
 		RESEND_API_KEY: Config.redacted("RESEND_API_KEY").pipe(
 			Config.withDefault(""),
 		),
@@ -223,6 +230,12 @@ export default Alchemy.Stack(
 				).pipe(Config.withDefault("")),
 				NEXT_PUBLIC_CREEM_PRODUCT_ID: Config.string(
 					"NEXT_PUBLIC_CREEM_PRODUCT_ID",
+				).pipe(Config.withDefault("")),
+				NEXT_PUBLIC_CREEM_PRO_MONTHLY_PRODUCT_ID: Config.string(
+					"CREEM_PRO_MONTHLY_PRODUCT_ID",
+				).pipe(Config.withDefault("")),
+				NEXT_PUBLIC_CREEM_PRO_YEARLY_PRODUCT_ID: Config.string(
+					"CREEM_PRO_YEARLY_PRODUCT_ID",
 				).pipe(Config.withDefault("")),
 				SENTRY_DSN: Config.string("SENTRY_DSN").pipe(Config.withDefault("")),
 				NEXT_PUBLIC_SENTRY_DSN: Config.string("NEXT_PUBLIC_SENTRY_DSN").pipe(

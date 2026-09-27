@@ -9,8 +9,14 @@ import { PageItemServiceError } from "../../src/exceptions/page-item.exception";
 import type { AppEnv } from "../../src/types";
 
 const sessionMiddleware: MiddlewareHandler<AppEnv> = async (c, next) => {
-	c.set("db", {} as DatabaseClient);
-	c.set("session", { user: { id: "user-1" } });
+	c.set("db", {
+		query: {
+			pages: { findFirst: async () => ({ id: "page-1", handle: "jane" }) },
+			creemSubscription: { findMany: async () => [] },
+			user: { findFirst: async () => ({ primaryPageHandle: "jane" }) },
+		},
+	} as unknown as DatabaseClient);
+	c.set("session", { user: { id: "user-1", email: "user@example.com" } });
 	await next();
 };
 
@@ -22,10 +28,18 @@ function createTestApp(
 		throw new Error("metadata service should not run");
 	},
 ) {
-	return new Hono<AppEnv>().route(
+	const app = new Hono<AppEnv>().route(
 		"/pages",
 		createPageItemsController({ sessionMiddleware, persist, enrichMetadata }),
 	);
+	const bindings = {
+		CREEM_PRO_MONTHLY_PRODUCT_ID: "",
+		CREEM_PRO_YEARLY_PRODUCT_ID: "",
+	} as AppEnv["Bindings"];
+	return {
+		request: (input: string, init?: RequestInit) =>
+			app.request(input, init, bindings),
+	};
 }
 
 describe("page items controller", () => {

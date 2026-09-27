@@ -4,23 +4,18 @@ import {
 	type UpdatePageDraft,
 } from "@grabbin/api";
 import type { DatabaseClient } from "@grabbin/db";
-import { pages, user } from "@grabbin/db/schema/index";
+import { creemSubscription, pages, user } from "@grabbin/db/schema/index";
 import {
 	type HandleAvailabilityResponse,
 	normalizePageHandle,
 } from "@grabbin/page-handle";
-import { and, eq } from "drizzle-orm";
+import { FREE_PAGE_LIMIT, getPlanAccess, PRO_PAGE_LIMIT } from "@grabbin/plan";
+import { and, eq, sql } from "drizzle-orm";
 
 import { PageServiceError } from "../exceptions/page.exception";
 import { isOwnedPageMediaKey } from "./media.service";
 import { checkPageHandle } from "./page-handle.service";
-
-function findPageIdByUserId(db: DatabaseClient, userId: string) {
-	return db.query.pages.findFirst({
-		where: eq(pages.userId, userId),
-		columns: { id: true },
-	});
-}
+import { assertPageWritable } from "./page-lifecycle.service";
 
 function findPublicPageByHandle(db: DatabaseClient, handle: string) {
 	return db.query.pages.findFirst({
@@ -48,27 +43,7 @@ export function getOwnedPage(
 			eq(pages.handle, normalizePageHandle(input.handle)),
 			eq(pages.userId, input.userId),
 		),
-		columns: { id: true },
-	});
-}
-
-async function insertPage(
-	db: DatabaseClient,
-	input: { id: string; userId: string; handle: string },
-) {
-	return db.transaction(async (tx) => {
-		const [page] = await tx
-			.insert(pages)
-			.values({ ...input, onboarding: false })
-			.returning();
-		if (!page) throw new Error("PAGE_CREATE_FAILED");
-
-		await tx
-			.update(user)
-			.set({ primaryPageHandle: page.handle })
-			.where(eq(user.id, input.userId));
-
-		return page;
+		columns: { id: true, handle: true },
 	});
 }
 
@@ -190,25 +165,62 @@ export async function createPage({
 	db,
 	userId,
 	rawHandle,
+	proProductIds = [],
 }: {
 	db: DatabaseClient;
 	userId: string;
 	rawHandle: string;
+	proProductIds?: readonly string[];
 }) {
 	const availability = await checkPageHandle({ db, rawHandle });
 	if (!availability.available) throw getHandleError(availability);
 	const handle = availability.handle;
 
-	const existingPage = await findPageIdByUserId(db, userId);
-	if (existingPage) {
-		throw new PageServiceError("PAGE_ALREADY_EXISTS");
-	}
-
 	try {
-		return await insertPage(db, {
-			id: crypto.randomUUID(),
-			userId,
-			handle,
+		return await db.transaction(async (tx) => {
+			await tx.execute(
+				sql`select id from "user" where id = ${userId} for update`,
+			);
+			const [ownedPages, subscriptions, currentUser] = await Promise.all([
+				tx.query.pages.findMany({
+					where: eq(pages.userId, userId),
+					columns: { id: true },
+				}),
+				tx.query.creemSubscription.findMany({
+					where: eq(creemSubscription.referenceId, userId),
+				}),
+				tx.query.user.findFirst({
+					where: eq(user.id, userId),
+					columns: { primaryPageHandle: true },
+				}),
+			]);
+			const plan = getPlanAccess(
+				subscriptions.map((subscription) => ({
+					productId: subscription.productId,
+					status: subscription.status,
+					periodEnd: subscription.periodEnd,
+					cancelAtPeriodEnd: subscription.cancelAtPeriodEnd,
+				})),
+				proProductIds,
+			);
+			const limit = plan.hasAccess ? PRO_PAGE_LIMIT : FREE_PAGE_LIMIT;
+			if (ownedPages.length >= limit) {
+				throw new PageServiceError("PAGE_LIMIT_REACHED");
+			}
+
+			const [page] = await tx
+				.insert(pages)
+				.values({ id: crypto.randomUUID(), userId, handle, onboarding: false })
+				.returning();
+			if (!page) throw new Error("PAGE_CREATE_FAILED");
+
+			if (!currentUser?.primaryPageHandle) {
+				await tx
+					.update(user)
+					.set({ primaryPageHandle: page.handle })
+					.where(eq(user.id, userId));
+			}
+			return page;
 		});
 	} catch (error) {
 		if (isUniqueViolation(error)) {
@@ -223,11 +235,13 @@ export async function updatePageHandle({
 	userId,
 	handle: rawCurrentHandle,
 	rawHandle,
+	proProductIds = [],
 }: {
 	db: DatabaseClient;
 	userId: string;
 	handle: string;
 	rawHandle: string;
+	proProductIds?: readonly string[];
 }) {
 	const currentHandle = normalizePageHandle(rawCurrentHandle);
 	const existingPage = await db.query.pages.findFirst({
@@ -235,6 +249,7 @@ export async function updatePageHandle({
 		columns: { id: true, handle: true },
 	});
 	if (!existingPage) throw new PageServiceError("PAGE_NOT_FOUND");
+	await assertPageWritable({ db, userId, page: existingPage, proProductIds });
 
 	const availability = await checkPageHandle({ db, rawHandle });
 	if (!availability.available && availability.handle !== existingPage.handle) {
@@ -251,10 +266,16 @@ export async function updatePageHandle({
 				.returning();
 			if (!page) throw new PageServiceError("PAGE_NOT_FOUND");
 
-			await tx
-				.update(user)
-				.set({ primaryPageHandle: page.handle })
-				.where(eq(user.id, userId));
+			const currentUser = await tx.query.user.findFirst({
+				where: eq(user.id, userId),
+				columns: { primaryPageHandle: true },
+			});
+			if (currentUser?.primaryPageHandle === existingPage.handle) {
+				await tx
+					.update(user)
+					.set({ primaryPageHandle: page.handle })
+					.where(eq(user.id, userId));
+			}
 
 			return page;
 		});
@@ -272,12 +293,14 @@ export async function completePage({
 	userId,
 	handle: rawHandle,
 	profile,
+	proProductIds = [],
 }: {
 	db: DatabaseClient;
 	bucket: R2Bucket;
 	userId: string;
 	handle: string;
 	profile: PageProfile;
+	proProductIds?: readonly string[];
 }) {
 	const handle = normalizePageHandle(rawHandle);
 	const existingPage = await db.query.pages.findFirst({
@@ -285,6 +308,12 @@ export async function completePage({
 		columns: { id: true, imageKey: true, imageSource: true, imageCrop: true },
 	});
 	if (!existingPage) throw new PageServiceError("PAGE_NOT_FOUND");
+	await assertPageWritable({
+		db,
+		userId,
+		page: { ...existingPage, handle },
+		proProductIds,
+	});
 
 	const imageKey = profile.imageKey?.trim() || null;
 	if (
@@ -325,12 +354,14 @@ export async function updatePageDraft({
 	userId,
 	handle: rawHandle,
 	draft,
+	proProductIds = [],
 }: {
 	db: DatabaseClient;
 	bucket: R2Bucket;
 	userId: string;
 	handle: string;
 	draft: UpdatePageDraft;
+	proProductIds?: readonly string[];
 }) {
 	const handle = normalizePageHandle(rawHandle);
 	const existingPage = await db.query.pages.findFirst({
@@ -338,6 +369,12 @@ export async function updatePageDraft({
 		columns: { id: true, imageKey: true, imageSource: true, imageCrop: true },
 	});
 	if (!existingPage) throw new PageServiceError("PAGE_NOT_FOUND");
+	await assertPageWritable({
+		db,
+		userId,
+		page: { ...existingPage, handle },
+		proProductIds,
+	});
 
 	const imageKey = draft.imageKey?.trim() || null;
 	if (
@@ -383,3 +420,5 @@ export async function updatePageDraft({
 export async function getPage(db: DatabaseClient, rawHandle: string) {
 	return findPublicPageByHandle(db, normalizePageHandle(rawHandle));
 }
+
+export { assertPageWritable } from "./page-lifecycle.service";

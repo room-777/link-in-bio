@@ -4,12 +4,26 @@ import type { R2Bucket } from "@cloudflare/workers-types";
 import type { DatabaseClient } from "@grabbin/db";
 
 import {
+	assertPageWritable,
 	completePage,
 	createPage,
 	getOwnedPage,
 	updatePageDraft,
 	updatePageHandle,
 } from "../../src/services/page.service";
+
+function withPrimaryFreePlan(
+	input: unknown,
+	primaryPageHandle = "jane",
+): DatabaseClient {
+	const mock = input as { query?: Record<string, unknown> };
+	mock.query = {
+		...mock.query,
+		creemSubscription: { findMany: async () => [] },
+		user: { findFirst: async () => ({ primaryPageHandle }) },
+	};
+	return mock as DatabaseClient;
+}
 
 describe("page service", () => {
 	/**
@@ -22,7 +36,7 @@ describe("page service", () => {
 	 */
 	it("PAGE-SERVICE-009 finds only the signed-in owner's normalized handle", async () => {
 		let receivedWhere: unknown;
-		const db = {
+		const db = withPrimaryFreePlan({
 			query: {
 				pages: {
 					findFirst: async (input: { where: unknown }) => {
@@ -31,7 +45,7 @@ describe("page service", () => {
 					},
 				},
 			},
-		} as unknown as DatabaseClient;
+		});
 
 		const result = await getOwnedPage(db, {
 			handle: " Jane ",
@@ -118,6 +132,12 @@ describe("page service", () => {
 			},
 		};
 		const tx = {
+			execute: async () => undefined,
+			query: {
+				pages: { findMany: async () => [] },
+				creemSubscription: { findMany: async () => [] },
+				user: { findFirst: async () => null },
+			},
 			insert() {
 				return {
 					values() {
@@ -134,6 +154,9 @@ describe("page service", () => {
 				pages: {
 					findFirst: async () => undefined,
 				},
+				creemSubscription: {
+					findMany: async () => [],
+				},
 			},
 			transaction: async (callback: (value: typeof tx) => unknown) =>
 				callback(tx),
@@ -142,6 +165,80 @@ describe("page service", () => {
 		await createPage({ db, userId: "user-1", rawHandle: "Jane" });
 
 		assert.deepEqual(userValues, { primaryPageHandle: "jane" });
+	});
+
+	/**
+	 * Case ID: PAGE-SERVICE-010
+	 * Given: a free account already owns one page.
+	 * When: it tries to create another page.
+	 * Then: creation is rejected before a second page is inserted.
+	 * Evidence: PAGE_LIMIT_REACHED error and no insert call.
+	 * Result: Pass | Fail | Blocked | Not Run
+	 */
+	it("PAGE-SERVICE-010 blocks a second page for a free account", async () => {
+		let insertCalled = false;
+		const tx = {
+			execute: async () => undefined,
+			query: {
+				pages: { findMany: async () => [{ id: "page-1" }] },
+				creemSubscription: { findMany: async () => [] },
+				user: { findFirst: async () => ({ primaryPageHandle: "page-1" }) },
+			},
+			insert() {
+				insertCalled = true;
+				throw new Error("insert should not run");
+			},
+			update() {
+				throw new Error("user should not be updated");
+			},
+		};
+		const db = {
+			query: { pages: { findFirst: async () => undefined } },
+			transaction: async (callback: (value: typeof tx) => unknown) =>
+				callback(tx),
+		} as unknown as DatabaseClient;
+
+		await assert.rejects(
+			createPage({ db, userId: "user-1", rawHandle: "another" }),
+			(error: unknown) =>
+				typeof error === "object" &&
+				error !== null &&
+				"code" in error &&
+				error.code === "PAGE_LIMIT_REACHED",
+		);
+		assert.equal(insertCalled, false);
+	});
+
+	/**
+	 * Case ID: PAGE-SERVICE-012
+	 * Given: a free owner edits a non-primary page.
+	 * When: the server checks write access.
+	 * Then: it rejects the change as read-only.
+	 * Evidence: PAGE_READ_ONLY and unchanged data.
+	 * Result: Pass | Fail | Blocked | Not Run
+	 */
+	it("PAGE-SERVICE-012 keeps extra pages read-only after Pro access ends", async () => {
+		const db = withPrimaryFreePlan(
+			{
+				query: {
+					creemSubscription: { findMany: async () => [] },
+				},
+			},
+			"primary",
+		);
+
+		await assert.rejects(
+			assertPageWritable({
+				db,
+				userId: "user-1",
+				page: { id: "extra", handle: "extra" },
+			}),
+			(error: unknown) =>
+				typeof error === "object" &&
+				error !== null &&
+				"code" in error &&
+				error.code === "PAGE_READ_ONLY",
+		);
 	});
 
 	it("updates the page and primary user handle together", async () => {
@@ -168,11 +265,14 @@ describe("page service", () => {
 			},
 		};
 		const tx = {
+			query: {
+				user: { findFirst: async () => ({ primaryPageHandle: "jane" }) },
+			},
 			update() {
 				return pageValues ? userUpdate : pageUpdate;
 			},
 		};
-		const db = {
+		const db = withPrimaryFreePlan({
 			query: {
 				pages: {
 					findFirst: async () => {
@@ -185,7 +285,7 @@ describe("page service", () => {
 			},
 			transaction: async (callback: (value: typeof tx) => unknown) =>
 				callback(tx),
-		} as unknown as DatabaseClient;
+		});
 
 		await updatePageHandle({
 			db,
@@ -227,14 +327,14 @@ describe("page service", () => {
 			},
 			returning: async () => [updatedPage],
 		};
-		const db = {
+		const db = withPrimaryFreePlan({
 			query: {
 				pages: {
 					findFirst: async () => ({ id: "page-1", imageKey: null }),
 				},
 			},
 			update: () => query,
-		} as unknown as DatabaseClient;
+		});
 		const bucket = {
 			head: async () => ({
 				size: 100,
@@ -277,14 +377,14 @@ describe("page service", () => {
 			},
 			returning: async () => [{ id: "page-1", name: "Jane", onboarding: true }],
 		};
-		const db = {
+		const db = withPrimaryFreePlan({
 			query: {
 				pages: {
 					findFirst: async () => ({ id: "page-1", imageKey: null }),
 				},
 			},
 			update: () => query,
-		} as unknown as DatabaseClient;
+		});
 		const bucket = {} as R2Bucket;
 
 		await completePage({
@@ -325,14 +425,14 @@ describe("page service", () => {
 			},
 			returning: async () => [{ id: "page-1", imageKey, name: "Jane" }],
 		};
-		const db = {
+		const db = withPrimaryFreePlan({
 			query: {
 				pages: {
 					findFirst: async () => ({ id: "page-1", imageKey: null }),
 				},
 			},
 			update: () => query,
-		} as unknown as DatabaseClient;
+		});
 		const bucket = {
 			head: async () => ({ size: 100 }),
 			delete: async () => undefined,
@@ -369,14 +469,14 @@ describe("page service", () => {
 				{ id: "page-1", name: "Jane", bio: "Hello", onboarding: false },
 			],
 		};
-		const db = {
+		const db = withPrimaryFreePlan({
 			query: {
 				pages: {
 					findFirst: async () => ({ id: "page-1", imageKey: null }),
 				},
 			},
 			update: () => query,
-		} as unknown as DatabaseClient;
+		});
 
 		const result = await updatePageDraft({
 			db,
@@ -402,14 +502,14 @@ describe("page service", () => {
 			},
 			returning: async () => [{ id: "page-1", name: null, bio: null }],
 		};
-		const db = {
+		const db = withPrimaryFreePlan({
 			query: {
 				pages: {
 					findFirst: async () => ({ id: "page-1", imageKey: null }),
 				},
 			},
 			update: () => query,
-		} as unknown as DatabaseClient;
+		});
 
 		await updatePageDraft({
 			db,
@@ -439,14 +539,14 @@ describe("page service", () => {
 			],
 		};
 		const deletedKeys: string[] = [];
-		const db = {
+		const db = withPrimaryFreePlan({
 			query: {
 				pages: {
 					findFirst: async () => ({ id: "page-1", imageKey: oldImageKey }),
 				},
 			},
 			update: () => query,
-		} as unknown as DatabaseClient;
+		});
 		const bucket = {
 			head: async () => ({
 				size: 100,
@@ -486,7 +586,7 @@ describe("page service", () => {
 			},
 			returning: async () => [{ id: "page-1", imageCrop: null }],
 		};
-		const db = {
+		const db = withPrimaryFreePlan({
 			query: {
 				pages: {
 					findFirst: async () => ({
@@ -496,7 +596,7 @@ describe("page service", () => {
 				},
 			},
 			update: () => query,
-		} as unknown as DatabaseClient;
+		});
 		const crop = { x: 10, y: 0, width: 80, height: 100 };
 
 		await updatePageDraft({

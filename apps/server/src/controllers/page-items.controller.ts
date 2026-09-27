@@ -17,6 +17,7 @@ import { Hono } from "hono";
 import * as v from "valibot";
 
 import { jsonApiError } from "../api-error";
+import { PageServiceError } from "../exceptions/page.exception";
 import { PageItemServiceError } from "../exceptions/page-item.exception";
 import type { LinkProviderEnvironment } from "../services/link-providers";
 import {
@@ -25,6 +26,7 @@ import {
 	createItemMediaUpload,
 } from "../services/media.service";
 import { getOwnedPage } from "../services/page.service";
+import { assertPageWritable } from "../services/page-lifecycle.service";
 import type { AppEnv } from "../types";
 
 const pageItemErrorDetails = {
@@ -89,6 +91,34 @@ async function readJson(c: Context<AppEnv>) {
 	return c.req.json().catch(() => null);
 }
 
+async function pageWriteError(
+	c: Context<AppEnv>,
+	userId: string,
+	page: { id: string; handle?: string },
+) {
+	try {
+		await assertPageWritable({
+			db: c.var.db,
+			userId,
+			page,
+			proProductIds: [
+				c.env.CREEM_PRO_MONTHLY_PRODUCT_ID,
+				c.env.CREEM_PRO_YEARLY_PRODUCT_ID,
+			].filter(Boolean),
+		});
+		return null;
+	} catch (error) {
+		if (error instanceof PageServiceError) {
+			return jsonApiError(c, {
+				status: 403,
+				code: "PAGE_READ_ONLY",
+				detail: "This page is read-only.",
+			});
+		}
+		throw error;
+	}
+}
+
 export type PageItemsControllerOptions = {
 	sessionMiddleware: MiddlewareHandler<AppEnv>;
 	persist: PersistPageItemBatch;
@@ -121,6 +151,14 @@ export function createPageItemsController({
 					detail: pageItemErrorDetails.INVALID_LINK_METADATA,
 				});
 			}
+			const page = await getOwnedPage(c.var.db, {
+				handle: c.req.param("handle"),
+				userId: session.user.id,
+			});
+			if (!page)
+				return jsonApiError(c, { status: 404, detail: "Page not found." });
+			const writeError = await pageWriteError(c, session.user.id, page);
+			if (writeError) return writeError;
 
 			try {
 				return c.json({
@@ -170,6 +208,8 @@ export function createPageItemsController({
 			if (!page) {
 				return jsonApiError(c, { status: 404, detail: "Page not found." });
 			}
+			const writeError = await pageWriteError(c, session.user.id, page);
+			if (writeError) return writeError;
 
 			try {
 				const upload = await createItemMediaUpload({
@@ -217,6 +257,8 @@ export function createPageItemsController({
 			if (!page) {
 				return jsonApiError(c, { status: 404, detail: "Page not found." });
 			}
+			const writeError = await pageWriteError(c, session.user.id, page);
+			if (writeError) return writeError;
 
 			try {
 				return c.json(
@@ -264,6 +306,8 @@ export function createPageItemsController({
 			if (!page) {
 				return jsonApiError(c, { status: 404, detail: "Page not found." });
 			}
+			const writeError = await pageWriteError(c, session.user.id, page);
+			if (writeError) return writeError;
 
 			try {
 				await cancelItemMediaUpload({
@@ -299,6 +343,14 @@ export function createPageItemsController({
 					detail: "Invalid item batch.",
 				});
 			}
+			const page = await getOwnedPage(c.var.db, {
+				handle: c.req.param("handle"),
+				userId: session.user.id,
+			});
+			if (!page)
+				return jsonApiError(c, { status: 404, detail: "Page not found." });
+			const writeError = await pageWriteError(c, session.user.id, page);
+			if (writeError) return writeError;
 
 			try {
 				return c.json(

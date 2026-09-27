@@ -11,6 +11,7 @@
 	"scripts": {
 		"build": "tsdown",
 		"check-types": "tsc -b",
+		"test:creem-e2e": "bun tests/e2e/creem-lifecycle.ts",
 		"compile": "bun build --compile --minify --sourcemap --bytecode ./src/index.ts --outfile server"
 	},
 	"dependencies": {
@@ -23,6 +24,7 @@
 		"@grabbin/bento-layout": "workspace:*",
 		"@grabbin/page-handle": "workspace:*",
 		"@grabbin/page-link": "workspace:*",
+		"@grabbin/plan": "workspace:*",
 		"aws4fetch": "^1.0.20",
 		"better-auth": "catalog:auth",
 		"dotenv": "catalog:runtime",
@@ -36,6 +38,8 @@
 		"@grabbin/config": "workspace:*",
 		"@sentry/vite-plugin": "catalog:sentry",
 		"@types/node": "catalog:tooling",
+		"@types/pg": "^8.15.6",
+		"pg": "^8.16.3",
 		"tsdown": "^0.22.14",
 		"typescript": "catalog:tooling"
 	}
