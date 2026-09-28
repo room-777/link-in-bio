@@ -89,17 +89,17 @@ export default async function UpdateDetailPage({
 					<MdxContent Content={Content} />
 				</div>
 				<div className="mx-auto max-w-xl">
-					<div className="relative isolate mt-40">
+					<div className="relative isolate mt-40 flex flex-col items-center gap-5">
 						<Image
 							alt=""
 							aria-hidden="true"
-							className="pointer-events-none absolute top-0 left-1/2 z-10 w-36 -translate-x-1/2"
+							className="pointer-events-none z-10 w-36"
 							height={1254}
 							sizes="144px"
 							src="/images/landing/features-flower.png"
 							width={1254}
 						/>
-						<CtaSection className="min-h-0 gap-5 rounded-xl py-12 sm:py-24 [&_h2]:text-2xl sm:[&_h2]:text-3xl" />
+						<CtaSection className="min-h-0 w-full gap-5 rounded-xl py-12 sm:py-24 [&_h2]:text-2xl sm:[&_h2]:text-3xl" />
 					</div>
 				</div>
 			</article>
