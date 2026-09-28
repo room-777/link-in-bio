@@ -1,11 +1,16 @@
 "use client";
 
+import { usePathname } from "next/navigation";
 import { useEffect, useState } from "react";
 
 export default function LandingHeaderBackground() {
 	const [hasPassedHero, setHasPassedHero] = useState(false);
+	const pathname = usePathname();
 
 	useEffect(() => {
+		setHasPassedHero(false);
+		if (pathname !== "/") return;
+
 		const hero = document.getElementById("hero");
 		if (!hero) return;
 
@@ -15,7 +20,7 @@ export default function LandingHeaderBackground() {
 		observer.observe(hero);
 
 		return () => observer.disconnect();
-	}, []);
+	}, [pathname]);
 
 	return (
 		<>
