@@ -5,8 +5,8 @@
 	"scripts": {
 		"check-types": "tsc --noEmit",
 		"dev": "alchemy dev",
-		"deploy": "SENTRY_UPLOAD_SOURCE_MAPS=1 bun run --filter server build && SENTRY_UPLOAD_SOURCE_MAPS=1 alchemy deploy",
-		"deploy:production": "NODE_ENV=production SENTRY_UPLOAD_SOURCE_MAPS=1 bun run --filter server build && NODE_ENV=production SENTRY_UPLOAD_SOURCE_MAPS=1 alchemy deploy --stage production --env-file ../../apps/server/.env.production",
+		"deploy": "bun run --filter web build && alchemy deploy",
+		"deploy:production": "NODE_ENV=production bun run --filter web build && NODE_ENV=production alchemy deploy --stage production --env-file ../../apps/server/.env.production",
 		"destroy": "alchemy destroy"
 	},
 	"dependencies": {

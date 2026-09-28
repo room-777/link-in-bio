@@ -211,21 +211,20 @@ export default Alchemy.Stack(
 			};
 		}
 
-		const webWorker = yield* Cloudflare.Website.Vite("web", {
+		const webWorker = yield* Cloudflare.Worker("web", {
 			name: "grabbin",
 			placement: { region: "aws:ap-northeast-2" },
 			domain: "grabbin.me",
-			rootDir: "../../apps/web",
-			dev: { port: 3000 },
-			viteEnvironments: {
-				entry: "rsc",
-				children: ["ssr"],
-			},
+			main: "../../apps/web/dist/server/index.js",
+			bundle: false,
+			assets: "../../apps/web/dist/client",
+			cache: { enabled: true },
 			compatibility: {
 				flags: ["nodejs_compat", "global_fetch_strictly_public"],
 			},
 			env: {
 				IMAGES: Cloudflare.Images.Images(),
+				CF_VERSION_METADATA: Cloudflare.Workers.VersionMetadata(),
 				SERVER: serverWorker,
 				NEXT_PUBLIC_SERVER_URL: serverWorker.url.as<string>(),
 				NEXT_PUBLIC_PAGE_DOMAIN: Config.string("NEXT_PUBLIC_PAGE_DOMAIN").pipe(
