@@ -37,10 +37,10 @@ import { useEffect, useRef, useState } from "react";
 import { useEmailOtpShake } from "@/hooks/use-email-otp-shake";
 import type { BentoCommand, BentoItem } from "@/lib/bento/bento-types";
 import { normalizeHttpsUrl } from "@/lib/normalize-https-url";
-import { useMapItemInteraction } from "./bento/items/map-item-interaction-context";
-import { MapLocationSearch } from "./bento/items/map-location-search";
-import { useOptionalMediaCrop } from "./bento/items/media-crop-context";
 import BentoPresetIcon from "./bento-preset-icon";
+import { useMapItemInteraction } from "./items/map-item-interaction-context";
+import { MapLocationSearch } from "./items/map-location-search";
+import { useOptionalMediaCrop } from "./items/media-crop-context";
 
 import "@grabbin/ui/styles/email-otp-form.css";
 

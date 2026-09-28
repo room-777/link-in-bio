@@ -8,11 +8,10 @@ import {
 } from "@grabbin/bento-layout";
 import { useCallback, useEffect, useState } from "react";
 import { getPageImageUrl } from "@/lib/page-image-url";
-
+import PageProfileForm from "../profile/page-profile-form";
+import PageFooter from "../shared/page-footer";
 import BentoEditor from "./bento-editor";
-import PageFooter from "./page-footer";
 import PageLayoutPreset from "./page-layout-preset";
-import PageProfileForm from "./page-profile-form";
 
 export default function OwnerPage({
 	pageResponse,

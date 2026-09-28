@@ -6,7 +6,7 @@ import dynamic from "next/dynamic";
 import type { ReactNode } from "react";
 
 import type { BentoCommand, BentoItem } from "@/lib/bento/bento-types";
-import { LinkItem } from "../bento-link";
+import { LinkItem } from "./bento-link";
 import { MediaItem } from "./items/media-item";
 import { SectionItem } from "./items/section-item";
 import { TextItem } from "./items/text-item";

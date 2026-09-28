@@ -5,7 +5,7 @@ import { Button } from "@grabbin/ui/components/button";
 import { TrashIcon } from "lucide-react";
 import { type CSSProperties, useEffect, useRef, useState } from "react";
 import type { BentoCommand, BentoItem } from "@/lib/bento/bento-types";
-import BentoItemControls from "../bento-item-controls";
+import BentoItemControls from "./bento-item-controls";
 import { RuntimeFallback, renderItem } from "./bento-item-registry";
 import { MapItemInteractionProvider } from "./items/map-item-interaction-context";
 import { MediaCropProvider } from "./items/media-crop-context";

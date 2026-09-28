@@ -1,7 +1,7 @@
 "use client";
 
-import OwnerPage from "@/components/page/owner-page";
 import { DEMO_PAGE_RESPONSE } from "@/lib/demo-page";
+import OwnerPage from "../page/editor/owner-page";
 
 export default function DemoEditorPreview() {
 	return (

@@ -1,9 +1,8 @@
 import type { Metadata } from "next";
 import Image from "next/image";
 import { redirect } from "next/navigation";
-
-import CreatePageForm from "@/components/page/create-page-form";
 import { getPrimaryPagePath, getServerSession } from "@/lib/server/session";
+import CreatePageForm from "../../components/page/management/create-page-form";
 
 export const metadata: Metadata = {
 	title: "Create your Grabbin page",

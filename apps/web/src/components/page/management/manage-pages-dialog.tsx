@@ -41,7 +41,7 @@ import { useRouter } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
 import { apiClient, getApiErrorMessage } from "@/lib/api-client";
 import { getPageImageUrl } from "@/lib/page-image-url";
-import { PlanDialog } from "../billing/plan-dialog";
+import { PlanDialog } from "../../billing/plan-dialog";
 import CreatePageForm from "./create-page-form";
 
 type Activity = "manage" | "create";

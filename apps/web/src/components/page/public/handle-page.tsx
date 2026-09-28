@@ -13,11 +13,13 @@ import { useEffect, useState } from "react";
 import { toBentoItem } from "@/lib/bento/bento-batch";
 import { getMediaCropStyle } from "@/lib/bento/media-crop";
 import { getPageImageUrl } from "@/lib/page-image-url";
-import PageFooter, { MadeWithGrabbinBadge } from "./page-footer";
+import PageFooter, { MadeWithGrabbinBadge } from "../shared/page-footer";
 import PublicShareLinkButton from "./public-share-link-button";
 import SimpleAnalyticsTracker from "./simple-analytics-tracker";
 
-const BentoSection = dynamic(() => import("./bento-section"), { ssr: false });
+const BentoSection = dynamic(() => import("../editor/bento/bento-section"), {
+	ssr: false,
+});
 const MotionImage = motion.create(Image);
 const PROFILE_ENTER_DURATION_SECONDS = 0.85;
 const PROFILE_TITLE_ENTER_DELAY_SECONDS = 0.08;

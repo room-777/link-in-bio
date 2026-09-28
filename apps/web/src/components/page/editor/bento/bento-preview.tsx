@@ -8,10 +8,9 @@ import {
 	type PresetName,
 } from "@grabbin/bento-layout";
 import { motion, useReducedMotion } from "motion/react";
-
-import { BentoItemShell } from "@/components/page/bento/bento-item-shell";
 import type { BentoItem } from "@/lib/bento/bento-types";
-import { MapViewportGate } from "./bento/items/shared";
+import { BentoItemShell } from "./bento-item-shell";
+import { MapViewportGate } from "./items/shared";
 
 const PREVIEW_TIMESTAMP = "2026-01-01T00:00:00.000Z";
 const PREVIEW_GRID_ROWS = 6;

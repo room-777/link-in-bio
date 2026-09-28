@@ -11,7 +11,7 @@ import {
 import { useIsMobile } from "@grabbin/ui/components/use-mobile";
 import { QrCode } from "lucide-react";
 import { useState } from "react";
-import ShareLinkContent from "./share-link-content";
+import ShareLinkContent from "../sharing/share-link-content";
 
 export default function PublicShareLinkButton({
 	profileImageUrl,

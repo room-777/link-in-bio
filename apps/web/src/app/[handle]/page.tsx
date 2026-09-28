@@ -2,12 +2,11 @@ import type { Metadata } from "next";
 import { headers } from "next/headers";
 import { notFound } from "next/navigation";
 import { cache } from "react";
-
-import HandlePage from "@/components/page/handle-page";
-import OwnerPage from "@/components/page/owner-page";
 import { DEMO_PAGE_RESPONSE } from "@/lib/demo-page";
 import { getPageImageUrl } from "@/lib/page-image-url";
 import { fetchPage } from "@/lib/server/page-query";
+import OwnerPage from "../../components/page/editor/owner-page";
+import HandlePage from "../../components/page/public/handle-page";
 
 const getPageForRequest = cache((handle: string, cookie: string) =>
 	fetchPage(handle, { cookie }),

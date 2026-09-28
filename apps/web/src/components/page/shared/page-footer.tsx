@@ -30,10 +30,10 @@ import { forwardRef, useEffect, useState } from "react";
 import { authClient, getAuthErrorMessage } from "@/lib/auth-client";
 import { getSignInHref } from "@/lib/auth-redirect";
 import { getPublicViewsQueryOptions } from "@/lib/public-views-api";
-import ChangeHandleDialog from "./change-handle-dialog";
-import DeleteAccountDialog from "./delete-account-dialog";
-import ManagePagesDialog from "./manage-pages-dialog";
-import SpinningCounter from "./spinning-counter";
+import ChangeHandleDialog from "../management/change-handle-dialog";
+import DeleteAccountDialog from "../management/delete-account-dialog";
+import ManagePagesDialog from "../management/manage-pages-dialog";
+import SpinningCounter from "../management/spinning-counter";
 
 type DiscordLinkProps = ComponentPropsWithoutRef<"a">;
 

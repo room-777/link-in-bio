@@ -32,8 +32,8 @@ import type {
 	BentoCommand,
 	BentoItem as BentoItemData,
 } from "@/lib/bento/bento-types";
-import { BentoItemShell } from "./bento/bento-item-shell";
-import { MapViewportGate } from "./bento/items/shared";
+import { BentoItemShell } from "./bento-item-shell";
+import { MapViewportGate } from "./items/shared";
 
 type BentoSectionProps = {
 	items: readonly BentoItemData[];

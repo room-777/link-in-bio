@@ -9,7 +9,9 @@ import { useBentoStore } from "@/lib/bento/bento-store";
 import AddWidgetDialog from "./add-widget-dialog";
 import EditMobileShareLinkButton from "./edit-mobile-share-link-button";
 
-const BentoSection = dynamic(() => import("./bento-section"), { ssr: false });
+const BentoSection = dynamic(() => import("./bento/bento-section"), {
+	ssr: false,
+});
 
 export default function BentoEditor({
 	items,

@@ -14,7 +14,7 @@ import { Tabs, TabsList, TabsTrigger } from "@grabbin/ui/components/tabs";
 import { Laptop, Smartphone } from "lucide-react";
 import { motion, useReducedMotion } from "motion/react";
 import { startTransition, useEffect, useState } from "react";
-import ShareLinkContent from "./share-link-content";
+import ShareLinkContent from "../sharing/share-link-content";
 
 type PageLayoutPresetProps = {
 	value: BentoBreakpoint;
