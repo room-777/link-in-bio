@@ -8,7 +8,7 @@ import WidgetTypesSection from "@/components/landing/widget-types-section";
 export default function Home() {
 	return (
 		<>
-			<main className="landing-page flex flex-col items-center justify-center font-aspekta">
+			<main className="landing-page flex flex-col items-center justify-center font-sans">
 				<HeroSection />
 				<DemoSection />
 				<WidgetTypesSection />

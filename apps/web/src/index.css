@@ -6,16 +6,7 @@
 @import "./styles/legal.css";
 @import "./styles/public-views.css";
 
-@font-face {
-	font-family: "Aspekta Variable";
-	font-style: normal;
-	font-weight: 300 900;
-	font-display: swap;
-	src: url("/fonts/AspektaVF.373dc70ab4a1.woff2") format("woff2");
-}
-
 @theme inline {
-	--font-aspekta: "Aspekta Variable", sans-serif;
 	--font-playfair: var(--font-playfair-display);
 }
 
