@@ -243,7 +243,9 @@ export default Alchemy.Stack(
 				NEXT_PUBLIC_CREEM_PRO_YEARLY_PRODUCT_ID: Config.string(
 					"CREEM_PRO_YEARLY_PRODUCT_ID",
 				).pipe(Config.withDefault("")),
-				SENTRY_DSN: Config.string("SENTRY_DSN").pipe(Config.withDefault("")),
+				SENTRY_DSN: Config.string("NEXT_PUBLIC_SENTRY_DSN").pipe(
+					Config.withDefault(""),
+				),
 				NEXT_PUBLIC_SENTRY_DSN: Config.string("NEXT_PUBLIC_SENTRY_DSN").pipe(
 					Config.withDefault(""),
 				),
