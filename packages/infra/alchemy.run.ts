@@ -72,6 +72,7 @@ export const hyperdrive = Cloudflare.Hyperdrive.Connection(
 		Effect.map(([origin, dev]) => ({
 			name: "grabbin",
 			origin,
+			caching: { disabled: true },
 			dev: dev ?? origin,
 		})),
 	),
