@@ -1,10 +1,14 @@
+import { cn } from "@grabbin/ui/lib/utils";
 import JoinForFreeButton from "@/components/landing/join-for-free-button";
 
-export default function CtaSection() {
+export default function CtaSection({ className }: { className?: string }) {
 	return (
 		<section
 			aria-labelledby="landing-cta-title"
-			className="flex min-h-[70svh] w-full flex-col items-center justify-center gap-8 px-6 py-28 sm:py-36"
+			className={cn(
+				"flex min-h-[70svh] w-full flex-col items-center justify-center gap-8 px-6 py-28 sm:py-36",
+				className,
+			)}
 		>
 			<h2
 				id="landing-cta-title"

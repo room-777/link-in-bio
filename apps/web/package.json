@@ -44,6 +44,7 @@
 		"react-server-dom-webpack": "^19.3.0",
 		"reicon-react": "catalog:ui",
 		"remark-frontmatter": "^5.0.0",
+		"remark-mdx-frontmatter": "^6.0.0",
 		"valibot": "catalog:runtime",
 		"vinext": "^1.0.0-beta.9"
 	},

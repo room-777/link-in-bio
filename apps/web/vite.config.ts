@@ -6,6 +6,7 @@ import { sentryVitePlugin } from "@sentry/vite-plugin";
 import { cdnAdapter } from "@vinext/cloudflare/cache/cdn-adapter";
 import { imagesOptimizer } from "@vinext/cloudflare/images/images-optimizer";
 import remarkFrontmatter from "remark-frontmatter";
+import remarkMdxFrontmatter from "remark-mdx-frontmatter";
 import vinext from "vinext";
 import { defineConfig } from "vite";
 
@@ -59,7 +60,10 @@ export default defineConfig(({ command }) => ({
 		},
 	},
 	plugins: [
-		{ ...mdx({ remarkPlugins: [remarkFrontmatter] }), enforce: "pre" },
+		{
+			...mdx({ remarkPlugins: [remarkFrontmatter, remarkMdxFrontmatter] }),
+			enforce: "pre",
+		},
 		vinext({
 			...(command === "build" ? { cache: { cdn: cdnAdapter() } } : {}),
 			images: { optimizer: imagesOptimizer() },
