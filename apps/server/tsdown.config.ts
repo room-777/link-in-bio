@@ -36,6 +36,20 @@ export default defineConfig({
 						filesToDeleteAfterUpload: ["dist/**/*.map"],
 					},
 				}),
+				{
+					name: "cloudflare-create-require-url",
+					generateBundle(_options, bundle) {
+						for (const output of Object.values(bundle)) {
+							if (output.type === "chunk") {
+								// ponytail: keep this same-length for source maps; update if Rolldown changes its shim.
+								output.code = output.code.replaceAll(
+									"createRequire(import.meta.url)",
+									'createRequire("file:///a.js" )',
+								);
+							}
+						}
+					},
+				},
 			]
 		: [],
 	deps: {
