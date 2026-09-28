@@ -6,7 +6,8 @@
 		"check-types": "tsc --noEmit",
 		"dev": "alchemy dev",
 		"deploy": "bun run --filter web build && alchemy deploy",
-		"deploy:production": "NODE_ENV=production SENTRY_UPLOAD_SOURCE_MAPS=1 bun --env-file=../../apps/web/.env.production --env-file=../../apps/server/.env.production run --filter web build && NODE_ENV=production SENTRY_UPLOAD_SOURCE_MAPS=1 bun --env-file=../../apps/web/.env.production --env-file=../../apps/server/.env.production run --filter server build && NODE_ENV=production SENTRY_UPLOAD_SOURCE_MAPS=1 bun --env-file=../../apps/web/.env.production --env-file=../../apps/server/.env.production run alchemy deploy --stage production",
+		"verify:worker-bundles": "cd ../../apps/web && if find ../server/dist dist -name '*.map' -print -quit | grep -q .; then echo 'Source maps remain in Worker deployment artifacts.' >&2; exit 1; fi && ./node_modules/.bin/wrangler deploy --dry-run --config dist/server/wrangler.json && ./node_modules/.bin/wrangler deploy ../server/dist/index.mjs --dry-run --no-bundle --name grabbin-server-module-check --compatibility-date \"$(date -u +%F)\" --compatibility-flags nodejs_compat",
+		"deploy:production": "NODE_ENV=production SENTRY_UPLOAD_SOURCE_MAPS=1 bun --env-file=../../apps/web/.env.production --env-file=../../apps/server/.env.production run --filter web build && NODE_ENV=production SENTRY_UPLOAD_SOURCE_MAPS=1 bun --env-file=../../apps/web/.env.production --env-file=../../apps/server/.env.production run --filter server build && bun run verify:worker-bundles && NODE_ENV=production SENTRY_UPLOAD_SOURCE_MAPS=1 bun --env-file=../../apps/web/.env.production --env-file=../../apps/server/.env.production run alchemy deploy --stage production",
 		"destroy": "alchemy destroy"
 	},
 	"dependencies": {
