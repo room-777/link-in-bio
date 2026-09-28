@@ -39,7 +39,10 @@ export default defineConfig({
 			]
 		: [],
 	deps: {
-		alwaysBundle: [/@grabbin\/.*/],
+		alwaysBundle: [
+			/@grabbin\/.*/,
+			/^(?:@sentry\/|aws4fetch$|better-auth(?:\/|$)|drizzle-orm(?:\/|$)|evlog(?:\/|$)|hono(?:\/|$)|valibot(?:\/|$))/,
+		],
 		neverBundle: ["cloudflare:workers"],
 	},
 });
