@@ -4,7 +4,6 @@ import HeroSection from "@/components/landing/hero-section";
 import JoinForFreeButton from "@/components/landing/join-for-free-button";
 import PlanSection from "@/components/landing/plan-section";
 import WidgetTypesSection from "@/components/landing/widget-types-section";
-import Footer from "@/components/layout/footer";
 
 export default function Home() {
 	return (
@@ -23,7 +22,6 @@ export default function Home() {
 				/>
 				<CtaSection />
 			</main>
-			<Footer />
 		</>
 	);
 }

@@ -1,4 +1,5 @@
 import { createLucideIcon } from "lucide-react";
+import Link from "next/link";
 
 const LogoIcon = createLucideIcon("PlayingCardsFan", [
 	[
@@ -36,12 +37,14 @@ export default function Logo({
 	decorative?: boolean;
 }) {
 	return (
-		<LogoIcon
-			className={`stroke-1 ${className ?? ""}`}
-			fill="white"
-			role={decorative ? undefined : "img"}
-			aria-label={decorative ? undefined : "Grabbin"}
-			aria-hidden={decorative || undefined}
-		/>
+		<Link href="/" aria-label={decorative ? "Home" : undefined}>
+			<LogoIcon
+				className={`stroke-1 ${className ?? ""}`}
+				fill="white"
+				role={decorative ? undefined : "img"}
+				aria-label={decorative ? undefined : "Grabbin"}
+				aria-hidden={decorative || undefined}
+			/>
+		</Link>
 	);
 }

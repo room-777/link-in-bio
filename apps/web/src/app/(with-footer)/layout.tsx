@@ -1,5 +1,6 @@
 import type { ReactNode } from "react";
 import LandingHeader from "@/components/landing/landing-header";
+import Footer from "@/components/layout/footer";
 
 export default function WithFooterLayout({
 	children,
@@ -10,6 +11,7 @@ export default function WithFooterLayout({
 		<>
 			<LandingHeader />
 			{children}
+			<Footer />
 		</>
 	);
 }

@@ -81,6 +81,11 @@ export default function Footer() {
 								</Link>
 							</li>
 							<li>
+								<Link href="/update" className="hover:text-primary/80">
+									Updates
+								</Link>
+							</li>
+							<li>
 								<Link href="/sign-in" className="hover:text-primary/80">
 									Sign in
 								</Link>
