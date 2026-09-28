@@ -54,6 +54,7 @@ type PageHandleFormProps = {
 	variant?: Parameters<typeof Button>[0]["variant"];
 	buttonClassName?: string;
 	titleClassName?: string;
+	layoutClassName?: string;
 	compact?: boolean;
 	onSubmit: (handle: string) => Promise<void>;
 };
@@ -66,6 +67,7 @@ export function PageHandleForm({
 	variant,
 	buttonClassName,
 	titleClassName,
+	layoutClassName,
 	compact = false,
 	onSubmit,
 }: PageHandleFormProps) {
@@ -181,11 +183,12 @@ export function PageHandleForm({
 
 	return (
 		<div
-			className={
+			className={cn(
 				compact
 					? "flex h-full w-full flex-col gap-6"
-					: "flex w-full flex-col gap-8"
-			}
+					: "flex w-full flex-col gap-8",
+				layoutClassName,
+			)}
 		>
 			<header className="flex w-full flex-col gap-0.5">
 				<Title

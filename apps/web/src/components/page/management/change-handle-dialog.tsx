@@ -69,6 +69,7 @@ export default function ChangeHandleDialog({
 			submitLabel="Change handle"
 			variant="outline"
 			compact={compact}
+			layoutClassName={compact ? "justify-between" : undefined}
 			onSubmit={handleChange}
 		/>
 	);
