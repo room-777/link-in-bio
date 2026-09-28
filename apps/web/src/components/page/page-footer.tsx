@@ -6,7 +6,6 @@ import {
 	AvatarImage,
 } from "@grabbin/ui/components/avatar";
 import { Button, buttonVariants } from "@grabbin/ui/components/button";
-import Loading from "@grabbin/ui/components/loading";
 import {
 	Popover,
 	PopoverContent,
@@ -132,11 +131,9 @@ function PublicViews({ handle }: { handle?: string }) {
 function OwnerFooter({
 	handle,
 	onHandleChange,
-	isSaving,
 }: {
 	handle?: string;
 	onHandleChange?: (handle: string) => void;
-	isSaving?: boolean;
 }) {
 	const router = useRouter();
 	const reduceMotion = useReducedMotion();
@@ -290,16 +287,6 @@ function OwnerFooter({
 				<DiscordTooltip />
 				<PublicViews handle={handle} />
 			</div>
-			{isSaving && (
-				<span
-					className="ml-2 flex items-center gap-2 text-muted-foreground/80 text-xs"
-					role="status"
-					aria-live="polite"
-				>
-					<Loading aria-hidden="true" className="size-4" />
-					Saving...
-				</span>
-			)}
 			<ChangeHandleDialog
 				handle={handle}
 				onHandleChange={onHandleChange}
@@ -401,13 +388,11 @@ export default function PageFooter({
 	handle,
 	isOwner,
 	onHandleChange,
-	isSaving,
 	hasProAccess,
 }: {
 	handle?: string;
 	isOwner: boolean;
 	onHandleChange?: (handle: string) => void;
-	isSaving?: boolean;
 	hasProAccess?: boolean;
 }) {
 	return (
@@ -417,11 +402,7 @@ export default function PageFooter({
 			</div>
 			<div className="flex min-h-10 items-center justify-start">
 				{isOwner ? (
-					<OwnerFooter
-						handle={handle}
-						onHandleChange={onHandleChange}
-						isSaving={isSaving}
-					/>
+					<OwnerFooter handle={handle} onHandleChange={onHandleChange} />
 				) : (
 					<ViewerFooter handle={handle} />
 				)}

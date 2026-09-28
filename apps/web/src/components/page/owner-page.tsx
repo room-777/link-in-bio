@@ -94,7 +94,6 @@ export default function OwnerPage({
 			handle={currentPage.handle}
 			isOwner
 			onHandleChange={handleChange}
-			isSaving={isSaving}
 		/>
 	);
 
