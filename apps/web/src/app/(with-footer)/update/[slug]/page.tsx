@@ -99,7 +99,7 @@ export default async function UpdateDetailPage({
 							src="/images/landing/features-flower.png"
 							width={1254}
 						/>
-						<CtaSection className="min-h-0 w-full gap-5 rounded-xl py-12 sm:py-24 [&_h2]:text-2xl sm:[&_h2]:text-3xl" />
+						<CtaSection className="min-h-0 w-full gap-5 rounded-xl py-0! [&_h2]:text-2xl sm:[&_h2]:text-3xl" />
 					</div>
 				</div>
 			</article>
