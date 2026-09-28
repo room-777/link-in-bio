@@ -1,6 +1,6 @@
 declare module "*.mdx" {
-	import type { ComponentType } from "react";
+	import type { MDXContent } from "mdx/types.js";
 
-	const content: ComponentType;
+	const content: MDXContent;
 	export default content;
 }

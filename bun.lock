@@ -93,6 +93,7 @@
         "@sentry/vite-plugin": "catalog:sentry",
         "@tailwindcss/postcss": "catalog:tooling",
         "@tanstack/react-query-devtools": "^5.102.2",
+        "@types/mdx": "^2.0.14",
         "@types/node": "catalog:tooling",
         "@types/react": "catalog:tooling",
         "@types/react-dom": "catalog:tooling",

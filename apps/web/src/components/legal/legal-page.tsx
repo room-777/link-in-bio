@@ -1,8 +1,9 @@
-import type { ComponentType } from "react";
+import type { MDXContent } from "mdx/types.js";
 import Footer from "@/components/layout/footer";
+import MdxContent from "@/components/mdx/mdx-content";
 
 type LegalPageProps = {
-	Document: ComponentType;
+	Document: MDXContent;
 	title: string;
 	description: string;
 	lastUpdated: string;
@@ -30,7 +31,7 @@ export default function LegalPage({
 						</time>
 					</header>
 					<div className="legal-markdown mt-16">
-						<Document />
+						<MdxContent Content={Document} />
 					</div>
 				</article>
 			</main>
