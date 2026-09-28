@@ -310,7 +310,7 @@ export default function AddWidgetDialog({
 					<DialogContent
 						keepMounted
 						showCloseButton={false}
-						portalContainer={portalContainer}
+						portalContainer={portalContainer ?? undefined}
 						className="z-[100003] gap-6 rounded-[2.2rem] p-6"
 					>
 						<DialogHeader className="p-0 pl-2">
