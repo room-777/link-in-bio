@@ -2,6 +2,8 @@ import type { Metadata } from "next";
 import LegalPage from "@/components/legal/legal-page";
 import Privacy from "@/content/legal/privacy.mdx";
 
+export const revalidate = 3600;
+
 export const metadata: Metadata = {
 	title: "Privacy Policy",
 	description: "How Grabbin collects, uses, and protects your information.",

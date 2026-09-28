@@ -1,3 +1,5 @@
+import { readFile, writeFile } from "node:fs/promises";
+import { resolve } from "node:path";
 import { cloudflare } from "@cloudflare/vite-plugin";
 import mdx from "@mdx-js/rollup";
 import { sentryVitePlugin } from "@sentry/vite-plugin";
@@ -62,14 +64,36 @@ export default defineConfig(({ command }) => ({
 			...(command === "build" ? { cache: { cdn: cdnAdapter() } } : {}),
 			images: { optimizer: imagesOptimizer() },
 		}),
-		process.env.ALCHEMY_CLOUDFLARE_VITE_INJECTED === "1"
-			? undefined
-			: cloudflare({
-					viteEnvironment: {
-						name: "rsc",
-						childEnvironments: ["ssr"],
-					},
-				}),
+		{
+			name: "grabbin:cdn-cacheability-manifest",
+			buildApp: {
+				order: "post",
+				async handler(builder) {
+					if (command !== "build") return;
+					const outputDir = resolve(builder.config.root, "dist/server");
+					const buildId = (
+						await readFile(resolve(outputDir, "BUILD_ID"), "utf8")
+					).trim();
+					const routes = Object.fromEntries(
+						["/privacy", "/terms"].map((pattern) => [
+							JSON.stringify(["app-page", pattern]),
+							{ kind: "app-page", pattern, state: "runtime-check" },
+						]),
+					);
+					const manifest = JSON.stringify({ buildId, routes, version: 1 });
+					await writeFile(
+						resolve(outputDir, "__vinext_cacheability_manifest.js"),
+						`export default ${JSON.stringify(manifest)};\n`,
+					);
+				},
+			},
+		},
+		cloudflare({
+			viteEnvironment: {
+				name: "rsc",
+				childEnvironments: ["ssr"],
+			},
+		}),
 		sourceMapUploadEnabled
 			? sentryVitePlugin({
 					authToken: process.env.SENTRY_AUTH_TOKEN,
