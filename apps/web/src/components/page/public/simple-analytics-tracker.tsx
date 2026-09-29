@@ -1,28 +1,41 @@
 "use client";
 
-import Script from "next/script";
-import { useEffect, useState } from "react";
-
-declare global {
-	interface Window {
-		sa_pageview?: (path?: string) => void;
-	}
-}
+import { useEffect, useRef } from "react";
+import {
+	isSimpleAnalyticsHost,
+	SIMPLE_ANALYTICS_READY_EVENT,
+} from "@/lib/simple-analytics";
 
 export default function SimpleAnalyticsTracker({ pageId }: { pageId: string }) {
-	const [ready, setReady] = useState(false);
+	const trackedPageId = useRef<string | null>(null);
 
 	useEffect(() => {
-		if (!ready || window.location.hostname !== "grabbin.me") return;
-		window.sa_pageview?.(`/__analytics/pages/${encodeURIComponent(pageId)}`);
-	}, [pageId, ready]);
+		if (
+			!isSimpleAnalyticsHost(window.location.hostname) ||
+			trackedPageId.current === pageId
+		) {
+			return;
+		}
 
-	return (
-		<Script
-			src="https://scripts.simpleanalyticscdn.com/latest.js"
-			strategy="afterInteractive"
-			data-auto-collect="false"
-			onReady={() => setReady(true)}
-		/>
-	);
+		const trackPageview = () => {
+			if (!window.sa_pageview) return;
+
+			trackedPageId.current = pageId;
+			window.sa_pageview(`/__analytics/pages/${encodeURIComponent(pageId)}`);
+		};
+
+		if (window.sa_pageview) {
+			trackPageview();
+			return;
+		}
+
+		window.addEventListener(SIMPLE_ANALYTICS_READY_EVENT, trackPageview, {
+			once: true,
+		});
+		return () => {
+			window.removeEventListener(SIMPLE_ANALYTICS_READY_EVENT, trackPageview);
+		};
+	}, [pageId]);
+
+	return null;
 }

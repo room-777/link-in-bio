@@ -3,6 +3,7 @@ import { Geist, Geist_Mono, Inter } from "next/font/google";
 
 import "../index.css";
 import { cn } from "@grabbin/ui/lib/utils";
+import SimpleAnalyticsRouteTracker from "@/components/analytics/simple-analytics-route-tracker";
 import Providers from "@/components/provider/providers";
 
 const inter = Inter({ subsets: ["latin"], variable: "--font-sans" });
@@ -74,7 +75,10 @@ export default function RootLayout({
 						__html: JSON.stringify(jsonLd).replace(/</g, "\\u003c"),
 					}}
 				/>
-				<Providers>{children}</Providers>
+				<Providers>
+					<SimpleAnalyticsRouteTracker />
+					{children}
+				</Providers>
 			</body>
 		</html>
 	);
