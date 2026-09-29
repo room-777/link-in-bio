@@ -7,8 +7,7 @@ const { mock } = require("bun:test") as {
 
 mock.module("@grabbin/env/server", () => ({
 	env: {
-		SIMPLE_ANALYTICS_API_KEY: "test-key",
-		NEXT_PUBLIC_PAGE_DOMAIN: "example.test",
+		PAGE_DOMAIN: "example.test",
 	},
 }));
 
@@ -28,13 +27,9 @@ describe("public views service", () => {
 	it("PUBLIC-VIEWS-001 returns and caches today's and yesterday's views", async () => {
 		const requestedUrls: URL[] = [];
 		const originalFetch = globalThis.fetch;
-		globalThis.fetch = (async (
-			input: URL | RequestInfo,
-			init?: RequestInit,
-		) => {
+		globalThis.fetch = (async (input: URL | RequestInfo) => {
 			const url = new URL(input.toString());
 			requestedUrls.push(url);
-			assert.equal(new Headers(init?.headers).get("Api-Key"), "test-key");
 			return Response.json({ pageviews: requestedUrls.length === 1 ? 12 : 5 });
 		}) as typeof fetch;
 
@@ -54,9 +49,10 @@ describe("public views service", () => {
 			for (const url of requestedUrls) {
 				assert.equal(url.hostname, "simpleanalytics.com");
 				assert.equal(
-					url.searchParams.get("pages"),
-					"/__analytics/pages/case-page-001",
+					url.pathname,
+					"/example.test/__analytics/pages/case-page-001.json",
 				);
+				assert.equal(url.searchParams.get("fields"), "pageviews");
 				assert.equal(url.searchParams.get("timezone"), "America/Los_Angeles");
 			}
 		} finally {

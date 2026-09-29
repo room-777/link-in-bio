@@ -41,10 +41,8 @@ function getLocalDates(timezone: string) {
 }
 
 async function getPageviews(pageId: string, timezone: string, date: string) {
-	if (!env.SIMPLE_ANALYTICS_API_KEY) return null;
-
 	const url = new URL(
-		`https://simpleanalytics.com/${env.NEXT_PUBLIC_PAGE_DOMAIN}.json`,
+		`https://simpleanalytics.com/${env.PAGE_DOMAIN}/__analytics/pages/${encodeURIComponent(pageId)}.json`,
 	);
 	url.search = new URLSearchParams({
 		version: "6",
@@ -52,13 +50,10 @@ async function getPageviews(pageId: string, timezone: string, date: string) {
 		start: date,
 		end: date,
 		timezone,
-		pages: `/__analytics/pages/${encodeURIComponent(pageId)}`,
 	}).toString();
 
 	try {
-		const response = await fetch(url, {
-			headers: { "Api-Key": env.SIMPLE_ANALYTICS_API_KEY },
-		});
+		const response = await fetch(url);
 		if (!response.ok) return null;
 		const data: unknown = await response.json();
 		if (typeof data !== "object" || data === null || !("pageviews" in data)) {
