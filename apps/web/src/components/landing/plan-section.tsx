@@ -86,7 +86,7 @@ export default function PlanSection({
 							width={1254}
 						/>
 						<div className="smooth-shadow-ring-sm relative z-10 flex h-full min-h-[26rem] flex-col justify-center gap-6 rounded-[2rem] bg-background px-6 pt-16 pb-6">
-							<ul className="flex flex-col gap-5 p-2 font-medium!">
+							<ul className="flex flex-col gap-2 p-2 font-medium!">
 								{freeFeatures.map((feature) => (
 									<li
 										key={feature}
@@ -101,9 +101,8 @@ export default function PlanSection({
 									</li>
 								))}
 							</ul>
-							<p className="text-pretty text-muted-foreground text-sm leading-relaxed">
-								Even if we introduce paid plans, we’ll keep these features free
-								as long as we can sustainably support them.
+							<p className="mt-auto text-pretty text-muted-foreground text-sm leading-relaxed">
+								Free as long as we can sustainably support them.
 							</p>
 							{joinButton}
 						</div>

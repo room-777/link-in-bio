@@ -18,7 +18,7 @@ export default function Home() {
 					joinButton={
 						<JoinForFreeButton
 							variant="brandBlack"
-							className="mt-auto h-12 w-full rounded-lg text-lg"
+							className="h-12 w-full rounded-lg text-lg"
 						/>
 					}
 				/>
