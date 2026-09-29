@@ -24,17 +24,73 @@ export function PlanPicker({
 	variant = "default",
 	className,
 	openBillingPortalOnChoose = false,
+	isAuthenticated,
 }: {
 	variant?: PlanCardVariant;
 	className?: string;
 	openBillingPortalOnChoose?: boolean;
+	isAuthenticated?: boolean;
+}) {
+	if (isAuthenticated !== undefined) {
+		return (
+			<PlanPickerContent
+				variant={variant}
+				className={className}
+				openBillingPortalOnChoose={openBillingPortalOnChoose}
+				isAuthenticated={isAuthenticated}
+				isPending={false}
+			/>
+		);
+	}
+
+	return (
+		<SessionPlanPicker
+			variant={variant}
+			className={className}
+			openBillingPortalOnChoose={openBillingPortalOnChoose}
+		/>
+	);
+}
+
+function SessionPlanPicker({
+	variant,
+	className,
+	openBillingPortalOnChoose,
+}: {
+	variant: PlanCardVariant;
+	className?: string;
+	openBillingPortalOnChoose: boolean;
+}) {
+	const { data: session, isPending } = authClient.useSession();
+	return (
+		<PlanPickerContent
+			variant={variant}
+			className={className}
+			openBillingPortalOnChoose={openBillingPortalOnChoose}
+			isAuthenticated={Boolean(session)}
+			isPending={isPending}
+		/>
+	);
+}
+
+function PlanPickerContent({
+	variant,
+	className,
+	openBillingPortalOnChoose,
+	isAuthenticated,
+	isPending,
+}: {
+	variant: PlanCardVariant;
+	className?: string;
+	openBillingPortalOnChoose: boolean;
+	isAuthenticated: boolean;
+	isPending: boolean;
 }) {
 	const router = useRouter();
-	const { data: session, isPending } = authClient.useSession();
 	const [isLoading, setIsLoading] = useState(false);
 
 	const choosePlan = async (plan: BillingPeriod) => {
-		if (!session) {
+		if (!isAuthenticated) {
 			router.push(getSignInHref(window.location.pathname));
 			return;
 		}

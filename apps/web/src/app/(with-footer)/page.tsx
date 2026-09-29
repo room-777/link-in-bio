@@ -4,8 +4,11 @@ import HeroSection from "@/components/landing/hero-section";
 import JoinForFreeButton from "@/components/landing/join-for-free-button";
 import PlanSection from "@/components/landing/plan-section";
 import WidgetTypesSection from "@/components/landing/widget-types-section";
+import { getServerSession } from "@/lib/server/session";
 
-export default function Home() {
+export default async function Home() {
+	const session = await getServerSession();
+
 	return (
 		<>
 			<main className="landing-page flex flex-col items-center justify-center font-sans">
@@ -13,6 +16,7 @@ export default function Home() {
 				<DemoSection />
 				<WidgetTypesSection />
 				<PlanSection
+					isAuthenticated={Boolean(session)}
 					joinButton={
 						<JoinForFreeButton
 							variant="brandBlack"

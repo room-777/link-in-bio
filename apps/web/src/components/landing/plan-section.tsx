@@ -15,7 +15,13 @@ const freeFeatures = [
 	"Separate desktop and mobile layouts",
 ];
 
-export default function PlanSection({ joinButton }: { joinButton: ReactNode }) {
+export default function PlanSection({
+	joinButton,
+	isAuthenticated,
+}: {
+	joinButton: ReactNode;
+	isAuthenticated: boolean;
+}) {
 	const reduceMotion = useReducedMotion();
 	const initial = reduceMotion ? false : { opacity: 0, y: 16 };
 	const animate = { opacity: 1, y: 0 };
@@ -121,6 +127,7 @@ export default function PlanSection({ joinButton }: { joinButton: ReactNode }) {
 								variant="default"
 								className="smooth-shadow-ring-sm flex h-full min-h-[26rem] flex-col rounded-[2rem] pb-6 [&_[data-slot=button]]:mt-auto"
 								openBillingPortalOnChoose
+								isAuthenticated={isAuthenticated}
 							/>
 						</div>
 					</motion.div>
