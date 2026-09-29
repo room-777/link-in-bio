@@ -9,6 +9,8 @@ import {
 } from "@/components/updates/update-components";
 import { getUpdate, updates } from "@/lib/updates";
 
+export const revalidate = false;
+
 export function generateStaticParams() {
 	return updates.map(({ slug }) => ({ slug }));
 }

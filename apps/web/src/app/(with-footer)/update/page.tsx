@@ -20,7 +20,6 @@ export const metadata: Metadata = {
 	twitter: { card: "summary", title: "Updates | Grabbin", description },
 };
 
-export const dynamic = "force-static";
 export const revalidate = false;
 
 const formatDate = (date: string) =>

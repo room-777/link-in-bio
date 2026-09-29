@@ -1,4 +1,4 @@
-import { readFile, writeFile } from "node:fs/promises";
+import { readdir, readFile, writeFile } from "node:fs/promises";
 import { resolve } from "node:path";
 import { cloudflare } from "@cloudflare/vite-plugin";
 import mdx from "@mdx-js/rollup";
@@ -78,12 +78,29 @@ export default defineConfig(({ command }) => ({
 					const buildId = (
 						await readFile(resolve(outputDir, "BUILD_ID"), "utf8")
 					).trim();
-					const routes = Object.fromEntries(
-						["/privacy", "/terms"].map((pattern) => [
-							JSON.stringify(["app-page", pattern]),
-							{ kind: "app-page", pattern, state: "runtime-check" },
-						]),
+					const updateFiles = await readdir(
+						resolve(builder.config.root, "src/content/updates"),
 					);
+					const updatePaths = updateFiles
+						.filter((file) => file.endsWith(".mdx"))
+						.map((file) => `/update/${file.slice(0, -4)}`)
+						.sort();
+					const routes: Record<string, unknown> = {};
+					for (const pattern of ["/", "/privacy", "/terms", "/update"]) {
+						routes[JSON.stringify(["app-page", pattern])] = {
+							kind: "app-page",
+							pattern,
+							state: "runtime-check",
+						};
+					}
+					if (updatePaths.length > 0) {
+						routes[JSON.stringify(["app-page", "/update/:slug"])] = {
+							kind: "app-page",
+							pattern: "/update/:slug",
+							state: "runtime-check",
+							runtimePaths: updatePaths,
+						};
+					}
 					const manifest = JSON.stringify({ buildId, routes, version: 1 });
 					await writeFile(
 						resolve(outputDir, "__vinext_cacheability_manifest.js"),

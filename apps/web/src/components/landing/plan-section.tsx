@@ -20,7 +20,7 @@ export default function PlanSection({
 	isAuthenticated,
 }: {
 	joinButton: ReactNode;
-	isAuthenticated: boolean;
+	isAuthenticated?: boolean;
 }) {
 	const reduceMotion = useReducedMotion();
 	const initial = reduceMotion ? false : { opacity: 0, y: 16 };

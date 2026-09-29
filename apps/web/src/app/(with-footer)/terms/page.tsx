@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import LegalPage from "@/components/legal/legal-page";
 import Terms from "@/content/legal/terms.mdx";
 
-export const revalidate = 3600;
+export const revalidate = false;
 
 export const metadata: Metadata = {
 	title: "Terms of Service",

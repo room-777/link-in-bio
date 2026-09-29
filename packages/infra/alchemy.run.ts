@@ -219,7 +219,7 @@ export default Alchemy.Stack(
 			main: "../../apps/web/dist/server/index.js",
 			bundle: false,
 			assets: "../../apps/web/dist/client",
-			cache: { enabled: true },
+			cache: { enabled: true, crossVersionCache: false },
 			compatibility: {
 				flags: ["nodejs_compat", "global_fetch_strictly_public"],
 			},
