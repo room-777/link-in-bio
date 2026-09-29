@@ -37,11 +37,7 @@ export default function Logo({
 	decorative?: boolean;
 }) {
 	return (
-		<Link
-			href="/"
-			prefetch={false}
-			aria-label={decorative ? "Home" : undefined}
-		>
+		<Link href="/" aria-label={decorative ? "Home" : undefined}>
 			<LogoIcon
 				className={`stroke-1 ${className ?? ""}`}
 				fill="white"

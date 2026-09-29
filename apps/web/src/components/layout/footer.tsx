@@ -81,29 +81,17 @@ export default function Footer() {
 					<nav aria-label="Footer">
 						<ul className="flex flex-col items-start gap-2 font-medium text-lg">
 							<li>
-								<Link
-									href="/"
-									prefetch={false}
-									className="hover:text-primary/80"
-								>
+								<Link href="/" className="hover:text-primary/80">
 									Home
 								</Link>
 							</li>
 							<li>
-								<Link
-									href="/update"
-									prefetch={false}
-									className="hover:text-primary/80"
-								>
+								<Link href="/update" className="hover:text-primary/80">
 									Updates
 								</Link>
 							</li>
 							<li>
-								<Link
-									href="/sign-in"
-									prefetch={false}
-									className="hover:text-primary/80"
-								>
+								<Link href="/sign-in" className="hover:text-primary/80">
 									Sign in
 								</Link>
 							</li>
@@ -118,20 +106,12 @@ export default function Footer() {
 								</a>
 							</li>
 							<li>
-								<Link
-									href="/privacy"
-									prefetch={false}
-									className="hover:text-primary/80"
-								>
+								<Link href="/privacy" className="hover:text-primary/80">
 									Privacy
 								</Link>
 							</li>
 							<li>
-								<Link
-									href="/terms"
-									prefetch={false}
-									className="hover:text-primary/80"
-								>
+								<Link href="/terms" className="hover:text-primary/80">
 									Terms
 								</Link>
 							</li>
