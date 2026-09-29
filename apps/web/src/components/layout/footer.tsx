@@ -131,12 +131,12 @@ export default function Footer() {
 				<Image
 					alt=""
 					aria-hidden="true"
-					fill
+					width={2171}
+					height={724}
 					loading="lazy"
 					sizes="100vw"
-					quality={55}
 					src="/images/footer-doodles-bf164e2b806327c8.png"
-					className="-z-10 select-none object-cover object-bottom"
+					className="absolute inset-0 -z-10 h-full w-full select-none object-cover object-bottom"
 				/>
 			</div>
 		</footer>
