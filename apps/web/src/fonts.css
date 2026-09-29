@@ -1,0 +1,35 @@
+@font-face {
+	font-family: "Open Runde";
+	font-style: normal;
+	font-display: swap;
+	font-weight: 400;
+	src: url("/fonts/OpenRunde-Regular.da42a03569a6.woff2") format("woff2");
+}
+
+@font-face {
+	font-family: "Open Runde";
+	font-style: normal;
+	font-display: swap;
+	font-weight: 500;
+	src: url("/fonts/OpenRunde-Medium.169d786a5984.woff2") format("woff2");
+}
+
+@font-face {
+	font-family: "Open Runde";
+	font-style: normal;
+	font-display: swap;
+	font-weight: 600;
+	src: url("/fonts/OpenRunde-Semibold.51bb1591ab0b.woff2") format("woff2");
+}
+
+@font-face {
+	font-family: "Open Runde";
+	font-style: normal;
+	font-display: swap;
+	font-weight: 700;
+	src: url("/fonts/OpenRunde-Bold.9a64eabe5389.woff2") format("woff2");
+}
+
+.open-runde {
+	font-family: "Open Runde", var(--font-sans), sans-serif;
+}

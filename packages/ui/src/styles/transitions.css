@@ -31,6 +31,10 @@
 	--dropdown-ease: ease-out;
 	--select-chevron-dur: 250ms;
 	--select-chevron-ease: cubic-bezier(0.22, 1, 0.36, 1);
+	--text-swap-dur: 150ms;
+	--text-swap-translate-y: 4px;
+	--text-swap-blur: 2px;
+	--text-swap-ease: ease-in-out;
 }
 
 .t-success-check {
@@ -156,6 +160,31 @@
 	transition: transform var(--select-chevron-dur) var(--select-chevron-ease);
 }
 
+.t-text-swap {
+	display: inline-block;
+	transform: translateY(0);
+	filter: blur(0);
+	opacity: 1;
+	transition:
+		transform var(--text-swap-dur) var(--text-swap-ease),
+		filter var(--text-swap-dur) var(--text-swap-ease),
+		opacity var(--text-swap-dur) var(--text-swap-ease);
+	will-change: transform, filter, opacity;
+}
+
+.t-text-swap.is-exit {
+	transform: translateY(calc(var(--text-swap-translate-y) * -1));
+	filter: blur(var(--text-swap-blur));
+	opacity: 0;
+}
+
+.t-text-swap.is-enter-start {
+	transform: translateY(var(--text-swap-translate-y));
+	filter: blur(var(--text-swap-blur));
+	opacity: 0;
+	transition: none;
+}
+
 [data-slot="select-trigger"][data-align-item-with-trigger="false"][data-popup-open]
 	.t-select-chevron {
 	transform: rotate(180deg);
@@ -178,7 +207,8 @@
 		transition: none !important;
 	}
 	.t-dropdown,
-	.t-select-chevron {
+	.t-select-chevron,
+	.t-text-swap {
 		/* biome-ignore lint/complexity/noImportantStyles: reduced motion must override the open transition */
 		transition: none !important;
 	}

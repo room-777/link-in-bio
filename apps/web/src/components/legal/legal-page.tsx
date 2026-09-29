@@ -15,7 +15,7 @@ export default function LegalPage({
 	lastUpdated,
 }: LegalPageProps) {
 	return (
-		<main className="legal-document flex flex-col items-center px-5 pt-40 pb-24">
+		<main className="open-runde legal-document flex flex-col items-center px-5 pt-40 pb-24">
 			<article className="w-full max-w-xl px-5">
 				<header className="flex flex-col items-center text-center">
 					<h1 className="font-medium text-4xl text-foreground leading-10 tracking-[-0.04em]">
