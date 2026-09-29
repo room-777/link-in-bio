@@ -12,8 +12,8 @@ export default function NotFound() {
 					fill
 					loading="lazy"
 					sizes="100vw"
+					quality={55}
 					src="/images/footer-doodles-bf164e2b806327c8.png"
-					unoptimized
 					className="select-none object-cover object-bottom"
 				/>
 			</div>

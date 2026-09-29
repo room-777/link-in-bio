@@ -23,6 +23,7 @@ import {
 import { useIsMobile } from "@grabbin/ui/components/use-mobile";
 import { Link2, Plus } from "lucide-react";
 import dynamic from "next/dynamic";
+import Image from "next/image";
 import { useRef, useState } from "react";
 import { useEmailOtpShake } from "@/hooks/use-email-otp-shake";
 import { normalizeHttpsUrl } from "@/lib/normalize-https-url";
@@ -96,27 +97,39 @@ function AddWidgetContent({
 					>
 						<div className="smooth-shadow-sm pointer-events-none absolute right-32 bottom-0 size-24 rotate-[-14deg] overflow-hidden rounded-2xl">
 							<div className="surface-line relative size-full rounded-2xl outline-depth">
-								<img
+								<Image
 									src="/media-widget-gas.png"
 									alt=""
+									fill
+									loading="lazy"
+									quality={60}
+									sizes="96px"
 									className="size-full object-cover"
 								/>
 							</div>
 						</div>
 						<div className="smooth-shadow-sm pointer-events-none absolute -right-2 bottom-0 size-28 rotate-[8deg] overflow-hidden rounded-2xl">
 							<div className="surface-line relative size-full rounded-2xl outline-depth">
-								<img
+								<Image
 									src="/media-widget-sunset.png"
 									alt=""
+									fill
+									loading="lazy"
+									quality={60}
+									sizes="112px"
 									className="size-full object-cover"
 								/>
 							</div>
 						</div>
 						<div className="smooth-shadow-sm pointer-events-none absolute right-16 bottom-0 z-10 size-32 rotate-[-6deg] overflow-hidden rounded-2xl">
 							<div className="surface-line relative size-full rounded-2xl outline-depth">
-								<img
+								<Image
 									src="/media-widget.png"
 									alt=""
+									fill
+									loading="lazy"
+									quality={60}
+									sizes="128px"
 									className="size-full object-cover"
 								/>
 							</div>

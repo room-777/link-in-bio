@@ -1,3 +1,4 @@
+import Image from "next/image";
 import type { UpdateFrontmatter } from "@/lib/updates";
 
 export function UpdateAuthor({
@@ -8,9 +9,14 @@ export function UpdateAuthor({
 	return (
 		<div className="flex flex-col items-center gap-2 text-center">
 			<div className="size-10 rounded-full outline-depth">
-				<img
+				<Image
 					src={author.image}
 					alt=""
+					width={40}
+					height={40}
+					loading="lazy"
+					quality={65}
+					sizes="40px"
 					className="size-full rounded-full object-cover"
 				/>
 			</div>
@@ -51,11 +57,15 @@ export function UpdateMedia({
 			/>
 		</video>
 	) : (
-		<img
+		<Image
 			className={`aspect-video w-full rounded-md bg-muted object-cover ${className}`}
 			src={thumbnail.src}
 			alt={thumbnail.alt}
+			width={1600}
+			height={900}
 			loading="lazy"
+			quality={65}
+			sizes="(min-width: 80rem) 1200px, 100vw"
 		/>
 	);
 }

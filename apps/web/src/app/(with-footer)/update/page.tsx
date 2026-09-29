@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import Image from "next/image";
 import Link from "next/link";
 import { UpdateMedia } from "@/components/updates/update-components";
 import { updates } from "@/lib/updates";
@@ -46,9 +47,14 @@ export default function UpdatesPage() {
 						<div className="mb-4 flex items-center justify-between gap-3 text-sm">
 							<span className="text-muted-foreground/80">{update.type}</span>
 							<div className="flex items-center gap-2 text-muted-foreground/80">
-								<img
+								<Image
 									src={update.author.image}
 									alt=""
+									width={20}
+									height={20}
+									loading="lazy"
+									quality={65}
+									sizes="20px"
 									className="size-5 rounded-full object-cover shadow-sm ring-1 ring-black/10"
 								/>
 								<time dateTime={update.date}>{formatDate(update.date)}</time>
