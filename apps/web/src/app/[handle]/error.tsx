@@ -19,17 +19,17 @@ export default function RouteError({
 	}, [error]);
 
 	return (
-		<main className="relative isolate grid min-h-svh place-items-center bg-background px-6 py-16 text-center">
+		<main className="open-runde relative isolate grid min-h-svh place-items-center bg-background px-6 py-16 text-center">
 			<div className="pointer-events-none absolute inset-x-0 bottom-0 z-0 aspect-[1.25/1] w-full overflow-hidden sm:aspect-[5/1]">
 				<Image
 					alt=""
 					aria-hidden="true"
-					fill
+					width={2171}
+					height={724}
 					loading="lazy"
 					sizes="100vw"
-					quality={55}
 					src="/images/footer-doodles-bf164e2b806327c8.png"
-					className="select-none object-cover object-bottom"
+					className="absolute inset-0 h-full w-full select-none object-cover object-bottom"
 				/>
 			</div>
 			<section className="relative z-10 flex flex-col items-center">
