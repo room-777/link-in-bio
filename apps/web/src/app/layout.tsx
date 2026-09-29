@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { Geist, Geist_Mono, Inter } from "next/font/google";
+import Script from "next/script";
 
 import "../index.css";
 import { cn } from "@grabbin/ui/lib/utils";
@@ -74,6 +75,11 @@ export default function RootLayout({
 					dangerouslySetInnerHTML={{
 						__html: JSON.stringify(jsonLd).replace(/</g, "\\u003c"),
 					}}
+				/>
+				<Script
+					src="https://stats.wooky.cfd/glance.js"
+					strategy="afterInteractive"
+					data-site="site_73xx7p5nm623czow"
 				/>
 				<Providers>
 					<SimpleAnalyticsRouteTracker />
