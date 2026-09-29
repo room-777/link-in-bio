@@ -23,12 +23,10 @@ import {
 export function PlanPicker({
 	variant = "default",
 	className,
-	openBillingPortalOnChoose = false,
 	isAuthenticated,
 }: {
 	variant?: PlanCardVariant;
 	className?: string;
-	openBillingPortalOnChoose?: boolean;
 	isAuthenticated?: boolean;
 }) {
 	if (isAuthenticated !== undefined) {
@@ -36,37 +34,27 @@ export function PlanPicker({
 			<PlanPickerContent
 				variant={variant}
 				className={className}
-				openBillingPortalOnChoose={openBillingPortalOnChoose}
 				isAuthenticated={isAuthenticated}
 				isPending={false}
 			/>
 		);
 	}
 
-	return (
-		<SessionPlanPicker
-			variant={variant}
-			className={className}
-			openBillingPortalOnChoose={openBillingPortalOnChoose}
-		/>
-	);
+	return <SessionPlanPicker variant={variant} className={className} />;
 }
 
 function SessionPlanPicker({
 	variant,
 	className,
-	openBillingPortalOnChoose,
 }: {
 	variant: PlanCardVariant;
 	className?: string;
-	openBillingPortalOnChoose: boolean;
 }) {
 	const { data: session, isPending } = authClient.useSession();
 	return (
 		<PlanPickerContent
 			variant={variant}
 			className={className}
-			openBillingPortalOnChoose={openBillingPortalOnChoose}
 			isAuthenticated={Boolean(session)}
 			isPending={isPending}
 		/>
@@ -76,13 +64,11 @@ function SessionPlanPicker({
 function PlanPickerContent({
 	variant,
 	className,
-	openBillingPortalOnChoose,
 	isAuthenticated,
 	isPending,
 }: {
 	variant: PlanCardVariant;
 	className?: string;
-	openBillingPortalOnChoose: boolean;
 	isAuthenticated: boolean;
 	isPending: boolean;
 }) {
@@ -97,19 +83,6 @@ function PlanPickerContent({
 
 		setIsLoading(true);
 		try {
-			if (openBillingPortalOnChoose) {
-				const { data, error } = await authClient.creem.createPortal();
-				if (error || !data?.url) {
-					toast({
-						message: "Could not open billing management. Please try again.",
-						state: "error",
-					});
-					return;
-				}
-				window.location.assign(data.url);
-				return;
-			}
-
 			const productId =
 				plan === "monthly"
 					? env.NEXT_PUBLIC_CREEM_PRO_MONTHLY_PRODUCT_ID
@@ -138,9 +111,7 @@ function PlanPickerContent({
 				});
 		} catch {
 			toast({
-				message: openBillingPortalOnChoose
-					? "Could not open billing management. Please try again."
-					: "Could not start checkout. Please try again.",
+				message: "Could not start checkout. Please try again.",
 				state: "error",
 			});
 		} finally {

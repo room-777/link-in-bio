@@ -103,8 +103,14 @@ export async function createOrResumeProCheckout({
 							return { kind: "error", error: "CHECKOUT_UNAVAILABLE" };
 						return { kind: "completed", checkoutId: checkout.id };
 					}
-				} catch {
-					return { kind: "error", error: "CHECKOUT_UNAVAILABLE" };
+				} catch (error) {
+					const checkoutNotFound =
+						typeof error === "object" &&
+						error !== null &&
+						"statusCode" in error &&
+						error.statusCode === 404;
+					if (!checkoutNotFound)
+						return { kind: "error", error: "CHECKOUT_UNAVAILABLE" };
 				}
 				await tx
 					.delete(creemSubscription)

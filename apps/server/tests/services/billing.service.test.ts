@@ -14,6 +14,7 @@ function setup(inputRows: Record<string, unknown>[] = []) {
 	let createCalls = 0;
 	let retrieveCalls = 0;
 	let retrieveStatus = "pending";
+	let retrieveError: unknown;
 	const tx = {
 		execute: async () => undefined,
 		query: { creemSubscription: { findMany: async () => [...rows] } },
@@ -43,6 +44,7 @@ function setup(inputRows: Record<string, unknown>[] = []) {
 			},
 			retrieve: async () => {
 				retrieveCalls += 1;
+				if (retrieveError) throw retrieveError;
 				return {
 					status: retrieveStatus,
 					checkoutUrl: "https://checkout.creem.io/ch_existing",
@@ -62,6 +64,9 @@ function setup(inputRows: Record<string, unknown>[] = []) {
 		},
 		set retrieveStatus(value: string) {
 			retrieveStatus = value;
+		},
+		set retrieveError(value: unknown) {
+			retrieveError = value;
 		},
 	};
 }
@@ -169,6 +174,38 @@ describe("billing service", () => {
 			},
 		]);
 		state.retrieveStatus = "expired";
+		const result = await run(state);
+
+		assert.deepEqual(result, { url: "https://checkout.creem.io/ch_new" });
+		assert.equal(state.retrieveCalls, 1);
+		assert.equal(state.createCalls, 1);
+		assert.equal(state.rows[0]?.checkoutId, "ch_new");
+	});
+
+	/**
+	 * Case ID: BILLING-CHECKOUT-005
+	 * Given: a saved pending checkout no longer exists in Creem.
+	 * When: the user retries checkout for the same plan.
+	 * Then: the stale record is replaced by a new checkout instead of returning CHECKOUT_UNAVAILABLE.
+	 * Evidence: Creem 404, one retrieve and create call, and the replacement checkout reference.
+	 * Result: Pass | Fail | Blocked | Not Run
+	 */
+	it("BILLING-CHECKOUT-005 replaces a pending checkout that Creem no longer has", async () => {
+		const state = setup([
+			{
+				id: "hold-1",
+				referenceId: "user-1",
+				productId: "pro-monthly",
+				status: "pending",
+				checkoutId: "ch_missing",
+				checkoutUrl: "https://checkout.creem.io/ch_missing",
+				creemSubscriptionId: null,
+			},
+		]);
+		state.retrieveError = Object.assign(new Error("Checkout not found"), {
+			statusCode: 404,
+		});
+
 		const result = await run(state);
 
 		assert.deepEqual(result, { url: "https://checkout.creem.io/ch_new" });
