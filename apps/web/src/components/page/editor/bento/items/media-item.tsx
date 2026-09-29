@@ -1,7 +1,6 @@
 "use client";
 
 import type { PresetName } from "@grabbin/bento-layout";
-import Image from "next/image";
 import {
 	type SyntheticEvent,
 	useCallback,
@@ -167,9 +166,8 @@ export function MediaItem({
 					) : null}
 				</video>
 			) : hasEnteredViewport && imageSrc ? (
-				<Image
+				<img
 					ref={imageRef}
-					fill
 					alt={item.data.caption ?? "Media item"}
 					className={`pointer-events-none absolute inset-0 outline-2! outline-depth -outline-offset-2! transition-opacity ${cropStyle ? "size-full" : "size-full object-cover"} ${imageLoaded || !item.data.placeholderDataUrl ? "opacity-100" : "opacity-0"}`}
 					decoding="async"
@@ -177,7 +175,6 @@ export function MediaItem({
 					loading="lazy"
 					sizes="(min-width: 90rem) 20vw, 50vw"
 					src={imageSrc}
-					unoptimized
 					onLoad={handleImageLoadAndMeasure}
 					onError={() => {
 						if (imageSrc !== originalMediaUrl) {

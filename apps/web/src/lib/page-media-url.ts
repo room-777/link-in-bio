@@ -31,7 +31,7 @@ export function getPageMediaUrl(source: string, kind: PageMediaKind) {
 	const options =
 		kind === "video"
 			? "mode=video,width=1600,audio=false"
-			: "width=1600,fit=scale-down,format=auto";
+			: "width=1600,fit=scale-down,quality=70,format=auto";
 	const service = kind === "video" ? "media" : "image";
 	return `https://${pageDomain}/cdn-cgi/${service}/${options}/${source}`;
 }

@@ -7,6 +7,7 @@ import { CircleFadingArrowUp, Crop, Trash } from "lucide-react";
 import { motion, useReducedMotion } from "motion/react";
 import Image from "next/image";
 import {
+	type RefObject,
 	type SyntheticEvent,
 	useCallback,
 	useEffect,
@@ -23,6 +24,59 @@ import {
 const MotionImage = motion.create(Image);
 
 const maxImageSize = 5 * 1024 * 1024;
+
+function PageProfileImage({
+	src,
+	sizes,
+	className,
+	reduceMotion,
+	imageRef,
+	onLoad,
+}: {
+	src: string;
+	sizes: string;
+	className: string;
+	reduceMotion: boolean | null;
+	imageRef: RefObject<HTMLImageElement | null>;
+	onLoad: (event: SyntheticEvent<HTMLImageElement>) => void;
+}) {
+	const animation = {
+		initial: reduceMotion ? false : { opacity: 0, rotate: -8 },
+		animate: { opacity: 1, rotate: 0 },
+		transition: reduceMotion
+			? { duration: 0 }
+			: { duration: 0.85, ease: [0.22, 1, 0.36, 1] as const },
+	};
+	const isLocalPreview = src.startsWith("blob:") || src.startsWith("data:");
+
+	return isLocalPreview ? (
+		<motion.img
+			ref={imageRef}
+			src={src}
+			alt=""
+			initial={animation.initial}
+			animate={animation.animate}
+			transition={animation.transition}
+			className={className}
+			onLoad={onLoad}
+		/>
+	) : (
+		<MotionImage
+			ref={imageRef}
+			fill
+			src={src}
+			alt=""
+			sizes={sizes}
+			initial={animation.initial}
+			animate={animation.animate}
+			transition={animation.transition}
+			className={className}
+			quality={65}
+			loading="lazy"
+			onLoad={onLoad}
+		/>
+	);
+}
 
 export default function PageImageField({
 	value,
@@ -205,24 +259,13 @@ export default function PageImageField({
 								className={`absolute overflow-hidden ${cropOpen ? "smooth-shadow-lg rounded-md" : "rounded-full"}`}
 								style={cropStyle}
 							>
-								<MotionImage
-									ref={imageRef}
-									fill
+								<PageProfileImage
 									src={value}
-									alt=""
 									sizes={isWide ? "(min-width: 90rem) 184px, 112px" : "112px"}
-									unoptimized={
-										value.startsWith("blob:") || value.startsWith("data:")
-									}
-									initial={reduceMotion ? false : { opacity: 0, rotate: -8 }}
-									animate={{ opacity: 1, rotate: 0 }}
-									transition={
-										reduceMotion
-											? { duration: 0 }
-											: { duration: 0.85, ease: [0.22, 1, 0.36, 1] as const }
-									}
-									className={`size-full ${cropOpen ? "rounded-md" : "rounded-full object-cover"}`}
+									reduceMotion={reduceMotion}
+									imageRef={imageRef}
 									onLoad={handleImageLoad}
+									className={`size-full ${cropOpen ? "rounded-md" : "rounded-full object-cover"}`}
 								/>
 								{cropOpen && renderedCrop ? (
 									<div
@@ -243,24 +286,13 @@ export default function PageImageField({
 								) : null}
 							</div>
 						) : (
-							<MotionImage
-								ref={imageRef}
-								fill
+							<PageProfileImage
 								src={value}
-								alt=""
 								sizes={isWide ? "(min-width: 90rem) 184px, 112px" : "112px"}
-								unoptimized={
-									value.startsWith("blob:") || value.startsWith("data:")
-								}
-								initial={reduceMotion ? false : { opacity: 0, rotate: -8 }}
-								animate={{ opacity: 1, rotate: 0 }}
-								transition={
-									reduceMotion
-										? { duration: 0 }
-										: { duration: 0.85, ease: [0.22, 1, 0.36, 1] as const }
-								}
-								className={`size-full object-cover ${cropOpen ? "rounded-md" : "rounded-full"}`}
+								reduceMotion={reduceMotion}
+								imageRef={imageRef}
 								onLoad={handleImageLoad}
+								className={`size-full object-cover ${cropOpen ? "rounded-md" : "rounded-full"}`}
 							/>
 						)
 					) : (
