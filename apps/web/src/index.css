@@ -1,11 +1,10 @@
 @import "@grabbin/ui/globals.css";
 @import "react-grid-layout/css/styles.css";
-@import "./styles/bento-motion.css";
-@import "./styles/bento-layout.css";
+@import "@grabbin/ui/styles/bento-motion.css";
+@import "@grabbin/ui/styles/bento-layout.css";
 @import "./fonts.css";
-@import "./styles/map-widget.css";
-@import "./styles/legal.css";
-@import "./styles/public-views.css";
+@import "@grabbin/ui/styles/map-widget.css";
+@import "@grabbin/ui/styles/legal.css";
 
 @theme inline {
 	--font-playfair: var(--font-playfair-display);
