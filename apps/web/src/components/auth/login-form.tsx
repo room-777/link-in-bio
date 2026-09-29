@@ -1,6 +1,7 @@
 "use client";
 
 import { Button } from "@grabbin/ui/components/button";
+import Loading from "@grabbin/ui/components/loading";
 import { toast } from "@grabbin/ui/components/toast";
 import { Activity, useState } from "react";
 import Logo from "@/components/logo";
@@ -13,9 +14,12 @@ type SocialProvider = "google" | "github" | "twitter";
 
 export default function LoginForm({ returnTo }: { returnTo?: string | null }) {
 	const [otpEmail, setOtpEmail] = useState<string | null>(null);
+	const [socialLoginProvider, setSocialLoginProvider] =
+		useState<SocialProvider | null>(null);
 	const signInHref = getSignInHref(returnTo);
 
 	const handleSocialSignIn = async (provider: SocialProvider) => {
+		setSocialLoginProvider(provider);
 		const webOrigin = window.location.origin;
 		try {
 			const { error } = await authClient.signIn.social({
@@ -25,9 +29,11 @@ export default function LoginForm({ returnTo }: { returnTo?: string | null }) {
 			});
 
 			if (error) {
+				setSocialLoginProvider(null);
 				toast({ message: getAuthErrorMessage(error), state: "error" });
 			}
 		} catch {
+			setSocialLoginProvider(null);
 			toast({
 				message: "Unable to reach the sign-in service. Please try again.",
 				state: "error",
@@ -56,30 +62,44 @@ export default function LoginForm({ returnTo }: { returnTo?: string | null }) {
 						size={"xl"}
 						variant="outline"
 						className="h-11 w-full"
+						disabled={socialLoginProvider !== null}
 						onClick={() => handleSocialSignIn("google")}
 					>
-						<img
-							src="https://cdn.reicon.dev/logos/google/original.svg"
-							alt="Google"
-							width={16}
-							height={16}
-						/>
-						Continue with Google
+						{socialLoginProvider === "google" ? (
+							<Loading />
+						) : (
+							<>
+								<img
+									src="https://cdn.reicon.dev/logos/google/original.svg"
+									alt="Google"
+									width={16}
+									height={16}
+								/>
+								Continue with Google
+							</>
+						)}
 					</Button>
 					<Button
 						type="button"
 						size={"xl"}
 						variant="default"
 						className="h-11 w-full"
+						disabled={socialLoginProvider !== null}
 						onClick={() => handleSocialSignIn("twitter")}
 					>
-						<img
-							src="https://cdn.reicon.dev/logos/x-formerly-twitter/original.svg"
-							alt="X Formerly Twitter"
-							width={16}
-							height={16}
-						/>
-						Continue with X
+						{socialLoginProvider === "twitter" ? (
+							<Loading />
+						) : (
+							<>
+								<img
+									src="https://cdn.reicon.dev/logos/x-formerly-twitter/original.svg"
+									alt="X Formerly Twitter"
+									width={16}
+									height={16}
+								/>
+								Continue with X
+							</>
+						)}
 					</Button>
 				</div>
 			</Activity>
