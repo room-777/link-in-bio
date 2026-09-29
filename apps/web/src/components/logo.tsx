@@ -37,9 +37,13 @@ export default function Logo({
 	decorative?: boolean;
 }) {
 	return (
-		<Link href="/" aria-label={decorative ? "Home" : undefined}>
+		<Link
+			href="/"
+			aria-label={decorative ? "Home" : undefined}
+			className="w-fit"
+		>
 			<LogoIcon
-				className={`stroke-1 ${className ?? ""}`}
+				className={`mb-0! stroke-1 ${className ?? ""}`}
 				fill="white"
 				role={decorative ? undefined : "img"}
 				aria-label={decorative ? undefined : "Grabbin"}
