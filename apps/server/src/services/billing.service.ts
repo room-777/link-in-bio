@@ -94,8 +94,10 @@ export async function createOrResumeProCheckout({
 						checkout.status === "pending" ||
 						checkout.status === "processing"
 					) {
-						return checkout.checkoutUrl
-							? { kind: "url", url: checkout.checkoutUrl }
+						const checkoutUrl =
+							checkout.checkoutUrl || pendingCheckout.checkoutUrl;
+						return checkoutUrl
+							? { kind: "url", url: checkoutUrl }
 							: { kind: "error", error: "CHECKOUT_UNAVAILABLE" };
 					}
 					if (checkout.status === "completed") {

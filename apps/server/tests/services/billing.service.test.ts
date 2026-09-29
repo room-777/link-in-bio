@@ -14,6 +14,7 @@ function setup(inputRows: Record<string, unknown>[] = []) {
 	let createCalls = 0;
 	let retrieveCalls = 0;
 	let retrieveStatus = "pending";
+	let retrieveUrl: string | undefined = "https://checkout.creem.io/ch_existing";
 	let retrieveError: unknown;
 	const tx = {
 		execute: async () => undefined,
@@ -47,7 +48,7 @@ function setup(inputRows: Record<string, unknown>[] = []) {
 				if (retrieveError) throw retrieveError;
 				return {
 					status: retrieveStatus,
-					checkoutUrl: "https://checkout.creem.io/ch_existing",
+					checkoutUrl: retrieveUrl,
 				};
 			},
 		},
@@ -64,6 +65,9 @@ function setup(inputRows: Record<string, unknown>[] = []) {
 		},
 		set retrieveStatus(value: string) {
 			retrieveStatus = value;
+		},
+		set retrieveUrl(value: string | undefined) {
+			retrieveUrl = value;
 		},
 		set retrieveError(value: unknown) {
 			retrieveError = value;
@@ -109,7 +113,7 @@ describe("billing service", () => {
 	 * Evidence: one provider retrieve call, existing URL returned, and no new create call.
 	 * Result: Pass | Fail | Blocked | Not Run
 	 */
-	it("BILLING-CHECKOUT-002 reuses an unfinished checkout", async () => {
+	it("BILLING-CHECKOUT-002 reuses the saved URL when Creem omits it", async () => {
 		const state = setup([
 			{
 				id: "hold-1",
@@ -121,6 +125,7 @@ describe("billing service", () => {
 				creemSubscriptionId: null,
 			},
 		]);
+		state.retrieveUrl = undefined;
 		const result = await run(state);
 
 		assert.deepEqual(result, { url: "https://checkout.creem.io/ch_existing" });
