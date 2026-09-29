@@ -83,7 +83,11 @@ export default function DemoSection() {
 							size="xl"
 							className="text-muted-foreground/80"
 							nativeButton={false}
-							render={<Link href="/demo">Open live demo</Link>}
+							render={
+								<Link href="/demo" prefetch={false}>
+									Open live demo
+								</Link>
+							}
 						/>
 					</div>
 				)}

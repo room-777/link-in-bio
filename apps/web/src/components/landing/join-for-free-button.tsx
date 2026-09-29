@@ -26,7 +26,13 @@ export default async function JoinForFreeButton({
 			className={cn("h-14 w-xs text-base", className)}
 			nativeButton={false}
 			children={children}
-			render={render ?? <Link href={href}>{children}</Link>}
+			render={
+				render ?? (
+					<Link href={href} prefetch={false}>
+						{children}
+					</Link>
+				)
+			}
 		/>
 	);
 }
