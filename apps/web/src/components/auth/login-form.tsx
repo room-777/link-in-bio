@@ -46,7 +46,7 @@ export default function LoginForm({ returnTo }: { returnTo?: string | null }) {
 			<Activity mode={otpEmail ? "hidden" : "visible"}>
 				<header className="mb-8 flex w-full flex-col gap-0.5">
 					<Logo className="mb-6 size-10 self-center" />
-					<h1 className="font-medium text-xl">Good to see you again.</h1>
+					<h1 className="mt-4 font-medium text-xl">Good to see you again.</h1>
 					<p className="text-muted-foreground text-sm">
 						Create your page in seconds
 					</p>
