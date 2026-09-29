@@ -40,10 +40,14 @@ export default function Footer() {
 								aria-label="Support on Ko-fi"
 								className="block rounded-xl"
 							>
-								<img
-									src="/images/kofi-support-6a92ee94.png"
+								<Image
+									src="/images/kofi-support-194c03ea.webp"
 									alt=""
 									aria-hidden="true"
+									width={480}
+									height={131}
+									loading="lazy"
+									unoptimized
 									className="h-auto w-40 rounded-xl"
 								/>
 								<span className="sr-only">Support on Ko-fi</span>

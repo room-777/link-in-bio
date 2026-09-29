@@ -4,5 +4,8 @@
 /images/footer-doodles-*.png
 	Cache-Control: public, max-age=31556952, immutable
 
+/images/kofi-support-*.webp
+	Cache-Control: public, max-age=31556952, immutable
+
 /images/updates/*
 	Cache-Control: public, max-age=31556952, immutable
