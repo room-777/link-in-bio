@@ -233,7 +233,7 @@ export function PlanCard({
 					<ul
 						className={`order-4 grid gap-2 font-medium ${isHorizontal ? "xl:grid-cols-2" : "pt-4"}`}
 					>
-						<li className="flex items-center gap-2.5 text-sm">
+						<li className="flex items-center gap-2.5 text-base">
 							<CheckCircle
 								aria-hidden="true"
 								weight="Filled"
@@ -241,7 +241,7 @@ export function PlanCard({
 							/>
 							<span>All Free plan features included</span>
 						</li>
-						<li className="flex items-center gap-2.5 text-sm">
+						<li className="flex items-center gap-2.5 text-base">
 							<CheckCircle
 								aria-hidden="true"
 								weight="Filled"
@@ -249,7 +249,7 @@ export function PlanCard({
 							/>
 							<span>Up to 3 pages per account</span>
 						</li>
-						<li className="flex items-center gap-2.5 text-sm">
+						<li className="flex items-center gap-2.5 text-base">
 							<CheckCircle
 								aria-hidden="true"
 								weight="Filled"
@@ -266,7 +266,7 @@ export function PlanCard({
 						{upcomingFeatures.map(({ label, Icon }) => (
 							<li
 								key={label}
-								className="flex items-center gap-2.5 text-muted-foreground text-sm"
+								className="flex items-center gap-2.5 text-base text-muted-foreground"
 							>
 								<Icon aria-hidden="true" className="size-4 shrink-0" />
 								<span>{label}</span>

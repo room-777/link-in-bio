@@ -97,13 +97,11 @@ export default function PlanSection({
 											weight="Filled"
 											className="size-5 shrink-0 text-brand-green"
 										/>
-										<span className="text-base text-foreground sm:text-lg">
-											{feature}
-										</span>
+										<span className="text-base text-foreground">{feature}</span>
 									</li>
 								))}
 							</ul>
-							<p className="text-pretty text-center text-muted-foreground text-sm leading-relaxed">
+							<p className="text-pretty text-muted-foreground text-sm leading-relaxed">
 								Even if we introduce paid plans, we’ll keep these features free
 								as long as we can sustainably support them.
 							</p>
