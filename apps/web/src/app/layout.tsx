@@ -27,6 +27,9 @@ export const metadata: Metadata = {
 		description:
 			"Bring your links, photos, social profiles, and favorite places together on a page that feels like you.",
 	},
+	icons: {
+		icon: "/favicon.svg",
+	},
 };
 
 const jsonLd = {
@@ -37,7 +40,7 @@ const jsonLd = {
 			"@id": "https://grabbin.me/#organization",
 			name: "Grabbin",
 			url: "https://grabbin.me",
-			logo: "https://grabbin.me/icon.svg",
+			logo: "https://grabbin.me/favicon.svg",
 		},
 		{
 			"@type": "WebSite",
