@@ -74,7 +74,9 @@ export default function DemoSection() {
 								alt="Desktop preview of the interactive demo page"
 								className="h-full w-full object-contain"
 								fill
-								unoptimized
+								loading="lazy"
+								quality={60}
+								sizes="calc(100vw - 3rem)"
 								src="/images/updates/demo-desktop-858998aba3aa.png"
 							/>
 						</div>

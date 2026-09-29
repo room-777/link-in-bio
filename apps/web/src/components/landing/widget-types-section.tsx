@@ -24,6 +24,8 @@ export default function WidgetTypesSection() {
 				aria-hidden="true"
 				className="pointer-events-none absolute top-[14rem] left-[3%] z-0 hidden w-32 -rotate-12 md:block lg:left-[7%] lg:w-48"
 				height={1254}
+				loading="lazy"
+				quality={55}
 				sizes="(min-width: 1024px) 192px, 128px"
 				src="/images/landing/media-doodles-1.png"
 				width={1254}
@@ -33,6 +35,8 @@ export default function WidgetTypesSection() {
 				aria-hidden="true"
 				className="pointer-events-none absolute top-[19rem] right-[3%] z-0 hidden w-36 rotate-12 md:block lg:right-[8%] lg:w-52"
 				height={1254}
+				loading="lazy"
+				quality={55}
 				sizes="(min-width: 1024px) 208px, 144px"
 				src="/images/landing/media-doodles-2.png"
 				width={1254}

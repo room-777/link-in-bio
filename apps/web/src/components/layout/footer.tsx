@@ -47,7 +47,8 @@ export default function Footer() {
 									width={480}
 									height={131}
 									loading="lazy"
-									unoptimized
+									quality={65}
+									sizes="160px"
 									className="h-auto w-40 rounded-xl"
 								/>
 								<span className="sr-only">Support on Ko-fi</span>
@@ -153,8 +154,8 @@ export default function Footer() {
 					fill
 					loading="lazy"
 					sizes="100vw"
+					quality={55}
 					src="/images/footer-doodles-bf164e2b806327c8.png"
-					unoptimized
 					className="-z-10 select-none object-cover object-bottom"
 				/>
 			</div>

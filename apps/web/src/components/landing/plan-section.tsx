@@ -68,6 +68,8 @@ export default function PlanSection({
 							aria-hidden="true"
 							className="pointer-events-none absolute top-[4rem] left-[-4rem] z-0 hidden w-32 -rotate-12 md:block lg:w-48"
 							height={1254}
+							loading="lazy"
+							quality={55}
 							sizes="(min-width: 1024px) 192px, 128px"
 							src="/images/landing/media-doodles-1.png"
 							width={1254}
@@ -77,6 +79,8 @@ export default function PlanSection({
 							aria-hidden="true"
 							className="pointer-events-none absolute -top-16 left-1/2 z-20 w-48 -translate-x-1/2"
 							height={1254}
+							loading="lazy"
+							quality={60}
 							sizes="192px"
 							src="/images/landing/features-flower.png"
 							width={1254}
@@ -118,6 +122,8 @@ export default function PlanSection({
 							aria-hidden="true"
 							className="pointer-events-none absolute top-[9rem] right-[-4rem] z-0 hidden w-36 rotate-12 md:block lg:w-52"
 							height={1254}
+							loading="lazy"
+							quality={55}
 							sizes="(min-width: 1024px) 208px, 144px"
 							src="/images/landing/media-doodles-2.png"
 							width={1254}
