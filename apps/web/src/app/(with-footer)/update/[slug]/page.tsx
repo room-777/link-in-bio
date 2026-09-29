@@ -56,13 +56,13 @@ export default async function UpdateDetailPage({
 	const { Content } = update;
 
 	return (
-		<main className="px-5 pt-36 sm:pt-40">
+		<main className="open-runde px-5 pt-36 sm:pt-40">
 			<article className="mx-auto max-w-5xl">
-				<header className="mx-auto max-w-2xl text-center">
+				<header className="mx-auto max-w-xl text-center">
 					<p className="text-muted-foreground/80 text-sm">
 						<time
 							dateTime={update.date}
-							className="rounded-md bg-muted p-1 px-2 font-medium text-sm"
+							className="rounded-md bg-muted p-1 px-2 text-sm"
 						>
 							{new Intl.DateTimeFormat("en", {
 								dateStyle: "medium",
@@ -70,10 +70,10 @@ export default async function UpdateDetailPage({
 							}).format(new Date(`${update.date}T00:00:00Z`))}
 						</time>
 					</p>
-					<h1 className="mt-4 text-balance font-medium text-3xl tracking-[-0.04em]">
+					<h1 className="mt-4 text-balance font-medium text-4xl tracking-[-0.04em]">
 						{update.title}
 					</h1>
-					<p className="mx-auto mt-4 max-w-lg text-pretty text-muted-foreground/80 text-sm leading-6">
+					<p className="mx-auto mt-4 max-w-md text-pretty px-5 font-medium text-base text-muted-foreground/80 leading-6">
 						{update.description}
 					</p>
 					<div className="mt-7 flex justify-center">
@@ -87,7 +87,7 @@ export default async function UpdateDetailPage({
 						className="max-h-[70vh] rounded-xl"
 					/>
 				</div>
-				<div className="prose prose-neutral dark:prose-invert mx-auto mt-12 max-w-xl text-primary/70 sm:mt-16">
+				<div className="prose prose-neutral dark:prose-invert mx-auto mt-12 max-w-xl px-5 text-primary/70 sm:mt-16">
 					<MdxContent Content={Content} />
 				</div>
 				<div className="mx-auto max-w-xl">

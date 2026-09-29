@@ -6,14 +6,17 @@ export const mdxComponents = {
 	h1: (props: ComponentProps<"h1">) => (
 		<h1
 			{...props}
-			className={cn("font-medium text-3xl tracking-tight", props.className)}
+			className={cn(
+				"font-medium text-3xl text-primary tracking-tight",
+				props.className,
+			)}
 		/>
 	),
 	h2: (props: ComponentProps<"h2">) => (
 		<h2
 			{...props}
 			className={cn(
-				"mt-10 font-medium text-2xl tracking-tight",
+				"mt-10 font-medium text-2xl text-primary tracking-tight",
 				props.className,
 			)}
 		/>
@@ -21,14 +24,23 @@ export const mdxComponents = {
 	h3: (props: ComponentProps<"h3">) => (
 		<h3
 			{...props}
-			className={cn("mt-8 font-medium text-xl tracking-tight", props.className)}
+			className={cn(
+				"mt-8 font-medium text-primary text-xl tracking-tight",
+				props.className,
+			)}
 		/>
 	),
 	h4: (props: ComponentProps<"h4">) => (
 		<h4
 			{...props}
-			className={cn("mt-6 font-medium text-lg", props.className)}
+			className={cn("mt-6 font-medium text-lg text-primary", props.className)}
 		/>
+	),
+	h5: (props: ComponentProps<"h5">) => (
+		<h5 {...props} className={cn("text-primary", props.className)} />
+	),
+	h6: (props: ComponentProps<"h6">) => (
+		<h6 {...props} className={cn("text-primary", props.className)} />
 	),
 	p: (props: ComponentProps<"p">) => (
 		<p {...props} className={cn("mt-4 leading-7", props.className)} />

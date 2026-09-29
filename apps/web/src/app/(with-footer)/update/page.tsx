@@ -30,7 +30,7 @@ const formatDate = (date: string) =>
 
 export default function UpdatesPage() {
 	return (
-		<main className="mx-auto min-h-svh max-w-5xl px-5 pt-40 pb-24">
+		<main className="open-runde mx-auto min-h-svh max-w-5xl px-5 pt-40 pb-24">
 			<header className="text-center">
 				<h1 className="font-medium text-3xl leading-10 tracking-[-0.04em]">
 					Updates
@@ -46,16 +46,18 @@ export default function UpdatesPage() {
 						<div className="mb-4 flex items-center justify-between gap-3 text-sm">
 							<span className="text-muted-foreground/80">{update.type}</span>
 							<div className="flex items-center gap-2 text-muted-foreground/80">
-								<Image
-									src={update.author.image}
-									alt=""
-									width={20}
-									height={20}
-									loading="lazy"
-									quality={65}
-									sizes="20px"
-									className="size-5 rounded-full object-cover shadow-sm ring-1 ring-black/10"
-								/>
+								<div className="size-5 rounded-full outline-depth">
+									<Image
+										src={update.author.image}
+										alt=""
+										width={20}
+										height={20}
+										loading="lazy"
+										quality={65}
+										sizes="20px"
+										className="size-full rounded-[inherit] object-cover"
+									/>
+								</div>
 								<time dateTime={update.date}>{formatDate(update.date)}</time>
 							</div>
 						</div>
