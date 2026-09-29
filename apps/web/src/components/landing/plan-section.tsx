@@ -126,7 +126,6 @@ export default function PlanSection({
 							<PlanPicker
 								variant="default"
 								className="smooth-shadow-ring-sm flex h-full min-h-[26rem] flex-col rounded-[2rem] pb-6 [&_[data-slot=button]]:mt-auto"
-								openBillingPortalOnChoose
 								isAuthenticated={isAuthenticated}
 							/>
 						</div>
