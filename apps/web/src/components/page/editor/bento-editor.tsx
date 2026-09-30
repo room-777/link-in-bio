@@ -22,6 +22,7 @@ export default function BentoEditor({
 	profileImageUrl,
 	entryAnimationRevision,
 	entryReady,
+	onReady,
 	onEntryComplete,
 	onGridSavingChange,
 }: {
@@ -33,6 +34,7 @@ export default function BentoEditor({
 	profileImageUrl: string | null;
 	entryAnimationRevision: number;
 	entryReady: boolean;
+	onReady?: () => void;
 	onEntryComplete?: () => void;
 	onGridSavingChange?: (isSaving: boolean) => void;
 }) {
@@ -108,6 +110,7 @@ export default function BentoEditor({
 				breakpoint={breakpoint}
 				entryAnimationRevision={entryAnimationRevision}
 				entryReady={entryReady}
+				onReady={onReady}
 				onEntryComplete={onEntryComplete}
 				autoFocusItemId={store.autoFocusItemId}
 				onAutoFocus={store.clearAutoFocusItem}

@@ -39,6 +39,7 @@ type BentoSectionProps = {
 	items: readonly BentoItemData[];
 	entryAnimationRevision?: number;
 	entryReady?: boolean;
+	onReady?: () => void;
 	onEntryComplete?: () => void;
 	mode?: "view" | "edit";
 	breakpoint?: BentoBreakpoint;
@@ -69,6 +70,7 @@ export default function BentoSection({
 	items,
 	entryAnimationRevision = 0,
 	entryReady = true,
+	onReady,
 	onEntryComplete,
 	mode = "view",
 	breakpoint: requestedBreakpoint,
@@ -88,6 +90,9 @@ export default function BentoSection({
 
 	const measuredBreakpoint =
 		mounted && containerWidth >= WIDE_CONTAINER_MIN_WIDTH ? "wide" : "compact";
+	useEffect(() => {
+		if (mounted) onReady?.();
+	}, [mounted, onReady]);
 	const breakpoint = requestedBreakpoint ?? measuredBreakpoint;
 	const cols = getColumns(breakpoint);
 	const bentoWidth = getBentoWidth(cols);

@@ -26,6 +26,7 @@ export default function OwnerPage({
 	const [currentPage, setCurrentPage] = useState(page);
 	const [isSaving, setIsSaving] = useState(false);
 	const [isGridSaving, setIsGridSaving] = useState(false);
+	const [isBentoReady, setIsBentoReady] = useState(!demoPreview);
 	const [profileEntryComplete, setProfileEntryComplete] = useState(false);
 	const [bentoEntryComplete, setBentoEntryComplete] = useState(false);
 	const [entryAnimationRevision, setEntryAnimationRevision] = useState(0);
@@ -64,6 +65,7 @@ export default function OwnerPage({
 		() => setBentoEntryComplete(true),
 		[],
 	);
+	const handleBentoReady = useCallback(() => setIsBentoReady(true), []);
 	const handleLayoutBreakpointChange = useCallback(
 		(breakpoint: BentoBreakpoint) => {
 			setProfileEntryComplete(false);
@@ -84,9 +86,9 @@ export default function OwnerPage({
 	const compactBentoWidth = getBentoWidth(getColumns("compact"));
 	const compactMockupMaxWidth = `calc(${compactBentoWidth}px + 5rem)`;
 	const compactProfileMaxWidth = `calc(${compactBentoWidth}px + 3rem)`;
-	const desktopMainClassName = `page-profile mx-auto flex min-h-svh w-full max-w-md min-w-0 flex-col justify-between gap-8 p-6 px-6 pt-12 min-[90rem]:mx-0 min-[90rem]:sticky min-[90rem]:top-0 ${demoPreview ? "min-[90rem]:h-full min-[90rem]:min-h-0" : "min-[90rem]:min-h-dvh"} min-[90rem]:w-2xl min-[90rem]:max-w-none min-[90rem]:self-start min-[90rem]:px-16 min-[90rem]:pt-16`;
+	const desktopMainClassName = `bg-background page-profile mx-auto flex min-h-svh w-full max-w-md min-w-0 flex-col justify-between gap-8 p-6 px-6 pt-12 min-[90rem]:mx-0 min-[90rem]:sticky min-[90rem]:top-0 ${demoPreview ? "min-[90rem]:h-full min-[90rem]:min-h-0" : "min-[90rem]:min-h-dvh"} min-[90rem]:w-2xl min-[90rem]:max-w-none min-[90rem]:self-start min-[90rem]:px-16 min-[90rem]:pt-16`;
 	const mainClassName = isCompactContentLayout
-		? "flex w-full max-w-lg shrink-0 flex-col items-center justify-start overflow-visible p-6 px-6 pt-12"
+		? "flex w-full max-w-lg shrink-0 flex-col items-center justify-start overflow-visible p-6 px-6 pt-12 bg-background"
 		: desktopMainClassName;
 	const pageFooter = (
 		<PageFooter
@@ -100,7 +102,7 @@ export default function OwnerPage({
 		<div
 			className={
 				demoPreview
-					? `bento-page-scroll no-scrollbar relative isolate flex h-full min-h-0 w-full flex-col items-center overflow-y-auto ${isCompactPageLayout ? "bg-muted" : "min-[90rem]:flex-row min-[90rem]:items-start min-[90rem]:justify-around"}`
+					? `bento-page-scroll no-scrollbar relative isolate flex h-full min-h-0 w-full flex-col items-center overflow-y-auto ${isCompactPageLayout ? "" : "min-[90rem]:flex-row min-[90rem]:items-start min-[90rem]:justify-around"} ${!isBentoReady ? "bg-white" : isCompactPageLayout ? "bg-muted" : ""}`
 					: isCompactPageLayout
 						? "bento-page-scroll relative isolate flex h-svh min-h-0 w-full flex-col items-center overflow-hidden bg-muted"
 						: "bento-page-scroll isolate flex min-h-svh w-full flex-col items-center min-[90rem]:flex-row min-[90rem]:items-start min-[90rem]:justify-around min-[90rem]:overflow-visible"
@@ -109,8 +111,8 @@ export default function OwnerPage({
 			<div
 				className={
 					isCompactPageLayout
-						? `smooth-shadow-ring-sm no-scrollbar mx-auto w-full max-w-lg overflow-y-auto overscroll-y-contain rounded-[3.3rem] bg-background ${isViewportCompact ? "mt-8 mb-6 h-[calc(100svh-3.5rem)]" : "mt-10 mb-32 h-[calc(100svh-10.5rem)]"}`
-						: "contents"
+						? `smooth-shadow-ring-sm no-scrollbar mx-auto w-full max-w-lg overflow-y-auto overscroll-y-contain rounded-[3.3rem] bg-background ${isViewportCompact ? "mt-8 mb-6 h-[calc(100svh-3.5rem)]" : "mt-10 mb-32 h-[calc(100svh-10.5rem)]"} ${demoPreview && !isBentoReady ? "invisible" : ""}`
+						: `contents ${demoPreview && !isBentoReady ? "invisible" : ""}`
 				}
 				style={
 					isCompactPageLayout ? { maxWidth: compactMockupMaxWidth } : undefined
@@ -129,6 +131,7 @@ export default function OwnerPage({
 							page={currentPage}
 							breakpoint={effectiveBreakpoint}
 							demoMode={demoMode}
+							entryReady={isBentoReady}
 							entryAnimationRevision={entryAnimationRevision}
 							onEntryComplete={handleProfileEntryComplete}
 							onSavingChange={setIsSaving}
@@ -144,6 +147,7 @@ export default function OwnerPage({
 					profileImageUrl={profileImageUrl}
 					entryAnimationRevision={entryAnimationRevision}
 					entryReady={profileEntryComplete}
+					onReady={handleBentoReady}
 					onEntryComplete={handleBentoEntryComplete}
 					onGridSavingChange={setIsGridSaving}
 				/>

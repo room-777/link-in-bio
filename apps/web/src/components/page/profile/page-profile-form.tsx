@@ -35,6 +35,7 @@ export default function PageProfileForm({
 	page,
 	demoMode = false,
 	breakpoint = "wide",
+	entryReady = true,
 	entryAnimationRevision = 0,
 	onSavingChange,
 	onEntryComplete,
@@ -42,6 +43,7 @@ export default function PageProfileForm({
 	page: PageData;
 	demoMode?: boolean;
 	breakpoint?: BentoBreakpoint;
+	entryReady?: boolean;
 	entryAnimationRevision?: number;
 	onSavingChange?: (isSaving: boolean) => void;
 	onEntryComplete?: () => void;
@@ -103,8 +105,8 @@ export default function PageProfileForm({
 	}, [isSaving, onSavingChange]);
 
 	useEffect(() => {
-		if (reduceMotion) onEntryComplete?.();
-	}, [onEntryComplete, reduceMotion]);
+		if (reduceMotion && entryReady) onEntryComplete?.();
+	}, [entryReady, onEntryComplete, reduceMotion]);
 
 	useEffect(() => {
 		if (!autoSaveError) return;
@@ -135,6 +137,10 @@ export default function PageProfileForm({
 		: PROFILE_ENTRY_TRANSITION;
 	useLayoutEffect(() => {
 		entryAnimation.stop();
+		if (!entryReady) {
+			entryAnimation.set(PROFILE_ENTRY_START);
+			return;
+		}
 		if (reduceMotion) {
 			entryAnimation.set(PROFILE_ENTRY_END);
 			if (entryAnimationRevision > 0) onEntryComplete?.();
@@ -152,6 +158,7 @@ export default function PageProfileForm({
 	}, [
 		entryAnimationRevision,
 		entryAnimation,
+		entryReady,
 		onEntryComplete,
 		reduceMotion,
 		transition,
@@ -239,7 +246,7 @@ export default function PageProfileForm({
 				initial={reduceMotion ? false : PROFILE_ENTRY_START}
 				animate={entryAnimation}
 				transition={transition}
-				onAnimationComplete={onEntryComplete}
+				onAnimationComplete={entryReady ? onEntryComplete : undefined}
 				className="w-full"
 			>
 				<div className="mb-4 flex flex-col gap-8">
