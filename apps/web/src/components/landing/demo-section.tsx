@@ -1,6 +1,7 @@
 "use client";
 
 import { Button } from "@grabbin/ui/components/button";
+import { ExpandIcon } from "lucide-react";
 import { motion, useReducedMotion } from "motion/react";
 import dynamic from "next/dynamic";
 import Image from "next/image";
@@ -9,7 +10,7 @@ import { useEffect, useState } from "react";
 
 const DemoEditorPreview = dynamic(() => import("./demo-editor-preview"), {
 	ssr: false,
-	loading: () => <div className="h-full animate-pulse bg-muted" />,
+	loading: () => <div className="h-full animate-pulse bg-white" />,
 });
 
 export default function DemoSection() {
@@ -57,19 +58,43 @@ export default function DemoSection() {
 				<span className="block">You will love it.</span>
 			</motion.h2>
 			<motion.div
-				className={`smooth-shadow-ring-sm relative mx-auto w-full max-w-7xl rounded-[2rem] bg-background ${isWide ? "h-[calc(100svh-17rem)] max-h-[calc(100svh-17rem)]" : ""}`}
+				className={`smooth-shadow-ring-sm relative mx-auto flex w-full max-w-7xl flex-col rounded-3xl bg-secondary p-2 ${isWide ? "h-[calc(100svh-8rem)] max-h-[calc(100svh-17rem)]" : ""}`}
 				initial={reduceMotion ? false : { opacity: 0, scale: 0.99 }}
 				whileInView={{ opacity: 1, scale: 1 }}
 				viewport={{ once: true, amount: 0.2 }}
 				transition={{ duration: 0.55, delay: 0.08, ease: [0.23, 1, 0.32, 1] }}
 			>
+				{isNearViewport ? (
+					<div className="smooth-shadow-ring-xs flex flex-row items-center justify-between rounded-t-2xl bg-background p-1 px-2 pl-4">
+						<aside className="flex flex-row items-center gap-1.5">
+							<span className="h-3 w-3 rounded-full bg-[#F87171]" />
+							<span className="h-3 w-3 rounded-full bg-[#FACC15]" />
+							<span className="h-3 w-3 rounded-full bg-[#4ADE80]" />
+						</aside>
+						<aside className="font-medium text-muted-foreground/60 text-sm">
+							grabbin.me/avery_reed
+						</aside>
+						<aside>
+							<Button
+								variant={"ghost"}
+								size={"icon"}
+								nativeButton={false}
+								render={
+									<Link href={"/demo"}>
+										<ExpandIcon className="size-5" />
+									</Link>
+								}
+							/>
+						</aside>
+					</div>
+				) : null}
 				{isWide ? (
-					<div className="relative h-full w-full overflow-hidden rounded-[2rem]">
+					<div className="smooth-shadow-ring-xs relative min-h-0 w-full flex-1 overflow-hidden rounded-b-2xl">
 						{isNearViewport ? <DemoEditorPreview /> : null}
 					</div>
 				) : (
-					<div className="flex flex-col items-center gap-4 p-4">
-						<div className="relative aspect-[8/5] w-full overflow-hidden rounded-[2rem]">
+					<div className="smooth-shadow-ring-xs flex flex-col items-center gap-4 rounded-b-2xl bg-background p-4">
+						<div className="relative aspect-[8/5] w-full overflow-hidden">
 							<Image
 								alt="Desktop preview of the interactive demo page"
 								className="h-full w-full object-contain"
@@ -80,13 +105,6 @@ export default function DemoSection() {
 								src="/images/updates/demo-desktop-858998aba3aa.png"
 							/>
 						</div>
-						<Button
-							variant="secondary"
-							size="xl"
-							className="text-muted-foreground/80"
-							nativeButton={false}
-							render={<Link href="/demo">Open live demo</Link>}
-						/>
 					</div>
 				)}
 			</motion.div>
