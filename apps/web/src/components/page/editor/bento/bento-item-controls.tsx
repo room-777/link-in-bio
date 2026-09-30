@@ -277,7 +277,7 @@ function LinkControl({
 function MapItemExtraControls() {
 	const {
 		setLocationEditing,
-		disableNetworkRequests,
+		disableLocationSearch,
 		zoomIn,
 		zoomOut,
 		locate,
@@ -412,7 +412,7 @@ function MapItemExtraControls() {
 				>
 					<MapLocationSearch
 						accessToken={env.NEXT_PUBLIC_MAPBOX_ACCESS_TOKEN}
-						disabled={disableNetworkRequests}
+						disabled={disableLocationSearch}
 						onSelect={selectLocation}
 					/>
 				</PopoverContent>

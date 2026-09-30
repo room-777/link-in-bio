@@ -20,7 +20,7 @@ type MapItemController = {
 
 type MapItemInteractionContextValue = {
 	isLocationEditing: boolean;
-	disableNetworkRequests: boolean;
+	disableLocationSearch: boolean;
 	setLocationEditing: Dispatch<SetStateAction<boolean>>;
 	registerController(controller: MapItemController | null): void;
 	zoomIn(): void;
@@ -34,10 +34,10 @@ const MapItemInteractionContext =
 
 export function MapItemInteractionProvider({
 	children,
-	disableNetworkRequests = false,
+	disableLocationSearch = false,
 }: {
 	children: ReactNode;
-	disableNetworkRequests?: boolean;
+	disableLocationSearch?: boolean;
 }) {
 	const [isLocationEditing, setLocationEditing] = useState(false);
 	const controllerRef = useRef<MapItemController | null>(null);
@@ -57,7 +57,7 @@ export function MapItemInteractionProvider({
 	const value = useMemo(
 		() => ({
 			isLocationEditing,
-			disableNetworkRequests,
+			disableLocationSearch,
 			setLocationEditing,
 			registerController,
 			zoomIn,
@@ -67,7 +67,7 @@ export function MapItemInteractionProvider({
 		}),
 		[
 			isLocationEditing,
-			disableNetworkRequests,
+			disableLocationSearch,
 			registerController,
 			zoomIn,
 			zoomOut,

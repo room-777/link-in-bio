@@ -74,7 +74,7 @@ export function BentoItemShell({
 	onLinkImageSelect,
 	cardClassName,
 	isAnyItemDragging = false,
-	disableNetworkRequests = false,
+	disableLocationSearch = false,
 	isEntering = false,
 	isExiting = false,
 }: {
@@ -88,7 +88,7 @@ export function BentoItemShell({
 	onLinkImageSelect?: (itemId: string, file: File) => void | Promise<void>;
 	cardClassName?: string;
 	isAnyItemDragging?: boolean;
-	disableNetworkRequests?: boolean;
+	disableLocationSearch?: boolean;
 	isEntering?: boolean;
 	isExiting?: boolean;
 }) {
@@ -238,7 +238,7 @@ export function BentoItemShell({
 		>
 			{item.type === "map" ? (
 				<MapItemInteractionProvider
-					disableNetworkRequests={disableNetworkRequests}
+					disableLocationSearch={disableLocationSearch}
 				>
 					{content}
 				</MapItemInteractionProvider>
