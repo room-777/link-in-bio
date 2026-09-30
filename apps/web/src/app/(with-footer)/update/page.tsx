@@ -63,7 +63,10 @@ export default function UpdatesPage() {
 						</div>
 						<Link href={`/update/${update.slug}`} className="group block">
 							<div className="rounded-md outline-depth">
-								<UpdateMedia thumbnail={update.thumbnail} />
+								<UpdateMedia
+									thumbnail={update.thumbnail}
+									className="drop-shadow-xs"
+								/>
 							</div>
 							<h2 className="mt-3 font-medium text-base leading-6">
 								{update.title}
