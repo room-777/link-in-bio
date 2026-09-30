@@ -9,6 +9,8 @@ declare global {
 export const SIMPLE_ANALYTICS_READY_EVENT = "simpleanalytics:ready";
 
 export function isSimpleAnalyticsHost(hostname: string) {
+	if (hostname === "localhost" || hostname.endsWith(".localhost")) return false;
+
 	const pageDomain = env.NEXT_PUBLIC_PAGE_DOMAIN ?? "grabbin.me";
 	const pageUrl = pageDomain.includes("://")
 		? pageDomain
