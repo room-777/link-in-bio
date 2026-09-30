@@ -218,6 +218,37 @@ function setMapInteractions(map: MapboxMapWithHandlers, enabled: boolean) {
 	map.touchZoomRotate?.disableRotation();
 }
 
+function StaticMapPreview({ zoom }: { zoom: number }) {
+	return (
+		<div className="absolute inset-0 overflow-hidden bg-[#e9eee5]">
+			<svg
+				aria-hidden="true"
+				className="size-full transition-transform duration-300 ease-out"
+				viewBox="0 0 800 500"
+				style={{ transform: `scale(${1 + zoom * 0.12})` }}
+			>
+				<rect width="800" height="500" fill="#edf0e8" />
+				<path
+					d="M45 40h160v95H45zM585 48h140v118H585zM96 333h178v110H96zM565 340h150v92H565z"
+					fill="#d8e9cf"
+				/>
+				<g fill="none" stroke="#fff" strokeWidth="15">
+					<path d="M-30 170 830 310M170-20 340 530M590-30 470 530M-25 420 830 90" />
+				</g>
+				<g fill="none" stroke="#d1c9b9" strokeWidth="4">
+					<path d="M-20 215 825 360M-10 95 820 230M90-20 230 520M430-15 390 520M710-20 620 520M-20 470 820 150" />
+				</g>
+				<g fill="none" stroke="#d8dfd2" strokeWidth="2">
+					<path d="M0 55h800M0 275h800M0 385h800M0 465h800M35 0v500M300 0v500M520 0v500M760 0v500" />
+				</g>
+				<text x="92" y="192" fill="#66715e" fontSize="23" fontWeight="600">
+					Nakagyo
+				</text>
+			</svg>
+		</div>
+	);
+}
+
 export function MapItem({
 	item,
 	mode,
@@ -227,10 +258,16 @@ export function MapItem({
 	mode: "view" | "edit";
 	onCommand?: (command: BentoCommand) => void;
 }) {
-	const { isLocationEditing, setLocationEditing, registerController } =
-		useMapItemInteraction();
+	const {
+		isLocationEditing,
+		disableNetworkRequests,
+		setLocationEditing,
+		registerController,
+	} = useMapItemInteraction();
 	const mapsUrl = `https://www.google.com/maps?q=${item.data.latitude.toFixed(6)},${item.data.longitude.toFixed(6)}`;
-	const accessToken = env.NEXT_PUBLIC_MAPBOX_ACCESS_TOKEN?.trim();
+	const accessToken = disableNetworkRequests
+		? undefined
+		: env.NEXT_PUBLIC_MAPBOX_ACCESS_TOKEN?.trim();
 	const [mapError, setMapError] = useState(false);
 	const [mapRevision, setMapRevision] = useState(0);
 	const [mapReady, setMapReady] = useState(false);
@@ -243,6 +280,7 @@ export function MapItem({
 	const mapMoveSourceRef = useRef<MapMoveSource | null>(null);
 	const resizeTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 	const [isContainerSized, setIsContainerSized] = useState(false);
+	const [previewZoom, setPreviewZoom] = useState(0);
 	const interactive = mode === "edit" && isLocationEditing;
 	const showMapFallback = !accessToken || mapError;
 	const camera = normalizeMapCamera(item.data);
@@ -282,23 +320,32 @@ export function MapItem({
 	useEffect(() => {
 		registerController({
 			zoomIn: () => {
+				if (disableNetworkRequests) {
+					setPreviewZoom((zoom) => Math.min(4, zoom + 1));
+					return;
+				}
 				const map = mapRef.current?.getMap();
 				if (!map) return;
 				mapMoveSourceRef.current = "persist";
 				map.zoomIn();
 			},
 			zoomOut: () => {
+				if (disableNetworkRequests) {
+					setPreviewZoom((zoom) => Math.max(-2, zoom - 1));
+					return;
+				}
 				const map = mapRef.current?.getMap();
 				if (!map) return;
 				mapMoveSourceRef.current = "persist";
 				map.zoomOut();
 			},
 			locate: () => {
+				if (disableNetworkRequests) return;
 				mapMoveSourceRef.current = "ignore";
 				geolocateRef.current?.trigger();
 			},
 			selectLocation: (result: MapSearchResult) => {
-				if (!onCommand) return;
+				if (disableNetworkRequests || !onCommand) return;
 				setGeolocationError(false);
 				mapMoveSourceRef.current = "ignore";
 				const nextData = {
@@ -316,7 +363,13 @@ export function MapItem({
 			},
 		});
 		return () => registerController(null);
-	}, [item.data, item.id, onCommand, registerController]);
+	}, [
+		disableNetworkRequests,
+		item.data,
+		item.id,
+		onCommand,
+		registerController,
+	]);
 	useEffect(() => {
 		if (mode !== "edit") setLocationEditing(false);
 	}, [mode, setLocationEditing]);
@@ -358,7 +411,9 @@ export function MapItem({
 			data-bento-map-location-editing={interactive ? "true" : undefined}
 		>
 			<div className="absolute inset-0">
-				{showMapFallback ? (
+				{disableNetworkRequests ? (
+					<StaticMapPreview zoom={previewZoom} />
+				) : showMapFallback ? (
 					<div className="flex size-full min-h-0 items-center justify-center bg-secondary p-4 text-center">
 						<div className="flex max-w-xs flex-col items-center gap-3">
 							<div className="space-y-1">
@@ -524,7 +579,7 @@ export function MapItem({
 								) : null}
 							</div>
 						</MapViewportGate>
-						{mapReady ? (
+						{mapReady || disableNetworkRequests ? (
 							<div
 								aria-hidden="true"
 								className="pointer-events-none absolute inset-0 z-10 flex items-center justify-center"

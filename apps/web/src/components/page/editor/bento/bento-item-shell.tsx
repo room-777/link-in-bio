@@ -72,7 +72,9 @@ export function BentoItemShell({
 	onCommand,
 	onRefreshLinkMetadata,
 	onLinkImageSelect,
+	cardClassName,
 	isAnyItemDragging = false,
+	disableNetworkRequests = false,
 	isEntering = false,
 	isExiting = false,
 }: {
@@ -84,7 +86,9 @@ export function BentoItemShell({
 	onCommand?: (command: BentoCommand) => void;
 	onRefreshLinkMetadata?: (itemId: string) => Promise<void>;
 	onLinkImageSelect?: (itemId: string, file: File) => void | Promise<void>;
+	cardClassName?: string;
 	isAnyItemDragging?: boolean;
+	disableNetworkRequests?: boolean;
 	isEntering?: boolean;
 	isExiting?: boolean;
 }) {
@@ -168,7 +172,7 @@ export function BentoItemShell({
 		<>
 			<div
 				data-bento-item-card="true"
-				className={`bento-item-card smooth-shadow-ring-sm relative size-full overflow-hidden ${cardRadiusClass} bg-background ${hasTextSurface ? "surface-line" : ""} ${linkTheme ? "link-card-themed" : ""}`}
+				className={`bento-item-card smooth-shadow-ring-sm relative size-full overflow-hidden ${cardRadiusClass} bg-background ${hasTextSurface ? "surface-line" : ""} ${linkTheme ? "link-card-themed" : ""} ${cardClassName ?? ""}`}
 				style={cardStyle}
 			>
 				<div className="relative z-10 size-full min-h-0 rounded-[inherit]">
@@ -233,7 +237,11 @@ export function BentoItemShell({
 			className={`group/bento-item bento-item-pop-in relative size-full overflow-visible ${cardRadiusClass} transition-[z-index] focus-within:z-50 hover:z-50 ${isEntering ? "is-entering" : ""} ${isExiting ? "is-exiting" : ""}`}
 		>
 			{item.type === "map" ? (
-				<MapItemInteractionProvider>{content}</MapItemInteractionProvider>
+				<MapItemInteractionProvider
+					disableNetworkRequests={disableNetworkRequests}
+				>
+					{content}
+				</MapItemInteractionProvider>
 			) : item.type === "media" ? (
 				<MediaCropProvider containerRef={shellRef} breakpoint={breakpoint}>
 					{content}
