@@ -3,7 +3,8 @@
 import { env } from "@grabbin/env/web";
 import MapboxMap from "react-map-gl/mapbox";
 import "mapbox-gl/dist/mapbox-gl.css";
-import { type ReactNode, useRef, useState } from "react";
+import { AnimatePresence, motion } from "motion/react";
+import { type CSSProperties, type ReactNode, useRef, useState } from "react";
 import { CircleArrowRightUp } from "reicon-react";
 import {
 	getCenteredMediaCrop,
@@ -129,6 +130,7 @@ function PreviewCard({
 	onPresetChange,
 	children,
 	className = "",
+	style,
 	options = allPresets,
 	extraControls,
 }: {
@@ -136,6 +138,7 @@ function PreviewCard({
 	onPresetChange: (preset: Preset) => void;
 	children: ReactNode;
 	className?: string;
+	style?: CSSProperties;
 	options?: readonly Preset[];
 	extraControls?: ReactNode;
 }) {
@@ -146,9 +149,24 @@ function PreviewCard({
 			style={{ width: size.width, height: size.height }}
 		>
 			<div
+				data-bento-item-card="true"
 				className={`bento-item-card smooth-shadow-ring-sm relative size-full overflow-hidden rounded-2xl bg-background transition-[transform,box-shadow] duration-[320ms] ease-[cubic-bezier(0.34,1.25,0.64,1)] motion-reduce:transition-none ${className}`}
+				style={style}
 			>
-				{children}
+				<div className="relative z-10 size-full min-h-0 rounded-[inherit]">
+					<AnimatePresence initial={false} mode="popLayout">
+						<motion.div
+							key={preset}
+							initial={{ opacity: 0, filter: "blur(2px)" }}
+							animate={{ opacity: 1, filter: "blur(0px)" }}
+							exit={{ opacity: 0, filter: "blur(2px)" }}
+							transition={{ duration: 0.18, ease: [0.23, 1, 0.32, 1] }}
+							className="size-full min-h-0 min-w-0"
+						>
+							{children}
+						</motion.div>
+					</AnimatePresence>
+				</div>
 			</div>
 			<div className="absolute top-full left-1/2 z-20 mt-2 flex h-10 w-max -translate-x-1/2 -translate-y-1/2 items-center gap-1 rounded-lg bg-foreground/95 p-1 opacity-0 shadow-lg transition-opacity duration-150 group-focus-within/preview:opacity-100 group-hover/preview:opacity-100 motion-reduce:transition-none">
 				<SizeControls
@@ -175,7 +193,7 @@ function LinkBlock() {
 			href={provider.url}
 			target="_blank"
 			rel="noreferrer"
-			className={`inline-flex shrink-0 items-center justify-center text-center transition-transform hover:scale-105 ${faviconFailed ? "size-11 rounded-2xl px-2 font-semibold text-xs" : "size-8 rounded-md"}`}
+			className={`inline-flex shrink-0 cursor-pointer! items-center justify-center text-center transition-transform hover:scale-105 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/60 ${faviconFailed ? "size-11 rounded-2xl px-2 font-semibold text-xs" : "size-8 rounded-md"}`}
 			style={
 				faviconFailed
 					? { backgroundColor: presentation.cardBackground }
@@ -197,7 +215,7 @@ function LinkBlock() {
 	);
 	const title = (
 		<p
-			className={`field-sizing-fixed block min-h-0 w-full min-w-24 max-w-full rounded-sm px-1 py-0 font-medium text-foreground text-sm ${isHalfBanner ? "h-8 max-h-8 overflow-hidden whitespace-nowrap leading-8" : "max-h-full overflow-y-auto whitespace-pre-line leading-5"}`}
+			className={`field-sizing-fixed block min-h-0 w-full min-w-24 max-w-full rounded-sm px-1 py-0 font-medium text-foreground text-sm ${isHalfBanner ? "h-8 max-h-8 overflow-hidden whitespace-nowrap leading-8" : isTall ? "h-20 max-h-20 leading-5" : "max-h-full leading-5"} ${isLandscape || preset === "squareSmall" || isTall ? "flex-1 overflow-y-auto overscroll-y-contain whitespace-pre-line" : "overflow-hidden"}`}
 		>
 			{provider.metadata.title}
 		</p>
@@ -208,7 +226,7 @@ function LinkBlock() {
 			target="_blank"
 			rel="noreferrer"
 			aria-label={`${presentation.actionLabel} ${presentation.actionDetail}`}
-			className="flex h-8 shrink-0 cursor-pointer items-center justify-center gap-1 rounded-md px-3 font-medium text-sm shadow-none transition-all duration-150 ease-in-out"
+			className={`flex h-8 shrink-0 cursor-pointer! items-center justify-center gap-1 rounded-md px-3 font-medium text-sm! shadow-none transition-all duration-150 ease-in-out focus-visible:ring-ring/30 ${isHalfBanner ? "self-center" : "self-start"}`}
 			style={{
 				backgroundColor: presentation.actionBackground,
 				color: presentation.actionText,
@@ -222,7 +240,12 @@ function LinkBlock() {
 		<PreviewCard
 			preset={preset}
 			onPresetChange={setPreset}
-			className="bg-white"
+			className="link-card-themed bg-white"
+			style={
+				{
+					"--link-card-background": presentation.cardBackground,
+				} as CSSProperties
+			}
 		>
 			{preset === "squareSmall" ? (
 				<div
@@ -231,7 +254,7 @@ function LinkBlock() {
 				>
 					<div className="flex min-h-0 w-full flex-1 flex-col gap-1">
 						{badge}
-						{title}
+						<div className="flex min-h-0 min-w-0 flex-1 flex-col">{title}</div>
 					</div>
 					{action}
 				</div>
@@ -331,7 +354,7 @@ function MediaBlock() {
 				ref={frameRef}
 				data-media-frame="true"
 				data-media-preset={preset}
-				className={`relative size-full rounded-[inherit] bg-muted/30 ${cropOpen ? "overflow-visible!" : "overflow-hidden"}`}
+				className={`relative size-full rounded-[inherit] bg-muted/30 ${!cropOpen ? "surface-line overflow-hidden" : "overflow-visible!"}`}
 			>
 				<div
 					className={`absolute overflow-hidden rounded-[inherit] ${cropOpen ? "smooth-shadow-lg" : ""}`}
@@ -340,7 +363,7 @@ function MediaBlock() {
 					<img
 						src={mediaUrl}
 						alt="A quiet morning in Kyoto"
-						className="pointer-events-none size-full object-cover"
+						className="pointer-events-none size-full object-cover outline-2! outline-depth -outline-offset-2! transition-opacity"
 						onLoad={(event) =>
 							setSourceSize({
 								width: event.currentTarget.naturalWidth,
@@ -474,6 +497,7 @@ function MapBlock() {
 						</span>
 					</div>
 				) : null}
+				<div className="pointer-events-none relative z-10 size-full rounded-[inherit] outline-depth" />
 				<div className="pointer-events-none absolute inset-x-0 bottom-0 z-10 flex min-w-0 items-center gap-3 p-4 text-white">
 					<p className="flex h-7.5 w-fit min-w-0 max-w-[calc(100%-4.5rem)] items-center rounded-md border border-border bg-white/80 px-2 py-0 font-medium text-foreground text-sm backdrop-blur-sm">
 						<span className="block min-w-0 flex-1 truncate">
@@ -524,12 +548,16 @@ function TextBlock() {
 			className="bg-white text-foreground"
 		>
 			<div className="grid-action relative flex size-full min-h-0 flex-col gap-3 overflow-hidden rounded-lg p-3">
-				<textarea
-					aria-label="Text block content"
-					value={text}
-					onChange={(event) => setText(event.target.value)}
-					className="bento-text-input field-sizing-content max-h-full min-h-0 w-full flex-1 cursor-text resize-none overflow-y-auto overscroll-contain whitespace-pre-wrap break-all rounded-lg border-0 bg-transparent p-1 px-2 font-medium text-current text-lg leading-7 outline-none placeholder:text-current/45 focus-visible:ring-0"
-				/>
+				<div className="relative z-10 flex min-h-0 flex-1 items-stretch justify-between gap-3">
+					<div className="flex min-h-0 min-w-0 flex-1 flex-col justify-start">
+						<textarea
+							aria-label="Text block content"
+							value={text}
+							onChange={(event) => setText(event.target.value)}
+							className="bento-text-input grid-action field-sizing-content max-h-full min-h-0 w-full cursor-text! resize-none overflow-y-auto overscroll-contain whitespace-pre-wrap break-all rounded-lg border-0 bg-transparent p-1 px-2 font-medium text-current text-lg leading-7 outline-none placeholder:text-current/45 focus-visible:ring-0"
+						/>
+					</div>
+				</div>
 			</div>
 		</PreviewCard>
 	);
@@ -538,13 +566,23 @@ function TextBlock() {
 function SectionBlock() {
 	const [title, setTitle] = useState("A little about me");
 	return (
-		<div className="smooth-shadow-ring-sm relative flex h-[68px] w-[380px] shrink-0 items-center overflow-hidden rounded-2xl bg-background p-3">
-			<input
-				aria-label="Section title"
-				value={title}
-				onChange={(event) => setTitle(event.target.value)}
-				className="h-full w-full min-w-32 max-w-full truncate rounded-2xl px-2 text-left font-bold text-xl tracking-tight outline-none focus-visible:ring-2 focus-visible:ring-ring/60"
-			/>
+		<div className="smooth-shadow-ring-sm relative h-[68px] w-[380px] shrink-0 overflow-hidden rounded-2xl bg-background">
+			<div className="flex size-full items-center overflow-hidden p-3">
+				<div className="grid-action inline-grid h-full min-w-32 max-w-full overflow-hidden rounded-lg focus-within:bg-secondary hover:bg-secondary">
+					<span
+						aria-hidden="true"
+						className="invisible col-start-1 row-start-1 min-w-32 max-w-full overflow-hidden whitespace-pre font-bold text-xl tracking-tight"
+					>
+						{title}
+					</span>
+					<input
+						aria-label="Section title"
+						value={title}
+						onChange={(event) => setTitle(event.target.value)}
+						className="col-start-1 row-start-1 h-full w-full min-w-32 max-w-full truncate bg-transparent px-2 font-bold text-xl tracking-tight outline-none placeholder:text-muted-foreground focus-visible:ring-2 focus-visible:ring-ring/60"
+					/>
+				</div>
+			</div>
 		</div>
 	);
 }
