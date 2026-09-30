@@ -1,6 +1,16 @@
 "use client";
 
+import { env } from "@grabbin/env/web";
+import MapboxMap from "react-map-gl/mapbox";
+import "mapbox-gl/dist/mapbox-gl.css";
 import { type ReactNode, useRef, useState } from "react";
+import { CircleArrowRightUp } from "reicon-react";
+import {
+	getCenteredMediaCrop,
+	getMediaCropStyle,
+	moveMediaCrop,
+} from "@/lib/bento/media-crop";
+import { MAPBOX_STYLE_CONFIG, MAPBOX_STYLE_URL } from "@/lib/map-config";
 
 type BlockType = "link" | "media" | "map" | "text" | "section";
 type Preset =
@@ -32,27 +42,29 @@ const sizes: Record<Preset, { width: number; height: number; label: string }> =
 		squareLarge: { width: 380, height: 380, label: "Large square" },
 	};
 
-const imageUrl = "/media-widget.png";
-const mediaUrl = "/media-widget-sunset.png";
+const imageUrl =
+	"https://images.unsplash.com/photo-1490750967868-88aa4486c946?auto=format&fit=crop&w=900&q=80";
+const mediaUrl =
+	"https://images.unsplash.com/photo-1470252649378-9c29740c9fa8?auto=format&fit=crop&w=1200&q=85";
 const provider = {
-	url: "https://www.instagram.com/example",
+	url: "https://instagram.com/averyreed",
 	metadata: {
-		title: "@framebyjune",
+		title: "Daily moments",
+		description: "Photos, places, and little things.",
+		imageUrl,
 		faviconUrl: "/api/provider-icons/instagram.svg",
 		provider: "instagram",
 		providerData: {
-			followerCount: 687000000,
-			followerCountLabel: "687M",
-			followerCountApproximate: true,
+			followerCount: 12800,
 		},
 		presentation: {
 			provider: "instagram",
 			providerLabel: "Instagram",
-			cardBackground: "#fff2f8",
-			actionBackground: "#e1306c",
+			cardBackground: "#ffffff",
+			actionBackground: "#3797f0",
 			actionText: "#ffffff",
 			actionLabel: "Follow",
-			actionDetail: "687M",
+			actionDetail: "12.8K",
 			actionVariant: "solid",
 			imageUrls: [imageUrl],
 		},
@@ -130,11 +142,15 @@ function PreviewCard({
 	const size = sizes[preset];
 	return (
 		<div
-			className={`group/preview smooth-shadow-ring-sm relative shrink-0 rounded-2xl bg-background transition-[width,height,transform,box-shadow] duration-[320ms] ease-[cubic-bezier(0.34,1.25,0.64,1)] motion-reduce:transition-none ${className}`}
+			className="group/preview relative shrink-0 transition-[width,height] duration-[320ms] ease-[cubic-bezier(0.34,1.25,0.64,1)] motion-reduce:transition-none"
 			style={{ width: size.width, height: size.height }}
 		>
-			{children}
-			<div className="absolute top-[calc(100%+0.5rem)] left-1/2 z-20 flex -translate-x-1/2 items-center gap-1 rounded-lg bg-foreground/95 p-1 opacity-0 shadow-lg transition-opacity duration-150 group-focus-within/preview:opacity-100 group-hover/preview:opacity-100">
+			<div
+				className={`bento-item-card smooth-shadow-ring-sm relative size-full overflow-hidden rounded-2xl bg-background transition-[transform,box-shadow] duration-[320ms] ease-[cubic-bezier(0.34,1.25,0.64,1)] motion-reduce:transition-none ${className}`}
+			>
+				{children}
+			</div>
+			<div className="absolute top-full left-1/2 z-20 mt-2 flex h-10 w-max -translate-x-1/2 -translate-y-1/2 items-center gap-1 rounded-lg bg-foreground/95 p-1 opacity-0 shadow-lg transition-opacity duration-150 group-focus-within/preview:opacity-100 group-hover/preview:opacity-100 motion-reduce:transition-none">
 				<SizeControls
 					preset={preset}
 					onSelect={onPresetChange}
@@ -148,73 +164,117 @@ function PreviewCard({
 
 function LinkBlock() {
 	const [preset, setPreset] = useState<Preset>("landscape");
+	const [faviconFailed, setFaviconFailed] = useState(true);
 	const presentation = provider.metadata.presentation;
-	const providerData = provider.metadata.providerData;
+	const isLandscape = preset === "landscape";
+	const isHalfBanner = preset === "halfBanner";
 	const isTall = preset === "portrait" || preset === "squareLarge";
-	const showImage = preset !== "squareSmall" && preset !== "halfBanner";
+	const showImage = isLandscape || isTall;
+	const badge = (
+		<a
+			href={provider.url}
+			target="_blank"
+			rel="noreferrer"
+			className={`inline-flex shrink-0 items-center justify-center text-center transition-transform hover:scale-105 ${faviconFailed ? "size-11 rounded-2xl px-2 font-semibold text-xs" : "size-8 rounded-md"}`}
+			style={
+				faviconFailed
+					? { backgroundColor: presentation.cardBackground }
+					: undefined
+			}
+			aria-label={`Open ${presentation.providerLabel}`}
+		>
+			{faviconFailed ? (
+				<span aria-hidden="true">{presentation.providerLabel.slice(0, 1)}</span>
+			) : (
+				<img
+					src={`${provider.metadata.faviconUrl}?v=3`}
+					alt=""
+					className="size-full object-contain"
+					onError={() => setFaviconFailed(true)}
+				/>
+			)}
+		</a>
+	);
+	const title = (
+		<p
+			className={`field-sizing-fixed block min-h-0 w-full min-w-24 max-w-full rounded-sm px-1 py-0 font-medium text-foreground text-sm ${isHalfBanner ? "h-8 max-h-8 overflow-hidden whitespace-nowrap leading-8" : "max-h-full overflow-y-auto whitespace-pre-line leading-5"}`}
+		>
+			{provider.metadata.title}
+		</p>
+	);
+	const action = (
+		<a
+			href={provider.url}
+			target="_blank"
+			rel="noreferrer"
+			aria-label={`${presentation.actionLabel} ${presentation.actionDetail}`}
+			className="flex h-8 shrink-0 cursor-pointer items-center justify-center gap-1 rounded-md px-3 font-medium text-sm shadow-none transition-all duration-150 ease-in-out"
+			style={{
+				backgroundColor: presentation.actionBackground,
+				color: presentation.actionText,
+			}}
+		>
+			<span>{presentation.actionLabel}</span>
+			<span className="ml-1 opacity-70">{presentation.actionDetail}</span>
+		</a>
+	);
 	return (
 		<PreviewCard
 			preset={preset}
 			onPresetChange={setPreset}
-			className="bg-[#fff2f8]"
+			className="bg-white"
 		>
-			<div
-				data-provider={provider.metadata.provider}
-				className={`flex size-full min-h-0 gap-3 p-4 ${isTall ? "flex-col" : "flex-row-reverse"}`}
-			>
-				{showImage ? (
-					<div className="min-h-0 min-w-0 flex-[4] overflow-hidden rounded-lg bg-muted/30">
-						<img
-							src={presentation.imageUrls[0]}
-							alt="Instagram creator preview"
-							className="size-full object-cover"
-						/>
+			{preset === "squareSmall" ? (
+				<div
+					data-provider={provider.metadata.provider}
+					className="flex size-full min-h-0 flex-col items-start justify-between gap-2 p-4"
+				>
+					<div className="flex min-h-0 w-full flex-1 flex-col gap-1">
+						{badge}
+						{title}
 					</div>
-				) : null}
-				<div className="flex min-w-0 flex-[3] flex-col justify-between gap-2">
-					<div className="flex min-w-0 flex-col gap-1">
-						<a
-							href={provider.url}
-							target="_blank"
-							rel="noreferrer"
-							className="flex size-8 items-center justify-center rounded-md"
-							aria-label={`Open ${provider.metadata.presentation.providerLabel}`}
+					{action}
+				</div>
+			) : isHalfBanner ? (
+				<div
+					data-provider={provider.metadata.provider}
+					className="flex size-full min-h-0 items-center justify-between gap-1 p-4"
+				>
+					<div className="flex min-w-0 flex-1 items-center gap-1">
+						{badge}
+						<div className="min-h-0 min-w-0 flex-1">{title}</div>
+					</div>
+					{action}
+				</div>
+			) : (
+				<div
+					data-provider={provider.metadata.provider}
+					className={`flex size-full min-h-0 min-w-0 gap-3 p-4 ${isLandscape ? "flex-row-reverse items-stretch" : "flex-col"}`}
+				>
+					{showImage ? (
+						<div
+							className={`relative min-h-0 min-w-0 overflow-hidden rounded-lg bg-muted/30 ${isTall ? "flex-3" : "flex-4"}`}
 						>
 							<img
-								src={provider.metadata.faviconUrl}
-								alt=""
-								className="size-full object-contain"
+								src={presentation.imageUrls[0]}
+								alt="Flowers in a garden"
+								className="size-full object-cover"
 							/>
-						</a>
-						<p className="truncate font-semibold text-sm">
-							{provider.metadata.title}
-						</p>
-						<p className="text-muted-foreground text-xs">
-							{provider.metadata.presentation.providerLabel}
-						</p>
-						<p className="text-muted-foreground text-xs">
-							{providerData.followerCountApproximate ? "About " : ""}
-							{providerData.followerCountLabel ||
-								providerData.followerCount.toLocaleString()}{" "}
-							followers
-						</p>
-					</div>
-					<a
-						href={provider.url}
-						target="_blank"
-						rel="noreferrer"
-						data-action-variant={presentation.actionVariant}
-						className="flex h-8 items-center justify-center gap-2 rounded-md px-3 text-sm text-white"
-						style={{
-							backgroundColor: presentation.actionBackground,
-							color: presentation.actionText,
-						}}
+						</div>
+					) : null}
+					<div
+						className={`flex min-h-0 min-w-0 flex-col items-start gap-2 ${isLandscape ? "h-full flex-4 items-stretch justify-between" : "flex-3 items-stretch justify-between"}`}
 					>
-						<span>{presentation.actionLabel}</span>
-						<span>{presentation.actionDetail}</span>
-					</a>
+						<div
+							className={`flex min-h-0 min-w-0 flex-col items-start gap-1 ${isLandscape ? "w-full flex-1" : "flex-1 items-stretch"}`}
+						>
+							{badge}
+							{title}
+						</div>
+						{action}
+					</div>
 				</div>
-			</div>
+			)}
 		</PreviewCard>
 	);
 }
@@ -222,16 +282,21 @@ function LinkBlock() {
 function MediaBlock() {
 	const [preset, setPreset] = useState<Preset>("landscape");
 	const [cropOpen, setCropOpen] = useState(false);
-	const [cropOffset, setCropOffset] = useState({ x: 0, y: 0 });
-	const [draftOffset, setDraftOffset] = useState(cropOffset);
+	const [sourceSize, setSourceSize] = useState({ width: 0, height: 0 });
+	const [draftCrop, setDraftCrop] = useState<
+		{ x: number; y: number; width: number; height: number } | undefined
+	>();
+	const frameRef = useRef<HTMLDivElement>(null);
 	const dragStart = useRef<{
 		x: number;
 		y: number;
-		offsetX: number;
-		offsetY: number;
+		crop: { x: number; y: number; width: number; height: number };
 	} | null>(null);
 	const size = sizes[preset];
-	const imageSize = Math.max(size.width, size.height);
+	const centeredCrop =
+		sourceSize.width > 0 ? getCenteredMediaCrop(sourceSize, size) : undefined;
+	const currentCrop = cropOpen ? (draftCrop ?? centeredCrop) : undefined;
+	const cropStyle = currentCrop ? getMediaCropStyle(currentCrop) : undefined;
 
 	return (
 		<PreviewCard
@@ -240,7 +305,7 @@ function MediaBlock() {
 			options={mediaPresets}
 			className={
 				cropOpen
-					? "!shadow-xl z-10 translate-y-[-8px] scale-[1.02] ring-3 ring-black"
+					? "!shadow-xl overflow-visible! z-10 translate-y-[-8px] scale-[1.02] ring-3 ring-black"
 					: ""
 			}
 			extraControls={
@@ -249,8 +314,11 @@ function MediaBlock() {
 					aria-label={cropOpen ? "Apply media crop" : "Crop media"}
 					aria-pressed={cropOpen}
 					onClick={() => {
-						if (cropOpen) setCropOffset(draftOffset);
-						else setDraftOffset(cropOffset);
+						if (cropOpen) {
+							dragStart.current = null;
+						} else {
+							setDraftCrop(centeredCrop);
+						}
 						setCropOpen(!cropOpen);
 					}}
 					className="h-8 cursor-pointer rounded-md px-2 text-primary-foreground text-xs hover:bg-white/20 focus-visible:outline-2 focus-visible:outline-white aria-pressed:bg-brand-green"
@@ -260,62 +328,87 @@ function MediaBlock() {
 			}
 		>
 			<div
+				ref={frameRef}
 				data-media-frame="true"
-				className={`relative size-full rounded-[inherit] ${cropOpen ? "overflow-visible" : "overflow-hidden"}`}
+				data-media-preset={preset}
+				className={`relative size-full rounded-[inherit] bg-muted/30 ${cropOpen ? "overflow-visible!" : "overflow-hidden"}`}
 			>
 				<div
-					className="absolute touch-none select-none"
-					style={{
-						left: cropOpen ? (size.width - imageSize) / 2 + draftOffset.x : 0,
-						top: cropOpen ? (size.height - imageSize) / 2 + draftOffset.y : 0,
-						width: cropOpen ? imageSize : size.width,
-						height: cropOpen ? imageSize : size.height,
-					}}
-					onPointerDown={(event) => {
-						if (!cropOpen) return;
-						dragStart.current = {
-							x: event.clientX,
-							y: event.clientY,
-							offsetX: draftOffset.x,
-							offsetY: draftOffset.y,
-						};
-						event.currentTarget.setPointerCapture(event.pointerId);
-					}}
-					onPointerMove={(event) => {
-						if (!dragStart.current) return;
-						setDraftOffset({
-							x:
-								dragStart.current.offsetX + event.clientX - dragStart.current.x,
-							y:
-								dragStart.current.offsetY + event.clientY - dragStart.current.y,
-						});
-					}}
-					onPointerUp={() => {
-						dragStart.current = null;
-					}}
+					className={`absolute overflow-hidden rounded-[inherit] ${cropOpen ? "smooth-shadow-lg" : ""}`}
+					style={cropOpen && cropStyle ? cropStyle : { inset: 0 }}
 				>
 					<img
 						src={mediaUrl}
-						alt="A quiet evening in the city"
-						className="size-full object-cover"
+						alt="A quiet morning in Kyoto"
+						className="pointer-events-none size-full object-cover"
+						onLoad={(event) =>
+							setSourceSize({
+								width: event.currentTarget.naturalWidth,
+								height: event.currentTarget.naturalHeight,
+							})
+						}
 					/>
+					{cropOpen && currentCrop ? (
+						<div
+							aria-hidden="true"
+							className="pointer-events-none absolute inset-0 z-10 overflow-hidden rounded-[inherit]"
+						>
+							<span
+								className="absolute rounded-[inherit]"
+								style={{
+									left: `${currentCrop.x}%`,
+									top: `${currentCrop.y}%`,
+									width: `${currentCrop.width}%`,
+									height: `${currentCrop.height}%`,
+									boxShadow: "0 0 0 9999px rgb(255 255 255 / 0.35)",
+								}}
+							/>
+						</div>
+					) : null}
 				</div>
-				{cropOpen ? (
-					<div className="pointer-events-none absolute inset-0 rounded-[inherit] border-2 border-black shadow-[0_0_0_999px_rgba(0,0,0,0.28)]" />
+				{cropOpen && cropStyle && currentCrop ? (
+					<>
+						<button
+							type="button"
+							aria-label="Drag media to crop"
+							className="absolute z-20 cursor-grab touch-none rounded-[inherit] border-0 bg-transparent p-0"
+							style={cropStyle}
+							onPointerDown={(event) => {
+								dragStart.current = {
+									x: event.clientX,
+									y: event.clientY,
+									crop: currentCrop,
+								};
+								event.currentTarget.setPointerCapture(event.pointerId);
+							}}
+							onPointerMove={(event) => {
+								const drag = dragStart.current;
+								if (!drag) return;
+								setDraftCrop(
+									moveMediaCrop(
+										drag.crop,
+										event.clientX - drag.x,
+										event.clientY - drag.y,
+										size,
+									),
+								);
+							}}
+							onPointerUp={() => {
+								dragStart.current = null;
+							}}
+						/>
+						<span
+							aria-hidden="true"
+							className="pointer-events-none absolute inset-0 z-30 rounded-[inherit] border-[3px] border-black"
+						/>
+					</>
 				) : null}
-				<div className="pointer-events-none absolute inset-x-0 bottom-0 flex items-center justify-between gap-2 p-3">
-					<span className="rounded-md bg-background/90 px-2 py-1 text-xs">
-						A quiet evening in the city
-					</span>
-					<a
-						href="https://example.com/city-journal"
-						target="_blank"
-						rel="noreferrer"
-						aria-label="Open media link"
-						className="pointer-events-auto flex size-8 items-center justify-center rounded-full bg-foreground text-background"
-					>
-						↗
-					</a>
+				<div className="pointer-events-none absolute inset-x-0 bottom-0 flex min-w-0 items-center gap-3 p-4 text-white">
+					<p className="flex h-7.5 w-fit min-w-0 max-w-full items-center rounded-md border border-border bg-white/80 px-2 py-0 font-medium text-foreground text-sm backdrop-blur-sm">
+						<span className="block min-w-0 flex-1 truncate">
+							A quiet morning in Kyoto
+						</span>
+					</p>
 				</div>
 			</div>
 		</PreviewCard>
@@ -325,13 +418,8 @@ function MediaBlock() {
 function MapBlock() {
 	const [preset, setPreset] = useState<Preset>("landscape");
 	const [moving, setMoving] = useState(false);
-	const [mapOffset, setMapOffset] = useState({ x: 0, y: 0 });
-	const dragStart = useRef<{
-		x: number;
-		y: number;
-		offsetX: number;
-		offsetY: number;
-	} | null>(null);
+	const [mapLoaded, setMapLoaded] = useState(false);
+	const accessToken = env.NEXT_PUBLIC_MAPBOX_ACCESS_TOKEN?.trim();
 	return (
 		<PreviewCard
 			preset={preset}
@@ -344,67 +432,78 @@ function MapBlock() {
 			}
 		>
 			<div
-				className="relative size-full overflow-hidden rounded-[inherit] bg-[#dcefd9]"
-				onPointerDown={(event) => {
-					if (!moving) return;
-					dragStart.current = {
-						x: event.clientX,
-						y: event.clientY,
-						offsetX: mapOffset.x,
-						offsetY: mapOffset.y,
-					};
-					event.currentTarget.setPointerCapture(event.pointerId);
-				}}
-				onPointerMove={(event) => {
-					if (!dragStart.current) return;
-					setMapOffset({
-						x: dragStart.current.offsetX + event.clientX - dragStart.current.x,
-						y: dragStart.current.offsetY + event.clientY - dragStart.current.y,
-					});
-				}}
-				onPointerUp={() => {
-					dragStart.current = null;
-				}}
+				className={`relative size-full overflow-hidden rounded-[inherit] bg-secondary ${mapLoaded ? "surface-line" : ""} ${moving ? "cursor-grab" : ""}`}
 			>
-				<div
-					aria-hidden="true"
-					className="absolute -inset-24"
-					style={{
-						transform: `translate(${mapOffset.x}px, ${mapOffset.y}px)`,
-						backgroundImage:
-							"linear-gradient(28deg, transparent 47%, #fff 48% 51%, transparent 52%), linear-gradient(90deg, transparent 44%, #f8f7ef 45% 48%, transparent 49%), linear-gradient(0deg, transparent 54%, #f8f7ef 55% 58%, transparent 59%), linear-gradient(138deg, transparent 48%, #fff 49% 50%, transparent 51%)",
-						backgroundSize:
-							"170px 140px, 130px 110px, 190px 130px, 220px 180px",
-					}}
-				/>
-				<div className="pointer-events-none absolute inset-0 flex items-center justify-center">
-					<div className="rounded-full bg-white p-1 shadow-md">
-						<div className="size-4 rounded-full bg-[#3b82f6] ring-4 ring-white" />
-					</div>
-					<span className="absolute bottom-1/2 left-1/2 -translate-x-1/2 -translate-y-6 font-semibold text-lg drop-shadow-sm">
-						Seoul
-					</span>
-				</div>
-				<div className="pointer-events-none absolute inset-x-0 bottom-0 flex items-center justify-between p-3 text-white text-xs">
-					<span className="rounded-md bg-black/45 px-2 py-1">
-						Seoul, South Korea
-					</span>
-					<a
-						href="https://www.google.com/maps?q=37.566500,126.978000"
-						target="_blank"
-						rel="noreferrer"
-						aria-label="Open location in Google Maps"
-						className="pointer-events-auto flex size-8 items-center justify-center rounded-full bg-black text-white"
+				{accessToken ? (
+					<div
+						className={`absolute inset-0 ${moving ? "" : "pointer-events-none"}`}
 					>
-						↗
-					</a>
+						<MapboxMap
+							mapLib={import("mapbox-gl")}
+							mapboxAccessToken={accessToken}
+							mapStyle={MAPBOX_STYLE_URL}
+							{...({ config: MAPBOX_STYLE_CONFIG } as const)}
+							initialViewState={{
+								latitude: 35.0116,
+								longitude: 135.7681,
+								zoom: 12,
+							}}
+							attributionControl={false}
+							interactive={moving}
+							projection="mercator"
+							pitch={0}
+							bearing={0}
+							dragRotate={false}
+							touchPitch={false}
+							style={{ height: "100%", width: "100%" }}
+							onLoad={(event) => {
+								event.target.resize();
+								setMapLoaded(true);
+							}}
+						/>
+					</div>
+				) : null}
+				{mapLoaded ? (
+					<div
+						aria-hidden="true"
+						className="pointer-events-none absolute inset-0 z-10 flex items-center justify-center"
+					>
+						<span className="animation-duration-[2.5s] absolute size-12 animate-ping rounded-full bg-brand/35" />
+						<span className="beautiful-shadow smooth-ring-neutral-300/40! relative size-7 rounded-full bg-white p-1 drop-shadow-lg">
+							<span className="block size-full rounded-full bg-brand" />
+						</span>
+					</div>
+				) : null}
+				<div className="pointer-events-none absolute inset-x-0 bottom-0 z-10 flex min-w-0 items-center gap-3 p-4 text-white">
+					<p className="flex h-7.5 w-fit min-w-0 max-w-[calc(100%-4.5rem)] items-center rounded-md border border-border bg-white/80 px-2 py-0 font-medium text-foreground text-sm backdrop-blur-sm">
+						<span className="block min-w-0 flex-1 truncate">
+							Currently dreaming of Kyoto
+						</span>
+					</p>
+				</div>
+				<div className="pointer-events-none absolute right-3 bottom-4 z-20">
+					<div className="pointer-events-auto flex h-fit items-center">
+						<a
+							href="https://www.google.com/maps?q=35.0116,135.7681"
+							target="_blank"
+							rel="noreferrer"
+							aria-label="Open location in Google Maps"
+							className="group inline-flex size-7 shrink-0 cursor-pointer items-center justify-center rounded-full bg-white font-medium text-black text-xs shadow-md backdrop-blur-sm transition-colors hover:bg-white/60"
+						>
+							<CircleArrowRightUp
+								aria-hidden="true"
+								size={28}
+								weight="Filled"
+							/>
+						</a>
+					</div>
 				</div>
 				<button
 					type="button"
 					aria-label={moving ? "Finish moving map" : "Move map"}
 					aria-pressed={moving}
 					onClick={() => setMoving((current) => !current)}
-					className="absolute top-3 right-3 rounded-md bg-black/80 px-2 py-1 text-white text-xs"
+					className={`absolute top-3 right-3 z-20 rounded-md bg-foreground/95 px-3 py-2 text-primary-foreground text-xs shadow-lg transition-opacity duration-150 ${moving ? "pointer-events-auto opacity-100" : "pointer-events-none opacity-0 group-focus-within/preview:pointer-events-auto group-focus-within/preview:opacity-100 group-hover/preview:pointer-events-auto group-hover/preview:opacity-100"}`}
 				>
 					{moving ? "Done" : "Move map"}
 				</button>
@@ -416,7 +515,7 @@ function MapBlock() {
 function TextBlock() {
 	const [preset, setPreset] = useState<Preset>("landscape");
 	const [text, setText] = useState(
-		"A collection of places, people, and small moments worth sharing.",
+		"Collecting small moments, good light, and places worth coming back to.",
 	);
 	return (
 		<PreviewCard
@@ -424,36 +523,27 @@ function TextBlock() {
 			onPresetChange={setPreset}
 			className="bg-white text-foreground"
 		>
-			<div className="flex size-full min-h-0 flex-col justify-center gap-2 p-4">
+			<div className="grid-action relative flex size-full min-h-0 flex-col gap-3 overflow-hidden rounded-lg p-3">
 				<textarea
 					aria-label="Text block content"
 					value={text}
 					onChange={(event) => setText(event.target.value)}
-					className="size-full resize-none overflow-auto rounded-lg border-0 bg-transparent p-1 text-sm leading-6 outline-none focus-visible:ring-2 focus-visible:ring-ring/60"
+					className="bento-text-input field-sizing-content max-h-full min-h-0 w-full flex-1 cursor-text resize-none overflow-y-auto overscroll-contain whitespace-pre-wrap break-all rounded-lg border-0 bg-transparent p-1 px-2 font-medium text-current text-lg leading-7 outline-none placeholder:text-current/45 focus-visible:ring-0"
 				/>
-				<a
-					href="https://example.com/my-story"
-					target="_blank"
-					rel="noreferrer"
-					aria-label="Open text link"
-					className="absolute right-3 bottom-3 flex size-8 items-center justify-center rounded-full bg-foreground text-background"
-				>
-					↗
-				</a>
 			</div>
 		</PreviewCard>
 	);
 }
 
 function SectionBlock() {
-	const [title, setTitle] = useState("Places to remember");
+	const [title, setTitle] = useState("A little about me");
 	return (
-		<div className="smooth-shadow-ring-sm relative h-[68px] w-[380px] shrink-0 rounded-2xl bg-background px-4">
+		<div className="smooth-shadow-ring-sm relative flex h-[68px] w-[380px] shrink-0 items-center overflow-hidden rounded-2xl bg-background p-3">
 			<input
 				aria-label="Section title"
 				value={title}
 				onChange={(event) => setTitle(event.target.value)}
-				className="size-full min-w-0 truncate border-0 bg-transparent text-center font-bold text-xl tracking-tight outline-none focus-visible:ring-2 focus-visible:ring-ring/60"
+				className="h-full w-full min-w-32 max-w-full truncate rounded-2xl px-2 text-left font-bold text-xl tracking-tight outline-none focus-visible:ring-2 focus-visible:ring-ring/60"
 			/>
 		</div>
 	);
