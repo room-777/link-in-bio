@@ -66,10 +66,12 @@ export default function Footer() {
 										srcSet="https://simpleanalyticsbadges.com/grabbin.me?mode=dark&amp;background=%23ffffff&amp;text=%23000000"
 										media="(prefers-color-scheme: dark)"
 									/>
-									<img
+									<Image
 										src="https://simpleanalyticsbadges.com/grabbin.me?mode=light&amp;background=%23ffffff&amp;text=%23000000"
 										alt="Simple Analytics badge"
 										loading="lazy"
+										width={200}
+										height={200}
 										referrerPolicy="no-referrer"
 										crossOrigin="anonymous"
 										className="h-auto w-44"
