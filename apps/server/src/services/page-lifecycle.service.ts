@@ -82,7 +82,7 @@ export async function listOwnedPages({
 
 export async function listSitemapHandles(db: DatabaseClient) {
 	const pagesForSitemap = await db.query.pages.findMany({
-		where: and(eq(pages.onboarding, true), isNull(pages.deletionScheduledAt)),
+		where: isNull(pages.deletionScheduledAt),
 		columns: { handle: true },
 		orderBy: asc(pages.handle),
 	});

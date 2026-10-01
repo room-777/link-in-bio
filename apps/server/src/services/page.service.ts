@@ -24,7 +24,6 @@ function findPublicPageByHandle(db: DatabaseClient, handle: string) {
 			id: true,
 			userId: true,
 			handle: true,
-			onboarding: true,
 			imageKey: true,
 			imageSource: true,
 			imageCrop: true,
@@ -67,7 +66,6 @@ function updateOwnedPage(
 			imageCrop: input.imageCrop,
 			name: input.name,
 			bio: input.bio,
-			onboarding: true,
 		})
 		.where(and(eq(pages.handle, input.handle), eq(pages.userId, input.userId)))
 		.returning();
@@ -210,7 +208,7 @@ export async function createPage({
 
 			const [page] = await tx
 				.insert(pages)
-				.values({ id: crypto.randomUUID(), userId, handle, onboarding: false })
+				.values({ id: crypto.randomUUID(), userId, handle })
 				.returning();
 			if (!page) throw new Error("PAGE_CREATE_FAILED");
 
@@ -432,7 +430,6 @@ export async function getPublicPageWithPlan(
 				id: pages.id,
 				userId: pages.userId,
 				handle: pages.handle,
-				onboarding: pages.onboarding,
 				imageKey: pages.imageKey,
 				imageSource: pages.imageSource,
 				imageCrop: pages.imageCrop,

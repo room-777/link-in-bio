@@ -234,7 +234,6 @@ export const DEMO_PAGE_RESPONSE: PageByHandleResponse = {
 	page: {
 		id: "demo-page",
 		handle: "demo",
-		onboarding: false,
 		imageKey: null,
 		imageSource:
 			"https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=800&q=85",

@@ -1,6 +1,5 @@
 import { relations } from "drizzle-orm";
 import {
-	boolean,
 	index,
 	jsonb,
 	pgTable,
@@ -19,7 +18,6 @@ export const pages = pgTable(
 			.notNull()
 			.references(() => user.id, { onDelete: "cascade" }),
 		handle: text("handle").notNull(),
-		onboarding: boolean("onboarding").default(false).notNull(),
 		name: text("name"),
 		bio: text("bio"),
 		imageKey: text("image_key"),

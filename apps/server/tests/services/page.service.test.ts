@@ -49,7 +49,6 @@ describe("page service", () => {
 										id: "page-1",
 										userId: "user-1",
 										handle: "jane",
-										onboarding: true,
 										imageKey: null,
 										imageSource: null,
 										imageCrop: null,
@@ -353,17 +352,16 @@ describe("page service", () => {
 	 * Case ID: PAGE-SERVICE-005
 	 * Given: the signed-in owner submits a profile for their page.
 	 * When: completePage updates the page.
-	 * Then: image, name, bio are saved and onboarding becomes true.
+	 * Then: image, name, and bio are saved.
 	 * Evidence: returned row and captured update values.
 	 * Result: Pass | Fail | Blocked | Not Run
 	 */
-	it("PAGE-SERVICE-004 completes onboarding for the page owner", async () => {
+	it("PAGE-SERVICE-004 saves the page profile for its owner", async () => {
 		let values: Record<string, unknown> | undefined;
 		const imageKey = "users/user-1/pages/page-1/profile/jane.webp";
 		const updatedPage = {
 			id: "page-1",
 			handle: "jane",
-			onboarding: true,
 			imageKey,
 			name: "Jane",
 			bio: "Hello",
@@ -412,11 +410,10 @@ describe("page service", () => {
 			imageCrop: null,
 			name: "Jane",
 			bio: "Hello",
-			onboarding: true,
 		});
 	});
 
-	it("PAGE-SERVICE-005 completes onboarding with only a name", async () => {
+	it("PAGE-SERVICE-005 saves a profile with only a name", async () => {
 		let values: Record<string, unknown> | undefined;
 		const query = {
 			set(nextValues: Record<string, unknown>) {
@@ -426,7 +423,7 @@ describe("page service", () => {
 			where() {
 				return query;
 			},
-			returning: async () => [{ id: "page-1", name: "Jane", onboarding: true }],
+			returning: async () => [{ id: "page-1", name: "Jane" }],
 		};
 		const db = withPrimaryFreePlan({
 			query: {
@@ -451,7 +448,6 @@ describe("page service", () => {
 			imageCrop: null,
 			name: "Jane",
 			bio: null,
-			onboarding: true,
 		});
 	});
 
@@ -460,7 +456,7 @@ describe("page service", () => {
 	 * Given: R2 stores an owned image without HTTP metadata.
 	 * When: the owner completes the page with that image key.
 	 * Then: the image key is accepted using the server-generated extension.
-	 * Evidence: page update values contain the image key and onboarding state.
+	 * Evidence: page update values contain the saved image fields.
 	 * Result: Pass | Fail | Blocked | Not Run
 	 */
 	it("PAGE-SERVICE-006 accepts an owned image without R2 HTTP metadata", async () => {
@@ -502,11 +498,10 @@ describe("page service", () => {
 			imageCrop: null,
 			name: "Jane",
 			bio: null,
-			onboarding: true,
 		});
 	});
 
-	it("PAGE-SERVICE-007 saves a draft without completing onboarding", async () => {
+	it("PAGE-SERVICE-007 saves a profile draft", async () => {
 		let values: Record<string, unknown> | undefined;
 		const query = {
 			set(nextValues: Record<string, unknown>) {
@@ -516,9 +511,7 @@ describe("page service", () => {
 			where() {
 				return query;
 			},
-			returning: async () => [
-				{ id: "page-1", name: "Jane", bio: "Hello", onboarding: false },
-			],
+			returning: async () => [{ id: "page-1", name: "Jane", bio: "Hello" }],
 		};
 		const db = withPrimaryFreePlan({
 			query: {
@@ -537,7 +530,7 @@ describe("page service", () => {
 			draft: { name: " Jane ", bio: " Hello " },
 		});
 
-		assert.equal(result.onboarding, false);
+		assert.deepEqual(result, { id: "page-1", name: "Jane", bio: "Hello" });
 		assert.deepEqual(values, { name: "Jane", bio: "Hello" });
 	});
 
@@ -585,9 +578,7 @@ describe("page service", () => {
 			where() {
 				return query;
 			},
-			returning: async () => [
-				{ id: "page-1", imageKey, name: "Jane", onboarding: true },
-			],
+			returning: async () => [{ id: "page-1", imageKey, name: "Jane" }],
 		};
 		const deletedKeys: string[] = [];
 		const db = withPrimaryFreePlan({

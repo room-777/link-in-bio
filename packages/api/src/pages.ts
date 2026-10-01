@@ -32,7 +32,6 @@ export const pageImageKeySchema = v.object({
 export const pageDataSchema = v.object({
 	id: v.string(),
 	handle: v.string(),
-	onboarding: v.boolean(),
 	imageKey: v.nullable(v.string()),
 	imageSource: v.nullable(v.string()),
 	imageCrop: v.nullable(pageImageCropSchema),

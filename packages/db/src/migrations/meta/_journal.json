@@ -50,6 +50,13 @@
 			"when": 1790476084616,
 			"tag": "0006_peaceful_groot",
 			"breakpoints": true
+		},
+		{
+			"idx": 7,
+			"version": "7",
+			"when": 1790855255311,
+			"tag": "0007_cold_william_stryker",
+			"breakpoints": true
 		}
 	]
 }
