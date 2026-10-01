@@ -108,6 +108,16 @@ export default function Footer() {
 								</a>
 							</li>
 							<li>
+								<a
+									href="https://grabbin.openheard.com/"
+									target="_blank"
+									rel="noreferrer"
+									className="hover:text-primary/80"
+								>
+									Roadmap
+								</a>
+							</li>
+							<li>
 								<Link href="/privacy" className="hover:text-primary/80">
 									Privacy
 								</Link>
