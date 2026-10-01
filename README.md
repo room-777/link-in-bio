@@ -142,6 +142,19 @@ cd packages/infra && bun run deploy:production
 
 Source map upload requires `SENTRY_AUTH_TOKEN`, `SENTRY_SERVER_ORG`, `SENTRY_SERVER_PROJECT`, `SENTRY_WEB_ORG`, and `SENTRY_WEB_PROJECT` in the deployment environment. The source maps are used by Sentry only and are deleted after upload, so they are not served by the deployed web or server files.
 
+### App releases
+
+Pushes to `main` create GitHub releases and `vX.Y.Z` tags from Conventional Commit messages:
+
+- `feat:` bumps the feature number (`1.2.0` → `1.3.0`)
+- `fix:` or `perf:` bumps the fix number (`1.2.0` → `1.2.1`)
+- `feat!:` or a `BREAKING CHANGE:` footer bumps the major number (`1.2.0` → `2.0.0`)
+- `docs:`, `chore:`, `refactor:`, `test:`, `build:`, and `ci:` keep the current version
+
+The first qualifying commit creates `v1.0.0`.
+
+The release tag identifies the source revision. It does not confirm that revision has been deployed; production deployment remains `bun run deploy:production`.
+
 ### Production origins
 
 - Required after the first deploy: set `CORS_ORIGIN` in `apps/server/.env` to the exact deployed web origin, such as `https://app.example.com`, then deploy the server again.
