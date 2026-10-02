@@ -45,6 +45,7 @@
 
 	--color-brand: var(--brand);
 	--color-brand-black: var(--brand-black);
+	--color-brand-blue: var(--brand-blue);
 	--color-brand-green: var(--brand-green);
 	--color-brand-gray: var(--brand-gray);
 	--color-brand-light-gray: var(--brand-light-gray);
@@ -61,6 +62,7 @@
 :root {
 	--brand: oklch(0.6556 0.1619 252.68);
 	--brand-black: oklch(0.269 0 0);
+	--brand-blue: oklch(0.6546 0.1771 248.22);
 	--brand-green: oklch(0.8003 0.1821 151.71);
 	--brand-gray: oklch(0.97 0 0);
 	--brand-light-gray: oklch(0.985104 0 0);

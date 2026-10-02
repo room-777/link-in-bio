@@ -39,6 +39,7 @@ import { Plus, Trash } from "lucide-react";
 import { AnimatePresence, motion, useReducedMotion } from "motion/react";
 import { useRouter } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
+import { Verified } from "reicon-react/icons/Verified";
 import { apiClient, getApiErrorMessage } from "@/lib/api-client";
 import { getPageImageUrl } from "@/lib/page-image-url";
 import { PlanDialog } from "../../billing/plan-dialog";
@@ -195,10 +196,19 @@ export default function ManagePagesDialog({
 								<DrawerHeader className="flex-row items-center justify-between gap-3 p-0 text-left">
 									<DrawerTitle>Manage pages</DrawerTitle>
 									{pagesQuery.data && (
-										<DrawerDescription className="m-0 font-medium text-muted-foreground/80 text-xs">
-											{pagesQuery.data.plan.hasAccess
-												? `Pro · ${pagesQuery.data.pages.length} of ${pagesQuery.data.plan.pageLimit} pages`
-												: "Free · 1 page"}
+										<DrawerDescription className="smooth-shadow-ring-xs m-0 flex items-center gap-1 rounded-md px-2 py-1 font-medium text-primary text-sm">
+											{pagesQuery.data.plan.hasAccess ? (
+												<span className="flex items-center gap-1">
+													<Verified
+														aria-hidden="true"
+														weight="Filled"
+														className="size-4 text-brand-blue"
+													/>
+													Pro
+												</span>
+											) : (
+												"Free"
+											)}
 										</DrawerDescription>
 									)}
 								</DrawerHeader>
@@ -206,10 +216,19 @@ export default function ManagePagesDialog({
 								<DialogHeader className="flex-row items-center justify-between gap-3">
 									<DialogTitle>Manage pages</DialogTitle>
 									{pagesQuery.data && (
-										<DialogDescription className="m-0 font-medium text-muted-foreground/80 text-xs">
-											{pagesQuery.data.plan.hasAccess
-												? `Pro · ${pagesQuery.data.pages.length} of ${pagesQuery.data.plan.pageLimit} pages`
-												: "Free · 1 page"}
+										<DialogDescription className="smooth-shadow-ring-xs m-0 flex items-center gap-1 rounded-md px-2 py-1 font-medium text-primary text-sm">
+											{pagesQuery.data.plan.hasAccess ? (
+												<span className="flex items-center gap-1">
+													<Verified
+														aria-hidden="true"
+														weight="Filled"
+														className="size-4 text-brand-blue"
+													/>
+													Pro
+												</span>
+											) : (
+												"Free"
+											)}
 										</DialogDescription>
 									)}
 								</DialogHeader>
@@ -239,7 +258,7 @@ export default function ManagePagesDialog({
 									pagesQuery.data?.pages.map((page) => (
 										<div
 											key={page.id}
-											className="relative w-full overflow-hidden rounded-2xl"
+											className="relative w-full overflow-hidden rounded-xl"
 										>
 											<motion.div
 												onPointerDownCapture={() => {
@@ -280,7 +299,7 @@ export default function ManagePagesDialog({
 														: info.offset.x <= -24 || info.velocity.x <= -500;
 													setRevealedHandle(shouldReveal ? page.handle : null);
 												}}
-												className={`relative z-10 flex min-h-12 w-full touch-pan-y items-center gap-2 rounded-2xl px-3 py-3 transition-colors duration-150 motion-reduce:transition-none ${revealedHandle === page.handle ? "bg-muted/80" : "bg-popover"}`}
+												className={`relative z-10 flex min-h-12 w-full touch-pan-y items-center gap-2 rounded-xl px-3 py-3 transition-colors duration-150 hover:bg-secondary motion-reduce:transition-none ${revealedHandle === page.handle ? "bg-muted/80" : "bg-popover"}`}
 											>
 												<Avatar size="lg" className="size-10 outline-depth">
 													<AvatarImage
@@ -321,7 +340,7 @@ export default function ManagePagesDialog({
 											<Button
 												variant="ghost"
 												aria-label={`Delete /${page.handle}`}
-												className="absolute top-1/2 right-0 z-0 grid h-9! w-9! min-w-0 shrink-0 -translate-y-1/2 place-items-center rounded-full bg-destructive p-0 text-white outline-depth hover:bg-destructive/80 hover:text-white"
+												className="absolute top-1/2 right-0 z-0 grid h-9! w-9! min-w-0 shrink-0 -translate-y-1/2 place-items-center rounded-full bg-destructive p-0 text-white outline-depth -outline-offset-2! hover:bg-destructive/80 hover:text-white"
 												disabled={busyHandle !== null}
 												onClick={() => setDeletePageHandle(page.handle)}
 												onFocus={(event) => {
@@ -347,9 +366,8 @@ export default function ManagePagesDialog({
 							<div className="flex justify-center">
 								<Button
 									aria-label="Add page"
-									className="relative size-12 rounded-full after:absolute after:-inset-1"
+									className="relative after:absolute after:-inset-1"
 									variant="secondary"
-									size="icon-lg"
 									disabled={
 										!pagesQuery.data ||
 										(pagesQuery.data.plan.hasAccess &&
@@ -360,8 +378,16 @@ export default function ManagePagesDialog({
 								>
 									<Plus
 										aria-hidden="true"
-										className="size-5 text-muted-foreground/80"
+										className="size-4 text-muted-foreground/80"
 									/>
+									{pagesQuery.data && (
+										<span className="text-muted-foreground/80 text-sm">
+											{pagesQuery.data.pages.length} of{" "}
+											{pagesQuery.data.plan.hasAccess
+												? pagesQuery.data.plan.pageLimit
+												: 1}
+										</span>
+									)}
 								</Button>
 							</div>
 						</div>

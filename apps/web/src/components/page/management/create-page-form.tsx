@@ -19,7 +19,7 @@ import Loading from "@grabbin/ui/components/loading";
 import { Marquee } from "@grabbin/ui/components/marquee";
 import { cn } from "@grabbin/ui/lib/utils";
 import { useQuery } from "@tanstack/react-query";
-import { Check, ChevronLeft, Copy, Globe } from "lucide-react";
+import { Check, Copy, Globe } from "lucide-react";
 import { AnimatePresence, motion, useReducedMotion } from "motion/react";
 import { useRouter } from "next/navigation";
 import { Activity, type FormEvent, useEffect, useState } from "react";
@@ -217,7 +217,7 @@ export function PageHandleForm({
 				aria-hidden="true"
 				className={
 					compact
-						? "w-full min-[90rem]:max-w-sm"
+						? "my-auto w-full min-[90rem]:max-w-sm"
 						: "my-6 w-full min-[90rem]:max-w-sm"
 				}
 			>
@@ -370,17 +370,12 @@ export default function CreatePageForm({
 				>
 					{isDialog && onBack && activity !== "complete" && (
 						<Button
-							variant="ghost"
-							size="icon-lg"
-							className="-ml-1 self-start rounded-full"
-							aria-label="Back to manage pages"
+							variant="outline"
+							size="xl"
+							className="-ml-1 self-start rounded-md text-base"
 							onClick={onBack}
 						>
-							<ChevronLeft
-								aria-hidden="true"
-								className="size-8"
-								strokeWidth={2}
-							/>
+							Cancel
 						</Button>
 					)}
 					<div className={isDialog ? "min-h-0 flex-1" : "min-[90rem]:max-w-sm"}>
