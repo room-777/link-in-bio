@@ -30,6 +30,7 @@ import { forwardRef, useEffect, useState } from "react";
 import { authClient, getAuthErrorMessage } from "@/lib/auth-client";
 import { getSignInHref } from "@/lib/auth-redirect";
 import { getPublicViewsQueryOptions } from "@/lib/public-views-api";
+import AccountDialog from "../management/account-dialog";
 import ChangeHandleDialog from "../management/change-handle-dialog";
 import DeleteAccountDialog from "../management/delete-account-dialog";
 import ManagePagesDialog from "../management/manage-pages-dialog";
@@ -141,6 +142,7 @@ function OwnerFooter({
 	const [isItemActive, setIsItemActive] = useState(false);
 	const [isHandleDialogOpen, setIsHandleDialogOpen] = useState(false);
 	const [isManagePagesOpen, setIsManagePagesOpen] = useState(false);
+	const [isAccountDialogOpen, setIsAccountDialogOpen] = useState(false);
 	const [isOpen, setIsOpen] = useState(false);
 	const [isSigningOut, setIsSigningOut] = useState(false);
 	const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
@@ -251,14 +253,32 @@ function OwnerFooter({
 						<Button
 							variant="ghost"
 							className="relative z-10 h-16 w-full justify-start px-5 hover:bg-transparent"
-							disabled={isSigningOut}
-							onClick={handleSignOut}
+							onClick={() => {
+								setIsOpen(false);
+								setIsAccountDialogOpen(true);
+							}}
 							onPointerEnter={() => {
 								setActiveItem(2);
 								setIsItemActive(true);
 							}}
 							onFocus={() => {
 								setActiveItem(2);
+								setIsItemActive(true);
+							}}
+						>
+							Account
+						</Button>
+						<Button
+							variant="ghost"
+							className="relative z-10 h-16 w-full justify-start px-5 hover:bg-transparent"
+							disabled={isSigningOut}
+							onClick={handleSignOut}
+							onPointerEnter={() => {
+								setActiveItem(3);
+								setIsItemActive(true);
+							}}
+							onFocus={() => {
+								setActiveItem(3);
 								setIsItemActive(true);
 							}}
 						>
@@ -272,11 +292,11 @@ function OwnerFooter({
 								setIsDeleteDialogOpen(true);
 							}}
 							onPointerEnter={() => {
-								setActiveItem(3);
+								setActiveItem(4);
 								setIsItemActive(true);
 							}}
 							onFocus={() => {
-								setActiveItem(3);
+								setActiveItem(4);
 								setIsItemActive(true);
 							}}
 						>
@@ -296,6 +316,10 @@ function OwnerFooter({
 			<ManagePagesDialog
 				open={isManagePagesOpen}
 				onOpenChange={setIsManagePagesOpen}
+			/>
+			<AccountDialog
+				open={isAccountDialogOpen}
+				onOpenChange={setIsAccountDialogOpen}
 			/>
 			<DeleteAccountDialog
 				onOpenChange={setIsDeleteDialogOpen}
