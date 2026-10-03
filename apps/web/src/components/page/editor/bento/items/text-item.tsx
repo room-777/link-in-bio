@@ -3,6 +3,7 @@
 import type { PresetName } from "@grabbin/bento-layout";
 import { useEffect, useRef } from "react";
 
+import { useBentoLineHeight } from "@/hooks/use-bento-line-height";
 import type { BentoCommand, BentoItem } from "@/lib/bento/bento-types";
 import { ExternalAction, textSizeClassByPreset } from "./shared";
 
@@ -22,6 +23,7 @@ export function TextItem({
 	onCommand?: (command: BentoCommand) => void;
 }) {
 	const textAreaRef = useRef<HTMLTextAreaElement>(null);
+	const { viewportRef, lineHeight } = useBentoLineHeight(8);
 	const autoFocusHandledRef = useRef(false);
 	useEffect(() => {
 		if (!autoFocus) {
@@ -49,7 +51,8 @@ export function TextItem({
 		>
 			<div className="relative z-10 flex min-h-0 flex-1 items-stretch justify-between gap-3">
 				<div
-					className={`flex min-h-0 min-w-0 flex-1 flex-col ${verticalAlignClass}`}
+					ref={viewportRef}
+					className={`flex min-h-0 min-w-0 flex-1 flex-col ${verticalAlignClass} ${textSizeClassByPreset[preset]}`}
 				>
 					<textarea
 						ref={textAreaRef}
@@ -58,7 +61,7 @@ export function TextItem({
 						aria-label="Text content"
 						readOnly={mode === "view"}
 						className={`bento-text-input grid-action field-sizing-content max-h-full min-h-0 w-full cursor-text! resize-none overflow-y-auto overscroll-contain whitespace-pre-wrap break-all rounded-lg border-0 bg-transparent p-1 px-2 text-current outline-none placeholder:text-current/45 focus-visible:ring-0 ${textSizeClassByPreset[preset]}`}
-						style={{ textAlign: item.style.textAlign ?? "left" }}
+						style={{ textAlign: item.style.textAlign ?? "left", lineHeight }}
 						onChange={(event) =>
 							onCommand?.({
 								type: "update-data",

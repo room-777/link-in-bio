@@ -364,7 +364,7 @@ export function MapItem({
 		<div
 			ref={mapFrameRef}
 			onPointerDownCapture={handleGridDragStart}
-			className={`relative size-full overflow-hidden rounded-[inherit] bg-secondary ${mapReady ? "surface-line" : ""} ${interactive ? "grid-action cursor-grab" : ""}`}
+			className={`relative size-full overflow-hidden rounded-[inherit] bg-secondary outline-depth ${mapReady ? "surface-line" : ""} ${interactive ? "grid-action cursor-grab" : ""}`}
 			data-bento-map-location-editing={interactive ? "true" : undefined}
 		>
 			<div className="absolute inset-0">
@@ -548,7 +548,6 @@ export function MapItem({
 					</div>
 				)}
 			</div>
-			<div className="pointer-events-none relative z-10 size-full rounded-[inherit] outline-depth" />
 			{geolocationError ? (
 				<output
 					aria-live="polite"

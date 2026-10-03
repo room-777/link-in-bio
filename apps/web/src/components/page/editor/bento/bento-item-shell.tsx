@@ -1,6 +1,9 @@
 "use client";
 
-import { inferPresetFromLayout } from "@grabbin/bento-layout";
+import {
+	getBentoItemRadius,
+	inferPresetFromLayout,
+} from "@grabbin/bento-layout";
 import { Button } from "@grabbin/ui/components/button";
 import { TrashIcon } from "lucide-react";
 import { type CSSProperties, useEffect, useRef, useState } from "react";
@@ -104,16 +107,26 @@ export function BentoItemShell({
 		: undefined;
 	const cardBackground =
 		getBackgroundColor(item.style.backgroundColor) ?? linkTheme?.cardBackground;
+	const publicLink =
+		mode === "view" && item.type === "link"
+			? {
+					href: item.data.url,
+					title: item.data.metadata?.title?.trim() || item.data.url,
+				}
+			: undefined;
+	const Card = publicLink ? "a" : "div";
+	const cardRadius = getBentoItemRadius(item.type, preset);
 	const cardStyle: CSSProperties = {
-		backgroundColor: cardBackground,
+		borderRadius: cardRadius,
+		backgroundColor: publicLink ? undefined : cardBackground,
 		...(item.type === "text"
 			? ({
 					"--text-card-background": cardBackground ?? "var(--background)",
 				} as CSSProperties)
 			: {}),
-		...(linkTheme
+		...(item.type === "link"
 			? ({
-					"--link-card-background": linkTheme.cardBackground,
+					"--link-card-background": cardBackground ?? "var(--background)",
 				} as CSSProperties)
 			: {}),
 		color:
@@ -121,7 +134,6 @@ export function BentoItemShell({
 				? getForegroundColor(item.style.backgroundColor)
 				: undefined,
 	};
-	const cardRadiusClass = "rounded-2xl";
 	const backgroundColor = item.style.backgroundColor?.toLowerCase();
 	const isWhiteBackground =
 		backgroundColor === "bg-white" ||
@@ -170,9 +182,13 @@ export function BentoItemShell({
 	};
 	const content = (
 		<>
-			<div
+			<Card
 				data-bento-item-card="true"
-				className={`bento-item-card smooth-shadow-ring-sm relative size-full overflow-hidden ${cardRadiusClass} bg-background ${hasTextSurface ? "surface-line" : ""} ${linkTheme ? "link-card-themed" : ""} ${cardClassName ?? ""}`}
+				href={publicLink?.href}
+				target={publicLink ? "_blank" : undefined}
+				rel={publicLink ? "noreferrer" : undefined}
+				aria-label={publicLink ? `Open ${publicLink.title}` : undefined}
+				className={`bento-item-card relative size-full overflow-hidden bg-background ${publicLink ? "bento-link-card block cursor-pointer! touch-manipulation outline-none focus-visible:outline-2 focus-visible:outline-ring focus-visible:outline-offset-2" : ""} ${hasTextSurface ? "surface-line" : ""} ${linkTheme ? "link-card-themed" : ""} ${cardClassName ?? ""}`}
 				style={cardStyle}
 			>
 				<div className="relative z-10 size-full min-h-0 rounded-[inherit]">
@@ -189,7 +205,7 @@ export function BentoItemShell({
 						<RuntimeFallback item={item} />
 					)}
 				</div>
-			</div>
+			</Card>
 			{mode === "edit" && onCommand ? (
 				<>
 					<Button
@@ -234,7 +250,8 @@ export function BentoItemShell({
 				}
 				scheduleCloseControls();
 			}}
-			className={`group/bento-item bento-item-pop-in relative size-full overflow-visible ${cardRadiusClass} transition-[z-index] focus-within:z-50 hover:z-50 ${isEntering ? "is-entering" : ""} ${isExiting ? "is-exiting" : ""}`}
+			className={`group/bento-item bento-item-pop-in relative size-full overflow-visible transition-[z-index] focus-within:z-50 hover:z-50 ${isEntering ? "is-entering" : ""} ${isExiting ? "is-exiting" : ""}`}
+			style={{ borderRadius: cardRadius }}
 		>
 			{item.type === "map" ? (
 				<MapItemInteractionProvider

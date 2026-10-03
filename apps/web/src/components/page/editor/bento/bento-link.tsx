@@ -1,7 +1,8 @@
 import type { PageItemLinkPresentation, PageItemResponse } from "@grabbin/api";
 import type { PresetName } from "@grabbin/bento-layout";
-import { Button } from "@grabbin/ui/components/button";
+import { Button, buttonVariants } from "@grabbin/ui/components/button";
 import { Textarea } from "@grabbin/ui/components/textarea";
+import { cn } from "@grabbin/ui/lib/utils";
 import { CircleFadingArrowUp, Trash, TriangleIcon } from "lucide-react";
 import { AnimatePresence, motion } from "motion/react";
 import {
@@ -11,6 +12,7 @@ import {
 	useRef,
 	useState,
 } from "react";
+import { useBentoLineHeight } from "@/hooks/use-bento-line-height";
 import type { BentoCommand } from "@/lib/bento/bento-types";
 import { getPageImageUrl } from "@/lib/page-image-url";
 import {
@@ -20,6 +22,7 @@ import {
 
 function LinkAction({
 	href,
+	mode,
 	label,
 	detail,
 	icon,
@@ -29,6 +32,7 @@ function LinkAction({
 	className: extraClassName,
 }: {
 	href: string;
+	mode: "view" | "edit";
 	label: string;
 	detail?: string;
 	icon?: ReactNode;
@@ -41,6 +45,53 @@ function LinkAction({
 	const className = `cursor-pointer! self-start shrink-0 rounded-md px-3 text-sm! h-8 gap-1 shadow-none transition-all duration-150 ease-in-out focus-visible:ring-ring/30 ${
 		!hasTheme ? "border border-border bg-[#f6f8fa] hover:bg-[#f6f8fa]/80" : ""
 	} ${extraClassName ?? ""}`;
+	const variant =
+		actionVariant === "outline"
+			? "outline"
+			: hasTheme
+				? "default"
+				: "secondary";
+	const style: CSSProperties = {
+		...(hasTheme
+			? { backgroundColor: actionBackground, color: actionText }
+			: {}),
+		boxShadow: "none",
+	};
+	const content = (
+		<>
+			{icon ? (
+				<span
+					aria-hidden="true"
+					className="inline-flex size-3 shrink-0 items-center justify-center"
+				>
+					{icon}
+				</span>
+			) : null}
+			<span>{label}</span>
+			{detail ? (
+				<span
+					className={
+						hasTheme ? "ml-1 opacity-70" : "ml-1 text-muted-foreground"
+					}
+				>
+					{detail}
+				</span>
+			) : null}
+		</>
+	);
+	if (mode === "view") {
+		return (
+			<span
+				className={cn(
+					buttonVariants({ variant, size: "sm", className }),
+					"motion-safe:active:not-aria-[haspopup]:scale-100",
+				)}
+				style={style}
+			>
+				{content}
+			</span>
+		);
+	}
 	return (
 		<Button
 			render={
@@ -51,44 +102,13 @@ function LinkAction({
 					aria-label={detail ? [label, detail].join(" ") : label}
 					className="font-medium"
 				>
-					{icon ? (
-						<span
-							aria-hidden="true"
-							className="inline-flex size-3 shrink-0 items-center justify-center"
-						>
-							{icon}
-						</span>
-					) : null}
-					<span>{label}</span>
-					{detail ? (
-						<span
-							className={
-								hasTheme ? "ml-1 opacity-70" : "ml-1 text-muted-foreground"
-							}
-						>
-							{detail}
-						</span>
-					) : null}
+					{content}
 				</a>
 			}
 			nativeButton={false}
-			variant={
-				actionVariant === "outline"
-					? "outline"
-					: hasTheme
-						? "default"
-						: "secondary"
-			}
+			variant={variant}
 			size="sm"
-			style={{
-				...(hasTheme
-					? {
-							backgroundColor: actionBackground,
-							color: actionText,
-						}
-					: {}),
-				boxShadow: "none",
-			}}
+			style={style}
 			className={className}
 		/>
 	);
@@ -275,6 +295,7 @@ function LinkPreviewImage({
 	const [imageLoaded, setImageLoaded] = useState(false);
 	const [placeholderFailed, setPlaceholderFailed] = useState(false);
 	const [transformedImageFailed, setTransformedImageFailed] = useState(false);
+	const [imageFailed, setImageFailed] = useState(false);
 	const transformedImageUrl = getPageMediaUrl(imageUrl, "image");
 	const imageSrc = transformedImageFailed ? imageUrl : transformedImageUrl;
 	const placeholderUrl = imagePlaceholderDataUrl
@@ -300,7 +321,7 @@ function LinkPreviewImage({
 	return (
 		<div
 			ref={imageRef}
-			className="relative size-full overflow-hidden rounded-[inherit] bg-muted/30"
+			className="relative size-full overflow-hidden rounded-[inherit] bg-muted/30 outline-depth"
 		>
 			{placeholderUrl && !placeholderFailed ? (
 				<img
@@ -312,15 +333,16 @@ function LinkPreviewImage({
 					onError={() => setPlaceholderFailed(true)}
 				/>
 			) : null}
-			{hasEnteredViewport ? (
+			{hasEnteredViewport && !imageFailed ? (
 				<img
 					alt=""
-					className={`absolute inset-0 size-full object-cover outline-depth transition-opacity ${!placeholderUrl || placeholderFailed || imageLoaded ? "opacity-100" : "opacity-0"}`}
+					className={`absolute inset-0 size-full object-cover transition-opacity ${!placeholderUrl || placeholderFailed || imageLoaded ? "opacity-100" : "opacity-0"}`}
 					loading="lazy"
 					src={imageSrc}
 					onLoad={() => setImageLoaded(true)}
 					onError={() => {
 						if (imageSrc !== imageUrl) setTransformedImageFailed(true);
+						else setImageFailed(true);
 					}}
 				/>
 			) : null}
@@ -437,10 +459,13 @@ function LinkImageArea({
 function LinkBadge({
 	item,
 	presentation,
+	mode,
 }: {
 	item: Extract<PageItemResponse, { type: "link" }>;
 	presentation?: PageItemLinkPresentation;
+	mode: "view" | "edit";
 }) {
+	const Badge = mode === "view" ? "span" : "a";
 	const faviconUrl = item.data.metadata?.faviconUrl;
 	const providerLabel = presentation?.providerLabel ?? "Link";
 	const [failedFaviconUrl, setFailedFaviconUrl] = useState<string>();
@@ -449,36 +474,33 @@ function LinkBadge({
 		? `${faviconUrl}?v=3`
 		: faviconUrl;
 	return faviconUrl && !faviconFailed ? (
-		<a
-			href={item.data.url}
-			target="_blank"
-			rel="noreferrer"
-			aria-label={`Open ${providerLabel}`}
-			className="inline-flex size-8 shrink-0 cursor-pointer! items-center justify-center rounded-md transition-transform hover:scale-105 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/60"
+		<Badge
+			href={mode === "edit" ? item.data.url : undefined}
+			target={mode === "edit" ? "_blank" : undefined}
+			rel={mode === "edit" ? "noreferrer" : undefined}
+			aria-label={mode === "edit" ? `Open ${providerLabel}` : undefined}
+			className="relative inline-flex size-8 shrink-0 cursor-pointer! items-center justify-center overflow-hidden rounded-md bg-transparent outline-depth transition-transform hover:scale-105 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/60"
 		>
 			<img
 				src={faviconSrc}
 				alt=""
-				className="size-full object-contain"
+				className="size-full rounded-[inherit] bg-transparent object-contain"
 				onError={() => setFailedFaviconUrl(faviconUrl)}
 			/>
-		</a>
+		</Badge>
 	) : (
-		<a
-			href={item.data.url}
-			target="_blank"
-			rel="noreferrer"
-			aria-label={`Open ${providerLabel}`}
-			className="inline-flex size-11 shrink-0 cursor-pointer! items-center justify-center rounded-2xl px-2 text-center font-semibold text-xs transition-transform hover:scale-105 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/60"
-			style={
-				presentation
-					? { backgroundColor: presentation.cardBackground }
-					: undefined
-			}
+		<Badge
+			href={mode === "edit" ? item.data.url : undefined}
+			target={mode === "edit" ? "_blank" : undefined}
+			rel={mode === "edit" ? "noreferrer" : undefined}
+			aria-label={mode === "edit" ? `Open ${providerLabel}` : undefined}
+			className="relative inline-flex size-11 shrink-0 cursor-pointer! items-center justify-center overflow-hidden rounded-2xl bg-transparent px-2 text-center font-semibold text-xs outline-depth transition-transform hover:scale-105 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/60"
 		>
 			<span aria-hidden="true">{providerLabel.slice(0, 1).toUpperCase()}</span>
-			<span className="sr-only">Open {providerLabel}</span>
-		</a>
+			{mode === "edit" ? (
+				<span className="sr-only">Open {providerLabel}</span>
+			) : null}
+		</Badge>
 	);
 }
 
@@ -498,47 +520,58 @@ function LinkTitle({
 	const isSquareSmall = preset === "squareSmall";
 	const isTall = preset === "squareLarge" || preset === "portrait";
 	const [value, setValue] = useState(title);
+	const { viewportRef, lineHeight } = useBentoLineHeight();
 	useEffect(() => setValue(title), [title]);
-	const titleClassName = `field-sizing-fixed block min-h-0 w-full min-w-24 max-w-full rounded-sm px-1 py-0 font-medium text-foreground text-sm ${
+	const titleClassName = `field-sizing-fixed block min-h-0 w-full min-w-24 max-w-full rounded-sm px-1 py-0 font-normal text-foreground text-sm ${
 		isHalfBanner
 			? "h-8 max-h-8 overflow-hidden whitespace-nowrap leading-8"
-			: isTall
-				? "h-20 max-h-20 leading-5"
-				: "max-h-full leading-5"
-	} ${isLandscape || isSquareSmall || isTall ? "flex-1" : ""}`;
+			: "h-full leading-5"
+	}`;
+	const titleViewportClassName = `min-h-0 min-w-0 w-full text-sm ${isHalfBanner ? "leading-8" : "leading-5"} ${
+		isHalfBanner ? "h-8" : isTall ? "max-h-20 flex-1" : "flex-1"
+	}`;
+
 	if (mode === "edit") {
 		return (
-			<Textarea
-				aria-label="Link title"
-				rows={1}
-				value={value}
-				wrap={isHalfBanner ? "off" : "soft"}
-				onChange={(event) => setValue(event.target.value)}
-				onBlur={(event) => {
-					event.currentTarget.scrollTo({
-						top: 0,
-						left: 0,
-						behavior: "smooth",
-					});
-					const nextValue = value.trim();
-					if (nextValue) onCommit(nextValue);
-				}}
-				className={`link-title-input ${isHalfBanner ? "" : "-ml-1"} cursor-text! resize-none border-0 bg-transparent text-current outline-none focus-visible:ring-0 ${titleClassName} overflow-y-auto overflow-x-hidden overscroll-y-contain`}
-				style={isHalfBanner ? { width: "100%", maxWidth: "100%" } : undefined}
-			/>
+			<div ref={viewportRef} className={titleViewportClassName}>
+				<Textarea
+					aria-label="Link title"
+					rows={1}
+					value={value}
+					wrap={isHalfBanner ? "off" : "soft"}
+					style={{
+						lineHeight,
+						...(isHalfBanner ? { width: "100%", maxWidth: "100%" } : {}),
+					}}
+					onChange={(event) => setValue(event.target.value)}
+					onBlur={(event) => {
+						event.currentTarget.scrollTo({
+							top: 0,
+							left: 0,
+							behavior: "smooth",
+						});
+						const nextValue = value.trim();
+						if (nextValue) onCommit(nextValue);
+					}}
+					className={`link-title-input ${isHalfBanner ? "" : "-ml-1"} cursor-text! resize-none border-0 bg-transparent text-current outline-none focus-visible:ring-0 ${titleClassName} overflow-y-auto overflow-x-hidden overscroll-y-contain`}
+				/>
+			</div>
 		);
 	}
 	return (
-		<div
-			className={`wrap-break-word ${titleClassName} ${
-				isHalfBanner
-					? "truncate"
-					: isLandscape || isSquareSmall || isTall
-						? "no-scrollbar overflow-y-auto overscroll-y-contain whitespace-pre-line"
-						: "truncate"
-			}`}
-		>
-			{title}
+		<div ref={viewportRef} className={titleViewportClassName}>
+			<div
+				style={{ lineHeight }}
+				className={`wrap-break-word ${titleClassName} ${
+					isHalfBanner
+						? "truncate"
+						: isLandscape || isSquareSmall || isTall
+							? "no-scrollbar overflow-y-auto overscroll-y-contain whitespace-pre-line"
+							: "truncate"
+				}`}
+			>
+				{title}
+			</div>
 		</div>
 	);
 }
@@ -564,12 +597,13 @@ export function LinkItem({
 	const linkCardClassName = presentation?.cardBackground
 		? "link-card-themed"
 		: "";
-	const linkCardStyle = presentation?.cardBackground
-		? ({
-				backgroundColor: presentation.cardBackground,
-				"--link-card-background": presentation.cardBackground,
-			} as CSSProperties)
-		: undefined;
+	const linkCardStyle =
+		mode === "edit" && presentation?.cardBackground
+			? ({
+					backgroundColor: presentation.cardBackground,
+					"--link-card-background": presentation.cardBackground,
+				} as CSSProperties)
+			: undefined;
 	const ownedImageUrl =
 		typeof item.data.imageKey === "string"
 			? getPageImageUrl(item.data.imageKey)
@@ -616,6 +650,7 @@ export function LinkItem({
 		});
 	};
 	const linkActionProps = {
+		mode,
 		label: presentation?.actionLabel ?? "Open",
 		detail: presentation?.actionDetail,
 		icon: isProductHuntUpvote ? (
@@ -629,7 +664,7 @@ export function LinkItem({
 	const isTall = preset === "squareLarge" || preset === "portrait";
 	const content = (
 		<div
-			className={`flex min-h-0 min-w-0 flex-col items-start gap-2 ${
+			className={`flex min-h-0 min-w-0 flex-col items-start gap-3 ${
 				isLandscape
 					? "h-full flex-4 items-stretch justify-between"
 					: isTall
@@ -639,11 +674,11 @@ export function LinkItem({
 			style={linkCardStyle}
 		>
 			<div
-				className={`flex min-h-0 min-w-0 flex-col items-start gap-1 ${
+				className={`flex min-h-0 min-w-0 flex-col items-start gap-2 ${
 					isLandscape ? "w-full flex-1" : isTall ? "flex-1 items-stretch" : ""
 				}`}
 			>
-				<LinkBadge item={item} presentation={presentation} />
+				<LinkBadge item={item} presentation={presentation} mode={mode} />
 				<LinkTitle
 					title={title}
 					preset={preset}
@@ -661,11 +696,11 @@ export function LinkItem({
 		if (preset === "squareSmall") {
 			return (
 				<div
-					className={`flex size-full min-h-0 flex-col items-start justify-between gap-2 p-4 ${linkCardClassName}`}
+					className={`flex size-full min-h-0 flex-col items-start justify-between gap-3 p-5 ${linkCardClassName}`}
 					style={linkCardStyle}
 				>
-					<div className="flex min-h-0 w-full flex-1 flex-col gap-1">
-						<LinkBadge item={item} presentation={presentation} />
+					<div className="flex min-h-0 w-full flex-1 flex-col gap-2">
+						<LinkBadge item={item} presentation={presentation} mode={mode} />
 						<div className="flex min-h-0 min-w-0 flex-1 flex-col">
 							<LinkTitle
 								title={title}
@@ -685,11 +720,11 @@ export function LinkItem({
 		if (preset === "halfBanner") {
 			return (
 				<div
-					className={`flex size-full min-h-0 items-center justify-between gap-1 p-4 ${linkCardClassName}`}
+					className={`flex size-full min-h-0 items-center justify-between gap-3 p-5 ${linkCardClassName}`}
 					style={linkCardStyle}
 				>
-					<div className="flex min-w-0 flex-1 items-center gap-1">
-						<LinkBadge item={item} presentation={presentation} />
+					<div className="flex min-w-0 flex-1 items-center gap-2">
+						<LinkBadge item={item} presentation={presentation} mode={mode} />
 						<div className="min-h-0 min-w-0 flex-1">
 							<LinkTitle
 								title={title}
@@ -712,7 +747,7 @@ export function LinkItem({
 
 		return (
 			<div
-				className={`flex size-full min-h-0 min-w-0 gap-3 p-4 ${
+				className={`flex size-full min-h-0 min-w-0 gap-3 p-5 ${
 					isLandscape ? "flex-row-reverse items-stretch" : "flex-col"
 				} ${linkCardClassName}`}
 				style={linkCardStyle}
@@ -725,7 +760,9 @@ export function LinkItem({
 					<LinkImageArea
 						imageUrls={imageUrls}
 						imagePlaceholderDataUrl={imagePlaceholderDataUrl}
-						backgroundColor={presentation?.cardBackground}
+						backgroundColor={
+							mode === "edit" ? presentation?.cardBackground : undefined
+						}
 						flexClassName="flex-4"
 						mode={mode}
 						hasImage={hasImage}
@@ -746,7 +783,9 @@ export function LinkItem({
 					<LinkImageArea
 						imageUrls={imageUrls}
 						imagePlaceholderDataUrl={imagePlaceholderDataUrl}
-						backgroundColor={presentation?.cardBackground}
+						backgroundColor={
+							mode === "edit" ? presentation?.cardBackground : undefined
+						}
 						flexClassName="flex-3"
 						mode={mode}
 						hasImage={hasImage}
