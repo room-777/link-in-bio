@@ -3,13 +3,15 @@
 import type { BentoBreakpoint } from "@grabbin/bento-layout";
 import {
 	bentoContainerPadding,
-	bentoMargin,
-	bentoRowHeight,
+	bentoGridMetrics,
+	getBentoItemRadius,
 	getBentoWidth,
 	getColumns,
+	inferPresetFromLayout,
 	validateBentoLayout,
 } from "@grabbin/bento-layout";
 import { motion, useAnimationControls, useReducedMotion } from "motion/react";
+import type { CSSProperties } from "react";
 import {
 	useCallback,
 	useEffect,
@@ -50,7 +52,7 @@ type BentoSectionProps = {
 	onLinkImageSelect?: (itemId: string, file: File) => void | Promise<void>;
 };
 
-const WIDE_CONTAINER_MIN_WIDTH = getBentoWidth(getColumns("wide"));
+const WIDE_CONTAINER_MIN_WIDTH = getBentoWidth("wide");
 const BENTO_ITEM_EXIT_DURATION = 180;
 const BENTO_SECTION_ENTRY_START = {
 	opacity: 0,
@@ -95,7 +97,7 @@ export default function BentoSection({
 	}, [mounted, onReady]);
 	const breakpoint = requestedBreakpoint ?? measuredBreakpoint;
 	const cols = getColumns(breakpoint);
-	const bentoWidth = getBentoWidth(cols);
+	const bentoWidth = getBentoWidth(breakpoint);
 	const bottomPaddingClass =
 		mode === "edit"
 			? breakpoint === "wide"
@@ -272,6 +274,17 @@ export default function BentoSection({
 			})),
 		[breakpoint, displayItems],
 	);
+	const draggingItem = displayItems.find((item) => item.id === draggingItemId);
+	const draggingPreset = draggingItem
+		? inferPresetFromLayout(
+				draggingItem.type,
+				draggingItem.layouts[breakpoint],
+				breakpoint,
+			)
+		: null;
+	const placeholderRadius = draggingItem
+		? getBentoItemRadius(draggingItem.type, draggingPreset)
+		: undefined;
 	const handleDragStart: EventCallback = useCallback(
 		(currentLayout, oldItem, newItem, placeholder, event, element) => {
 			dragMotion.onDragStart(
@@ -356,13 +369,20 @@ export default function BentoSection({
 					]
 						.filter(Boolean)
 						.join(" ")}
-					style={{ width: bentoWidth }}
+					style={
+						{
+							width: bentoWidth,
+							"--bento-placeholder-radius": placeholderRadius
+								? `${placeholderRadius}px`
+								: undefined,
+						} as CSSProperties
+					}
 					layout={layout}
 					width={bentoWidth}
 					gridConfig={{
 						cols,
-						rowHeight: bentoRowHeight,
-						margin: bentoMargin,
+						rowHeight: bentoGridMetrics[breakpoint].rowHeight,
+						margin: bentoGridMetrics[breakpoint].margin,
 						containerPadding: bentoContainerPadding,
 					}}
 					dragConfig={{
@@ -379,6 +399,12 @@ export default function BentoSection({
 					onDragStop={mode === "edit" ? handleDragStop : undefined}
 				>
 					{displayItems.map((item) => {
+						const preset = inferPresetFromLayout(
+							item.type,
+							item.layouts[breakpoint],
+							breakpoint,
+						);
+						const itemRadius = getBentoItemRadius(item.type, preset);
 						const itemShell = (
 							<BentoItemShell
 								item={item}
@@ -406,7 +432,8 @@ export default function BentoSection({
 										placeholder={
 											<div
 												aria-hidden="true"
-												className="size-full rounded-2xl bg-secondary"
+												className="size-full bg-secondary"
+												style={{ borderRadius: itemRadius }}
 											/>
 										}
 									>

@@ -6,6 +6,9 @@ export const bentoColumnCounts = {
 } as const;
 
 export type BentoBreakpoint = keyof typeof bentoColumnCounts;
+
+// Same 1260px boundary as the page-wide CSS breakpoint (78.75rem).
+export const bentoWideMediaQuery = "(min-width: 78.75rem)";
 export type PresetName =
 	| "fullBanner"
 	| "halfBanner"
@@ -14,6 +17,23 @@ export type PresetName =
 	| "squareLarge"
 	| "portrait";
 
+const bentoItemRadius = {
+	default: 24,
+	section: 20,
+	halfBanner: 20,
+	squareLarge: 28,
+} as const;
+
+export function getBentoItemRadius(
+	type: ItemType,
+	preset: PresetName | null,
+): number {
+	if (type === "section") return bentoItemRadius.section;
+	if (preset === "halfBanner") return bentoItemRadius.halfBanner;
+	if (preset === "squareLarge") return bentoItemRadius.squareLarge;
+	return bentoItemRadius.default;
+}
+
 export type BentoLayoutItem = {
 	id: string;
 	layout: ItemLayout;
@@ -21,14 +41,21 @@ export type BentoLayoutItem = {
 
 export type BentoLayoutMap = Record<string, ItemLayout>;
 
-export const bentoMargin: [number, number] = [36, 36];
-export const bentoRowHeight = 68;
+export const bentoGridMetrics: Record<
+	BentoBreakpoint,
+	{ margin: [number, number]; rowHeight: number }
+> = {
+	wide: { margin: [40, 40], rowHeight: 69 },
+	compact: { margin: [24, 24], rowHeight: 77 },
+};
 export const bentoContainerPadding: [number, number] = [0, 0];
 
-const squareBentoSize = bentoRowHeight * 2 + bentoMargin[1];
-
-export function getBentoWidth(cols: number): number {
-	return squareBentoSize * cols + bentoMargin[0] * (cols - 1);
+export function getBentoWidth(breakpoint: BentoBreakpoint): number {
+	const { margin, rowHeight } = bentoGridMetrics[breakpoint];
+	const cols = getColumns(breakpoint);
+	// Keep the small square at 178px with either gap.
+	const squareBentoSize = rowHeight * 2 + margin[1];
+	return squareBentoSize * cols + margin[0] * (cols - 1);
 }
 
 const allowedPresets: Record<ItemType, readonly PresetName[]> = {

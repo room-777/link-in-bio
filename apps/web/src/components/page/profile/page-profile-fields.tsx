@@ -46,7 +46,7 @@ export default function PageProfileFields({
 	return (
 		<FieldGroup className="gap-8">
 			<Field data-invalid={!!error} className="gap-8">
-				<div className="flex w-full items-center justify-between min-[90rem]:justify-start">
+				<div className="flex w-full items-center page-wide:justify-start justify-between">
 					<PageImageField
 						value={imageUrl}
 						isUploading={isImageUploading}
@@ -57,7 +57,7 @@ export default function PageProfileFields({
 						onCropChange={onImageCropChange}
 						breakpoint={breakpoint}
 					/>
-					<div className="min-[90rem]:hidden">
+					<div className="page-wide:hidden">
 						<MadeWithGrabbinBadge />
 					</div>
 				</div>
@@ -68,7 +68,7 @@ export default function PageProfileFields({
 							name="name"
 							aria-label="Name"
 							autoComplete="name"
-							className={`editable-paragraph field-sizing-content min-h-fit! w-full min-w-0 max-w-full whitespace-pre-wrap break-words border-0! bg-transparent! p-0! pr-1! font-bold leading-tight tracking-tight outline-none transition-[background-color,box-shadow] duration-150 ease-out ${isWide ? "min-[90rem]:!text-[40px] text-3xl!" : "text-3xl!"}`}
+							className={`editable-paragraph field-sizing-content min-h-fit! w-full min-w-0 max-w-full whitespace-pre-wrap break-words border-0! bg-transparent! p-0! pr-1! font-bold leading-tight tracking-tight outline-none transition-[background-color,box-shadow] duration-150 ease-out ${isWide ? "page-wide:text-profile-name-desktop! text-profile-name!" : "text-profile-name!"}`}
 							rows={1}
 							placeholder="Name"
 							required={nameRequired}
@@ -83,7 +83,7 @@ export default function PageProfileFields({
 							id="page-bio"
 							name="bio"
 							aria-label="Bio"
-							className={`editable-paragraph field-sizing-content min-h-fit! w-full overflow-hidden whitespace-pre-wrap border-0! bg-transparent! px-0.5! text-primary/80 leading-6 outline-none transition-[background-color,box-shadow] duration-150 ease-out ${isWide ? "text-base! min-[90rem]:text-xl! min-[90rem]:leading-8" : "text-base!"}`}
+							className={`editable-paragraph field-sizing-content min-h-fit! w-full overflow-hidden whitespace-pre-wrap border-0! bg-transparent! px-0.5! text-primary/80 leading-6 outline-none transition-[background-color,box-shadow] duration-150 ease-out ${isWide ? "page-wide:text-xl! text-base! page-wide:leading-8" : "text-base!"}`}
 							rows={2}
 							placeholder="Tell about you"
 							value={bio}

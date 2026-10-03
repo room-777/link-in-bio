@@ -1,7 +1,10 @@
 "use client";
 
 import { type PageImageCrop, pageImageContentTypes } from "@grabbin/api";
-import type { BentoBreakpoint } from "@grabbin/bento-layout";
+import {
+	type BentoBreakpoint,
+	bentoWideMediaQuery,
+} from "@grabbin/bento-layout";
 import { Button } from "@grabbin/ui/components/button";
 import { CircleFadingArrowUp, Crop, Trash } from "lucide-react";
 import { motion, useReducedMotion } from "motion/react";
@@ -233,7 +236,7 @@ export default function PageImageField({
 	return (
 		<div
 			data-page-image-crop-open={cropOpen ? "true" : undefined}
-			className={`group/image relative isolate self-start ${isWide ? "size-28! min-[90rem]:size-46!" : "size-28!"}`}
+			className={`group/image relative isolate self-start ${isWide ? "page-wide:size-46! size-28!" : "size-28!"}`}
 		>
 			<button
 				ref={frameRef}
@@ -261,7 +264,9 @@ export default function PageImageField({
 							>
 								<PageProfileImage
 									src={value}
-									sizes={isWide ? "(min-width: 90rem) 184px, 112px" : "112px"}
+									sizes={
+										isWide ? `${bentoWideMediaQuery} 184px, 112px` : "112px"
+									}
 									reduceMotion={reduceMotion}
 									imageRef={imageRef}
 									onLoad={handleImageLoad}
@@ -288,7 +293,7 @@ export default function PageImageField({
 						) : (
 							<PageProfileImage
 								src={value}
-								sizes={isWide ? "(min-width: 90rem) 184px, 112px" : "112px"}
+								sizes={isWide ? `${bentoWideMediaQuery} 184px, 112px` : "112px"}
 								reduceMotion={reduceMotion}
 								imageRef={imageRef}
 								onLoad={handleImageLoad}
@@ -297,7 +302,7 @@ export default function PageImageField({
 						)
 					) : (
 						<CircleFadingArrowUp
-							className={`size-6 ${isWide ? "min-[90rem]:size-9" : ""}`}
+							className={`size-6 ${isWide ? "page-wide:size-9" : ""}`}
 							strokeWidth={2.5}
 							aria-hidden="true"
 						/>
@@ -332,7 +337,7 @@ export default function PageImageField({
 						}
 						disabled={isUploading || !sourceSize.width}
 						onClick={cropOpen ? closeCrop : openCrop}
-						className={`smooth-shadow-xs absolute top-0 left-0 z-30 inline-flex items-center justify-center rounded-full border-0! bg-background opacity-0 outline-depth transition-[opacity,transform,scale,background-color,color] duration-150 ease-[cubic-bezier(0.23,1,0.32,1)] focus-visible:scale-100 focus-visible:opacity-100 group-hover/image:scale-100 group-hover/image:opacity-100 ${isWide ? "min-[90rem]:top-2 min-[90rem]:left-2" : ""} ${cropOpen ? "bg-brand-green text-white! opacity-100 hover:bg-brand-green/80" : ""}`}
+						className={`smooth-shadow-xs absolute top-0 left-0 z-30 inline-flex items-center justify-center rounded-full border-0! bg-background opacity-0 outline-depth transition-[opacity,transform,scale,background-color,color] duration-150 ease-[cubic-bezier(0.23,1,0.32,1)] focus-visible:scale-100 focus-visible:opacity-100 group-hover/image:scale-100 group-hover/image:opacity-100 ${isWide ? "page-wide:top-2 page-wide:left-2" : ""} ${cropOpen ? "bg-brand-green text-white! opacity-100 hover:bg-brand-green/80" : ""}`}
 						style={{
 							width: profileImageControlSize,
 							height: profileImageControlSize,
@@ -353,7 +358,7 @@ export default function PageImageField({
 						aria-label="Remove profile image"
 						disabled={isUploading || cropOpen}
 						onClick={onRemove}
-						className={`smooth-shadow-xs absolute z-30 inline-flex items-center justify-center rounded-full border-0! bg-background opacity-0 outline-depth transition-[opacity,transform,scale,background-color,color] duration-150 ease-[cubic-bezier(0.23,1,0.32,1)] focus-visible:scale-100 focus-visible:opacity-100 group-hover/image:scale-100 group-hover/image:opacity-100 ${isWide ? "top-0 right-0 min-[90rem]:top-2 min-[90rem]:right-2" : "top-0 right-0"}`}
+						className={`smooth-shadow-xs absolute z-30 inline-flex items-center justify-center rounded-full border-0! bg-background opacity-0 outline-depth transition-[opacity,transform,scale,background-color,color] duration-150 ease-[cubic-bezier(0.23,1,0.32,1)] focus-visible:scale-100 focus-visible:opacity-100 group-hover/image:scale-100 group-hover/image:opacity-100 ${isWide ? "page-wide:top-2 top-0 page-wide:right-2 right-0" : "top-0 right-0"}`}
 						style={{
 							width: profileImageControlSize,
 							height: profileImageControlSize,

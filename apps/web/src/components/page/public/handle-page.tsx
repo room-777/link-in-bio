@@ -3,8 +3,8 @@
 import type { PageByHandleResponse } from "@grabbin/api";
 import {
 	type BentoBreakpoint,
+	bentoWideMediaQuery,
 	getBentoWidth,
-	getColumns,
 } from "@grabbin/bento-layout";
 import { motion, useReducedMotion } from "motion/react";
 import dynamic from "next/dynamic";
@@ -45,7 +45,7 @@ export default function HandlePage({
 	const reduceMotion = useReducedMotion();
 	const [profileBreakpoint, setProfileBreakpoint] =
 		useState<BentoBreakpoint>("compact");
-	const compactProfileMaxWidth = `calc(${getBentoWidth(getColumns("compact"))}px + 3rem)`;
+	const compactProfileMaxWidth = `calc(${getBentoWidth("compact")}px + 3rem)`;
 	const enterTransition = reduceMotion
 		? { duration: 0 }
 		: {
@@ -54,7 +54,7 @@ export default function HandlePage({
 			};
 	const [profileEntryComplete, setProfileEntryComplete] = useState(false);
 	useEffect(() => {
-		const mediaQuery = window.matchMedia("(min-width: 90rem)");
+		const mediaQuery = window.matchMedia(bentoWideMediaQuery);
 		const syncBreakpoint = () =>
 			setProfileBreakpoint(mediaQuery.matches ? "wide" : "compact");
 		syncBreakpoint();
@@ -62,32 +62,32 @@ export default function HandlePage({
 		return () => mediaQuery.removeEventListener("change", syncBreakpoint);
 	}, []);
 	return (
-		<main className="page-scroll-container no-scrollbar relative box-border flex h-dvh min-h-0 w-full flex-col items-center overflow-y-auto overscroll-y-none bg-background min-[90rem]:items-start min-[90rem]:justify-center">
+		<main className="page-scroll-container no-scrollbar relative box-border flex h-dvh min-h-0 w-full flex-col page-wide:items-start items-center page-wide:justify-center overflow-y-auto overscroll-y-none bg-background">
 			<PublicShareLinkButton profileImageUrl={imageUrl} />
 			<SimpleAnalyticsTracker pageId={page.id} />
-			<div className="flex w-full flex-col items-center gap-8 min-[90rem]:min-h-dvh min-[90rem]:flex-row min-[90rem]:items-stretch min-[90rem]:justify-around">
-				<div className="contents w-full min-w-0 max-w-md min-[90rem]:flex min-[90rem]:min-h-0 min-[90rem]:w-2xl min-[90rem]:max-w-none min-[90rem]:flex-col">
+			<div className="flex page-wide:min-h-dvh w-full page-wide:flex-row flex-col items-center page-wide:items-stretch page-wide:justify-around gap-8">
+				<div className="page-wide:flex contents page-wide:min-h-0 page-wide:w-2xl w-full min-w-0 max-w-md page-wide:max-w-none page-wide:flex-col">
 					<article
-						className="order-1 flex min-h-0 w-full max-w-md flex-1 flex-col gap-8 p-6 px-6 pt-12 min-[90rem]:fixed min-[90rem]:top-0 min-[90rem]:min-h-dvh min-[90rem]:max-w-none min-[90rem]:flex-none min-[90rem]:self-start min-[90rem]:px-12 min-[90rem]:pt-16"
+						className="page-wide:fixed page-wide:top-0 order-1 flex min-h-0 page-wide:min-h-dvh w-full max-w-md page-wide:max-w-none flex-1 page-wide:flex-none flex-col gap-8 page-wide:self-start p-6 page-wide:px-12 px-6 page-wide:pt-16 pt-12"
 						style={
 							profileBreakpoint === "wide"
 								? { width: "min(42rem, calc(100vw - 58rem))" }
 								: { maxWidth: compactProfileMaxWidth }
 						}
 					>
-						<div className="flex w-full items-center justify-between min-[90rem]:justify-start">
+						<div className="flex w-full items-center page-wide:justify-start justify-between">
 							<motion.div
 								initial={imageUrl && !reduceMotion ? { rotate: -8 } : false}
 								animate={{ rotate: 0 }}
 								transition={enterTransition}
-								className="relative flex size-28 items-center justify-center overflow-hidden rounded-full sm:size-32 min-[90rem]:size-46"
+								className="relative flex page-wide:size-46 size-28 items-center justify-center overflow-hidden rounded-full sm:size-32"
 							>
 								{imageUrl && (
 									<MotionImage
 										fill
 										src={imageUrl}
 										alt={title}
-										sizes="(min-width: 90rem) 184px, 128px"
+										sizes={`${bentoWideMediaQuery} 184px, 128px`}
 										initial={reduceMotion ? false : { opacity: 0 }}
 										animate={{ opacity: 1 }}
 										transition={enterTransition}
@@ -102,7 +102,7 @@ export default function HandlePage({
 									/>
 								)}
 							</motion.div>
-							<div className="min-[90rem]:hidden">
+							<div className="page-wide:hidden">
 								<MadeWithGrabbinBadge hasProAccess={page.hasProAccess} />
 							</div>
 						</div>
@@ -117,7 +117,7 @@ export default function HandlePage({
 								onAnimationComplete={
 									bio ? undefined : () => setProfileEntryComplete(true)
 								}
-								className="break-words font-bold text-3xl leading-tight tracking-tight min-[90rem]:text-[40px]"
+								className="break-words font-bold page-wide:text-profile-name-desktop text-profile-name leading-tight tracking-tight"
 							>
 								{title}
 							</motion.h1>
@@ -130,7 +130,7 @@ export default function HandlePage({
 										delay: PROFILE_BIO_ENTER_DELAY_SECONDS,
 									}}
 									onAnimationComplete={() => setProfileEntryComplete(true)}
-									className="whitespace-pre-wrap px-0.5 text-base text-primary/80 leading-6 min-[90rem]:text-xl min-[90rem]:leading-8"
+									className="whitespace-pre-wrap px-0.5 page-wide:text-xl text-base text-primary/80 leading-6 page-wide:leading-8"
 								>
 									{page.bio}
 								</motion.p>
@@ -138,7 +138,7 @@ export default function HandlePage({
 						</div>
 					</article>
 				</div>
-				<section className="bento-content-scroll-shell no-scrollbar order-2 min-h-[calc(100dvh-3rem)] w-full max-w-md overflow-visible px-6 pt-0 min-[90rem]:order-none min-[90rem]:h-full min-[90rem]:min-h-[calc(100dvh-4rem)] min-[90rem]:w-4xl min-[90rem]:max-w-none min-[90rem]:shrink-0 min-[90rem]:px-0 min-[90rem]:pt-16 min-[90rem]:pb-24">
+				<section className="bento-content-scroll-shell no-scrollbar order-2 page-wide:order-none page-wide:h-full min-h-[calc(100dvh-3rem)] page-wide:min-h-[calc(100dvh-4rem)] page-wide:w-4xl w-full max-w-md page-wide:max-w-none page-wide:shrink-0 overflow-visible page-wide:px-0 px-6 page-wide:pt-16 pt-0 page-wide:pb-24">
 					<div className="flex flex-col gap-4">
 						<BentoSection
 							items={pageResponse.items.map(toBentoItem)}

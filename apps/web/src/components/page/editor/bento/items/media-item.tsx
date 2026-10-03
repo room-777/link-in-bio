@@ -1,6 +1,6 @@
 "use client";
 
-import type { PresetName } from "@grabbin/bento-layout";
+import { bentoWideMediaQuery, type PresetName } from "@grabbin/bento-layout";
 import {
 	type SyntheticEvent,
 	useCallback,
@@ -173,7 +173,7 @@ export function MediaItem({
 					decoding="async"
 					fetchPriority="low"
 					loading="lazy"
-					sizes="(min-width: 90rem) 20vw, 50vw"
+					sizes={`${bentoWideMediaQuery} 20vw, 50vw`}
 					src={imageSrc}
 					onLoad={handleImageLoadAndMeasure}
 					onError={() => {

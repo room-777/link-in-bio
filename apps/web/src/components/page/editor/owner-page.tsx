@@ -3,8 +3,8 @@
 import type { PageByHandleResponse } from "@grabbin/api";
 import {
 	type BentoBreakpoint,
+	bentoWideMediaQuery,
 	getBentoWidth,
-	getColumns,
 } from "@grabbin/bento-layout";
 import { useCallback, useEffect, useState } from "react";
 import { getPageImageUrl } from "@/lib/page-image-url";
@@ -37,7 +37,7 @@ export default function OwnerPage({
 	const [isViewportReady, setIsViewportReady] = useState(false);
 
 	useEffect(() => {
-		const mediaQuery = window.matchMedia("(min-width: 90rem)");
+		const mediaQuery = window.matchMedia(bentoWideMediaQuery);
 		const syncViewportBreakpoint = () => {
 			const nextBreakpoint = mediaQuery.matches ? "wide" : "compact";
 			setViewportBreakpoint(nextBreakpoint);
@@ -83,10 +83,10 @@ export default function OwnerPage({
 	const effectiveBreakpoint = isViewportCompact ? "compact" : layoutBreakpoint;
 	const isCompactContentLayout = effectiveBreakpoint === "compact";
 	const isCompactPageLayout = layoutBreakpoint === "compact";
-	const compactBentoWidth = getBentoWidth(getColumns("compact"));
+	const compactBentoWidth = getBentoWidth("compact");
 	const compactMockupMaxWidth = `calc(${compactBentoWidth}px + 5rem)`;
 	const compactProfileMaxWidth = `calc(${compactBentoWidth}px + 3rem)`;
-	const desktopMainClassName = `bg-background page-profile mx-auto flex min-h-svh w-full max-w-md min-w-0 flex-col justify-between gap-8 p-6 px-6 pt-12 min-[90rem]:mx-0 min-[90rem]:sticky min-[90rem]:top-0 ${demoPreview ? "min-[90rem]:h-full min-[90rem]:min-h-0" : "min-[90rem]:min-h-dvh"} min-[90rem]:w-2xl min-[90rem]:max-w-none min-[90rem]:self-start min-[90rem]:px-16 min-[90rem]:pt-16`;
+	const desktopMainClassName = `bg-background page-profile mx-auto flex min-h-svh w-full max-w-md min-w-0 flex-col justify-between gap-8 p-6 px-6 pt-12 page-wide:mx-0 page-wide:sticky page-wide:top-0 ${demoPreview ? "page-wide:h-full page-wide:min-h-0" : "page-wide:min-h-dvh"} page-wide:w-2xl page-wide:max-w-none page-wide:self-start page-wide:px-16 page-wide:pt-16`;
 	const mainClassName = isCompactContentLayout
 		? "flex w-full max-w-lg shrink-0 flex-col items-center justify-start overflow-visible p-6 px-6 pt-12 bg-background"
 		: desktopMainClassName;
@@ -102,10 +102,10 @@ export default function OwnerPage({
 		<div
 			className={
 				demoPreview
-					? `bento-page-scroll no-scrollbar relative isolate flex h-full min-h-0 w-full flex-col items-center overflow-y-auto ${isCompactPageLayout ? "" : "min-[90rem]:flex-row min-[90rem]:items-start min-[90rem]:justify-around"} ${!isBentoReady ? "bg-white" : isCompactPageLayout ? "bg-muted" : ""}`
+					? `bento-page-scroll no-scrollbar relative isolate flex h-full min-h-0 w-full flex-col items-center overflow-y-auto ${isCompactPageLayout ? "" : "page-wide:flex-row page-wide:items-start page-wide:justify-around"} ${!isBentoReady ? "bg-white" : isCompactPageLayout ? "bg-muted" : ""}`
 					: isCompactPageLayout
 						? "bento-page-scroll relative isolate flex h-svh min-h-0 w-full flex-col items-center overflow-hidden bg-muted"
-						: "bento-page-scroll isolate flex min-h-svh w-full flex-col items-center min-[90rem]:flex-row min-[90rem]:items-start min-[90rem]:justify-around min-[90rem]:overflow-visible"
+						: "bento-page-scroll isolate flex min-h-svh w-full page-wide:flex-row flex-col page-wide:items-start items-center page-wide:justify-around page-wide:overflow-visible"
 			}
 		>
 			<div

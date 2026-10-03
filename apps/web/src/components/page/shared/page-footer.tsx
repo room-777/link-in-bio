@@ -396,8 +396,8 @@ export default function PageFooter({
 	hasProAccess?: boolean;
 }) {
 	return (
-		<footer className="-mx-4 mb-4 flex min-h-10 w-full flex-col items-center justify-start gap-2 py-12 min-[90rem]:fixed min-[90rem]:bottom-6 min-[90rem]:left-16 min-[90rem]:z-30 min-[90rem]:-mx-2 min-[90rem]:w-auto min-[90rem]:items-start min-[90rem]:py-0">
-			<div className="hidden min-[90rem]:block">
+		<footer className="page-wide:fixed page-wide:bottom-6 page-wide:left-16 page-wide:z-30 -mx-4 page-wide:-mx-2 mb-4 flex min-h-10 page-wide:w-auto w-full flex-col page-wide:items-start items-center justify-start gap-2 page-wide:py-0 py-12">
+			<div className="page-wide:block hidden">
 				<MadeWithGrabbinBadge hasProAccess={hasProAccess} />
 			</div>
 			<div className="flex min-h-10 items-center justify-start">

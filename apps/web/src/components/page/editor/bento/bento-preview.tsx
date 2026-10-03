@@ -1,8 +1,7 @@
 "use client";
 
 import {
-	bentoMargin,
-	bentoRowHeight,
+	bentoGridMetrics,
 	getBentoWidth,
 	getPresetGeometry,
 	type PresetName,
@@ -14,7 +13,9 @@ import { MapViewportGate } from "./items/shared";
 
 const PREVIEW_TIMESTAMP = "2026-01-01T00:00:00.000Z";
 const PREVIEW_GRID_ROWS = 6;
-const PREVIEW_GRID_WIDTH = getBentoWidth(4);
+const { margin: bentoMargin, rowHeight: bentoRowHeight } =
+	bentoGridMetrics.wide;
+const PREVIEW_GRID_WIDTH = getBentoWidth("wide");
 const PREVIEW_GRID_HEIGHT =
 	bentoRowHeight * PREVIEW_GRID_ROWS + bentoMargin[1] * (PREVIEW_GRID_ROWS - 1);
 const PREVIEW_COLUMN_GAP = `${(bentoMargin[0] / PREVIEW_GRID_WIDTH) * 100}%`;
@@ -226,7 +227,7 @@ export default function BentoPreview({
 		<motion.section
 			aria-label="Bento item preview"
 			aria-hidden="true"
-			className={`pointer-events-none relative hidden min-h-96 cursor-default select-none items-center justify-center overflow-visible px-6 py-12 xl:px-0 ${wideOnly ? "min-[90rem]:flex min-[90rem]:min-h-svh" : "xl:flex xl:min-h-svh"}`}
+			className={`pointer-events-none relative hidden min-h-96 cursor-default select-none items-center justify-center overflow-visible px-6 py-12 xl:px-0 ${wideOnly ? "page-wide:flex page-wide:min-h-svh" : "xl:flex xl:min-h-svh"}`}
 			inert
 			initial={false}
 			animate={{ opacity: visible ? 1 : 0 }}
@@ -237,8 +238,10 @@ export default function BentoPreview({
 			}
 		>
 			<div
-				className="relative h-[588px] w-[796px] shrink-0"
+				className="relative shrink-0"
 				style={{
+					width: PREVIEW_GRID_WIDTH,
+					height: PREVIEW_GRID_HEIGHT,
 					aspectRatio: `${PREVIEW_GRID_WIDTH} / ${PREVIEW_GRID_HEIGHT}`,
 				}}
 			>
