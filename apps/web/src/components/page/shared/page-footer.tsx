@@ -30,10 +30,9 @@ import { forwardRef, useEffect, useState } from "react";
 import { authClient, getAuthErrorMessage } from "@/lib/auth-client";
 import { getSignInHref } from "@/lib/auth-redirect";
 import { getPublicViewsQueryOptions } from "@/lib/public-views-api";
-import AccountDialog from "../management/account-dialog";
 import ChangeHandleDialog from "../management/change-handle-dialog";
 import DeleteAccountDialog from "../management/delete-account-dialog";
-import ManagePagesDialog from "../management/manage-pages-dialog";
+import SettingDialog from "../management/setting-dialog";
 import SpinningCounter from "../management/spinning-counter";
 
 type DiscordLinkProps = ComponentPropsWithoutRef<"a">;
@@ -74,7 +73,7 @@ function DiscordTooltip() {
 	return (
 		<Tooltip>
 			<TooltipTrigger delay={0} render={<DiscordLink />} />
-			<TooltipContent>community</TooltipContent>
+			<TooltipContent>Community</TooltipContent>
 		</Tooltip>
 	);
 }
@@ -141,8 +140,7 @@ function OwnerFooter({
 	const [activeItem, setActiveItem] = useState<number | null>(null);
 	const [isItemActive, setIsItemActive] = useState(false);
 	const [isHandleDialogOpen, setIsHandleDialogOpen] = useState(false);
-	const [isManagePagesOpen, setIsManagePagesOpen] = useState(false);
-	const [isAccountDialogOpen, setIsAccountDialogOpen] = useState(false);
+	const [isSettingDialogOpen, setIsSettingDialogOpen] = useState(false);
 	const [isOpen, setIsOpen] = useState(false);
 	const [isSigningOut, setIsSigningOut] = useState(false);
 	const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
@@ -188,7 +186,7 @@ function OwnerFooter({
 								/>
 							}
 						/>
-						<TooltipContent>setting</TooltipContent>
+						<TooltipContent>Setting</TooltipContent>
 					</Tooltip>
 					<PopoverContent
 						align="start"
@@ -237,7 +235,7 @@ function OwnerFooter({
 							className="relative z-10 h-16 w-full justify-start px-5 hover:bg-transparent"
 							onClick={() => {
 								setIsOpen(false);
-								setIsManagePagesOpen(true);
+								setIsSettingDialogOpen(true);
 							}}
 							onPointerEnter={() => {
 								setActiveItem(1);
@@ -248,25 +246,7 @@ function OwnerFooter({
 								setIsItemActive(true);
 							}}
 						>
-							Manage pages
-						</Button>
-						<Button
-							variant="ghost"
-							className="relative z-10 h-16 w-full justify-start px-5 hover:bg-transparent"
-							onClick={() => {
-								setIsOpen(false);
-								setIsAccountDialogOpen(true);
-							}}
-							onPointerEnter={() => {
-								setActiveItem(2);
-								setIsItemActive(true);
-							}}
-							onFocus={() => {
-								setActiveItem(2);
-								setIsItemActive(true);
-							}}
-						>
-							Account
+							Setting
 						</Button>
 						<Button
 							variant="ghost"
@@ -274,11 +254,11 @@ function OwnerFooter({
 							disabled={isSigningOut}
 							onClick={handleSignOut}
 							onPointerEnter={() => {
-								setActiveItem(3);
+								setActiveItem(2);
 								setIsItemActive(true);
 							}}
 							onFocus={() => {
-								setActiveItem(3);
+								setActiveItem(2);
 								setIsItemActive(true);
 							}}
 						>
@@ -292,11 +272,11 @@ function OwnerFooter({
 								setIsDeleteDialogOpen(true);
 							}}
 							onPointerEnter={() => {
-								setActiveItem(4);
+								setActiveItem(3);
 								setIsItemActive(true);
 							}}
 							onFocus={() => {
-								setActiveItem(4);
+								setActiveItem(3);
 								setIsItemActive(true);
 							}}
 						>
@@ -313,13 +293,9 @@ function OwnerFooter({
 				onOpenChange={setIsHandleDialogOpen}
 				open={isHandleDialogOpen}
 			/>
-			<ManagePagesDialog
-				open={isManagePagesOpen}
-				onOpenChange={setIsManagePagesOpen}
-			/>
-			<AccountDialog
-				open={isAccountDialogOpen}
-				onOpenChange={setIsAccountDialogOpen}
+			<SettingDialog
+				open={isSettingDialogOpen}
+				onOpenChange={setIsSettingDialogOpen}
 			/>
 			<DeleteAccountDialog
 				onOpenChange={setIsDeleteDialogOpen}
