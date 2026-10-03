@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import { Geist, Geist_Mono, Inter } from "next/font/google";
+import { Inter } from "next/font/google";
 import Script from "next/script";
 
 import "../index.css";
@@ -9,28 +9,19 @@ import Providers from "@/components/provider/providers";
 
 const inter = Inter({ subsets: ["latin"], variable: "--font-sans" });
 
-const geistSans = Geist({
-	variable: "--font-geist-sans",
-	subsets: ["latin"],
-});
-
-const geistMono = Geist_Mono({
-	variable: "--font-geist-mono",
-	subsets: ["latin"],
-});
-
 export const metadata: Metadata = {
 	metadataBase: new URL("https://grabbin.me"),
-	title: "grabbin",
+	title: "A visual personal website for your work | Grabbin",
 	description:
-		"Bring your links, photos, social profiles, and favorite places together on a page that feels like you.",
+		"Create a personal website that brings your story, work, and content together. Build a polished page with flexible widgets and make your link in bio feel like your own corner of the web.",
 	openGraph: {
-		title: "Your link in bio. Made to feel like you.",
+		title: "A visual personal website for your work | Grabbin",
 		description:
-			"Bring your links, photos, social profiles, and favorite places together on a page that feels like you.",
+			"Create a personal website that brings your story, work, and content together. Build a polished page with flexible widgets and make your link in bio feel like your own corner of the web.",
 	},
 	icons: {
 		icon: "/favicon.svg",
+		apple: "/apple-icon.png",
 	},
 };
 
@@ -50,7 +41,7 @@ const jsonLd = {
 			url: "https://grabbin.me",
 			name: "Grabbin",
 			description:
-				"Bring your links, photos, social profiles, and favorite places together on a page that feels like you.",
+				"Create a personal website that brings your story, work, and content together. Build a polished page with flexible widgets and make your link in bio feel like your own corner of the web.",
 			publisher: { "@id": "https://grabbin.me/#organization" },
 		},
 	],
@@ -67,9 +58,7 @@ export default function RootLayout({
 			suppressHydrationWarning
 			className={cn("font-sans", inter.variable)}
 		>
-			<body
-				className={`${geistSans.variable} ${geistMono.variable} relative antialiased`}
-			>
+			<body className="relative antialiased">
 				<script
 					type="application/ld+json"
 					dangerouslySetInnerHTML={{

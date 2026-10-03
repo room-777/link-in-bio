@@ -2,7 +2,6 @@ import type { Metadata } from "next";
 import { headers } from "next/headers";
 import { notFound } from "next/navigation";
 import { cache } from "react";
-import { DEMO_PAGE_RESPONSE } from "@/lib/demo-page";
 import { getPageImageUrl } from "@/lib/page-image-url";
 import { fetchPage } from "@/lib/server/page-query";
 import OwnerPage from "../../components/page/editor/owner-page";
@@ -16,17 +15,6 @@ export async function generateMetadata({
 	params,
 }: PageProps<"/[handle]">): Promise<Metadata> {
 	const { handle } = await params;
-	if (handle === "demo") {
-		const image = getPageImageUrl(DEMO_PAGE_RESPONSE.page.imageSource, {
-			width: 64,
-			height: 64,
-			format: "png",
-		});
-		return {
-			title: DEMO_PAGE_RESPONSE.page.name ?? "demo",
-			icons: image ? { icon: image } : undefined,
-		};
-	}
 	const requestHeaders = await headers();
 	const page = await getPageForRequest(
 		handle,
@@ -34,6 +22,14 @@ export async function generateMetadata({
 	);
 	if (!page) return {};
 	const { page: pageData } = page;
+	const displayName = pageData.name?.trim() || `@${pageData.handle}`;
+	const bio = pageData.bio?.trim();
+	const hasPlaceholderBio = Boolean(bio && /\blorem ipsum\b/i.test(bio));
+	const description =
+		bio && !hasPlaceholderBio
+			? `Explore ${displayName}'s page on Grabbin: ${bio}`.slice(0, 160)
+			: `Explore ${displayName}'s links, photos, social profiles, and favorite places on Grabbin.`;
+	const title = displayName;
 	const icon = getPageImageUrl(pageData.imageSource ?? pageData.imageKey, {
 		width: 64,
 		height: 64,
@@ -46,7 +42,18 @@ export async function generateMetadata({
 	});
 
 	return {
-		title: pageData.name ?? pageData.handle,
+		title,
+		description,
+		robots: hasPlaceholderBio ? { index: false, follow: true } : undefined,
+		alternates: { canonical: `/${encodeURIComponent(pageData.handle)}` },
+		openGraph: {
+			title,
+			description,
+			url: `/${encodeURIComponent(pageData.handle)}`,
+			siteName: "Grabbin",
+			type: "website",
+		},
+		twitter: { card: "summary", title, description },
 		icons: icon
 			? {
 					icon: { url: icon, type: "image/png", sizes: "64x64" },
@@ -60,9 +67,6 @@ export async function generateMetadata({
 
 export default async function Page({ params }: PageProps<"/[handle]">) {
 	const { handle } = await params;
-	if (handle === "demo") {
-		return <OwnerPage pageResponse={DEMO_PAGE_RESPONSE} demoMode />;
-	}
 	const requestHeaders = await headers();
 	const page = await getPageForRequest(
 		handle,

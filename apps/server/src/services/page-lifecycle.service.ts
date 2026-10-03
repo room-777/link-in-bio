@@ -83,12 +83,15 @@ export async function listOwnedPages({
 export async function listSitemapHandles(db: DatabaseClient) {
 	const pagesForSitemap = await db.query.pages.findMany({
 		where: isNull(pages.deletionScheduledAt),
-		columns: { handle: true },
+		columns: { handle: true, bio: true },
 		orderBy: asc(pages.handle),
 	});
 	return pagesForSitemap
-		.map(({ handle }) => handle)
-		.filter((handle) => !isReservedPageHandle(handle));
+		.filter(
+			({ handle, bio }) =>
+				!isReservedPageHandle(handle) && !/\blorem ipsum\b/i.test(bio ?? ""),
+		)
+		.map(({ handle }) => handle);
 }
 
 export async function changePrimaryPage({
