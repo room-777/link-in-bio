@@ -522,6 +522,7 @@ function LinkTitle({
 	const [value, setValue] = useState(title);
 	const { viewportRef, lineHeight } = useBentoLineHeight();
 	useEffect(() => setValue(title), [title]);
+	const titleAlignmentClassName = isHalfBanner ? "" : "-mx-1";
 	const titleClassName = `field-sizing-fixed block min-h-0 w-full min-w-24 max-w-full rounded-sm px-1 py-0 font-normal text-foreground text-sm ${
 		isHalfBanner
 			? "h-8 max-h-8 overflow-hidden whitespace-nowrap leading-8"
@@ -553,7 +554,7 @@ function LinkTitle({
 						const nextValue = value.trim();
 						if (nextValue) onCommit(nextValue);
 					}}
-					className={`link-title-input ${isHalfBanner ? "" : "-ml-1"} cursor-text! resize-none border-0 bg-transparent text-current outline-none focus-visible:ring-0 ${titleClassName} overflow-y-auto overflow-x-hidden overscroll-y-contain`}
+					className={`link-title-input ${titleAlignmentClassName} cursor-text! resize-none border-0 bg-transparent text-current outline-none focus-visible:ring-0 ${titleClassName} overflow-y-auto overflow-x-hidden overscroll-y-contain`}
 				/>
 			</div>
 		);
@@ -562,7 +563,7 @@ function LinkTitle({
 		<div ref={viewportRef} className={titleViewportClassName}>
 			<div
 				style={{ lineHeight }}
-				className={`wrap-break-word ${titleClassName} ${
+				className={`wrap-break-word ${titleAlignmentClassName} ${titleClassName} ${
 					isHalfBanner
 						? "truncate"
 						: isLandscape || isSquareSmall || isTall
