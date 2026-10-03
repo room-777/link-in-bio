@@ -192,7 +192,7 @@ export function MediaItem({
 			data-media-frame="true"
 			data-media-preset={preset}
 			data-bento-item-crop-open={isCropOpen ? "true" : undefined}
-			className={`relative size-full overflow-hidden rounded-[inherit] bg-muted/30 outline-depth ${!isCropOpen && hasSourceSize && item.data.mediaUrl && !item.data.mediaUrl.startsWith("data:") ? "surface-line" : ""} ${isCropOpen ? "overflow-visible!" : ""}`}
+			className={`relative size-full overflow-hidden rounded-[inherit] bg-muted/30 ${!isCropOpen && hasSourceSize && item.data.mediaUrl && !item.data.mediaUrl.startsWith("data:") ? "surface-line" : ""} ${isCropOpen ? "overflow-visible!" : ""}`}
 		>
 			{cropStyle ? (
 				<div
