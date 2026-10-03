@@ -424,8 +424,8 @@ export default function CreatePageForm({
 							transition={entryTransition}
 							className={cn(
 								isDialog
-									? "flex h-full min-h-0 w-full flex-col justify-center gap-6 p-1"
-									: "mx-auto flex min-h-svh w-full max-w-md flex-col justify-center gap-8 p-6",
+									? "flex h-full min-h-0 w-full flex-col items-center justify-center gap-6 p-1"
+									: "mx-auto flex min-h-svh w-full max-w-md flex-col items-center justify-center gap-8 p-6",
 							)}
 						>
 							<PageOnboardingComplete
