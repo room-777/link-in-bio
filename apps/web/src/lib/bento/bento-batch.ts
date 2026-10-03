@@ -121,12 +121,9 @@ export function mergeAcknowledgedBentoItems(
 	return draft.map((item) => {
 		const sentItem = sentById.get(item.id);
 		const acknowledgedItem = acknowledgedById.get(item.id);
-		if (
-			!sentItem ||
-			!acknowledgedItem ||
-			!sameItem(toBatchItem(item), sentItem)
-		) {
-			return item;
+		if (!sentItem || !acknowledgedItem) return item;
+		if (!sameItem(toBatchItem(item), sentItem)) {
+			return { ...item, updatedAt: acknowledgedItem.updatedAt };
 		}
 		if (
 			item.type === "media" &&

@@ -7,7 +7,7 @@ import * as v from "valibot";
 
 import { apiClient, getApiErrorMessage } from "@/lib/api-client";
 
-export const PAGE_AUTO_SAVE_DELAY = 1000;
+export const PAGE_AUTO_SAVE_DELAY = 2500;
 
 export type PageAutoSaveStatus = "saved" | "dirty" | "saving" | "error";
 

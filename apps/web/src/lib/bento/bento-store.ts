@@ -33,7 +33,7 @@ type UseBentoStoreOptions = {
 	persistItems?: boolean;
 };
 
-const SAVE_DELAY = 1000;
+const SAVE_DELAY = 2500;
 
 type MediaUploadTask = {
 	controller: AbortController;
@@ -60,13 +60,13 @@ export function useBentoStore({
 	const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 	const saveInFlightRef = useRef<Promise<SaveResult> | null>(null);
 	const scheduleSaveRef = useRef<() => void>(() => {});
-	const stateVersionRef = useRef(0);
+	const activeHandleRef = useRef(handle);
+	activeHandleRef.current = handle;
 	const previewUrlsRef = useRef(new Set<string>());
 	const mediaUploadsRef = useRef(new Map<string, MediaUploadTask>());
 
 	useEffect(() => {
 		const nextItems = initialItems.map(toBentoItem);
-		stateVersionRef.current += 1;
 		draftRef.current = nextItems;
 		persistedRef.current = nextItems;
 		pendingRef.current = { upserts: [], deletes: [] };
@@ -122,7 +122,6 @@ export function useBentoStore({
 			return Promise.resolve<SaveResult>({ ok: true });
 		}
 
-		const stateVersion = stateVersionRef.current;
 		setStatus("saving");
 
 		let request: Promise<SaveResult> | null = null;
@@ -130,8 +129,7 @@ export function useBentoStore({
 			let shouldScheduleFollowUp = false;
 			try {
 				const response = await patchBentoBatch(handle, sentBatch);
-				if (stateVersion !== stateVersionRef.current) {
-					shouldScheduleFollowUp = hasBentoBatchChanges(pendingRef.current);
+				if (activeHandleRef.current !== handle) {
 					return { ok: true };
 				}
 
@@ -165,8 +163,7 @@ export function useBentoStore({
 				setStatus(shouldScheduleFollowUp ? "dirty" : "saved");
 				return { ok: true };
 			} catch (error) {
-				if (stateVersion !== stateVersionRef.current) {
-					shouldScheduleFollowUp = hasBentoBatchChanges(pendingRef.current);
+				if (activeHandleRef.current !== handle) {
 					return { ok: true };
 				}
 				const nextBatch = createBentoBatch(
@@ -215,7 +212,6 @@ export function useBentoStore({
 			) {
 				return;
 			}
-			stateVersionRef.current += 1;
 			draftRef.current = nextItems;
 			setItems(nextItems);
 			if (!persistItems) {

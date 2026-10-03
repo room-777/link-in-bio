@@ -44,7 +44,7 @@ export default function BentoEditor({
 		persistItems: !demoMode,
 	});
 	useEffect(() => {
-		onGridSavingChange?.(store.status === "dirty" || store.status === "saving");
+		onGridSavingChange?.(store.status === "saving");
 	}, [onGridSavingChange, store.status]);
 
 	const addItem = (itemType: ItemType, url?: string) => {

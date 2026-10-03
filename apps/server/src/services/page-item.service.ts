@@ -244,12 +244,6 @@ export async function persistPageItemBatch({
 			if (current && current.type !== item.type) {
 				throw new PageItemServiceError("ITEM_TYPE_IMMUTABLE");
 			}
-			if (
-				current &&
-				(!item.updatedAt || current.updatedAt.toISOString() !== item.updatedAt)
-			) {
-				throw new PageItemServiceError("CONCURRENT_ITEM_UPDATE");
-			}
 			assertValidItemPayload(item, userId, page.id);
 		}
 
