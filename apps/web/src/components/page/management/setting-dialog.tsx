@@ -120,7 +120,7 @@ export default function SettingDialog({
 						Custom domain
 					</TabsTrigger>
 				</TabsList>
-				<div className="min-h-0 min-w-0 flex-1 overflow-y-auto">
+				<div className="min-h-0 min-w-0 flex-1 overflow-y-auto overflow-x-hidden px-1">
 					<TabsContent value="account" className="m-0 h-full">
 						<section className="flex min-w-0 flex-col gap-3">
 							<h2 className="font-medium text-base">Your email</h2>
