@@ -479,7 +479,7 @@ function LinkBadge({
 			target={mode === "edit" ? "_blank" : undefined}
 			rel={mode === "edit" ? "noreferrer" : undefined}
 			aria-label={mode === "edit" ? `Open ${providerLabel}` : undefined}
-			className="relative inline-flex size-8 shrink-0 cursor-pointer! items-center justify-center overflow-hidden rounded-md bg-transparent outline-depth transition-transform hover:scale-105 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/60"
+			className="relative inline-flex size-8 shrink-0 cursor-pointer! items-center justify-center overflow-hidden rounded-md bg-transparent transition-transform hover:scale-105 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/60"
 		>
 			<img
 				src={faviconSrc}

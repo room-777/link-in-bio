@@ -153,7 +153,7 @@ export function MediaItem({
 							setVideoTransformFailed(true);
 						}
 					}}
-					className={`pointer-events-none absolute inset-0 outline-depth transition-opacity ${cropStyle ? "size-full" : "size-full object-cover"} ${videoLoaded || !item.data.placeholderDataUrl ? "opacity-100" : "opacity-0"}`}
+					className={`pointer-events-none absolute inset-0 transition-opacity ${cropStyle ? "size-full" : "size-full object-cover"} ${videoLoaded || !item.data.placeholderDataUrl ? "opacity-100" : "opacity-0"}`}
 				>
 					{hasEnteredViewport && videoSrc ? (
 						<source
@@ -169,7 +169,7 @@ export function MediaItem({
 				<img
 					ref={imageRef}
 					alt={item.data.caption ?? "Media item"}
-					className={`pointer-events-none absolute inset-0 outline-2! outline-depth -outline-offset-2! transition-opacity ${cropStyle ? "size-full" : "size-full object-cover"} ${imageLoaded || !item.data.placeholderDataUrl ? "opacity-100" : "opacity-0"}`}
+					className={`pointer-events-none absolute inset-0 transition-opacity ${cropStyle ? "size-full" : "size-full object-cover"} ${imageLoaded || !item.data.placeholderDataUrl ? "opacity-100" : "opacity-0"}`}
 					decoding="async"
 					fetchPriority="low"
 					loading="lazy"
@@ -192,7 +192,7 @@ export function MediaItem({
 			data-media-frame="true"
 			data-media-preset={preset}
 			data-bento-item-crop-open={isCropOpen ? "true" : undefined}
-			className={`relative size-full overflow-hidden rounded-[inherit] bg-muted/30 ${!isCropOpen && hasSourceSize && item.data.mediaUrl && !item.data.mediaUrl.startsWith("data:") ? "surface-line" : ""} ${isCropOpen ? "overflow-visible!" : ""}`}
+			className={`relative size-full overflow-hidden rounded-[inherit] bg-muted/30 outline-depth ${!isCropOpen && hasSourceSize && item.data.mediaUrl && !item.data.mediaUrl.startsWith("data:") ? "surface-line" : ""} ${isCropOpen ? "overflow-visible!" : ""}`}
 		>
 			{cropStyle ? (
 				<div

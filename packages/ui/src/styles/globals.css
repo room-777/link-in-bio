@@ -142,7 +142,6 @@
 	position: relative;
 	--outline-depth-color: rgba(0, 0, 0, 0.1);
 	--outline-depth-shadow: inset 0 0 0 1px var(--outline-depth-color);
-	--outline-depth-image-filter: url("data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%3E%3Cfilter%20id%3D%22edge%22%20color-interpolation-filters%3D%22sRGB%22%3E%3CfeMorphology%20in%3D%22SourceAlpha%22%20operator%3D%22erode%22%20radius%3D%221%22%20result%3D%22inner%22%2F%3E%3CfeComposite%20in%3D%22SourceAlpha%22%20in2%3D%22inner%22%20operator%3D%22out%22%20result%3D%22edge%22%2F%3E%3CfeFlood%20flood-color%3D%22black%22%20flood-opacity%3D%220.1%22%2F%3E%3CfeComposite%20in2%3D%22edge%22%20operator%3D%22in%22%2F%3E%3CfeMerge%3E%3CfeMergeNode%20in%3D%22SourceGraphic%22%2F%3E%3CfeMergeNode%2F%3E%3C%2FfeMerge%3E%3C%2Ffilter%3E%3C%2Fsvg%3E#edge");
 
 	/* Keep the edge above content and independent of the wrapper's own shadow. */
 	&:not(img, video)::before {
@@ -153,18 +152,6 @@
 		content: "";
 		border-radius: inherit;
 		box-shadow: var(--outline-depth-shadow);
-	}
-
-	/* Contained icons can have transparent corners inside their CSS rounded box.
-	   Draw the 1px edge inside the image alpha instead of across those corners. */
-	&:has(> img.object-contain) {
-		&::before {
-			content: none;
-		}
-
-		& > img.object-contain {
-			filter: var(--outline-depth-image-filter);
-		}
 	}
 
 	&.surface-line::before {
@@ -180,12 +167,6 @@
 
 	@variant dark {
 		--outline-depth-color: rgba(255, 255, 255, 0.1);
-	}
-}
-
-@variant dark {
-	.outline-depth:has(> img.object-contain) {
-		--outline-depth-image-filter: url("data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%3E%3Cfilter%20id%3D%22edge%22%20color-interpolation-filters%3D%22sRGB%22%3E%3CfeMorphology%20in%3D%22SourceAlpha%22%20operator%3D%22erode%22%20radius%3D%221%22%20result%3D%22inner%22%2F%3E%3CfeComposite%20in%3D%22SourceAlpha%22%20in2%3D%22inner%22%20operator%3D%22out%22%20result%3D%22edge%22%2F%3E%3CfeFlood%20flood-color%3D%22white%22%20flood-opacity%3D%220.1%22%2F%3E%3CfeComposite%20in2%3D%22edge%22%20operator%3D%22in%22%2F%3E%3CfeMerge%3E%3CfeMergeNode%20in%3D%22SourceGraphic%22%2F%3E%3CfeMergeNode%2F%3E%3C%2FfeMerge%3E%3C%2Ffilter%3E%3C%2Fsvg%3E#edge");
 	}
 }
 
