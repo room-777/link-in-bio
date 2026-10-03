@@ -150,6 +150,7 @@ const authOptions = {
 				sendDeleteAccountVerificationEmail({
 					apiKey: env.RESEND_API_KEY,
 					from: env.RESEND_FROM_EMAIL,
+					templateId: env.RESEND_ACCOUNT_DELETION_TEMPLATE_ID,
 					email: user.email,
 					url,
 				}),
@@ -177,13 +178,13 @@ const authOptions = {
 	socialProviders,
 	plugins: [
 		emailOTP({
-			sendVerificationOTP: ({ email, otp, type }) =>
+			sendVerificationOTP: ({ email, otp }) =>
 				sendVerificationOTPEmail({
 					apiKey: env.RESEND_API_KEY,
 					from: env.RESEND_FROM_EMAIL,
+					templateId: env.RESEND_OTP_TEMPLATE_ID,
 					email,
 					otp,
-					type,
 				}),
 		}),
 		customSession(async ({ user, session }, context) => {

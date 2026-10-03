@@ -154,6 +154,12 @@ export const server = Cloudflare.Worker("server", {
 		RESEND_FROM_EMAIL: Config.string("RESEND_FROM_EMAIL").pipe(
 			Config.withDefault(""),
 		),
+		RESEND_OTP_TEMPLATE_ID: Config.string("RESEND_OTP_TEMPLATE_ID").pipe(
+			Config.withDefault(""),
+		),
+		RESEND_ACCOUNT_DELETION_TEMPLATE_ID: Config.string(
+			"RESEND_ACCOUNT_DELETION_TEMPLATE_ID",
+		).pipe(Config.withDefault("")),
 		YOUTUBE_API_KEY: Config.string("YOUTUBE_API_KEY").pipe(
 			Config.withDefault(""),
 		),
