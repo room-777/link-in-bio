@@ -212,7 +212,7 @@ export default Alchemy.Stack(
 		const webWorker = yield* Cloudflare.Worker("web", {
 			name: "grabbin",
 			placement: { region: "aws:ap-northeast-2" },
-			domain: "grabbin.me",
+			domain: { name: "grabbin.me", redirects: ["www.grabbin.me"] },
 			main: "../../apps/web/dist/server/index.js",
 			bundle: false,
 			assets: "../../apps/web/dist/client",
