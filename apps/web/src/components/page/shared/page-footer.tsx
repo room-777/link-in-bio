@@ -324,7 +324,7 @@ function ViewerFooter({ handle }: { handle?: string }) {
 						className: "text-muted-foreground/80",
 					})}
 				>
-					Sign in
+					Create your page
 				</Link>
 				<DiscordTooltip />
 				<PublicViews handle={handle} />

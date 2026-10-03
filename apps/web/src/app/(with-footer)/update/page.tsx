@@ -4,7 +4,8 @@ import Link from "next/link";
 import { UpdateMedia } from "@/components/updates/update-components";
 import { updates } from "@/lib/updates";
 
-const description = "Latest news and updates from Grabbin.";
+const description =
+	"Read product news, feature releases, and behind-the-scenes notes about building your Grabbin page.";
 
 export const metadata: Metadata = {
 	title: "Updates | Grabbin",

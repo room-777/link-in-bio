@@ -50,13 +50,13 @@ function makeDb(input: {
 describe("page lifecycle service", () => {
 	/**
 	 * Case ID: PAGE-SITEMAP-SERVICE-001
-	 * Given: the query returns public pages, including a draft and reserved handle.
+	 * Given: the query returns public pages, including a draft, a reserved handle, and a placeholder profile.
 	 * When: sitemap handles are listed.
-	 * Then: drafts remain eligible, reserved handles are omitted, and results stay sorted.
+	 * Then: drafts remain eligible, while reserved handles and placeholder profiles are omitted.
 	 * Evidence: returned handles and the rendered Drizzle filter.
 	 * Result: Pass | Fail | Blocked | Not Run
 	 */
-	it("PAGE-SITEMAP-SERVICE-001 includes public draft handles", async () => {
+	it("PAGE-SITEMAP-SERVICE-001 includes useful public handles", async () => {
 		let queryOptions: Record<string, unknown> | undefined;
 		const db = {
 			query: {
@@ -64,9 +64,10 @@ describe("page lifecycle service", () => {
 					findMany: async (options: Record<string, unknown>) => {
 						queryOptions = options;
 						return [
-							{ handle: "avery" },
-							{ handle: "create" },
-							{ handle: "jordan" },
+							{ handle: "avery", bio: "A creator and photographer." },
+							{ handle: "create", bio: null },
+							{ handle: "jordan", bio: "A designer in Seoul." },
+							{ handle: "test", bio: "Lorem Ipsum is placeholder text." },
 						];
 					},
 				},
@@ -74,9 +75,9 @@ describe("page lifecycle service", () => {
 		} as unknown as DatabaseClient;
 
 		assert.deepEqual(await listSitemapHandles(db), ["avery", "jordan"]);
-		assert.deepEqual(queryOptions?.columns, { handle: true });
+		assert.deepEqual(queryOptions?.columns, { handle: true, bio: true });
 		const where = new PgDialect().sqlToQuery(queryOptions?.where as never).sql;
-		assert.equal(where, '("pages"."deletion_scheduled_at" is null)');
+		assert.equal(where, '"pages"."deletion_scheduled_at" is null');
 		assert.ok(queryOptions?.orderBy);
 	});
 

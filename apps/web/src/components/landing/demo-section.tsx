@@ -48,15 +48,17 @@ export default function DemoSection() {
 			id="demo"
 		>
 			<motion.h2
-				className="mb-12 text-center font-medium text-4xl tracking-[-0.06em] sm:text-5xl"
+				className="mb-2 text-center font-medium text-4xl tracking-[-0.06em] sm:text-5xl"
 				initial={reduceMotion ? false : { opacity: 0 }}
 				whileInView={{ opacity: 1 }}
 				viewport={{ once: true, amount: 0.25 }}
 				transition={{ duration: 0.45, ease: [0.23, 1, 0.32, 1] }}
 			>
-				<span className="block">Try this.</span>
-				<span className="block">You will love it.</span>
+				See your page take shape.
 			</motion.h2>
+			<p className="mb-12 text-center text-muted-foreground sm:text-lg">
+				Try this. You will love it.
+			</p>
 			<motion.div
 				className={`smooth-shadow-ring-sm relative mx-auto flex w-full max-w-7xl flex-col rounded-3xl bg-secondary p-2 ${isWide ? "h-[calc(100svh-8rem)] max-h-[calc(100svh-17rem)]" : ""}`}
 				initial={reduceMotion ? false : { opacity: 0, scale: 0.99 }}

@@ -48,11 +48,11 @@ export default function PlanSection({
 						id="landing-plan-title"
 						className="text-pretty font-medium text-3xl text-foreground leading-tight tracking-[-0.065em] sm:text-4xl lg:text-5xl"
 					>
-						More room for everything you share.
+						A thoughtful page, free to start.
 					</h2>
 					<p className="text-pretty text-muted-foreground sm:text-lg">
-						Start free. Upgrade to Pro for more pages and a page without the
-						watermark.
+						Build for free. Move to Pro when you need more pages or want to
+						remove the watermark.
 					</p>
 				</motion.div>
 				<div className="relative mt-8 grid w-full max-w-[51rem] grid-cols-1 gap-6 [grid-auto-rows:1fr] md:grid-cols-2">

@@ -14,8 +14,8 @@ export default function Footer() {
 								<span className="text-xl">Grabbin</span>
 							</div>
 							<p className="max-w-md text-pretty text-base text-primary/90">
-								A home for your links, photos, social profiles, and favorite
-								places—made to feel like you.
+								Grabbin is a visual personal website builder for sharing your
+								story and work in a style that feels like you.
 							</p>
 						</div>
 						<div className="flex flex-col gap-0 font-normal text-base">

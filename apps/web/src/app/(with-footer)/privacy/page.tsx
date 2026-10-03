@@ -4,9 +4,12 @@ import Privacy from "@/content/legal/privacy.mdx";
 
 export const revalidate = false;
 
+const description =
+	"Learn what personal data Grabbin collects, how it is used and stored, and the choices available to you when you use the service.";
+
 export const metadata: Metadata = {
 	title: "Privacy Policy",
-	description: "How Grabbin collects, uses, and protects your information.",
+	description,
 };
 
 export default function PrivacyPage() {
@@ -14,7 +17,7 @@ export default function PrivacyPage() {
 		<LegalPage
 			Document={Privacy}
 			title="Privacy Policy"
-			description="How Grabbin collects, uses, and protects your information."
+			description={description}
 			lastUpdated="August 19, 2026"
 		/>
 	);

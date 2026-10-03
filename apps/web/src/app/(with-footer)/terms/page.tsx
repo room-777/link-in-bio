@@ -4,9 +4,12 @@ import Terms from "@/content/legal/terms.mdx";
 
 export const revalidate = false;
 
+const description =
+	"Read the rules for creating and sharing pages on Grabbin, including account responsibilities, acceptable use, and service terms.";
+
 export const metadata: Metadata = {
 	title: "Terms of Service",
-	description: "The terms that apply when you use Grabbin.",
+	description,
 };
 
 export default function TermsPage() {
@@ -14,7 +17,7 @@ export default function TermsPage() {
 		<LegalPage
 			Document={Terms}
 			title="Terms of Service"
-			description="The terms that apply when you use Grabbin."
+			description={description}
 			lastUpdated="August 19, 2026"
 		/>
 	);
