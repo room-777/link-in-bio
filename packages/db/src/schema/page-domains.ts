@@ -48,4 +48,4 @@ export const pageDomains = pgTable(
 		),
 		index("page_domains_next_check_idx").on(table.nextCheckAt),
 	],
-);
+).enableRLS();

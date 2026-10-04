@@ -64,6 +64,13 @@
 			"when": 1791102750574,
 			"tag": "0008_page_domains",
 			"breakpoints": true
+		},
+		{
+			"idx": 9,
+			"version": "7",
+			"when": 1791114419515,
+			"tag": "0009_protect_page_domain_verification",
+			"breakpoints": true
 		}
 	]
 }
