@@ -33,7 +33,7 @@ type UseBentoStoreOptions = {
 	persistItems?: boolean;
 };
 
-const SAVE_DELAY = 2500;
+const SAVE_DELAY = 1500;
 
 type MediaUploadTask = {
 	controller: AbortController;
