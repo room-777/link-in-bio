@@ -48,11 +48,12 @@ function renderMedia({ item, preset, options }: Parameters<ItemRenderer>[0]) {
 	);
 }
 
-function renderMap({ item, options }: Parameters<ItemRenderer>[0]) {
+function renderMap({ item, preset, options }: Parameters<ItemRenderer>[0]) {
 	if (item.type !== "map") return null;
 	return (
 		<LazyMapItem
 			item={item}
+			preset={preset}
 			mode={options.mode}
 			onCommand={options.onCommand}
 		/>

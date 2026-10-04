@@ -1,5 +1,6 @@
 "use client";
 
+import { getBentoItemRadius, type PresetName } from "@grabbin/bento-layout";
 import { env } from "@grabbin/env/web";
 import { buttonVariants } from "@grabbin/ui/components/button";
 import MapboxMap, {
@@ -220,10 +221,12 @@ function setMapInteractions(map: MapboxMapWithHandlers, enabled: boolean) {
 
 export function MapItem({
 	item,
+	preset,
 	mode,
 	onCommand,
 }: {
 	item: Extract<BentoItem, { type: "map" }>;
+	preset: PresetName;
 	mode: "view" | "edit";
 	onCommand?: (command: BentoCommand) => void;
 }) {
@@ -360,9 +363,13 @@ export function MapItem({
 			resizeTimeoutRef.current = null;
 		};
 	}, []);
+	// Match the inside edge of the card's 1px border.
+	const frameRadius = getBentoItemRadius(item.type, preset) - 1;
+
 	return (
 		<div
 			ref={mapFrameRef}
+			style={{ borderRadius: frameRadius }}
 			onPointerDownCapture={handleGridDragStart}
 			className={`relative size-full overflow-hidden rounded-[inherit] bg-secondary ${mapReady ? "surface-line" : ""} ${interactive ? "grid-action cursor-grab" : ""}`}
 			data-bento-map-location-editing={interactive ? "true" : undefined}
