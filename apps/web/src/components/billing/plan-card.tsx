@@ -5,14 +5,13 @@ import { Button } from "@grabbin/ui/components/button";
 import Loading from "@grabbin/ui/components/loading";
 import { Tabs, TabsList, TabsTrigger } from "@grabbin/ui/components/tabs";
 import { cn } from "@grabbin/ui/lib/utils";
-import { BarChart3, Globe2, Sparkles } from "lucide-react";
+import { BarChart3, Sparkles } from "lucide-react";
 import { AnimatePresence, motion, useReducedMotion } from "motion/react";
 import { useState } from "react";
 import { CheckCircle } from "reicon-react/icons/CheckCircle";
 
 const upcomingFeatures = [
 	{ label: "Advanced Widgets", Icon: Sparkles },
-	{ label: "Custom domain", Icon: Globe2 },
 	{ label: "Advanced analytics", Icon: BarChart3 },
 ];
 
@@ -256,6 +255,14 @@ export function PlanCard({
 								className="size-5 shrink-0 text-brand-green"
 							/>
 							<span>Remove watermark</span>
+						</li>
+						<li className="flex items-center gap-2.5 text-base">
+							<CheckCircle
+								aria-hidden="true"
+								weight="Filled"
+								className="size-5 shrink-0 text-brand-green"
+							/>
+							<span>Custom domain</span>
 						</li>
 						{!isHorizontal && (
 							<li className="flex items-center gap-3 pt-2 text-muted-foreground text-xs uppercase">
