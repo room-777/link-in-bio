@@ -6,7 +6,6 @@ import { consoleLoggingIntegration, sentry } from "@sentry/hono/cloudflare";
 import { initLogger } from "evlog";
 import { evlog } from "evlog/hono";
 import { Hono } from "hono";
-import { cors } from "hono/cors";
 import { createFactory } from "hono/factory";
 import { prettyJSON } from "hono/pretty-json";
 import { timing } from "hono/timing";
@@ -16,6 +15,7 @@ import { createPageDomainsController } from "./controllers/page-domains.controll
 import { pageItemsController } from "./controllers/page-items.route";
 import { pagesController } from "./controllers/pages.controller";
 import { providerIconsController } from "./controllers/provider-icons.controller";
+import { createApiCors } from "./middlewares/cors.middleware";
 import { requiredSession } from "./middlewares/session.middleware";
 import {
 	createOrResumeProCheckout,
@@ -75,16 +75,18 @@ const app = createFactory<AppEnv>({
 		app.use(trimTrailingSlash());
 		app.use(
 			"/*",
-			cors({
+			createApiCors({
 				origin: env.CORS_ORIGIN,
-				allowMethods: ["GET", "POST", "PATCH", "DELETE", "OPTIONS"],
-				allowHeaders: [
-					"Content-Type",
-					"Authorization",
-					"baggage",
-					"sentry-trace",
-				],
-				credentials: true,
+				resolveDomain: async (hostname, c) => {
+					const db = await createDb();
+					try {
+						return await createBoundPageDomainService(db, c.env).resolve(
+							hostname,
+						);
+					} finally {
+						await db.$client.end();
+					}
+				},
 			}),
 		);
 	},
