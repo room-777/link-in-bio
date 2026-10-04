@@ -359,7 +359,6 @@ export function useBentoStore({
 						task.objectKey = createdUpload.objectKey;
 					},
 				});
-				const placeholderDataUrl = await placeholderPromise;
 				if (task.controller.signal.aborted) return;
 				if (mediaUploadsRef.current.get(itemId) !== task) return;
 				mediaUploadsRef.current.delete(itemId);
@@ -367,7 +366,6 @@ export function useBentoStore({
 					itemId,
 					objectKey: upload.objectKey,
 					mimeType: upload.mimeType,
-					placeholderDataUrl,
 				});
 			} catch (error) {
 				if (mediaUploadsRef.current.get(itemId) === task) {

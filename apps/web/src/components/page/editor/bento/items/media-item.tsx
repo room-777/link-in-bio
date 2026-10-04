@@ -50,7 +50,7 @@ export function MediaItem({
 		handleCropPointerEnd,
 	} = useMediaCropEditor({ item, mode, onCommand });
 	const isLocalPreview = item.data.mediaUrl?.startsWith("blob:") ?? false;
-	const originalMediaUrl = isLocalPreview ? undefined : item.data.mediaUrl;
+	const originalMediaUrl = item.data.mediaUrl;
 	const transformedMediaUrl = originalMediaUrl
 		? getPageMediaUrl(originalMediaUrl, isVideo ? "video" : "image")
 		: undefined;
@@ -165,7 +165,7 @@ export function MediaItem({
 						/>
 					) : null}
 				</video>
-			) : hasEnteredViewport && imageSrc ? (
+			) : (isLocalPreview || hasEnteredViewport) && imageSrc ? (
 				<img
 					ref={imageRef}
 					alt={item.data.caption ?? "Media item"}
