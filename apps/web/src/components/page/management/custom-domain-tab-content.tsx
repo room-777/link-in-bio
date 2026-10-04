@@ -53,7 +53,7 @@ function DomainStatusIcon({ status }: { status: keyof typeof statusLabels }) {
 		case "expired":
 			return <GlobeX aria-hidden="true" className="size-6" />;
 		default:
-			return <Loading aria-hidden="true" className="size-6" />;
+			return <Loading aria-hidden="true" className="size-4" />;
 	}
 }
 
@@ -235,7 +235,7 @@ export default function CustomDomainTabContent({
 
 	return (
 		<>
-			<Field className="min-w-0">
+			<Field className="no-scrollbar scroll-fade-y h-full min-h-0 min-w-0 gap-1 overflow-y-auto *:shrink-0">
 				<FieldTitle className="gap-1 text-base">
 					Custom domain
 					<Verified
@@ -254,7 +254,7 @@ export default function CustomDomainTabContent({
 					</p>
 				) : domainQuery.isPending ? (
 					<p className="mt-4 text-muted-foreground text-sm" aria-live="polite">
-						Loading domain settings…
+						<Loading />
 					</p>
 				) : domainQuery.isError ? (
 					<div className="mt-4 flex flex-col items-start gap-2">
@@ -272,98 +272,109 @@ export default function CustomDomainTabContent({
 						</Button>
 					</div>
 				) : domain ? (
-					<div className="mt-4 flex min-w-0 flex-col gap-4">
-						<section
-							aria-label="Connected custom domain"
-							className="smooth-shadow-ring-xs smooth-ring-neutral-300/40 flex min-w-0 flex-col items-start gap-1 rounded-xl p-3 pl-5"
-						>
-							<div className="flex w-full min-w-0 flex-row items-center justify-between gap-3">
-								<p className="min-w-0 break-all font-medium text-base">
-									{domain.hostname}
-								</p>
-								<span className="flex size-8 shrink-0 items-center justify-center rounded-full">
-									<DomainStatusIcon status={domain.status} />
-								</span>
-							</div>
-							<span className="sr-only" role="status">
-								{statusLabels[domain.status]}
-							</span>
-							{domain.lastError && (
-								<p
-									className="wrap-break-word text-destructive text-xs"
-									role="status"
+					<div className="mt-4 flex min-w-0 flex-1 flex-col gap-4">
+						<div className="flex min-w-0 flex-1 flex-col gap-4">
+							<div className="flex shrink-0 flex-col gap-1.5">
+								<section
+									aria-label="Connected custom domain"
+									className="smooth-shadow-xs flex w-3xs min-w-0 max-w-sm shrink-0 flex-col items-start gap-1 rounded-lg border border-black/8 p-2 pl-4"
 								>
-									{domain.lastError}
-								</p>
-							)}
-							{!domain.canConfigure && domain.graceEndsAt && (
-								<p className="text-muted-foreground text-sm">
-									Your Pro plan has ended. This domain remains connected until{" "}
-									<strong className="font-medium text-primary">
-										{formatDate(domain.graceEndsAt)}
-									</strong>
-									while your existing grace period lasts.
-								</p>
-							)}
-						</section>
+									<div className="flex w-full min-w-0 flex-row items-center justify-between gap-3">
+										<p className="min-w-0 truncate break-all text-sm">
+											{domain.hostname}
+										</p>
+										<span className="flex size-7 shrink-0 items-center justify-center rounded-full">
+											<DomainStatusIcon status={domain.status} />
+										</span>
+									</div>
+									<span className="sr-only" role="status">
+										{statusLabels[domain.status]}
+									</span>
+								</section>
+								{domain.lastError && (
+									<p
+										className="wrap-break-word text-destructive text-xs"
+										role="status"
+									>
+										{domain.lastError}
+									</p>
+								)}
+								{!domain.canConfigure && domain.graceEndsAt && (
+									<p className="text-muted-foreground text-sm">
+										Your Pro plan has ended. This domain remains connected until{" "}
+										<strong className="font-medium text-primary">
+											{formatDate(domain.graceEndsAt)}
+										</strong>
+										while your existing grace period lasts.
+									</p>
+								)}
+							</div>
 
-						{domain.records.length > 0 && domain.status !== "active" && (
-							<section
-								aria-label="Required DNS records"
-								className="flex flex-col gap-3"
-							>
-								<p className="font-medium text-sm">
-									Add these records at your domain provider.
-								</p>
-								{domain.records.map((record) => {
-									const recordKey = `${record.type}:${record.name}`;
-									const fields = [
-										{ label: "Type", value: record.type },
-										{ label: "Name", value: record.name },
-										{ label: "Target", value: record.value },
-									];
-									return (
-										<div
-											key={recordKey}
-											className="smooth-shadow-ring-xs smooth-ring-neutral-300/40 flex flex-col gap-0 rounded-xl p-1 py-2"
-										>
-											{fields.map((field) => {
-												const key = `${recordKey}:${field.label}`;
-												const isCopied = copiedRecord === key;
+							{domain.records.length > 0 && domain.status !== "active" && (
+								<section
+									aria-label="Required DNS records"
+									className="mt-4 flex shrink-0 flex-col gap-3"
+								>
+									<p className="font-medium text-sm">
+										Add these records at your domain provider.
+									</p>
+									{domain.records.map((record) => {
+										const recordKey = `${record.type}:${record.name}`;
+										const fields = [
+											{ label: "Type", value: record.type },
+											{ label: "Name", value: record.name },
+											{ label: "Target", value: record.value },
+										];
+										return (
+											<div
+												key={recordKey}
+												className="smooth-shadow-xs flex min-w-0 flex-col gap-3 rounded-xl border border-black/8 p-3"
+											>
+												{fields.map((field) => {
+													const key = `${recordKey}:${field.label}`;
+													const isCopied = copiedRecord === key;
 
-												return (
-													<div
-														key={field.label}
-														className="flex flex-row items-center gap-1 pr-0.5"
-													>
-														<span className="h-10 p-2 px-3 font-medium text-muted-foreground text-sm">
-															{field.label}
-														</span>
-														<span className="h-10 min-w-0 flex-1 break-all p-2 text-sm">
-															{field.value}
-														</span>
-														<Button
-															variant="ghost"
-															size="icon-lg"
-															aria-label={`${isCopied ? "Copied" : "Copy"} ${record.type} ${field.label.toLowerCase()}`}
-															onClick={() => void copyRecord(key, field.value)}
-															className={"size-9"}
+													return (
+														<div
+															key={field.label}
+															className="flex min-w-0 flex-col gap-1"
 														>
-															<CopyStateIcon
-																copied={isCopied}
-																reduceMotion={reduceMotion}
-															/>
-														</Button>
-													</div>
-												);
-											})}
-										</div>
-									);
-								})}
-							</section>
-						)}
+															<span className="font-medium text-primary text-xs">
+																{field.label}
+															</span>
+															<div className="flex min-h-11 min-w-0 items-center gap-1 rounded-lg bg-brand-gray p-1 pl-3 dark:bg-input/30">
+																<span
+																	className="min-w-0 flex-1 truncate py-1 text-sm"
+																	title={field.value}
+																>
+																	{field.value}
+																</span>
+																<Button
+																	variant="outline"
+																	size="icon-lg"
+																	aria-label={`${isCopied ? "Copied" : "Copy"} ${record.type} ${field.label.toLowerCase()}`}
+																	onClick={() =>
+																		void copyRecord(key, field.value)
+																	}
+																	className="size-9 shrink-0 rounded-md"
+																>
+																	<CopyStateIcon
+																		copied={isCopied}
+																		reduceMotion={reduceMotion}
+																	/>
+																</Button>
+															</div>
+														</div>
+													);
+												})}
+											</div>
+										);
+									})}
+								</section>
+							)}
+						</div>
 
-						<div className="flex flex-wrap gap-2">
+						<div className="mt-auto flex shrink-0 flex-wrap justify-end gap-2">
 							<Button
 								variant="outline"
 								size="xl"
