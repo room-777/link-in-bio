@@ -71,7 +71,7 @@ export default function SettingDialog({
 		}
 	};
 	const tabTriggerClassName =
-		"py-2.5 bg-background hover:bg-muted/80 hover:text-[var(--tabs-text-muted)] data-active:bg-background data-active:text-foreground data-active:hover:bg-muted/80 data-active:hover:text-foreground data-active:smooth-shadow-xs data-active:border data-active:border-border";
+		"min-w-0 py-2.5 bg-background hover:bg-muted/80 hover:text-[var(--tabs-text-muted)] data-active:bg-background data-active:text-foreground data-active:hover:bg-muted/80 data-active:hover:text-foreground data-active:smooth-shadow-xs data-active:border data-active:border-border group-data-[size=xl]/tabs-list:px-1 group-data-[size=xl]/tabs-list:text-sm md:group-data-[size=xl]/tabs-list:px-2 md:group-data-[size=xl]/tabs-list:text-base";
 
 	const content = (
 		<div className="flex min-h-0 min-w-0 flex-1 flex-col gap-5">
@@ -84,7 +84,7 @@ export default function SettingDialog({
 					aria-label="Settings"
 					variant="line"
 					size="xl"
-					className="w-full max-w-full items-center justify-start gap-1 overflow-x-visible bg-background px-0 [&>[data-slot=tabs-indicator]]:hidden"
+					className="grid w-full max-w-full shrink-0 grid-cols-[repeat(4,auto)] items-center justify-stretch gap-1 overflow-visible bg-background px-0 [&>[data-slot=tabs-indicator]]:hidden"
 				>
 					<TabsTrigger className={tabTriggerClassName} value="account">
 						Account
@@ -99,8 +99,8 @@ export default function SettingDialog({
 						Custom domain
 					</TabsTrigger>
 				</TabsList>
-				<div className="min-h-0 min-w-0 flex-1 overflow-y-auto overflow-x-hidden px-1">
-					<TabsContent value="account" className="m-0 h-full">
+				<div className="-mx-3 min-h-0 min-w-0 flex-1 overflow-y-auto px-4">
+					<TabsContent value="account" className="m-0 h-full w-full">
 						<section className="flex min-w-0 flex-col gap-3">
 							<h2 className="font-medium text-base">Your email</h2>
 							<div className="flex h-11 min-w-0 items-center justify-between gap-2 rounded-lg bg-secondary p-3 pl-3.5">
@@ -115,7 +115,7 @@ export default function SettingDialog({
 							</div>
 						</section>
 					</TabsContent>
-					<TabsContent value="page" className="m-0 h-full">
+					<TabsContent value="page" className="m-0 h-full w-full">
 						<PageTabContent
 							active={open && activeTab === "page"}
 							onClose={() => onOpenChange(false)}
@@ -176,7 +176,7 @@ export default function SettingDialog({
 				<Dialog open={open} onOpenChange={onOpenChange}>
 					<DialogContent
 						showCloseButton={false}
-						className="smooth-shadow-md h-[min(44rem,calc(100dvh-2rem))] w-[min(40rem,calc(100vw-2rem))] max-w-none gap-0 p-5 ring-0 sm:max-w-none"
+						className="smooth-shadow-md h-[min(44rem,calc(100dvh-2rem))] w-[min(40rem,calc(100vw-2rem))] max-w-md gap-0 p-5 ring-0 sm:max-w-md"
 					>
 						<div className="flex h-full min-h-0 min-w-0 flex-col gap-5">
 							<DialogHeader className="hidden">
