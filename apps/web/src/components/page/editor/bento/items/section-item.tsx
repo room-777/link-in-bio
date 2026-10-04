@@ -41,7 +41,7 @@ export function SectionItem({
 			>
 				<span
 					aria-hidden="true"
-					className="invisible col-start-1 row-start-1 min-w-32 max-w-full overflow-hidden whitespace-pre font-bold text-xl tracking-tight"
+					className="invisible col-start-1 row-start-1 min-w-32 max-w-full overflow-hidden whitespace-pre font-semibold text-xl tracking-tight"
 				>
 					{item.data.title}
 				</span>
@@ -50,7 +50,7 @@ export function SectionItem({
 					value={item.data.title}
 					placeholder="Section title..."
 					aria-label="Section title"
-					className="col-start-1 row-start-1 h-full w-full min-w-32 max-w-full truncate bg-transparent px-2 font-bold text-xl tracking-tight outline-none placeholder:text-muted-foreground focus-visible:ring-2 focus-visible:ring-ring/60"
+					className="col-start-1 row-start-1 h-full w-full min-w-32 max-w-full truncate bg-transparent px-2 font-semibold text-xl tracking-tight outline-none placeholder:text-muted-foreground focus-visible:ring-2 focus-visible:ring-ring/60"
 					onChange={(event) =>
 						onCommand?.({
 							type: "update-data",
@@ -63,7 +63,7 @@ export function SectionItem({
 		</div>
 	) : (
 		<div className="flex size-full items-center overflow-hidden p-3">
-			<h2 className="flex h-full w-full min-w-32 max-w-full items-center truncate rounded-2xl px-2 font-bold text-xl tracking-tight">
+			<h2 className="flex h-full w-full min-w-32 max-w-full items-center truncate rounded-2xl px-2 font-semibold text-xl tracking-tight">
 				{item.data.title}
 			</h2>
 		</div>
