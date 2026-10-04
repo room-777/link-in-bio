@@ -12,6 +12,7 @@ import { prettyJSON } from "hono/pretty-json";
 import { timing } from "hono/timing";
 import { trimTrailingSlash } from "hono/trailing-slash";
 import { jsonApiError } from "./api-error";
+import { createPageDomainsController } from "./controllers/page-domains.controller";
 import { pageItemsController } from "./controllers/page-items.route";
 import { pagesController } from "./controllers/pages.controller";
 import { providerIconsController } from "./controllers/provider-icons.controller";
@@ -20,6 +21,7 @@ import {
 	createOrResumeProCheckout,
 	scheduleProCancellation,
 } from "./services/billing.service";
+import { createBoundPageDomainService } from "./services/page-domain.service";
 import { reconcileUserPageLifecycle } from "./services/page-lifecycle.service";
 import { runScheduledJobs } from "./services/scheduled.service";
 import type { AppEnv } from "./types";
@@ -206,7 +208,14 @@ const app = createFactory<AppEnv>({
 	.route("/", createRoutes)
 	.route("/pages", pagesController)
 	.route("/pages", pageItemsController)
-	.route("/provider-icons", providerIconsController);
+	.route("/provider-icons", providerIconsController)
+	.route(
+		"/pages",
+		createPageDomainsController({
+			sessionMiddleware: requiredSession,
+			service: (c) => createBoundPageDomainService(c.var.db, c.env),
+		}),
+	);
 
 export type AppType = typeof app;
 export type { ApiError } from "@grabbin/api";
@@ -221,6 +230,7 @@ export async function scheduled(
 			db,
 			bindings,
 			date: new Date(controller.scheduledTime),
+			cron: controller.cron,
 		});
 	} finally {
 		await db.$client.end();

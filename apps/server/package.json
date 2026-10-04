@@ -31,6 +31,7 @@
 		"drizzle-orm": "^0.45.2",
 		"evlog": "catalog:runtime",
 		"hono": "catalog:runtime",
+		"tldts": "^7.4.16",
 		"valibot": "catalog:runtime"
 	},
 	"devDependencies": {

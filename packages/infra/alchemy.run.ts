@@ -102,7 +102,7 @@ export const server = Cloudflare.Worker("server", {
 	compatibility: {
 		flags: ["nodejs_compat"],
 	},
-	crons: ["0 6 * * *"],
+	crons: ["0 6 * * *", "*/5 * * * *"],
 	env: {
 		HYPERDRIVE: hyperdrive,
 		R2_BUCKET: grabbinBucket,
@@ -181,6 +181,15 @@ export const server = Cloudflare.Worker("server", {
 		GITHUB_TOKEN: Config.redacted("GITHUB_TOKEN").pipe(Config.withDefault("")),
 		PRODUCT_HUNT_TOKEN: Config.redacted("PRODUCT_HUNT_TOKEN").pipe(
 			Config.withDefault(""),
+		),
+		CLOUDFLARE_SAAS_ZONE_ID: Config.string("CLOUDFLARE_SAAS_ZONE_ID").pipe(
+			Config.withDefault(""),
+		),
+		CLOUDFLARE_SAAS_API_TOKEN: Config.redacted(
+			"CLOUDFLARE_SAAS_API_TOKEN",
+		).pipe(Config.withDefault("")),
+		CUSTOM_DOMAIN_TARGET: Config.string("CUSTOM_DOMAIN_TARGET").pipe(
+			Config.withDefault("custom.grabbin.me"),
 		),
 		PAGE_DOMAIN: Config.string("PAGE_DOMAIN").pipe(
 			Config.withDefault("grabbin.me"),

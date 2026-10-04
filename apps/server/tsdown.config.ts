@@ -126,7 +126,7 @@ export default defineConfig({
 	deps: {
 		alwaysBundle: [
 			/@grabbin\/.*/,
-			/^(?:@sentry\/|aws4fetch$|better-auth(?:\/|$)|drizzle-orm(?:\/|$)|evlog(?:\/|$)|hono(?:\/|$)|valibot(?:\/|$))/,
+			/^(?:@sentry\/|aws4fetch$|better-auth(?:\/|$)|drizzle-orm(?:\/|$)|evlog(?:\/|$)|hono(?:\/|$)|tldts(?:-core)?(?:\/|$)|valibot(?:\/|$))/,
 		],
 		neverBundle: ["cloudflare:workers"],
 	},

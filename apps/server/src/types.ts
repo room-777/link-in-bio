@@ -31,6 +31,9 @@ export type AppEnv = EvlogVariables & {
 		GITHUB_TOKEN: string;
 		PRODUCT_HUNT_TOKEN: string;
 		PAGE_DOMAIN: string;
+		CLOUDFLARE_SAAS_ZONE_ID?: string;
+		CLOUDFLARE_SAAS_API_TOKEN?: string;
+		CUSTOM_DOMAIN_TARGET?: string;
 	};
 	Variables: {
 		db: DatabaseClient;
