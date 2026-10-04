@@ -1,5 +1,5 @@
 import assert from "node:assert/strict";
-import { describe, it } from "node:test";
+import { describe, it, mock } from "node:test";
 import { Hono } from "hono";
 import { createPageDomainsController } from "../../src/controllers/page-domains.controller";
 import type { AppEnv } from "../../src/types";
@@ -7,11 +7,28 @@ import { domainFixture, present } from "../fixtures/page-domain.fixture";
 
 function fixture() {
 	const f = domainFixture();
+	const db = {} as AppEnv["Variables"]["db"];
+	let databaseRequests = 0;
+	let sessionRequests = 0;
 	const app = new Hono<AppEnv>().route(
 		"/pages",
 		createPageDomainsController({
-			service: () => f.service,
+			databaseMiddleware: async (c, next) => {
+				databaseRequests += 1;
+				c.set("db", db);
+				await next();
+			},
+			service: (c) => {
+				assert.equal(
+					c.var.db,
+					db,
+					"Domain requests need a database connection.",
+				);
+				return f.service;
+			},
 			sessionMiddleware: async (c, next) => {
+				sessionRequests += 1;
+				c.set("db", db);
 				const id = c.req.header("X-Test-User");
 				c.set(
 					"session",
@@ -25,6 +42,12 @@ function fixture() {
 	return {
 		...f,
 		app,
+		get databaseRequests() {
+			return databaseRequests;
+		},
+		get sessionRequests() {
+			return sessionRequests;
+		},
 		request: (path: string, method = "GET", body?: string, user = "owner-a") =>
 			app.request(`/pages/${path}`, {
 				method,
@@ -203,8 +226,8 @@ describe("page domain HTTP API", () => {
 	});
 	/** Case ID: DOMAIN-API-008
 	 * Given: an active custom hostname. When: its visitor requests page routing.
-	 * Then: return the public page handle without a session; inactive claims are hidden.
-	 * Evidence: route status, handle, cache policy and inactive 404. Result: Pass | Fail | Blocked | Not Run
+	 * Then: initialize the database before resolving without a session; inactive claims are hidden.
+	 * Evidence: database initialization, no session lookup, route status, handle, cache policy and inactive 404. Result: Pass | Fail | Blocked | Not Run
 	 */
 	it("DOMAIN-API-008 resolves active domains for public page routing", async () => {
 		const f = fixture();
@@ -213,6 +236,8 @@ describe("page domain HTTP API", () => {
 		assert.equal(response.status, 200);
 		assert.equal(response.headers.get("Cache-Control"), "no-store");
 		assert.deepEqual(await response.json(), { handle: "avery" });
+		assert.equal(f.databaseRequests, 1);
+		assert.equal(f.sessionRequests, 0);
 
 		const pending = await f.request(
 			"blair/domain",
@@ -225,5 +250,33 @@ describe("page domain HTTP API", () => {
 			(await f.app.request("/pages/domain/other.example.com")).status,
 			404,
 		);
+	});
+	/** Case ID: DOMAIN-API-009
+	 * Given: an unexpected database failure. When: public domain routing is requested.
+	 * Then: log the original error while returning a generic response to the visitor.
+	 * Evidence: logged error object, HTTP 500 and absence of internal details in the body. Result: Pass | Fail | Blocked | Not Run
+	 */
+	it("DOMAIN-API-009 logs unexpected failures without exposing them", async () => {
+		const error = new Error("Private database failure.");
+		const log = mock.method(console, "error", () => {});
+		try {
+			const app = createPageDomainsController({
+				databaseMiddleware: async (_c, next) => next(),
+				sessionMiddleware: async (_c, next) => next(),
+				service: () => {
+					throw error;
+				},
+			});
+			const response = await app.request("/domain/hello.example.com");
+			assert.equal(response.status, 500);
+			assert.equal(log.mock.calls.length, 1);
+			assert.deepEqual(log.mock.calls[0]?.arguments, [
+				"Domain request failed.",
+				error,
+			]);
+			assert.doesNotMatch(await response.text(), /Private database failure/);
+		} finally {
+			log.mock.restore();
+		}
 	});
 });

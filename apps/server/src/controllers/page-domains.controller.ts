@@ -30,11 +30,13 @@ function ownerId(c: Context<AppEnv>) {
 	return session.user.id;
 }
 
-/** HTTP-only adapter; authentication and service wiring are supplied by the server. */
+/** HTTP-only adapter; database, authentication and service wiring are supplied by the server. */
 export function createPageDomainsController({
+	databaseMiddleware,
 	sessionMiddleware,
 	service,
 }: {
+	databaseMiddleware: MiddlewareHandler<AppEnv>;
 	sessionMiddleware: MiddlewareHandler<AppEnv>;
 	service: (c: Context<AppEnv>) => PageDomainService;
 }) {
@@ -61,14 +63,14 @@ export function createPageDomainsController({
 	controller.use("/:handle/domain/*", authenticated);
 	controller.onError((error, c) => {
 		if (!(error instanceof PageDomainError)) {
-			console.error("Domain request failed.");
+			console.error("Domain request failed.", error);
 			return jsonApiError(c, { status: 500 });
 		}
 		const [status, detail] = errors[error.code];
 		return jsonApiError(c, { status, code: error.code, detail });
 	});
 	return controller
-		.get("/domain/:hostname", async (c) => {
+		.get("/domain/:hostname", databaseMiddleware, async (c) => {
 			c.header("Cache-Control", "no-store");
 			const page = await service(c).resolve(c.req.param("hostname"));
 			if (!page)

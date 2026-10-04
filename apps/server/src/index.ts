@@ -212,6 +212,10 @@ const app = createFactory<AppEnv>({
 	.route(
 		"/pages",
 		createPageDomainsController({
+			databaseMiddleware: async (c, next) => {
+				c.set("db", await createDb());
+				await next();
+			},
 			sessionMiddleware: requiredSession,
 			service: (c) => createBoundPageDomainService(c.var.db, c.env),
 		}),
