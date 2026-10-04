@@ -26,6 +26,7 @@ import { useIsMobile } from "@grabbin/ui/components/use-mobile";
 import { useState } from "react";
 import { CheckCircle } from "reicon-react/icons/CheckCircle";
 import { authClient } from "@/lib/auth-client";
+import { isMultiPageEnabled } from "@/lib/feature-flags";
 import { PlanDialog } from "../../billing/plan-dialog";
 import CustomDomainTabContent from "./custom-domain-tab-content";
 import PageTabContent from "./page-tab-content";
@@ -84,14 +85,16 @@ export default function SettingDialog({
 					aria-label="Settings"
 					variant="line"
 					size="xl"
-					className="grid w-full max-w-full shrink-0 grid-cols-[repeat(4,auto)] items-center justify-stretch gap-1 overflow-visible bg-background px-0 [&>[data-slot=tabs-indicator]]:hidden"
+					className={`grid w-full max-w-full shrink-0 ${isMultiPageEnabled ? "grid-cols-[repeat(4,auto)]" : "grid-cols-[repeat(3,auto)]"} items-center justify-stretch gap-1 overflow-visible bg-background px-0 [&>[data-slot=tabs-indicator]]:hidden`}
 				>
 					<TabsTrigger className={tabTriggerClassName} value="account">
 						Account
 					</TabsTrigger>
-					<TabsTrigger className={tabTriggerClassName} value="page">
-						Page
-					</TabsTrigger>
+					{isMultiPageEnabled && (
+						<TabsTrigger className={tabTriggerClassName} value="page">
+							Page
+						</TabsTrigger>
+					)}
 					<TabsTrigger className={tabTriggerClassName} value="billing">
 						Billing
 					</TabsTrigger>
@@ -115,12 +118,14 @@ export default function SettingDialog({
 							</div>
 						</section>
 					</TabsContent>
-					<TabsContent value="page" className="m-0 h-full w-full">
-						<PageTabContent
-							active={open && activeTab === "page"}
-							onClose={() => onOpenChange(false)}
-						/>
-					</TabsContent>
+					{isMultiPageEnabled && (
+						<TabsContent value="page" className="m-0 h-full w-full">
+							<PageTabContent
+								active={open && activeTab === "page"}
+								onClose={() => onOpenChange(false)}
+							/>
+						</TabsContent>
+					)}
 					<TabsContent value="billing" className="m-0 h-full">
 						<section className="flex items-center justify-between gap-4">
 							<div>

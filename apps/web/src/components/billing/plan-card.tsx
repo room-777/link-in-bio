@@ -9,6 +9,7 @@ import { BarChart3, Sparkles } from "lucide-react";
 import { AnimatePresence, motion, useReducedMotion } from "motion/react";
 import { useState } from "react";
 import { CheckCircle } from "reicon-react/icons/CheckCircle";
+import { isMultiPageEnabled } from "@/lib/feature-flags";
 
 const upcomingFeatures = [
 	{ label: "Advanced Widgets", Icon: Sparkles },
@@ -240,14 +241,16 @@ export function PlanCard({
 							/>
 							<span>All Free plan features included</span>
 						</li>
-						<li className="flex items-center gap-2.5 text-base">
-							<CheckCircle
-								aria-hidden="true"
-								weight="Filled"
-								className="size-5 shrink-0 text-brand-green"
-							/>
-							<span>Up to 3 pages per account</span>
-						</li>
+						{isMultiPageEnabled && (
+							<li className="flex items-center gap-2.5 text-base">
+								<CheckCircle
+									aria-hidden="true"
+									weight="Filled"
+									className="size-5 shrink-0 text-brand-green"
+								/>
+								<span>Up to 3 pages per account</span>
+							</li>
+						)}
 						<li className="flex items-center gap-2.5 text-base">
 							<CheckCircle
 								aria-hidden="true"

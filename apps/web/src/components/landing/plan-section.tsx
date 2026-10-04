@@ -51,8 +51,8 @@ export default function PlanSection({
 						A thoughtful page, free to start.
 					</h2>
 					<p className="text-pretty text-muted-foreground sm:text-lg">
-						Build for free. Move to Pro when you need more pages or want to
-						remove the watermark.
+						Build for free. Move to Pro to remove the watermark or connect a
+						custom domain.
 					</p>
 				</motion.div>
 				<div className="relative mt-8 grid w-full max-w-[51rem] grid-cols-1 gap-6 [grid-auto-rows:1fr] md:grid-cols-2">
