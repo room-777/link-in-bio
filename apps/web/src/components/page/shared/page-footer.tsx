@@ -294,6 +294,7 @@ function OwnerFooter({
 				open={isHandleDialogOpen}
 			/>
 			<SettingDialog
+				handle={handle}
 				open={isSettingDialogOpen}
 				onOpenChange={setIsSettingDialogOpen}
 			/>

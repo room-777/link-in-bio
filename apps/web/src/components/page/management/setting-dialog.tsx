@@ -16,17 +16,6 @@ import {
 	DrawerTitle,
 } from "@grabbin/ui/components/drawer";
 import {
-	Field,
-	FieldDescription,
-	FieldTitle,
-} from "@grabbin/ui/components/field";
-import {
-	InputGroup,
-	InputGroupAddon,
-	InputGroupButton,
-	InputGroupInput,
-} from "@grabbin/ui/components/input-group";
-import {
 	Tabs,
 	TabsContent,
 	TabsList,
@@ -36,17 +25,19 @@ import { toast } from "@grabbin/ui/components/toast";
 import { useIsMobile } from "@grabbin/ui/components/use-mobile";
 import { useState } from "react";
 import { CheckCircle } from "reicon-react/icons/CheckCircle";
-import { Verified } from "reicon-react/icons/Verified";
 import { authClient } from "@/lib/auth-client";
 import { PlanDialog } from "../../billing/plan-dialog";
+import CustomDomainTabContent from "./custom-domain-tab-content";
 import PageTabContent from "./page-tab-content";
 
 export default function SettingDialog({
 	open,
 	onOpenChange,
+	handle,
 }: {
 	open: boolean;
 	onOpenChange: (open: boolean) => void;
+	handle?: string;
 }) {
 	const isMobile = useIsMobile();
 	const { data: session } = authClient.useSession();
@@ -165,40 +156,12 @@ export default function SettingDialog({
 						</section>
 					</TabsContent>
 					<TabsContent value="custom-domain" className="m-0 h-full p-1">
-						<Field className="min-w-0">
-							<FieldTitle className="gap-1 text-base">
-								Custom domain
-								<Verified
-									aria-hidden="true"
-									weight="Filled"
-									className="size-5 text-brand-blue"
-								/>
-							</FieldTitle>
-							<FieldDescription id="custom-domain-description">
-								Connect your own domain to make your page more personal.
-							</FieldDescription>
-							<InputGroup className="mt-2 h-11">
-								<InputGroupInput
-									id="custom-domain"
-									disabled={!isPro}
-									aria-label="Custom domain"
-									aria-describedby="custom-domain-description"
-									autoComplete="url"
-									inputMode="url"
-									placeholder="example.com"
-									className="w-0 min-w-0 text-base!"
-								/>
-								<InputGroupAddon align="inline-end" className="shrink-0 pr-2">
-									<InputGroupButton
-										disabled={!isPro}
-										variant="outline"
-										className="h-9 rounded-md px-3 text-primary hover:bg-background hover:text-primary"
-									>
-										Connect
-									</InputGroupButton>
-								</InputGroupAddon>
-							</InputGroup>
-						</Field>
+						<CustomDomainTabContent
+							active={open && activeTab === "custom-domain"}
+							handle={handle}
+							isPro={isPro}
+							onUpgrade={() => setIsCheckoutDialogOpen(true)}
+						/>
 					</TabsContent>
 				</div>
 			</Tabs>
