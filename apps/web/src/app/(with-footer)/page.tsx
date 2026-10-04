@@ -45,10 +45,15 @@ const getDomainPage = cache(async (hostname: string) => {
 	const response = await client.pages.domain[":hostname"].$get({
 		param: { hostname },
 	});
+
 	if (response.status === 404 || response.status === 422) return null;
+
 	if (!response.ok) throw new Error(await getApiErrorMessage(response));
+
 	const result = await response.json();
+
 	if (!("handle" in result)) throw new Error("Could not find this page.");
+
 	return fetchPage(result.handle);
 });
 
@@ -61,6 +66,7 @@ async function getRequestDomainPage() {
 export async function generateMetadata(): Promise<Metadata> {
 	const hostname = getCustomDomainHostname((await headers()).get("host"));
 	const pageResponse = await getRequestDomainPage();
+
 	if (!pageResponse) return landingMetadata;
 
 	const { page } = pageResponse;

@@ -71,32 +71,20 @@ export default function SettingDialog({
 		}
 	};
 	const tabTriggerClassName =
-		"py-1.5 bg-background hover:bg-muted/80 hover:text-[var(--tabs-text-muted)] data-active:bg-background data-active:text-foreground data-active:hover:bg-muted/80 data-active:hover:text-foreground data-active:smooth-shadow-xs data-active:border data-active:border-border";
+		"py-2.5 bg-background hover:bg-muted/80 hover:text-[var(--tabs-text-muted)] data-active:bg-background data-active:text-foreground data-active:hover:bg-muted/80 data-active:hover:text-foreground data-active:smooth-shadow-xs data-active:border data-active:border-border";
 
 	const content = (
 		<div className="flex min-h-0 min-w-0 flex-1 flex-col gap-5">
-			<h2 className="text-center font-heading font-medium text-base">
-				Setting
-			</h2>
 			<Tabs
 				value={activeTab}
 				onValueChange={(value) => setActiveTab(String(value))}
-				orientation={isMobile ? "horizontal" : "vertical"}
-				className={
-					isMobile
-						? "flex min-h-0 min-w-0 flex-1 flex-col gap-4"
-						: "flex min-h-0 min-w-0 flex-1 gap-6"
-				}
+				className="flex min-h-0 min-w-0 flex-1 flex-col gap-4"
 			>
 				<TabsList
 					aria-label="Settings"
 					variant="line"
-					size="lg"
-					className={
-						isMobile
-							? "w-full max-w-full items-center justify-start gap-1 overflow-x-visible bg-background px-0 [&>[data-slot=tabs-indicator]]:hidden"
-							: "w-36 shrink-0 items-stretch overflow-x-visible bg-background px-0 [&>[data-slot=tabs-indicator]]:hidden"
-					}
+					size="xl"
+					className="w-full max-w-full items-center justify-start gap-1 overflow-x-visible bg-background px-0 [&>[data-slot=tabs-indicator]]:hidden"
 				>
 					<TabsTrigger className={tabTriggerClassName} value="account">
 						Account

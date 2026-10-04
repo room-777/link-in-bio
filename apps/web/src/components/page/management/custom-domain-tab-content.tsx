@@ -22,10 +22,13 @@ import {
 	InputGroupButton,
 	InputGroupInput,
 } from "@grabbin/ui/components/input-group";
+import Loading from "@grabbin/ui/components/loading";
 import { toast } from "@grabbin/ui/components/toast";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { Check, Copy, LoaderCircle, Trash2 } from "lucide-react";
-import { type FormEvent, useState } from "react";
+import { Check, Copy, GlobeX } from "lucide-react";
+import { AnimatePresence, motion, useReducedMotion } from "motion/react";
+import { type FormEvent, useEffect, useState } from "react";
+import { CheckCircle as StatusCheck } from "reicon-react/icons/CheckCircle";
 import { Verified } from "reicon-react/icons/Verified";
 import { apiClient, getApiErrorMessage } from "@/lib/api-client";
 
@@ -37,11 +40,61 @@ const statusLabels = {
 	expired: "Pro plan ended",
 } as const;
 
+function DomainStatusIcon({ status }: { status: keyof typeof statusLabels }) {
+	switch (status) {
+		case "active":
+			return (
+				<StatusCheck
+					aria-hidden="true"
+					weight="Filled"
+					className="size-6 text-brand-green"
+				/>
+			);
+		case "expired":
+			return <GlobeX aria-hidden="true" className="size-6" />;
+		default:
+			return <Loading aria-hidden="true" className="size-6" />;
+	}
+}
+
 function formatDate(value: string) {
 	return new Intl.DateTimeFormat(undefined, {
 		dateStyle: "medium",
 		timeStyle: "short",
 	}).format(new Date(value));
+}
+
+function CopyStateIcon({
+	copied,
+	reduceMotion,
+}: {
+	copied: boolean;
+	reduceMotion: boolean;
+}) {
+	return (
+		<span className="relative inline-grid place-items-center">
+			<AnimatePresence initial={false} mode="popLayout">
+				<motion.span
+					key={copied ? "copied" : "copy"}
+					initial={
+						reduceMotion
+							? false
+							: { opacity: 0, scale: 0.25, filter: "blur(4px)" }
+					}
+					animate={{ opacity: 1, scale: 1, filter: "blur(0px)" }}
+					exit={{ opacity: 0, scale: 0.25, filter: "blur(4px)" }}
+					transition={{ type: "spring", duration: 0.3, bounce: 0 }}
+					className="col-start-1 row-start-1 inline-flex items-center gap-1.5"
+				>
+					{copied ? (
+						<Check className="size-4" aria-hidden="true" />
+					) : (
+						<Copy className="size-4" aria-hidden="true" />
+					)}
+				</motion.span>
+			</AnimatePresence>
+		</span>
+	);
 }
 
 export default function CustomDomainTabContent({
@@ -59,6 +112,7 @@ export default function CustomDomainTabContent({
 	const [hostname, setHostname] = useState("");
 	const [isDisconnectDialogOpen, setIsDisconnectDialogOpen] = useState(false);
 	const [copiedRecord, setCopiedRecord] = useState<string | null>(null);
+	const reduceMotion = useReducedMotion() ?? false;
 	const queryKey = ["page-domain", handle];
 	const domainQuery = useQuery({
 		queryKey,
@@ -80,6 +134,13 @@ export default function CustomDomainTabContent({
 				: false,
 	});
 	const domain = domainQuery.data?.domain;
+	const checkLabel = domain?.status === "active" ? "Check status" : "Check DNS";
+
+	useEffect(() => {
+		if (!copiedRecord) return;
+		const timeout = window.setTimeout(() => setCopiedRecord(null), 1800);
+		return () => window.clearTimeout(timeout);
+	}, [copiedRecord]);
 
 	const updateDomain = async () => queryClient.invalidateQueries({ queryKey });
 	const connectMutation = useMutation({
@@ -161,7 +222,6 @@ export default function CustomDomainTabContent({
 		try {
 			await navigator.clipboard.writeText(value);
 			setCopiedRecord(key);
-			window.setTimeout(() => setCopiedRecord(null), 1600);
 		} catch {
 			toast({ message: "Could not copy this value.", state: "error" });
 		}
@@ -215,29 +275,24 @@ export default function CustomDomainTabContent({
 					<div className="mt-4 flex min-w-0 flex-col gap-4">
 						<section
 							aria-label="Connected custom domain"
-							className="flex min-w-0 flex-col gap-3 rounded-lg bg-secondary p-3.5"
+							className="smooth-shadow-ring-xs smooth-ring-neutral-300/40 flex min-w-0 flex-col items-start gap-1 rounded-xl p-3 pl-5"
 						>
-							<div className="flex min-w-0 items-start justify-between gap-3">
-								<div className="min-w-0">
-									<p className="break-all font-medium text-base">
-										{domain.hostname}
-									</p>
-									<p
-										className="mt-1 text-muted-foreground text-sm"
-										aria-live="polite"
-									>
-										{statusLabels[domain.status]}
-									</p>
-								</div>
-								{domain.status === "active" && (
-									<Check
-										aria-label="Connected"
-										className="size-5 shrink-0 text-brand-green"
-									/>
-								)}
+							<div className="flex w-full min-w-0 flex-row items-center justify-between gap-3">
+								<p className="min-w-0 break-all font-medium text-base">
+									{domain.hostname}
+								</p>
+								<span className="flex size-8 shrink-0 items-center justify-center rounded-full">
+									<DomainStatusIcon status={domain.status} />
+								</span>
 							</div>
+							<span className="sr-only" role="status">
+								{statusLabels[domain.status]}
+							</span>
 							{domain.lastError && (
-								<p className="text-muted-foreground text-sm" role="status">
+								<p
+									className="wrap-break-word text-destructive text-xs"
+									role="status"
+								>
 									{domain.lastError}
 								</p>
 							)}
@@ -261,35 +316,47 @@ export default function CustomDomainTabContent({
 									Add these records at your domain provider.
 								</p>
 								{domain.records.map((record) => {
-									const key = `${record.type}:${record.name}`;
+									const recordKey = `${record.type}:${record.name}`;
+									const fields = [
+										{ label: "Type", value: record.type },
+										{ label: "Name", value: record.name },
+										{ label: "Target", value: record.value },
+									];
 									return (
 										<div
-											key={key}
-											className="grid min-w-0 grid-cols-[2.5rem_minmax(0,1fr)_2.25rem] items-start gap-x-2 gap-y-1 rounded-lg border p-3"
+											key={recordKey}
+											className="smooth-shadow-ring-xs smooth-ring-neutral-300/40 flex flex-col gap-0 rounded-xl p-1 py-2"
 										>
-											<span className="row-span-2 pt-0.5 font-medium text-muted-foreground text-xs">
-												{record.type}
-											</span>
-											<span className="break-all font-mono text-xs">
-												{record.name}
-											</span>
-											<span className="row-span-2 flex justify-end">
-												<Button
-													variant="ghost"
-													size="icon-sm"
-													aria-label={`Copy ${record.type} record value`}
-													onClick={() => void copyRecord(key, record.value)}
-												>
-													{copiedRecord === key ? (
-														<Check aria-hidden="true" />
-													) : (
-														<Copy aria-hidden="true" />
-													)}
-												</Button>
-											</span>
-											<span className="break-all font-mono text-muted-foreground text-xs">
-												{record.value}
-											</span>
+											{fields.map((field) => {
+												const key = `${recordKey}:${field.label}`;
+												const isCopied = copiedRecord === key;
+
+												return (
+													<div
+														key={field.label}
+														className="flex flex-row items-center gap-1 pr-0.5"
+													>
+														<span className="h-10 p-2 px-3 font-medium text-muted-foreground text-sm">
+															{field.label}
+														</span>
+														<span className="h-10 min-w-0 flex-1 break-all p-2 text-sm">
+															{field.value}
+														</span>
+														<Button
+															variant="ghost"
+															size="icon-lg"
+															aria-label={`${isCopied ? "Copied" : "Copy"} ${record.type} ${field.label.toLowerCase()}`}
+															onClick={() => void copyRecord(key, field.value)}
+															className={"size-9"}
+														>
+															<CopyStateIcon
+																copied={isCopied}
+																reduceMotion={reduceMotion}
+															/>
+														</Button>
+													</div>
+												);
+											})}
 										</div>
 									);
 								})}
@@ -299,28 +366,38 @@ export default function CustomDomainTabContent({
 						<div className="flex flex-wrap gap-2">
 							<Button
 								variant="outline"
+								size="xl"
 								disabled={
 									checkMutation.isPending || domain.status === "deleting"
 								}
 								onClick={() => checkMutation.mutate()}
+								aria-label={
+									checkMutation.isPending ? "Checking domain" : undefined
+								}
 							>
-								{checkMutation.isPending && (
-									<LoaderCircle
-										aria-hidden="true"
-										className="size-4 animate-spin"
-									/>
-								)}
-								{domain.status === "active" ? "Check status" : "Check DNS"}
+								<span className="relative inline-grid place-items-center">
+									<span
+										aria-hidden={checkMutation.isPending}
+										className={
+											checkMutation.isPending ? "invisible" : undefined
+										}
+									>
+										{checkLabel}
+									</span>
+									{checkMutation.isPending && (
+										<Loading className="absolute size-4" />
+									)}
+								</span>
 							</Button>
 							<Button
-								variant="ghost"
-								className="text-destructive hover:text-destructive"
+								variant="destructive"
+								size="xl"
 								disabled={
 									disconnectMutation.isPending || domain.status === "deleting"
 								}
 								onClick={() => setIsDisconnectDialogOpen(true)}
+								className="min-w-0 overflow-hidden whitespace-nowrap bg-destructive text-white hover:bg-destructive/80 motion-safe:active:scale-100"
 							>
-								<Trash2 aria-hidden="true" className="size-4" />
 								Disconnect
 							</Button>
 						</div>
@@ -349,10 +426,14 @@ export default function CustomDomainTabContent({
 											aria-label="Connect custom domain"
 											disabled={!hostname.trim() || connectMutation.isPending}
 											variant="outline"
-											className="h-9 rounded-md px-3 text-primary hover:bg-background hover:text-primary"
+											className="h-9 min-w-[4.5rem] justify-center rounded-md px-3 text-primary hover:bg-background hover:text-primary"
 											type="submit"
 										>
-											{connectMutation.isPending ? "Connecting…" : "Connect"}
+											{connectMutation.isPending ? (
+												<Loading className="size-4" />
+											) : (
+												"Connect"
+											)}
 										</InputGroupButton>
 									</InputGroupAddon>
 								</InputGroup>
@@ -377,28 +458,43 @@ export default function CustomDomainTabContent({
 				open={isDisconnectDialogOpen}
 				onOpenChange={setIsDisconnectDialogOpen}
 			>
-				<AlertDialogContent>
-					<AlertDialogHeader>
-						<AlertDialogTitle>Disconnect custom domain?</AlertDialogTitle>
-						<AlertDialogDescription>
-							{domain?.hostname} will stop opening this page. You can connect it
-							again later.
-						</AlertDialogDescription>
-					</AlertDialogHeader>
-					<AlertDialogFooter>
-						<AlertDialogCancel disabled={disconnectMutation.isPending}>
-							Cancel
-						</AlertDialogCancel>
-						<AlertDialogAction
-							disabled={disconnectMutation.isPending}
-							onClick={(event) => {
-								event.preventDefault();
-								disconnectMutation.mutate();
-							}}
-						>
-							{disconnectMutation.isPending ? "Disconnecting…" : "Disconnect"}
-						</AlertDialogAction>
-					</AlertDialogFooter>
+				<AlertDialogContent
+					overlayProps={{ forceRender: true, className: "z-[60]" }}
+					className="z-[70] gap-0 overflow-hidden p-5"
+				>
+					<div className="flex h-full w-full min-w-0 flex-col gap-4">
+						<AlertDialogHeader>
+							<AlertDialogTitle>Disconnect custom domain?</AlertDialogTitle>
+							<AlertDialogDescription>
+								<span className="font-medium text-primary">
+									{domain?.hostname}
+								</span>{" "}
+								will stop opening this page. You can connect it again later.
+							</AlertDialogDescription>
+						</AlertDialogHeader>
+						<AlertDialogFooter className="mx-0 mt-auto w-full! flex-col-reverse! items-end rounded-b-xl border-0 bg-transparent px-0 sm:justify-end">
+							<AlertDialogCancel
+								className="w-full min-w-0 whitespace-nowrap sm:max-w-36"
+								size="xl"
+								variant="outline"
+								disabled={disconnectMutation.isPending}
+							>
+								Cancel
+							</AlertDialogCancel>
+							<AlertDialogAction
+								variant="destructive"
+								size="xl"
+								disabled={disconnectMutation.isPending}
+								onClick={(event) => {
+									event.preventDefault();
+									disconnectMutation.mutate();
+								}}
+								className="relative w-full min-w-0 overflow-hidden whitespace-nowrap bg-destructive text-white hover:bg-destructive/80 motion-safe:active:scale-100 sm:max-w-36"
+							>
+								{disconnectMutation.isPending ? "Disconnecting…" : "Disconnect"}
+							</AlertDialogAction>
+						</AlertDialogFooter>
+					</div>
 				</AlertDialogContent>
 			</AlertDialog>
 		</>
