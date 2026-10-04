@@ -128,13 +128,7 @@ export default function PageTabContent({
 	};
 
 	const content = (
-		<div
-			className={
-				isMobile
-					? "flex h-full min-h-0 min-w-0 flex-col overflow-y-auto p-1"
-					: "flex h-full min-h-0 min-w-0 flex-col overflow-hidden p-1"
-			}
-		>
+		<div className="flex h-full min-h-0 min-w-0 flex-col p-1">
 			<AnimatePresence initial={false} mode="wait">
 				<motion.div
 					key={activity}
@@ -189,7 +183,10 @@ export default function PageTabContent({
 										</div>
 									) : (
 										pagesQuery.data?.pages.map((page) => (
-											<div key={page.id} className="w-full rounded-xl">
+											<div
+												key={page.id}
+												className="-mx-3 self-stretch rounded-xl"
+											>
 												<div className="flex min-h-12 w-full items-center gap-2 rounded-xl bg-popover px-3 py-3 transition-colors duration-150 hover:bg-secondary motion-reduce:transition-none">
 													<Avatar size="lg" className="size-10 outline-depth">
 														<AvatarImage
@@ -220,7 +217,7 @@ export default function PageTabContent({
 													<Checkbox
 														checked={page.isPrimary}
 														aria-label={`Set /${page.handle} as primary page`}
-														className="size-6 cursor-pointer rounded-full border border-muted-foreground/30 data-checked:border-2 data-checked:border-brand-green! data-checked:bg-brand-green! data-checked:text-white! data-checked:outline-depth"
+														className="size-6 cursor-pointer rounded-full border border-muted-foreground/30 data-checked:border-0 data-checked:bg-brand-green! data-checked:text-white!"
 														disabled={busyHandle !== null}
 														onCheckedChange={(checked) => {
 															if (checked) requestPrimaryChange(page.handle);
@@ -231,7 +228,7 @@ export default function PageTabContent({
 															variant="ghost"
 															size="icon-xs"
 															aria-label={`Delete /${page.handle}`}
-															className="size-6! min-w-0 rounded-full border border-destructive bg-destructive p-0 text-white outline-depth -outline-offset-1! hover:bg-destructive/80 hover:text-white"
+															className="size-6! min-w-0 rounded-full border-0 bg-destructive p-0 text-white hover:bg-destructive/80 hover:text-white"
 															disabled={busyHandle !== null}
 															onClick={() => setDeletePageHandle(page.handle)}
 														>
