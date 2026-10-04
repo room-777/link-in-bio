@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { headers } from "next/headers";
 import { notFound } from "next/navigation";
 import { cache } from "react";
+import { getCustomDomainHostname } from "@/lib/custom-domain-host";
 import { getPageImageUrl } from "@/lib/page-image-url";
 import { fetchPage } from "@/lib/server/page-query";
 import OwnerPage from "../../components/page/editor/owner-page";
@@ -16,6 +17,7 @@ export async function generateMetadata({
 }: PageProps<"/[handle]">): Promise<Metadata> {
 	const { handle } = await params;
 	const requestHeaders = await headers();
+	if (getCustomDomainHostname(requestHeaders.get("host"))) return {};
 	const page = await getPageForRequest(
 		handle,
 		requestHeaders.get("cookie") ?? "",
@@ -68,6 +70,7 @@ export async function generateMetadata({
 export default async function Page({ params }: PageProps<"/[handle]">) {
 	const { handle } = await params;
 	const requestHeaders = await headers();
+	if (getCustomDomainHostname(requestHeaders.get("host"))) notFound();
 	const page = await getPageForRequest(
 		handle,
 		requestHeaders.get("cookie") ?? "",
