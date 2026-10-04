@@ -4,8 +4,7 @@ import Link from "next/link";
 import { UpdateMedia } from "@/components/updates/update-components";
 import { updates } from "@/lib/updates";
 
-const description =
-	"Read product news, feature releases, and behind-the-scenes notes about building your Grabbin page.";
+const description = "Product news and feature updates.";
 
 export const metadata: Metadata = {
 	title: "Updates | Grabbin",
@@ -32,11 +31,13 @@ const formatDate = (date: string) =>
 export default function UpdatesPage() {
 	return (
 		<main className="open-runde mx-auto min-h-svh max-w-5xl px-5 pt-40 pb-24">
-			<header className="text-center">
-				<h1 className="font-medium text-3xl leading-10 tracking-[-0.04em]">
+			<header className="mx-auto max-w-xl text-center">
+				<h1 className="text-balance font-medium text-4xl tracking-[-0.04em]">
 					Updates
 				</h1>
-				<p className="mt-3 text-muted-foreground text-sm">{description}</p>
+				<p className="mx-auto mt-4 max-w-md text-pretty px-5 font-medium text-base text-muted-foreground/80 leading-6">
+					{description}
+				</p>
 			</header>
 			<section
 				aria-label="Latest updates"

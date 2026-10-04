@@ -63,7 +63,7 @@ export function UpdateMedia({
 	) : (
 		<Image
 			className={cn(
-				"aspect-video w-full rounded-md bg-secondary/10 object-contain drop-shadow-sm",
+				"aspect-video w-full rounded-md bg-secondary/10 object-cover drop-shadow-sm",
 				className,
 			)}
 			src={thumbnail.src}
