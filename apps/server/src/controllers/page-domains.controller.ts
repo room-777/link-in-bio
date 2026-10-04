@@ -70,6 +70,13 @@ export function createPageDomainsController({
 		return jsonApiError(c, { status, code: error.code, detail });
 	});
 	return controller
+		.get("/domain/:hostname", async (c) => {
+			c.header("Cache-Control", "no-store");
+			const page = await service(c).resolve(c.req.param("hostname"));
+			if (!page)
+				return jsonApiError(c, { status: 404, detail: "Page not found." });
+			return c.json({ handle: page.handle });
+		})
 		.get("/:handle/domain", async (c) =>
 			c.json(await service(c).get(ownerId(c), c.req.param("handle"))),
 		)

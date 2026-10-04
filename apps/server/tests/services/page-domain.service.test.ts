@@ -135,6 +135,7 @@ describe("custom domain lifecycle", () => {
 		present(f.pages.get("page-a")).handle = "renamed";
 		assert.deepEqual(await f.service.resolve("hello.example.com"), {
 			pageId: "page-a",
+			handle: "renamed",
 		});
 		assert.equal(f.calls.filter((call) => call.method === "POST").length, 1);
 	});
@@ -152,6 +153,7 @@ describe("custom domain lifecycle", () => {
 		assert.equal(JSON.stringify(failed).includes("fake-test-token"), false);
 		assert.deepEqual(await f.service.resolve("hello.example.com"), {
 			pageId: "page-a",
+			handle: "avery",
 		});
 		f.advance();
 		f.failDns(true);

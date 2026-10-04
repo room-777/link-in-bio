@@ -376,7 +376,7 @@ export function createPageDomainService(options: DomainOptions) {
 				response(repo, page, await repo.byId(row.id), clock()),
 			);
 		},
-		/** Resolves only active, entitled domains; render a public page using this stable ID. */
+		/** Resolves only active, entitled domains for public-host routing. */
 		async resolve(rawHostname: string) {
 			const hostname = normalizeHostname(rawHostname, serviceDomain);
 			const found = await store.byHostname(hostname);
@@ -394,7 +394,7 @@ export function createPageDomainService(options: DomainOptions) {
 				const page = await repo.pageById(row.pageId);
 				if (!page || !(await access(repo, page, row, clock())).canServe)
 					return null;
-				return { pageId: page.id };
+				return { pageId: page.id, handle: page.handle };
 			});
 		},
 		/** Mark expired claims only after billing refresh; frequent checks perform provider cleanup. */

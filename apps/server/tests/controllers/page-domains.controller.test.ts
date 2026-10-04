@@ -198,4 +198,29 @@ describe("page domain HTTP API", () => {
 		assert.equal(f.rows.size, 1);
 		assert.equal(await f.service.resolve(row.hostname), null);
 	});
+	/** Case ID: DOMAIN-API-008
+	 * Given: an active custom hostname. When: its visitor requests page routing.
+	 * Then: return the public page handle without a session; inactive claims are hidden.
+	 * Evidence: route status, handle, cache policy and inactive 404. Result: Pass | Fail | Blocked | Not Run
+	 */
+	it("DOMAIN-API-008 resolves active domains for public page routing", async () => {
+		const f = fixture();
+		const row = await f.active();
+		const response = await f.app.request(`/pages/domain/${row.hostname}`);
+		assert.equal(response.status, 200);
+		assert.equal(response.headers.get("Cache-Control"), "no-store");
+		assert.deepEqual(await response.json(), { handle: "avery" });
+
+		const pending = await f.request(
+			"blair/domain",
+			"POST",
+			'{"hostname":"other.example.com"}',
+			"owner-b",
+		);
+		assert.equal(pending.status, 200);
+		assert.equal(
+			(await f.app.request("/pages/domain/other.example.com")).status,
+			404,
+		);
+	});
 });
