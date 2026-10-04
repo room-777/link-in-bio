@@ -82,6 +82,16 @@ export async function generateMetadata(): Promise<Metadata> {
 		height: 630,
 		format: "png",
 	});
+	const icon = getPageImageUrl(page.imageSource ?? page.imageKey, {
+		width: 64,
+		height: 64,
+		format: "png",
+	});
+	const appleIcon = getPageImageUrl(page.imageSource ?? page.imageKey, {
+		width: 180,
+		height: 180,
+		format: "png",
+	});
 
 	return {
 		title,
@@ -102,6 +112,14 @@ export async function generateMetadata(): Promise<Metadata> {
 			description,
 			images: image ? [image] : undefined,
 		},
+		icons: icon
+			? {
+					icon: { url: icon, type: "image/png", sizes: "64x64" },
+					apple: appleIcon
+						? { url: appleIcon, type: "image/png", sizes: "180x180" }
+						: undefined,
+				}
+			: undefined,
 	};
 }
 
