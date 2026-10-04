@@ -18,7 +18,6 @@ import {
 
 const CHECK_INTERVAL_MS = 5 * 60 * 1000;
 const ACTIVE_CHECK_INTERVAL_MS = 6 * 60 * 60 * 1000;
-const MANUAL_CHECK_INTERVAL_MS = 30 * 1000;
 
 /** Accepts public subdomains only, including multi-part suffixes such as co.kr. */
 function normalizeHostname(raw: string, serviceDomain: string) {
@@ -197,12 +196,6 @@ export function createPageDomainService(options: DomainOptions) {
 			)
 				return row;
 			if (row.status === "deleting") return row;
-			if (
-				manual &&
-				row.lastCheckedAt &&
-				now.getTime() - row.lastCheckedAt.getTime() < MANUAL_CHECK_INTERVAL_MS
-			)
-				throw new PageDomainError("DOMAIN_CHECK_RATE_LIMITED");
 			const page = row.pageId ? await repo.pageById(row.pageId) : undefined;
 			const entitlement = page ? await access(repo, page, row, now) : null;
 			if (!entitlement?.canServe) {

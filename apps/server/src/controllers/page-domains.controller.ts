@@ -17,7 +17,6 @@ const errors = {
 	DOMAIN_NOT_FOUND: [404, "No domain is connected to this page."],
 	PAGE_NOT_FOUND: [404, "Page not found."],
 	PRO_REQUIRED: [403, "A Pro plan is required to connect a domain."],
-	DOMAIN_CHECK_RATE_LIMITED: [429, "Wait 30 seconds before checking again."],
 	DOMAIN_NOT_CONFIGURED: [503, "Domain connections are not configured yet."],
 	DOMAIN_PROVIDER_UNAVAILABLE: [
 		503,
@@ -66,7 +65,6 @@ export function createPageDomainsController({
 			return jsonApiError(c, { status: 500 });
 		}
 		const [status, detail] = errors[error.code];
-		if (status === 429) c.header("Retry-After", "30");
 		return jsonApiError(c, { status, code: error.code, detail });
 	});
 	return controller

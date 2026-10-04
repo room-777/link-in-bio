@@ -145,7 +145,7 @@ export function domainFixture() {
 			url: url.toString(),
 			body: init?.body ? JSON.parse(String(init.body)) : null,
 		});
-		assert.equal(init?.redirect, "error");
+		assert.equal(init?.redirect, "manual");
 		assert.ok(init?.signal);
 		if (url.hostname === "cloudflare-dns.com") {
 			if (dnsFailure) throw new Error("Simulated DNS failure.");

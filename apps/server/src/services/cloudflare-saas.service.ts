@@ -36,7 +36,7 @@ export function createCloudflareSaas({
 					"Content-Type": "application/json",
 				},
 				body: body === undefined ? undefined : JSON.stringify(body),
-				redirect: "error",
+				redirect: "manual",
 				signal: AbortSignal.timeout(8000),
 			});
 			// Deletion is idempotent if a previous attempt already removed the hostname.
@@ -118,7 +118,7 @@ export function createDomainDns(fetcher: typeof fetch = fetch): DomainDns {
 				url.search = new URLSearchParams({ name: hostname, type }).toString();
 				const response = await fetcher(url, {
 					headers: { Accept: "application/dns-json" },
-					redirect: "error",
+					redirect: "manual",
 					signal: AbortSignal.timeout(5000),
 				});
 				if (!response.ok) throw new Error("DNS lookup failed.");

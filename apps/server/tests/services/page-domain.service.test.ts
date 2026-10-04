@@ -163,18 +163,16 @@ describe("custom domain lifecycle", () => {
 		);
 	});
 	/** Case ID: DOMAIN-SVC-007
-	 * Given: a connection was just checked. When: parallel checks arrive within 30 seconds.
-	 * Then: deny repeats without further external calls. Evidence: rate-limit code and request count. Result: Pass | Fail | Blocked | Not Run
+	 * Given: a connection was just checked. When: it is checked again immediately.
+	 * Then: run DNS and provider checks again. Evidence: active status and external request count. Result: Pass | Fail | Blocked | Not Run
 	 */
-	it("DOMAIN-SVC-007 limits repeated checks", async () => {
+	it("DOMAIN-SVC-007 allows immediate repeated checks", async () => {
 		const f = domainFixture();
 		await f.active();
 		const before = f.calls.length;
-		await assert.rejects(
-			f.service.check("owner-a", "avery"),
-			code("DOMAIN_CHECK_RATE_LIMITED"),
-		);
-		assert.equal(f.calls.length, before);
+		const result = await f.service.check("owner-a", "avery");
+		assert.equal(result.domain?.status, "active");
+		assert.ok(f.calls.length > before);
 	});
 	/** Case ID: DOMAIN-SVC-008
 	 * Given: an active primary-page domain and an expired Pro period. When: grace starts and exactly seven days pass.

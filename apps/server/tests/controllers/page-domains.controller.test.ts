@@ -159,14 +159,17 @@ describe("page domain HTTP API", () => {
 	});
 	/** Case ID: DOMAIN-API-005
 	 * Given: a recently checked domain. When: checking again immediately.
-	 * Then: return 429 with Retry-After. Evidence: HTTP status and Retry-After header. Result: Pass | Fail | Blocked | Not Run
+	 * Then: return the refreshed domain state. Evidence: HTTP status and domain state. Result: Pass | Fail | Blocked | Not Run
 	 */
-	it("DOMAIN-API-005 exposes the check cooldown", async () => {
+	it("DOMAIN-API-005 allows immediate repeated checks", async () => {
 		const f = fixture();
 		await f.active();
 		const response = await f.request("avery/domain/check", "POST");
-		assert.equal(response.status, 429);
-		assert.equal(response.headers.get("Retry-After"), "30");
+		assert.equal(response.status, 200);
+		assert.equal(
+			((await response.json()) as { domain: { status: string } }).domain.status,
+			"active",
+		);
 	});
 	/** Case ID: DOMAIN-API-006
 	 * Given: a missing connection. When: checking or disconnecting.
