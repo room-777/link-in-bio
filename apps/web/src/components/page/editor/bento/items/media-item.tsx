@@ -1,6 +1,10 @@
 "use client";
 
-import { bentoWideMediaQuery, type PresetName } from "@grabbin/bento-layout";
+import {
+	bentoWideMediaQuery,
+	getBentoItemRadius,
+	type PresetName,
+} from "@grabbin/bento-layout";
 import {
 	type SyntheticEvent,
 	useCallback,
@@ -186,12 +190,16 @@ export function MediaItem({
 		</>
 	);
 
+	// Match the inside edge of the card's 1px border.
+	const frameRadius = getBentoItemRadius(item.type, preset) - 1;
+
 	return (
 		<div
 			ref={frameRef}
 			data-media-frame="true"
 			data-media-preset={preset}
 			data-bento-item-crop-open={isCropOpen ? "true" : undefined}
+			style={{ borderRadius: frameRadius }}
 			className={`relative size-full overflow-hidden rounded-[inherit] bg-muted/30 ${!isCropOpen && hasSourceSize && item.data.mediaUrl && !item.data.mediaUrl.startsWith("data:") ? "surface-line" : ""} ${isCropOpen ? "overflow-visible!" : ""}`}
 		>
 			{cropStyle ? (
