@@ -13,11 +13,11 @@ export const metadata: Metadata = {
 	metadataBase: new URL("https://grabbin.me"),
 	title: "A visual personal website for your work | Grabbin",
 	description:
-		"Create a personal website that brings your story, work, and content together. Build a polished page with flexible widgets and make your link in bio feel like your own corner of the web.",
+		"Build a visual personal website and link-in-bio page for your work, with photos, videos, text, links, and places in one flexible layout.",
 	openGraph: {
 		title: "A visual personal website for your work | Grabbin",
 		description:
-			"Create a personal website that brings your story, work, and content together. Build a polished page with flexible widgets and make your link in bio feel like your own corner of the web.",
+			"Build a visual personal website and link-in-bio page for your work, with photos, videos, text, links, and places in one flexible layout.",
 	},
 	icons: {
 		icon: "/favicon.svg",

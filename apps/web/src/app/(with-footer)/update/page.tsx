@@ -4,7 +4,8 @@ import Link from "next/link";
 import { UpdateMedia } from "@/components/updates/update-components";
 import { updates } from "@/lib/updates";
 
-const description = "Product news and feature updates.";
+const description =
+	"Get the latest Grabbin product news, including new features and changes to the service.";
 
 const listedUpdates = updates.filter(
 	({ showInUpdates }) => showInUpdates !== false,

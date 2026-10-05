@@ -19,7 +19,7 @@ export const revalidate = false;
 
 const title = "A visual personal website for your work | Grabbin";
 const description =
-	"Create a personal website that brings your story, work, and content together. Build a polished bento page with flexible widgets and make your link in bio feel like your own corner of the web.";
+	"Build a visual personal website and link-in-bio page for your work, with photos, videos, text, links, and places in one flexible layout.";
 
 const landingMetadata: Metadata = {
 	title,
