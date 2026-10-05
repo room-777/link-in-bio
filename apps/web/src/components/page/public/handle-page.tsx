@@ -76,12 +76,7 @@ export default function HandlePage({
 						}
 					>
 						<div className="flex w-full items-center page-wide:justify-start justify-between">
-							<motion.div
-								initial={imageUrl && !reduceMotion ? { rotate: -8 } : false}
-								animate={{ rotate: 0 }}
-								transition={enterTransition}
-								className="relative flex page-wide:size-46 size-28 items-center justify-center overflow-hidden rounded-full sm:size-32"
-							>
+							<div className="relative flex page-wide:size-46 size-28 items-center justify-center overflow-hidden rounded-full sm:size-32">
 								{imageUrl && (
 									<MotionImage
 										fill
@@ -101,7 +96,7 @@ export default function HandlePage({
 										className="pointer-events-none absolute inset-0 z-10 rounded-full outline-depth"
 									/>
 								)}
-							</motion.div>
+							</div>
 							<div className="page-wide:hidden">
 								<MadeWithGrabbinBadge hasProAccess={page.hasProAccess} />
 							</div>

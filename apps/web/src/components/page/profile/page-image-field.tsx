@@ -44,8 +44,8 @@ function PageProfileImage({
 	onLoad: (event: SyntheticEvent<HTMLImageElement>) => void;
 }) {
 	const animation = {
-		initial: reduceMotion ? false : { opacity: 0, rotate: -8 },
-		animate: { opacity: 1, rotate: 0 },
+		initial: reduceMotion ? false : { opacity: 0 },
+		animate: { opacity: 1 },
 		transition: reduceMotion
 			? { duration: 0 }
 			: { duration: 0.85, ease: [0.22, 1, 0.36, 1] as const },
