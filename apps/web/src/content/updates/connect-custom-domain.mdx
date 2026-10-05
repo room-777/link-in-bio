@@ -1,0 +1,84 @@
+---
+showInUpdates: false
+type: Guide
+date: "2026-10-05"
+title: "How to Connect a Custom Domain to Your Grabbin Page"
+description: "Connect a subdomain to Grabbin Pro, add the required DNS records, check your connection, and learn where to edit your page."
+thumbnail:
+  type: image
+  src: /images/updates/custom-domain-settings-20261005.png
+  alt: Grabbin custom domain settings with a connected subdomain
+author:
+  name: Wooky
+  title: Founder
+  image: /images/updates/grabbin-author-d0d09cc3bb577091.png
+---
+
+## Give your page an address you chose
+
+You can use a custom domain for your link-in-bio page on Grabbin Pro. Connect a subdomain such as `links.example.com`, add the records shown in your settings, and check the connection before sharing it.
+
+Your original Grabbin address keeps working. The custom address opens the same public page; editing still happens at your Grabbin address.
+
+## Before you start
+
+You need a Grabbin page, an active Pro plan, and access to the DNS settings for a domain you own. DNS settings tell browsers which service should open an address.
+
+Grabbin supports subdomains, such as `links.example.com` or `portfolio.example.com`. A root domain such as `example.com` is not supported. Choose an unused subdomain so you do not replace an address that already serves another website.
+
+If you have not made your page yet, follow the [visual page guide](/update/build-visual-link-in-bio) first.
+
+## 1. Connect your subdomain
+
+Open settings from the Grabbin page you want to connect, then choose **Custom domain**. Enter your subdomain without `https://` or a page path, and select **Connect**.
+
+If you see **Upgrade to Pro**, you need Pro access before you can configure a domain.
+
+## 2. Copy the DNS records from Grabbin
+
+Your settings show the records to add at your domain provider. Each record has a **Type**, **Name**, and **Target**, with copy buttons for the values.
+
+- The **CNAME** record points your chosen subdomain to Grabbin.
+- The **TXT** record verifies that you control the address. Its name starts with `_grabbin`.
+
+Copy the values from your own settings. A verification value from someone else's screenshot will not verify your domain.
+
+## 3. Add the records at your domain provider
+
+Open the DNS settings wherever your domain's DNS is managed. Add both records using the types and targets supplied by Grabbin.
+
+Providers handle the Name field differently. Some expect the full name, such as `links.example.com`; others append `example.com` for you and expect only `links`. Check your provider's field instructions so the domain is not added twice. Apply the same check to the TXT record name.
+
+Keep unrelated records, including email records, unchanged. If the subdomain already has a record, confirm what it is used for before replacing it. Your provider can help resolve a conflicting record.
+
+## 4. Check the connection
+
+Return to **Custom domain** and select **Check DNS**. DNS changes may not be visible immediately, so a pending connection does not necessarily mean you entered something incorrectly.
+
+Grabbin checks the DNS records and sets up HTTPS, the secure connection used to open your page. Once connected, the check button becomes **Check status**.
+
+Open your custom address in a private browser window. Confirm that it loads your page over HTTPS and that your links work before putting it in your social profiles or printing a QR code.
+
+## If your page does not open
+
+### Check DNS reports a record problem
+
+Compare both records with the values in Grabbin. Check the record type, name, and target, including whether your provider has appended your domain twice. Follow the error shown in your settings, then check again after your provider has applied the changes.
+
+### DNS is correct but the secure connection is still being prepared
+
+Allow the connection setup to finish, then check again. Do not bypass a browser security warning to share the page. If it remains unavailable, contact [Grabbin support](mailto:support@grabbin.me) with the hostname and the error you see. Never send your domain provider password.
+
+### You cannot see editing controls
+
+This is expected on a custom domain. Open your original Grabbin page while signed in to edit its content. Your custom address is for visitors.
+
+### Your Pro plan has ended
+
+Check the message in your domain settings. If a grace period applies, its end date is shown there. Do not assume your custom address will continue serving the page after that period.
+
+## Disconnecting your domain
+
+Choose **Disconnect** in the same settings and confirm. The custom address will stop opening this page; your original Grabbin link remains available. Update places where you shared the custom address if you no longer plan to use it.
+
+For the original feature announcement, read [Your page, your domain](/update/your-page-your-domain). To arrange the work visitors will see, continue with [a visual link-in-bio page for designers](/update/link-in-bio-for-designers).

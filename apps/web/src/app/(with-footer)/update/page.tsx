@@ -6,6 +6,10 @@ import { updates } from "@/lib/updates";
 
 const description = "Product news and feature updates.";
 
+const listedUpdates = updates.filter(
+	({ showInUpdates }) => showInUpdates !== false,
+);
+
 export const metadata: Metadata = {
 	title: "Updates | Grabbin",
 	description,
@@ -43,7 +47,7 @@ export default function UpdatesPage() {
 				aria-label="Latest updates"
 				className="mt-16 grid gap-x-8 gap-y-10 md:grid-cols-2 lg:grid-cols-3"
 			>
-				{updates.map((update) => (
+				{listedUpdates.map((update) => (
 					<article key={update.slug}>
 						<div className="mb-4 flex items-center justify-between gap-3 text-sm">
 							<span className="text-muted-foreground/80">{update.type}</span>

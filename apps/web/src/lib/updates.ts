@@ -1,6 +1,7 @@
 import type { MDXContent } from "mdx/types.js";
 
 export type UpdateFrontmatter = {
+	showInUpdates?: boolean;
 	type: string;
 	date: string;
 	title: string;
