@@ -94,6 +94,7 @@ export default function OwnerPage({
 		<PageFooter
 			handle={currentPage.handle}
 			isOwner
+			demoMode={demoMode}
 			onHandleChange={handleChange}
 		/>
 	);
@@ -151,9 +152,9 @@ export default function OwnerPage({
 					onEntryComplete={handleBentoEntryComplete}
 					onGridSavingChange={setIsGridSaving}
 				/>
-				{!demoMode && isViewportCompact && isViewportReady ? pageFooter : null}
+				{isViewportCompact && isViewportReady ? pageFooter : null}
 			</div>
-			{!demoMode && !isViewportCompact && isViewportReady ? pageFooter : null}
+			{!isViewportCompact && isViewportReady ? pageFooter : null}
 			{!isViewportCompact && bentoEntryComplete ? (
 				<PageLayoutPreset
 					value={layoutBreakpoint}

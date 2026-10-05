@@ -13,6 +13,7 @@ import PageImageField from "./page-image-field";
 
 export default function PageProfileFields({
 	imageUrl,
+	demoMode = false,
 	isImageUploading,
 	onSelectImage,
 	onRemoveImage,
@@ -28,6 +29,7 @@ export default function PageProfileFields({
 	breakpoint = "wide",
 }: {
 	imageUrl: string;
+	demoMode?: boolean;
 	isImageUploading: boolean;
 	onSelectImage: (file: File) => void;
 	onRemoveImage: () => void;
@@ -57,9 +59,11 @@ export default function PageProfileFields({
 						onCropChange={onImageCropChange}
 						breakpoint={breakpoint}
 					/>
-					<div className="page-wide:hidden">
-						<MadeWithGrabbinBadge />
-					</div>
+					{!demoMode ? (
+						<div className="page-wide:hidden">
+							<MadeWithGrabbinBadge />
+						</div>
+					) : null}
 				</div>
 				<div className="flex min-w-0 flex-col gap-2">
 					<InputGroup className="h-auto rounded-none bg-transparent focus-within:ring-0! has-[[data-slot=input-group-control][aria-invalid=true]]:ring-0!">

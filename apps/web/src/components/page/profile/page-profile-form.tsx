@@ -252,6 +252,7 @@ export default function PageProfileForm({
 				<div className="mb-4 flex flex-col gap-8">
 					<PageProfileFields
 						imageUrl={imageUrl}
+						demoMode={demoMode}
 						isImageUploading={isImageUploading || isSaving}
 						onSelectImage={handleImageSelect}
 						onRemoveImage={() => {
