@@ -190,8 +190,7 @@ export function MediaItem({
 		</>
 	);
 
-	// Match the inside edge of the card's 1px border.
-	const frameRadius = getBentoItemRadius(item.type, preset) - 1;
+	const frameRadius = getBentoItemRadius(item.type, preset);
 
 	return (
 		<div
@@ -200,7 +199,7 @@ export function MediaItem({
 			data-media-preset={preset}
 			data-bento-item-crop-open={isCropOpen ? "true" : undefined}
 			style={{ borderRadius: frameRadius }}
-			className={`relative size-full overflow-hidden rounded-[inherit] bg-muted/30 ${!isCropOpen && hasSourceSize && item.data.mediaUrl && !item.data.mediaUrl.startsWith("data:") ? "surface-line" : ""} ${isCropOpen ? "overflow-visible!" : ""}`}
+			className={`relative size-full overflow-hidden rounded-[inherit] bg-muted/30 ${!isCropOpen && hasSourceSize && item.data.mediaUrl && !item.data.mediaUrl.startsWith("data:") ? "surface-line outline-depth" : ""} ${isCropOpen ? "overflow-visible!" : ""}`}
 		>
 			{cropStyle ? (
 				<div

@@ -136,7 +136,7 @@
 
 :is([data-bento-item-type="map"], [data-bento-item-type="media"])
 	.bento-item-card {
-	border: 1px solid rgba(0, 0, 0, 0.08);
+	border: 0;
 }
 
 .bento-layout [data-bento-item-type="section"] .bento-item-card {
