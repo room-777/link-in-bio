@@ -5,24 +5,28 @@ export default function CtaSection({ className }: { className?: string }) {
 	return (
 		<section
 			aria-labelledby="landing-cta-title"
-			className={cn(
-				"flex min-h-[70svh] w-full flex-col items-center justify-center gap-8 px-6 py-28 sm:py-36",
-				className,
-			)}
+			className={cn("mx-auto w-full max-w-5xl px-5 pt-16 md:px-0", className)}
 		>
-			<h2
-				id="landing-cta-title"
-				className="text-pretty text-center font-medium text-3xl text-foreground leading-tight tracking-[-0.065em] sm:text-4xl lg:text-5xl"
-			>
-				<span className="block">Bring everything together.</span>
-				<span className="block">Make it feel like you.</span>
-			</h2>
-			<div className="flex flex-row items-center gap-2">
-				<JoinForFreeButton
-					variant="brandBlack"
-					size="lg"
-					className="h-10 w-auto shrink-0 px-4 text-sm sm:text-base"
-				/>
+			<div className="flex flex-col items-center gap-5 rounded-3xl bg-secondary/60 px-8 py-8 md:py-16">
+				<h2
+					id="landing-cta-title"
+					className="max-w-md text-balance text-center font-medium text-4xl text-fg-4 leading-12 tracking-tight"
+				>
+					Bring everything together in one page
+				</h2>
+				<p className="w-full max-w-sm text-center font-medium text-muted-foreground">
+					Create your page for today and bring your work, links, and story
+					together in one place.
+				</p>
+				<div className="flex flex-row items-center gap-2">
+					<JoinForFreeButton
+						variant="brand"
+						size="lg"
+						className="h-12 w-auto shrink-0 rounded-3xl px-5 text-sm sm:text-base"
+					>
+						Create your page
+					</JoinForFreeButton>
+				</div>
 			</div>
 		</section>
 	);

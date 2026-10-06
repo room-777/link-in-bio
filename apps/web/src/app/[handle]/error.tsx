@@ -19,7 +19,7 @@ export default function RouteError({
 	}, [error]);
 
 	return (
-		<main className="open-runde relative isolate grid min-h-svh place-items-center bg-background px-6 py-16 text-center">
+		<main className="relative isolate grid min-h-svh place-items-center bg-background px-6 py-16 text-center font-open-runde">
 			<div className="pointer-events-none absolute inset-x-0 bottom-0 z-0 aspect-[1.25/1] w-full overflow-hidden sm:aspect-[5/1]">
 				<Image
 					alt=""

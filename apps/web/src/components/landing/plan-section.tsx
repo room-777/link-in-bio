@@ -2,26 +2,13 @@
 
 import { motion, useReducedMotion } from "motion/react";
 import Image from "next/image";
-import type { ReactNode } from "react";
-import { CheckCircle } from "reicon-react/icons/CheckCircle";
 import { PlanPicker } from "@/components/billing/plan-dialog";
 
-const freeFeatures = [
-	"Unlimited images and videos",
-	"Today and yesterday's page views",
-	"QR code sharing",
-	"Unlimited links",
-	"Easy drag-and-drop page editing",
-	"Separate desktop and mobile layouts",
-];
-
 export default function PlanSection({
-	joinButton,
 	isAuthenticated,
 }: {
-	joinButton: ReactNode;
 	isAuthenticated?: boolean;
-}) {
+} = {}) {
 	const reduceMotion = useReducedMotion();
 	const initial = reduceMotion ? false : { opacity: 0, y: 16 };
 	const animate = { opacity: 1, y: 0 };
@@ -38,7 +25,7 @@ export default function PlanSection({
 		>
 			<div className="mx-auto flex w-full max-w-5xl flex-col items-center gap-10 sm:gap-14">
 				<motion.div
-					className="grid gap-3 text-center"
+					className="flex flex-col items-center gap-5 text-center"
 					initial={initial}
 					whileInView={animate}
 					viewport={viewport}
@@ -46,67 +33,16 @@ export default function PlanSection({
 				>
 					<h2
 						id="landing-plan-title"
-						className="text-pretty font-medium text-3xl text-foreground leading-tight tracking-[-0.065em] sm:text-4xl lg:text-5xl"
+						className="max-w-lg text-balance text-center font-medium text-4xl leading-11 tracking-tighter"
 					>
 						A thoughtful page, free to start.
 					</h2>
-					<p className="text-pretty text-muted-foreground sm:text-lg">
+					<p className="w-full max-w-md text-center font-medium text-lg/6 text-muted-foreground">
 						Build for free. Move to Pro to remove the watermark or connect a
 						custom domain.
 					</p>
 				</motion.div>
-				<div className="relative mt-8 grid w-full max-w-[51rem] grid-cols-1 gap-6 [grid-auto-rows:1fr] md:grid-cols-2">
-					<motion.div
-						className="relative isolate mx-auto h-full w-full max-w-sm"
-						initial={reduceMotion ? false : { opacity: 0, x: -24 }}
-						whileInView={{ opacity: 1, x: 0 }}
-						viewport={viewport}
-						transition={{ ...transition, delay: reduceMotion ? 0 : 0.1 }}
-					>
-						<Image
-							alt=""
-							aria-hidden="true"
-							className="pointer-events-none absolute top-[4rem] left-[-4rem] z-0 hidden w-32 -rotate-12 md:block lg:w-48"
-							height={1254}
-							loading="lazy"
-							quality={55}
-							sizes="(min-width: 1024px) 192px, 128px"
-							src="/images/landing/media-doodles-1.png"
-							width={1254}
-						/>
-						<Image
-							alt=""
-							aria-hidden="true"
-							className="pointer-events-none absolute -top-16 left-1/2 z-20 w-48 -translate-x-1/2"
-							height={1254}
-							loading="lazy"
-							quality={60}
-							sizes="192px"
-							src="/images/landing/features-flower.png"
-							width={1254}
-						/>
-						<div className="smooth-shadow-ring-sm relative z-10 flex h-full min-h-[26rem] flex-col justify-center gap-6 rounded-[2rem] bg-background px-6 pt-16 pb-6">
-							<ul className="flex flex-col gap-2 p-2 font-medium!">
-								{freeFeatures.map((feature) => (
-									<li
-										key={feature}
-										className="flex flex-row items-center gap-3"
-									>
-										<CheckCircle
-											aria-hidden="true"
-											weight="Filled"
-											className="size-5 shrink-0 text-brand-green"
-										/>
-										<span className="text-base text-foreground">{feature}</span>
-									</li>
-								))}
-							</ul>
-							<p className="mt-auto text-pretty text-muted-foreground text-sm leading-relaxed">
-								Free as long as we can sustainably support them.
-							</p>
-							{joinButton}
-						</div>
-					</motion.div>
+				<div className="relative mx-auto mt-8 w-full max-w-sm">
 					<motion.div
 						className="relative isolate mx-auto h-full w-full max-w-sm"
 						initial={reduceMotion ? false : { opacity: 0, x: 24 }}

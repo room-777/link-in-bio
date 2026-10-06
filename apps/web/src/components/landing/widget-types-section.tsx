@@ -43,15 +43,14 @@ export default function WidgetTypesSection() {
 			/>
 			<div className="relative z-10 mx-auto flex w-full max-w-5xl flex-col items-center gap-40">
 				<motion.h2
-					className="text-pretty text-center font-medium text-3xl text-foreground leading-tight tracking-[-0.065em] sm:text-4xl lg:text-5xl"
+					className="max-w-lg text-balance text-center font-medium text-4xl leading-11 tracking-tighter"
 					id="landing-widget-types-title"
 					initial={initial}
 					whileInView={animate}
 					viewport={viewport}
 					transition={transition}
 				>
-					<span className="block">Everything you share,</span>
-					<span className="block">in one simple page.</span>
+					Everything you share, in one simple page.
 				</motion.h2>
 				<motion.div
 					className="w-full"

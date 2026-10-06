@@ -13,10 +13,10 @@ export default async function WithFooterLayout({
 	if (getCustomDomainHostname(requestHeaders.get("host"))) return children;
 
 	return (
-		<>
+		<div className="[&_*]:!font-open-runde font-open-runde">
 			<LandingHeader />
 			{children}
 			<Footer />
-		</>
+		</div>
 	);
 }

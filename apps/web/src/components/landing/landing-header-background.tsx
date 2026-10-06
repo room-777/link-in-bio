@@ -1,39 +1,65 @@
 "use client";
 
-import { usePathname } from "next/navigation";
+import { motion, useReducedMotion } from "motion/react";
+import type { ReactNode } from "react";
 import { useEffect, useState } from "react";
 
-export default function LandingHeaderBackground() {
-	const [hasPassedHero, setHasPassedHero] = useState(false);
-	const pathname = usePathname();
+export default function LandingHeaderBackground({
+	children,
+}: {
+	children: ReactNode;
+}) {
+	const [isScrolled, setIsScrolled] = useState(false);
+	const reduceMotion = useReducedMotion();
+	const transition = {
+		duration: reduceMotion ? 0 : 0.8,
+		ease: [0.22, 1, 0.36, 1] as const,
+	};
 
 	useEffect(() => {
-		setHasPassedHero(false);
-		if (pathname !== "/") return;
+		let frame = 0;
+		let previousScrollState = window.scrollY > 0;
+		setIsScrolled(previousScrollState);
 
-		const hero = document.getElementById("hero");
-		if (!hero) return;
+		const updateScrollState = () => {
+			if (frame) return;
+			frame = window.requestAnimationFrame(() => {
+				frame = 0;
+				const nextScrollState = window.scrollY > 0;
+				if (nextScrollState === previousScrollState) return;
+				previousScrollState = nextScrollState;
+				setIsScrolled(nextScrollState);
+			});
+		};
 
-		const observer = new IntersectionObserver(([entry]) => {
-			setHasPassedHero(!entry.isIntersecting);
-		});
-		observer.observe(hero);
+		window.addEventListener("scroll", updateScrollState, { passive: true });
 
-		return () => observer.disconnect();
-	}, [pathname]);
-
+		return () => {
+			window.removeEventListener("scroll", updateScrollState);
+			if (frame) window.cancelAnimationFrame(frame);
+		};
+	}, []);
 	return (
-		<>
-			<div
-				aria-hidden="true"
-				className="absolute inset-0 bg-white transition-opacity"
-				style={{ opacity: hasPassedHero ? 1 : 0 }}
-			/>
-			<div
-				aria-hidden="true"
-				className="pointer-events-none absolute inset-x-0 top-full h-8 bg-gradient-to-b from-white to-transparent transition-opacity"
-				style={{ opacity: hasPassedHero ? 1 : 0 }}
-			/>
-		</>
+		<motion.header
+			className="fixed inset-x-0 top-0 z-100003 px-6 py-2 sm:px-2"
+			animate={{ y: isScrolled ? 15 : 0 }}
+			transition={transition}
+		>
+			<motion.div
+				initial={false}
+				animate={{ maxWidth: isScrolled ? "28rem" : "64rem" }}
+				className="relative mx-auto flex w-full items-center justify-between rounded-full px-2 py-2 pl-4"
+				transition={{ maxWidth: transition }}
+			>
+				<motion.div
+					aria-hidden="true"
+					initial={{ opacity: 0 }}
+					className="pointer-events-none absolute inset-0 rounded-full border border-black/8 bg-background shadow-[0_2px_4px_rgba(0,0,0,0.04)]"
+					animate={{ opacity: isScrolled ? 1 : 0 }}
+					transition={transition}
+				/>
+				{children}
+			</motion.div>
+		</motion.header>
 	);
 }

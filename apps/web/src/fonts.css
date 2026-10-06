@@ -29,7 +29,3 @@
 	font-weight: 700;
 	src: url("/fonts/OpenRunde-Bold.9a64eabe5389.woff2") format("woff2");
 }
-
-.open-runde {
-	font-family: "Open Runde", var(--font-sans), sans-serif;
-}

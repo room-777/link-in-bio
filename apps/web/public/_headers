@@ -1,6 +1,9 @@
 /images/landing/hero-sky-*.png
 	Cache-Control: public, max-age=31556952, immutable
 
+/images/landing/hero-*.webp
+	Cache-Control: public, max-age=31556952, immutable
+
 /images/footer-doodles-*.png
 	Cache-Control: public, max-age=31556952, immutable
 

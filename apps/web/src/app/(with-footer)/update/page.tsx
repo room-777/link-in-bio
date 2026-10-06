@@ -35,7 +35,7 @@ const formatDate = (date: string) =>
 
 export default function UpdatesPage() {
 	return (
-		<main className="open-runde mx-auto min-h-svh max-w-5xl px-5 pt-40 pb-24">
+		<main className="mx-auto min-h-svh max-w-5xl px-5 pt-40 pb-24 font-open-runde">
 			<header className="mx-auto max-w-xl text-center">
 				<h1 className="text-balance font-medium text-4xl tracking-[-0.04em]">
 					Updates

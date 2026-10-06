@@ -56,7 +56,7 @@ export default async function UpdateDetailPage({
 	const { Content } = update;
 
 	return (
-		<main className="open-runde px-5 pt-36 sm:pt-40">
+		<main className="px-5 pt-36 font-open-runde sm:pt-40">
 			<article className="mx-auto max-w-5xl">
 				<header className="mx-auto max-w-xl text-center">
 					<p className="text-muted-foreground/80 text-sm">
@@ -90,19 +90,8 @@ export default async function UpdateDetailPage({
 				<div className="prose prose-neutral dark:prose-invert mx-auto mt-12 max-w-xl px-5 text-primary/70 sm:mt-16">
 					<MdxContent Content={Content} />
 				</div>
-				<div className="mx-auto max-w-xl">
-					<div className="relative isolate mt-40 flex flex-col items-center gap-5">
-						<Image
-							alt=""
-							aria-hidden="true"
-							className="pointer-events-none z-10 w-36"
-							height={1254}
-							sizes="144px"
-							src="/images/landing/features-flower.png"
-							width={1254}
-						/>
-						<CtaSection className="min-h-0 w-full gap-5 rounded-xl py-0! [&_h2]:text-2xl sm:[&_h2]:text-3xl" />
-					</div>
+				<div className="mx-auto">
+					<CtaSection />
 				</div>
 			</article>
 		</main>
