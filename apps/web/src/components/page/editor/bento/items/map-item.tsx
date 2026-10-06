@@ -563,11 +563,11 @@ export function MapItem({
 					Couldn’t determine your location. Try again.
 				</output>
 			) : null}
-			<div className="pointer-events-none absolute inset-x-0 bottom-0 flex min-w-0 items-center justify-between gap-3 p-4 text-white">
+			<div className="pointer-events-none absolute right-[52px] bottom-4 left-4 z-10 flex min-w-0 text-white">
 				<MediaCaption
 					value={item.data.caption}
 					mode={mode}
-					className="max-w-[calc(100%-4.5rem)]"
+					className="min-w-0 max-w-full"
 					onChange={(caption) =>
 						onCommand?.({
 							type: "update-data",
