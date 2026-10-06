@@ -1,6 +1,10 @@
 "use client";
 
 import {
+	AnimatedTooltip,
+	type AnimatedTooltipControl,
+} from "@grabbin/ui/components/animated-tooltip";
+import {
 	Avatar,
 	AvatarFallback,
 	AvatarImage,
@@ -14,11 +18,6 @@ import {
 } from "@grabbin/ui/components/popover";
 import { Skeleton } from "@grabbin/ui/components/skeleton";
 import { toast } from "@grabbin/ui/components/toast";
-import {
-	Tooltip,
-	TooltipContent,
-	TooltipTrigger,
-} from "@grabbin/ui/components/tooltip";
 import { cn } from "@grabbin/ui/lib/utils";
 import { useQuery } from "@tanstack/react-query";
 import { SlidersHorizontal } from "lucide-react";
@@ -69,16 +68,11 @@ const DiscordLink = forwardRef<HTMLAnchorElement, DiscordLinkProps>(
 	},
 );
 
-function DiscordTooltip() {
-	return (
-		<Tooltip>
-			<TooltipTrigger delay={0} render={<DiscordLink />} />
-			<TooltipContent>Community</TooltipContent>
-		</Tooltip>
-	);
+function getDiscordTooltipControl(): AnimatedTooltipControl {
+	return { id: "community", trigger: <DiscordLink />, content: "Community" };
 }
 
-function PublicViews({ handle }: { handle?: string }) {
+function usePublicViewsTooltip(handle?: string) {
 	const [timezone, setTimezone] = useState<string | null>(null);
 	useEffect(() => {
 		setTimezone(Intl.DateTimeFormat().resolvedOptions().timeZone || "UTC");
@@ -89,11 +83,14 @@ function PublicViews({ handle }: { handle?: string }) {
 		enabled: Boolean(handle && timezone),
 	});
 
-	if (!handle) return null;
+	if (!handle) return { control: null, fallback: null };
 	if (timezone === null || isPending) {
-		return <Skeleton aria-busy="true" className="h-8 w-28 rounded-md" />;
+		return {
+			control: null,
+			fallback: <Skeleton aria-busy="true" className="h-8 w-28 rounded-md" />,
+		};
 	}
-	if (isError || !data) return null;
+	if (isError || !data) return { control: null, fallback: null };
 
 	const todayViews = data.todayViews ?? 0;
 	const yesterdayViews = data.yesterdayViews ?? 0;
@@ -106,26 +103,25 @@ function PublicViews({ handle }: { handle?: string }) {
 	const today = formatViews(todayViews);
 	const yesterday = formatViews(yesterdayViews);
 
-	return (
-		<Tooltip>
-			<TooltipTrigger
-				delay={0}
-				render={
-					<Button
-						variant="ghost"
-						size="lg"
-						className="px-2 text-muted-foreground/80"
-						aria-label={`${todayViews} views today`}
-					/>
-				}
-			>
-				<SpinningCounter value={today.value} />
-				{today.unit}
-				<span className="ml-0">views today</span>
-			</TooltipTrigger>
-			<TooltipContent>{`${yesterday.value}${yesterday.unit} views yesterday`}</TooltipContent>
-		</Tooltip>
-	);
+	return {
+		fallback: null,
+		control: {
+			id: "views",
+			trigger: (
+				<Button
+					variant="ghost"
+					size="lg"
+					className="px-2 text-muted-foreground/80"
+					aria-label={`${todayViews} views today`}
+				>
+					<SpinningCounter value={today.value} />
+					{today.unit}
+					<span className="ml-0">views today</span>
+				</Button>
+			),
+			content: `${yesterday.value}${yesterday.unit} views yesterday`,
+		},
+	};
 }
 
 function OwnerFooter({
@@ -144,6 +140,7 @@ function OwnerFooter({
 	const [isOpen, setIsOpen] = useState(false);
 	const [isSigningOut, setIsSigningOut] = useState(false);
 	const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
+	const viewsTooltip = usePublicViewsTooltip(handle);
 	const hoverTransition = reduceMotion
 		? { duration: 0 }
 		: { type: "spring" as const, stiffness: 560, damping: 32, mass: 0.8 };
@@ -168,26 +165,31 @@ function OwnerFooter({
 						setIsOpen(open);
 					}}
 				>
-					<Tooltip>
-						<TooltipTrigger
-							delay={0}
-							render={
-								<PopoverTrigger
-									render={
-										<Button
-											variant="ghost"
-											size="icon-lg"
-											className="text-muted-foreground/80"
-											aria-label="Open page options"
-										>
-											<SlidersHorizontal className="stroke-[2.5px]" />
-										</Button>
-									}
-								/>
-							}
-						/>
-						<TooltipContent>Setting</TooltipContent>
-					</Tooltip>
+					<AnimatedTooltip
+						className="bg-background text-muted-foreground"
+						controls={[
+							{
+								id: "setting",
+								content: "Setting",
+								trigger: (
+									<PopoverTrigger
+										render={
+											<Button
+												variant="ghost"
+												size="icon-lg"
+												className="text-muted-foreground/80"
+												aria-label="Open page options"
+											>
+												<SlidersHorizontal className="stroke-[2.5px]" />
+											</Button>
+										}
+									/>
+								),
+							},
+							getDiscordTooltipControl(),
+							...(viewsTooltip.control ? [viewsTooltip.control] : []),
+						]}
+					/>
 					<PopoverContent
 						align="start"
 						side="top"
@@ -284,8 +286,7 @@ function OwnerFooter({
 						</Button>
 					</PopoverContent>
 				</Popover>
-				<DiscordTooltip />
-				<PublicViews handle={handle} />
+				{viewsTooltip.fallback}
 			</div>
 			<ChangeHandleDialog
 				handle={handle}
@@ -309,6 +310,7 @@ function OwnerFooter({
 function ViewerFooter({ handle }: { handle?: string }) {
 	const { data: session, isPending } = authClient.useSession();
 	const [isHydrated, setIsHydrated] = useState(false);
+	const viewsTooltip = usePublicViewsTooltip(handle);
 
 	useEffect(() => setIsHydrated(true), []);
 
@@ -327,8 +329,14 @@ function ViewerFooter({ handle }: { handle?: string }) {
 				>
 					Create your page
 				</Link>
-				<DiscordTooltip />
-				<PublicViews handle={handle} />
+				<AnimatedTooltip
+					className="bg-background"
+					controls={[
+						getDiscordTooltipControl(),
+						...(viewsTooltip.control ? [viewsTooltip.control] : []),
+					]}
+				/>
+				{viewsTooltip.fallback}
 			</div>
 		);
 	}
@@ -362,8 +370,14 @@ function ViewerFooter({ handle }: { handle?: string }) {
 					{name}
 				</span>
 			</Link>
-			<DiscordTooltip />
-			<PublicViews handle={handle} />
+			<AnimatedTooltip
+				className="bg-background"
+				controls={[
+					getDiscordTooltipControl(),
+					...(viewsTooltip.control ? [viewsTooltip.control] : []),
+				]}
+			/>
+			{viewsTooltip.fallback}
 		</div>
 	);
 }
