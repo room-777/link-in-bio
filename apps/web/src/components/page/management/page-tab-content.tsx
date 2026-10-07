@@ -26,7 +26,7 @@ import { Plus } from "lucide-react";
 import { AnimatePresence, motion, useReducedMotion } from "motion/react";
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
-import { Trash2 } from "reicon-react/icons/Trash2";
+import { Trash } from "@/components/trash";
 import { apiClient, getApiErrorMessage } from "@/lib/api-client";
 import { getPageImageUrl } from "@/lib/page-image-url";
 import { PlanDialog } from "../../billing/plan-dialog";
@@ -233,7 +233,7 @@ export default function PageTabContent({
 															disabled={busyHandle !== null}
 															onClick={() => setDeletePageHandle(page.handle)}
 														>
-															<Trash2 aria-hidden="true" className="size-4" />
+															<Trash aria-hidden="true" className="size-4" />
 														</Button>
 													)}
 												</div>

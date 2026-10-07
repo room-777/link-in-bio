@@ -12,7 +12,7 @@ import {
 	useRef,
 	useState,
 } from "react";
-import { Trash2 } from "reicon-react/icons/Trash2";
+import { Trash } from "@/components/trash";
 import { useBentoLineHeight } from "@/hooks/use-bento-line-height";
 import type { BentoCommand } from "@/lib/bento/bento-types";
 import { getPageImageUrl } from "@/lib/page-image-url";
@@ -393,7 +393,7 @@ function LinkImageControls({
 						className="size-7 cursor-pointer! rounded-md text-white hover:bg-white/20 hover:text-white focus-visible:ring-2 focus-visible:ring-white/60 disabled:cursor-not-allowed! disabled:opacity-40 disabled:hover:bg-transparent"
 						onClick={onDelete}
 					>
-						<Trash2 className="size-5" aria-hidden="true" />
+						<Trash className="size-5" aria-hidden="true" />
 					</Button>
 				) : null}
 			</div>
