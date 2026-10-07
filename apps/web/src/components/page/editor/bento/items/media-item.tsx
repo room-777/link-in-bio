@@ -9,6 +9,7 @@ import {
 	type SyntheticEvent,
 	useCallback,
 	useEffect,
+	useLayoutEffect,
 	useRef,
 	useState,
 } from "react";
@@ -30,12 +31,15 @@ export function MediaItem({
 	onCommand?: (command: BentoCommand) => void;
 }) {
 	const isVideo = item.data.mimeType.startsWith("video/");
+	const isLocalPreview = item.data.mediaUrl?.startsWith("blob:") ?? false;
 	const [hasEnteredViewport, setHasEnteredViewport] = useState(false);
 	const [isInViewport, setIsInViewport] = useState(false);
 	const [imageLoaded, setImageLoaded] = useState(false);
 	const [videoLoaded, setVideoLoaded] = useState(false);
 	const [imageTransformFailed, setImageTransformFailed] = useState(false);
 	const [videoTransformFailed, setVideoTransformFailed] = useState(false);
+	const [isNewlySelectedMedia] = useState(isLocalPreview);
+	const loadedImageSourceRef = useRef<string | undefined>(undefined);
 	const loadedVideoSourceRef = useRef<string | undefined>(undefined);
 	const previousMediaUrlRef = useRef(item.data.mediaUrl);
 	const {
@@ -53,7 +57,6 @@ export function MediaItem({
 		handleCropPointerMove,
 		handleCropPointerEnd,
 	} = useMediaCropEditor({ item, mode, onCommand });
-	const isLocalPreview = item.data.mediaUrl?.startsWith("blob:") ?? false;
 	const originalMediaUrl = item.data.mediaUrl;
 	const transformedMediaUrl = originalMediaUrl
 		? getPageMediaUrl(originalMediaUrl, isVideo ? "video" : "image")
@@ -88,7 +91,7 @@ export function MediaItem({
 		return () => observer.disconnect();
 	}, [frameRef]);
 
-	useEffect(() => {
+	useLayoutEffect(() => {
 		if (previousMediaUrlRef.current === originalMediaUrl) return;
 		previousMediaUrlRef.current = originalMediaUrl;
 		setImageLoaded(false);
@@ -120,13 +123,19 @@ export function MediaItem({
 	const handleImageLoadAndMeasure = useCallback(
 		(event: SyntheticEvent<HTMLImageElement>) => {
 			const image = event.currentTarget;
-			const loadedSource = image.currentSrc;
+			const loadedSource = image.getAttribute("src") ?? image.currentSrc;
+			if (image.getAttribute("src") === loadedSource) {
+				loadedImageSourceRef.current = loadedSource;
+			}
 			handleImageLoad(event);
 			void image
 				.decode()
 				.catch(() => {})
 				.then(() => {
-					if (image.currentSrc === loadedSource) setImageLoaded(true);
+					if (image.getAttribute("src") === loadedSource) {
+						loadedImageSourceRef.current = loadedSource;
+						setImageLoaded(true);
+					}
 				});
 		},
 		[handleImageLoad],
@@ -139,15 +148,31 @@ export function MediaItem({
 	);
 
 	const isMediaLoaded = isVideo ? videoLoaded : imageLoaded;
+	const isCurrentImageLoaded =
+		imageLoaded && loadedImageSourceRef.current === imageSrc;
 	const mediaOpacityClassName = isMediaLoaded ? "opacity-100" : "opacity-0";
+	const imageTransitionClassName = isNewlySelectedMedia
+		? ""
+		: "transition-opacity duration-[250ms] ease-out";
 	const media = !item.data.mediaUrl ? null : (
 		<>
-			{item.data.placeholderDataUrl ? (
+			{!isNewlySelectedMedia && item.data.placeholderDataUrl ? (
 				<img
 					alt=""
 					aria-hidden="true"
 					className={`pointer-events-none absolute inset-0 size-full scale-110 object-cover blur-md transition-opacity duration-[250ms] ease-out ${isMediaLoaded ? "opacity-0" : "opacity-100"}`}
 					src={item.data.placeholderDataUrl}
+				/>
+			) : null}
+			{!isVideo &&
+			loadedImageSourceRef.current &&
+			loadedImageSourceRef.current !== imageSrc ? (
+				<img
+					key={loadedImageSourceRef.current}
+					alt=""
+					aria-hidden="true"
+					className={`pointer-events-none absolute inset-0 ${cropStyle ? "size-full" : "size-full object-cover"}`}
+					src={loadedImageSourceRef.current}
 				/>
 			) : null}
 			{isVideo ? (
@@ -179,9 +204,10 @@ export function MediaItem({
 				</video>
 			) : (isLocalPreview || hasEnteredViewport) && imageSrc ? (
 				<img
+					key={imageSrc}
 					ref={imageRef}
 					alt={item.data.caption ?? "Media item"}
-					className={`pointer-events-none absolute inset-0 transition-opacity duration-[250ms] ease-out ${cropStyle ? "size-full" : "size-full object-cover"} ${mediaOpacityClassName}`}
+					className={`pointer-events-none absolute inset-0 ${imageTransitionClassName} ${cropStyle ? "size-full" : "size-full object-cover"} ${isCurrentImageLoaded ? "opacity-100" : "opacity-0"}`}
 					decoding="async"
 					fetchPriority="low"
 					loading="lazy"
