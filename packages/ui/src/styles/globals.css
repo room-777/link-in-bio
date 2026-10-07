@@ -31,6 +31,7 @@
 	--color-ring: var(--ring);
 	--color-input: var(--input);
 	--color-border: var(--border);
+	--color-bento-media-border: var(--bento-media-border);
 	--color-destructive: var(--destructive);
 	--color-accent-foreground: var(--accent-foreground);
 	--color-accent: var(--accent);
@@ -86,6 +87,7 @@
 	--accent-foreground: oklch(0.205 0 0);
 	--destructive: oklch(0.6438 0.2431 32.13);
 	--border: oklch(0.922 0 0);
+	--bento-media-border: rgba(0, 0, 0, 0.08);
 	--input: oklch(0.922 0 0);
 	--ring: oklch(0.708 0 0);
 	--chart-1: oklch(0.87 0 0);
@@ -121,6 +123,7 @@
 	--accent-foreground: oklch(0.985 0 0);
 	--destructive: oklch(0.704 0.191 22.216);
 	--border: oklch(1 0 0 / 10%);
+	--bento-media-border: rgba(255, 255, 255, 0.08);
 	--input: oklch(1 0 0 / 15%);
 	--ring: oklch(0.556 0 0);
 	--chart-1: oklch(0.87 0 0);
@@ -154,10 +157,6 @@
 		box-shadow: var(--outline-depth-shadow);
 	}
 
-	&.surface-line::before {
-		box-shadow: var(--outline-depth-shadow), var(--surface-line-inset-shadow);
-	}
-
 	&:is(img, video) {
 		/* Replaced content covers inset shadows, so outline the media itself. */
 		border-radius: inherit !important;
@@ -173,10 +172,8 @@
 @utility surface-line {
 	position: relative;
 	border-radius: inherit;
-	--surface-line-inset-shadow:
-		inset 0 1px rgb(255 255 255 / 12%), inset 0 -1px rgb(0 0 0 / 6%);
+	box-shadow: 0 2px 4px rgb(0 0 0 / 4%);
 
-	&::before,
 	&::after {
 		position: absolute;
 		pointer-events: none;
@@ -186,17 +183,20 @@
 		border-radius: inherit;
 	}
 
-	&::before {
-		inset: 0;
-		border-color: color-mix(in oklch, var(--foreground) 14%, transparent);
-		box-shadow: var(--surface-line-inset-shadow);
-	}
-
 	&::after {
 		inset: 1px;
-		border-color: rgb(255 255 255 / 24%);
-		mask-image: linear-gradient(to bottom, black, transparent);
+		border-color: rgb(255 255 255 / 22%);
+		mask-image: linear-gradient(0deg, transparent, black);
 	}
+}
+
+@utility bento-media-border {
+	position: absolute;
+	inset: 0;
+	z-index: 10;
+	pointer-events: none;
+	border: 1px solid var(--color-bento-media-border);
+	border-radius: inherit;
 }
 
 @utility mapbox-clean {
