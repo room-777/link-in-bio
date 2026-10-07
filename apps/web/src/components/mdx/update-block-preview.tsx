@@ -110,7 +110,11 @@ function ItemPreview({ type }: { type: BlockType }) {
 						onCommand={handleCommand}
 						onLinkImageSelect={handleLinkImageSelect}
 						cardClassName={
-							item.type === "section" ? "smooth-shadow-ring-sm!" : undefined
+							item.type === "text"
+								? "[&_textarea]:text-black"
+								: item.type === "section"
+									? "smooth-shadow-ring-sm! [&_input]:text-black"
+									: undefined
 						}
 						isAnyItemDragging={false}
 						disableLocationSearch

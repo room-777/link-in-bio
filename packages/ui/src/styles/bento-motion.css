@@ -182,6 +182,12 @@
 	overflow: visible !important;
 }
 
+.react-grid-item:has([data-bento-map-location-editing="true"])
+	[data-bento-item-card] {
+	outline: 3px solid #000;
+	outline-offset: 0;
+}
+
 .bento-layout
 	.react-grid-item:has([data-bento-map-location-editing="true"])
 	.mapboxgl-canvas-container.mapboxgl-interactive {
@@ -210,12 +216,6 @@
 		var(--tw-ring-offset-shadow), var(--tw-ring-shadow), var(--tw-shadow) !important;
 	transition-duration: var(--bento-drag-lift-duration);
 	transition-timing-function: var(--bento-drag-lift-ease);
-}
-
-.bento-layout
-	.react-grid-item:has([data-bento-map-location-editing="true"])
-	[data-bento-item-card] {
-	@apply ring-3 ring-black;
 }
 
 .bento-layout
