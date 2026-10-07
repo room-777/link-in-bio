@@ -8,6 +8,7 @@ import {
 } from "@grabbin/bento-layout";
 import { Button } from "@grabbin/ui/components/button";
 import { TrashIcon } from "lucide-react";
+import { motion } from "motion/react";
 import { type CSSProperties, useEffect, useRef, useState } from "react";
 import type { BentoCommand, BentoItem } from "@/lib/bento/bento-types";
 import BentoItemControls from "./bento-item-controls";
@@ -82,6 +83,11 @@ export function BentoItemShell({
 	disableLocationSearch = false,
 	isEntering = false,
 	isExiting = false,
+	isInitialEntryItem = false,
+	entryReady = true,
+	entryDelay = 0,
+	reduceMotion = false,
+	onEntryComplete,
 }: {
 	item: BentoItem;
 	breakpoint: "wide" | "compact";
@@ -96,6 +102,11 @@ export function BentoItemShell({
 	disableLocationSearch?: boolean;
 	isEntering?: boolean;
 	isExiting?: boolean;
+	isInitialEntryItem?: boolean;
+	entryReady?: boolean;
+	entryDelay?: number;
+	reduceMotion?: boolean;
+	onEntryComplete?: () => void;
 }) {
 	const preset = inferPresetFromLayout(
 		item.type,
@@ -235,7 +246,7 @@ export function BentoItemShell({
 		</>
 	);
 	return (
-		<div
+		<motion.div
 			ref={shellRef}
 			data-bento-item-shell="true"
 			data-bento-item-controls-open={controlsOpen ? "true" : undefined}
@@ -252,8 +263,24 @@ export function BentoItemShell({
 				}
 				scheduleCloseControls();
 			}}
-			className={`group/bento-item bento-item-pop-in relative size-full overflow-visible transition-[z-index] focus-within:z-50 hover:z-50 ${isEntering ? "is-entering" : ""} ${isExiting ? "is-exiting" : ""}`}
+			className={`group/bento-item bento-item-pop-in relative size-full overflow-visible transition-[z-index] focus-within:z-50 hover:z-50 ${isEntering ? "is-entering" : ""} ${isExiting ? "is-exiting" : ""} ${isInitialEntryItem ? "bento-item-initial-entering" : ""}`}
 			style={{ borderRadius: cardRadius }}
+			initial={
+				isInitialEntryItem && !reduceMotion
+					? { opacity: 0, transform: "translateY(16px)" }
+					: false
+			}
+			animate={
+				isInitialEntryItem && entryReady
+					? { opacity: 1, transform: "translateY(0px)" }
+					: undefined
+			}
+			transition={{
+				duration: reduceMotion ? 0 : 0.8,
+				delay: reduceMotion ? 0 : entryDelay,
+				ease: [0.2, 1, 0.3, 1],
+			}}
+			onAnimationComplete={onEntryComplete}
 		>
 			{item.type === "map" ? (
 				<MapItemInteractionProvider
@@ -268,6 +295,6 @@ export function BentoItemShell({
 			) : (
 				content
 			)}
-		</div>
+		</motion.div>
 	);
 }

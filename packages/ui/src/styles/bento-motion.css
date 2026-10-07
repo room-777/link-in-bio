@@ -105,6 +105,10 @@
 		filter var(--bento-item-pop-duration) var(--bento-item-pop-ease);
 }
 
+.bento-item-initial-entering {
+	transition: none;
+}
+
 .bento-item-pop-in.is-entering,
 .bento-item-pop-in.is-exiting {
 	filter: blur(var(--bento-item-pop-blur));

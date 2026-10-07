@@ -12,7 +12,7 @@ import {
 	inferPresetFromLayout,
 	validateBentoLayout,
 } from "@grabbin/bento-layout";
-import { motion, useAnimationControls, useReducedMotion } from "motion/react";
+import { useReducedMotion } from "motion/react";
 import type { CSSProperties } from "react";
 import {
 	useCallback,
@@ -56,19 +56,6 @@ type BentoSectionProps = {
 
 const WIDE_CONTAINER_MIN_WIDTH = getBentoWidth("wide");
 const BENTO_ITEM_EXIT_DURATION = 180;
-const BENTO_SECTION_ENTRY_START = {
-	opacity: 0,
-	y: 24,
-};
-const BENTO_SECTION_ENTRY_END = {
-	opacity: 1,
-	y: 0,
-};
-const BENTO_SECTION_ENTRY_TRANSITION = {
-	duration: 0.7,
-	ease: [0.22, 0.61, 0.36, 1] as const,
-};
-const REDUCED_MOTION_TRANSITION = { duration: 0 };
 
 export default function BentoSection({
 	items,
@@ -122,6 +109,9 @@ export default function BentoSection({
 	const [enteringItemIds, setEnteringItemIds] = useState<ReadonlySet<string>>(
 		new Set(),
 	);
+	const [initialEntryItemIds, setInitialEntryItemIds] = useState(
+		() => new Set(items.map((item) => item.id)),
+	);
 	const [exitingItems, setExitingItems] = useState<
 		ReadonlyMap<string, BentoItemData>
 	>(new Map());
@@ -129,32 +119,37 @@ export default function BentoSection({
 	const [draggingItemId, setDraggingItemId] = useState<string | null>(null);
 	const dragMotion = useBentoDragMotion();
 	const reduceMotion = useReducedMotion();
-	const entryAnimation = useAnimationControls();
 	const previousEntryAnimationRevisionRef = useRef(entryAnimationRevision);
-	const sectionEntryTarget =
-		reduceMotion || entryReady || entryAnimationRevision > 0
-			? BENTO_SECTION_ENTRY_END
-			: BENTO_SECTION_ENTRY_START;
 	useLayoutEffect(() => {
 		if (previousEntryAnimationRevisionRef.current === entryAnimationRevision) {
 			return;
 		}
 		previousEntryAnimationRevisionRef.current = entryAnimationRevision;
-		entryAnimation.stop();
-		if (reduceMotion) {
-			entryAnimation.set(BENTO_SECTION_ENTRY_END);
+		setInitialEntryItemIds(new Set(items.map((item) => item.id)));
+	}, [entryAnimationRevision, items]);
+	const emptyEntryCompletedRevisionRef = useRef<number | null>(null);
+	useEffect(() => {
+		if (
+			mode !== "edit" ||
+			!entryReady ||
+			reduceMotion ||
+			initialEntryItemIds.size > 0 ||
+			items.length > 0 ||
+			emptyEntryCompletedRevisionRef.current === entryAnimationRevision
+		) {
 			return;
 		}
-
-		entryAnimation.set(BENTO_SECTION_ENTRY_START);
-	}, [entryAnimationRevision, entryAnimation, reduceMotion]);
-	useEffect(() => {
-		if (entryAnimationRevision === 0 || !entryReady || reduceMotion) return;
-		void entryAnimation.start(
-			BENTO_SECTION_ENTRY_END,
-			BENTO_SECTION_ENTRY_TRANSITION,
-		);
-	}, [entryAnimationRevision, entryAnimation, entryReady, reduceMotion]);
+		emptyEntryCompletedRevisionRef.current = entryAnimationRevision;
+		onEntryComplete?.();
+	}, [
+		entryAnimationRevision,
+		entryReady,
+		initialEntryItemIds.size,
+		items.length,
+		mode,
+		reduceMotion,
+		onEntryComplete,
+	]);
 	useEffect(() => {
 		if (reduceMotion && entryReady) onEntryComplete?.();
 	}, [entryReady, onEntryComplete, reduceMotion]);
@@ -343,21 +338,13 @@ export default function BentoSection({
 		},
 		[breakpoint, cols, dragMotion, handleBentoCommand, layout],
 	);
+	const lastInitialEntryItemId = [...items]
+		.reverse()
+		.find((item) => initialEntryItemIds.has(item.id))?.id;
 
 	const section = (
-		<motion.section
+		<section
 			ref={containerRef}
-			initial={reduceMotion ? false : BENTO_SECTION_ENTRY_START}
-			whileInView={sectionEntryTarget}
-			viewport={{ once: true, amount: "some" }}
-			transition={
-				reduceMotion
-					? REDUCED_MOTION_TRANSITION
-					: BENTO_SECTION_ENTRY_TRANSITION
-			}
-			onAnimationComplete={() => {
-				if (reduceMotion || entryReady) onEntryComplete?.();
-			}}
 			className={`bento-section-shell flex min-w-full max-w-full shrink-0 justify-center overflow-visible ${bottomPaddingClass}`}
 			style={mounted ? { width: bentoWidth } : undefined}
 			aria-label="Page content"
@@ -400,13 +387,14 @@ export default function BentoSection({
 					onDrag={mode === "edit" ? handleDrag : undefined}
 					onDragStop={mode === "edit" ? handleDragStop : undefined}
 				>
-					{displayItems.map((item) => {
+					{displayItems.map((item, index) => {
 						const preset = inferPresetFromLayout(
 							item.type,
 							item.layouts[breakpoint],
 							breakpoint,
 						);
 						const itemRadius = getBentoItemRadius(item.type, preset);
+						const isInitialEntryItem = initialEntryItemIds.has(item.id);
 						const itemShell = (
 							<BentoItemShell
 								item={item}
@@ -422,6 +410,18 @@ export default function BentoSection({
 								isAnyItemDragging={draggingItemId !== null}
 								isEntering={enteringItemIds.has(item.id)}
 								isExiting={exitingItems.has(item.id)}
+								isInitialEntryItem={isInitialEntryItem}
+								entryReady={entryReady}
+								entryDelay={index * 0.1}
+								reduceMotion={Boolean(reduceMotion)}
+								onEntryComplete={
+									!reduceMotion && item.id === lastInitialEntryItemId
+										? () => {
+												setInitialEntryItemIds(new Set());
+												onEntryComplete?.();
+											}
+										: undefined
+								}
 								onRefreshLinkMetadata={onRefreshLinkMetadata}
 								onLinkImageSelect={onLinkImageSelect}
 							/>
@@ -449,15 +449,11 @@ export default function BentoSection({
 					})}
 				</ReactGridLayout>
 			) : null}
-		</motion.section>
+		</section>
 	);
 	return (
-		<motion.div
-			initial={false}
-			animate={mode === "edit" ? entryAnimation : undefined}
-			className={mode === "edit" ? "w-full min-w-0 shrink-0" : "contents"}
-		>
+		<div className={mode === "edit" ? "w-full min-w-0 shrink-0" : "contents"}>
 			{section}
-		</motion.div>
+		</div>
 	);
 }
