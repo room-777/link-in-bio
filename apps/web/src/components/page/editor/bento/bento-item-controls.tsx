@@ -108,6 +108,7 @@ function LinkControl({
 	isRefreshing = false,
 	ariaLabel,
 	allowEmpty = true,
+	inputBackground = "bg-black/25",
 }: {
 	value: string;
 	onCommit: (value: string) => void;
@@ -115,6 +116,7 @@ function LinkControl({
 	isRefreshing?: boolean;
 	ariaLabel: string;
 	allowEmpty?: boolean;
+	inputBackground?: string;
 }) {
 	const [open, setOpen] = useState(false);
 	const [draftUrl, setDraftUrl] = useState(value);
@@ -216,7 +218,7 @@ function LinkControl({
 						aria-invalid={linkError}
 						value={draftUrl}
 						placeholder="Add link..."
-						className="h-8 w-full border-0 bg-black/25 text-primary-foreground placeholder:text-primary-foreground/45 hover:border-white/10 focus-visible:border-white/10 focus-visible:ring-0"
+						className={`h-8 w-full border-0 ${inputBackground} text-primary-foreground placeholder:text-primary-foreground/45 hover:border-white/10 focus-visible:border-white/10 focus-visible:ring-0`}
 						onChange={(event) => {
 							setDraftUrl(event.target.value);
 							invalidRef.current = false;
@@ -611,6 +613,7 @@ function TextStyleControls({
 						value={item.data.link ?? ""}
 						onCommit={onManageLink}
 						ariaLabel={item.data.link ? "Edit text link" : "Add text link"}
+						inputBackground="bg-transparent"
 					/>
 				</div>
 				{paletteOpen ? (
@@ -810,6 +813,7 @@ export default function BentoItemControls({
 								: "Add media link"
 					}
 					allowEmpty={item.type !== "link"}
+					inputBackground="bg-transparent"
 					onRefresh={
 						item.type === "link" && onRefreshLinkMetadata
 							? refreshMetadata
