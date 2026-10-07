@@ -1,6 +1,6 @@
+import { PageDomainError } from "@grabbin/application/page-domain";
 import type { Context } from "hono";
 import { cors } from "hono/cors";
-import { PageDomainError } from "../exceptions/page-domain.exception";
 import type { AppEnv } from "../types";
 
 export function createApiCors({

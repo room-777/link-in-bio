@@ -97,6 +97,13 @@ describe("page item service", () => {
 				pageItems: itemQuery,
 			},
 			insert: () => insertQuery,
+			update: () => ({
+				set: () => ({
+					where: () => ({
+						returning: async () => [{ objectKey: "registered-key" }],
+					}),
+				}),
+			}),
 		};
 		const db = {
 			transaction: async (callback: (value: typeof tx) => unknown) =>
@@ -550,11 +557,11 @@ describe("page item service", () => {
 	 * Case ID: PAGE-ITEM-SERVICE-010
 	 * Given: an existing media item is replaced with another owned object key.
 	 * When: persistPageItemBatch commits the replacement.
-	 * Then: it requests cleanup only after the transaction finishes.
-	 * Evidence: cleanup receives only the old object key after transaction completion.
+	 * Then: it records the old object key as pending_delete for the cron worker.
+	 * Evidence: the queue contains only the old key.
 	 * Result: Pass | Fail | Blocked | Not Run
 	 */
-	it("PAGE-ITEM-SERVICE-010 cleans replaced media after the transaction commits", async () => {
+	it("PAGE-ITEM-SERVICE-010 queues replaced media for cron cleanup", async () => {
 		const oldObjectKey = "users/user-1/pages/page-1/items/old-image.webp";
 		const current = {
 			id: "item-1",
@@ -567,6 +574,7 @@ describe("page item service", () => {
 			updatedAt: new Date("2026-09-20T00:00:00.000Z"),
 		};
 		let findManyCount = 0;
+		let queuedKeys: string[] = [];
 		const tx = {
 			query: {
 				pages: { findFirst: async () => ({ id: "page-1" }) },
@@ -591,22 +599,28 @@ describe("page item service", () => {
 			},
 			insert: () => {
 				const query = {
-					values: () => query,
+					values: (values: { objectKey?: string; status?: string }[]) => {
+						if (values.some((value) => value.status === "pending_delete"))
+							queuedKeys = values.map((value) => value.objectKey ?? "");
+						return query;
+					},
 					onConflictDoUpdate: async () => undefined,
 				};
 				return query;
 			},
+			update: () => ({
+				set: () => ({
+					where: () => ({
+						returning: async () => [{ objectKey: "registered-key" }],
+					}),
+				}),
+			}),
 			delete: () => ({ where: async () => undefined }),
 		};
-		let transactionFinished = false;
 		const db = {
-			transaction: async (callback: (value: typeof tx) => unknown) => {
-				const result = await callback(tx);
-				transactionFinished = true;
-				return result;
-			},
+			transaction: async (callback: (value: typeof tx) => unknown) =>
+				callback(tx),
 		} as unknown as DatabaseClient;
-		const cleanedKeys: string[][] = [];
 
 		await persistPageItemBatch({
 			db,
@@ -628,13 +642,9 @@ describe("page item service", () => {
 				],
 				deletes: [],
 			},
-			cleanupMedia: async (keys) => {
-				assert.equal(transactionFinished, true);
-				cleanedKeys.push([...keys]);
-			},
 		});
 
-		assert.deepEqual(cleanedKeys, [[oldObjectKey]]);
+		assert.deepEqual(queuedKeys, [oldObjectKey]);
 	});
 
 	/**

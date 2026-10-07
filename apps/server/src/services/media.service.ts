@@ -4,6 +4,7 @@ import {
 	pageItemUploadRequestSchema,
 	pageItemUploadResponseSchema,
 } from "@grabbin/api";
+import { cancelPendingPageMedia } from "@grabbin/application/media-assets";
 import { AwsClient } from "aws4fetch";
 import * as v from "valibot";
 import { PageItemServiceError } from "../exceptions/page-item.exception";
@@ -252,7 +253,7 @@ export async function completeItemMediaUpload(input: {
 }
 
 export async function cancelItemMediaUpload(input: {
-	bucket: R2Bucket;
+	db: import("@grabbin/db").DatabaseClient;
 	userId: string;
 	pageId: string;
 	objectKey: string;
@@ -269,5 +270,10 @@ export async function cancelItemMediaUpload(input: {
 		})
 	)
 		throw new PageItemServiceError("INVALID_MEDIA_KEY");
-	await input.bucket.delete(input.objectKey);
+	await cancelPendingPageMedia({
+		db: input.db,
+		objectKey: input.objectKey,
+		pageId: input.pageId,
+		userId: input.userId,
+	});
 }

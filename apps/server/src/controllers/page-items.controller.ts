@@ -11,13 +11,16 @@ import {
 	pageItemUploadCompleteRequestSchema,
 	pageItemUploadRequestSchema,
 } from "@grabbin/api";
+import { registerPendingPageMedia } from "@grabbin/application/media-assets";
+import {
+	assertPageWritable,
+	PageServiceError,
+} from "@grabbin/application/page-lifecycle";
 import type { DatabaseClient } from "@grabbin/db";
 import type { Context, MiddlewareHandler } from "hono";
 import { Hono } from "hono";
 import * as v from "valibot";
-
 import { jsonApiError } from "../api-error";
-import { PageServiceError } from "../exceptions/page.exception";
 import { PageItemServiceError } from "../exceptions/page-item.exception";
 import type { LinkProviderEnvironment } from "../services/link-providers";
 import {
@@ -26,7 +29,6 @@ import {
 	createItemMediaUpload,
 } from "../services/media.service";
 import { getOwnedPage } from "../services/page.service";
-import { assertPageWritable } from "../services/page-lifecycle.service";
 import type { AppEnv } from "../types";
 
 const pageItemErrorDetails = {
@@ -73,7 +75,6 @@ type PersistPageItemBatch = (input: {
 	userId: string;
 	batch: PageItemBatchRequest;
 	publicBaseUrl?: string;
-	cleanupMedia?: (objectKeys: readonly string[]) => Promise<void>;
 }) => Promise<PageItemBatchResponse>;
 
 type EnrichPageItemMetadata = (input: {
@@ -221,6 +222,13 @@ export function createPageItemsController({
 					pageId: page.id,
 					request: parsed.output,
 				});
+				await registerPendingPageMedia({
+					db: c.var.db,
+					objectKey: upload.objectKey,
+					pageId: page.id,
+					userId: session.user.id,
+					uploadExpiresAt: new Date(upload.expiresAt),
+				});
 				return c.json(upload);
 			} catch (error) {
 				if (error instanceof PageItemServiceError) {
@@ -311,7 +319,7 @@ export function createPageItemsController({
 
 			try {
 				await cancelItemMediaUpload({
-					bucket: c.env.R2_BUCKET,
+					db: c.var.db,
 					userId: session.user.id,
 					pageId: page.id,
 					objectKey: parsed.output.objectKey,
@@ -360,13 +368,6 @@ export function createPageItemsController({
 						userId: session.user.id,
 						batch: parsed.output,
 						publicBaseUrl: c.env?.R2_PUBLIC_URL,
-						cleanupMedia: async (objectKeys) => {
-							await Promise.allSettled(
-								objectKeys.map((objectKey) =>
-									c.env.R2_BUCKET.delete(objectKey),
-								),
-							);
-						},
 					}),
 				);
 			} catch (error) {

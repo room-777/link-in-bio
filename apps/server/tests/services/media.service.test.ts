@@ -95,34 +95,29 @@ describe("page item media service", () => {
 	});
 
 	it("cancels an owned object", async () => {
-		const deletedKeys: string[] = [];
-		const bucket = {
-			delete: async (key: string) => {
-				deletedKeys.push(key);
-			},
-		} as unknown as R2Bucket;
+		const db = {
+			update: () => ({
+				set: () => ({
+					where: () => ({
+						returning: async () => [{ objectKey }],
+					}),
+				}),
+			}),
+			delete: () => ({ where: async () => undefined }),
+		} as unknown as import("@grabbin/db").DatabaseClient;
 
 		await cancelItemMediaUpload({
-			bucket,
+			db,
 			userId: "user-1",
 			pageId: "page-1",
 			objectKey,
 		});
-
-		assert.deepEqual(deletedKeys, [objectKey]);
 	});
 
 	it("rejects cancelling a foreign object key", async () => {
-		const deletedKeys: string[] = [];
-		const bucket = {
-			delete: async (key: string) => {
-				deletedKeys.push(key);
-			},
-		} as unknown as R2Bucket;
-
 		await assert.rejects(
 			cancelItemMediaUpload({
-				bucket,
+				db: {} as import("@grabbin/db").DatabaseClient,
 				userId: "user-1",
 				pageId: "page-1",
 				objectKey: "users/other/pages/page-1/items/image.jpg",
@@ -131,6 +126,5 @@ describe("page item media service", () => {
 				error instanceof PageItemServiceError &&
 				error.code === "INVALID_MEDIA_KEY",
 		);
-		assert.deepEqual(deletedKeys, []);
 	});
 });

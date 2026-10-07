@@ -21,10 +21,24 @@
         "typescript": "catalog:tooling",
       },
     },
+    "apps/cron": {
+      "name": "cron",
+      "dependencies": {
+        "@grabbin/application": "workspace:*",
+        "@grabbin/db": "workspace:*",
+        "drizzle-orm": "^0.45.2",
+      },
+      "devDependencies": {
+        "@cloudflare/workers-types": "catalog:cloudflare",
+        "@grabbin/config": "workspace:*",
+        "typescript": "catalog:tooling",
+      },
+    },
     "apps/server": {
       "name": "server",
       "dependencies": {
         "@grabbin/api": "workspace:*",
+        "@grabbin/application": "workspace:*",
         "@grabbin/auth": "workspace:*",
         "@grabbin/bento-layout": "workspace:*",
         "@grabbin/db": "workspace:*",
@@ -40,7 +54,6 @@
         "drizzle-orm": "^0.45.2",
         "evlog": "catalog:runtime",
         "hono": "catalog:runtime",
-        "tldts": "^7.4.16",
         "valibot": "catalog:runtime",
       },
       "devDependencies": {
@@ -117,6 +130,24 @@
       "name": "@grabbin/api",
       "version": "0.0.0",
       "dependencies": {
+        "valibot": "catalog:runtime",
+      },
+      "devDependencies": {
+        "@grabbin/config": "workspace:*",
+        "typescript": "catalog:tooling",
+      },
+    },
+    "packages/application": {
+      "name": "@grabbin/application",
+      "version": "0.0.0",
+      "dependencies": {
+        "@grabbin/api": "workspace:*",
+        "@grabbin/auth": "workspace:*",
+        "@grabbin/db": "workspace:*",
+        "@grabbin/page-handle": "workspace:*",
+        "@grabbin/plan": "workspace:*",
+        "drizzle-orm": "^0.45.2",
+        "tldts": "^7.4.16",
         "valibot": "catalog:runtime",
       },
       "devDependencies": {
@@ -618,6 +649,8 @@
     "@floating-ui/utils": ["@floating-ui/utils@0.2.12", "", {}, "sha512-HpCo8tmWzLVad5s2d19EhAz5zqrrQ6s69qd6moPMQvkOuSwDT1YgRfWSVuc4ennqrgv3OHppiOGMQ7oC13yIww=="],
 
     "@grabbin/api": ["@grabbin/api@workspace:packages/api"],
+
+    "@grabbin/application": ["@grabbin/application@workspace:packages/application"],
 
     "@grabbin/auth": ["@grabbin/auth@workspace:packages/auth"],
 
@@ -1572,6 +1605,8 @@
     "cosmiconfig": ["cosmiconfig@9.0.2", "", { "dependencies": { "env-paths": "^2.2.1", "import-fresh": "^3.3.0", "js-yaml": "^4.1.0", "parse-json": "^5.2.0" }, "peerDependencies": { "typescript": ">=4.9.5" }, "optionalPeers": ["typescript"] }, "sha512-gtTZxTDau1wL7Y7zifc2dd8jHSK/k6BTx/2Xp/BpdlAdnlYWFVt7qhJqgwi7637yRwRQ3qL4ZidbB4I8tA5VOg=="],
 
     "creem": ["creem@1.12.0", "", { "dependencies": { "@modelcontextprotocol/sdk": "^1.26.0", "jsonpath-rfc9535": "1.1.0", "zod": "^3.25.0 || ^4.0.0" }, "bin": { "mcp": "bin/mcp-server.js" } }, "sha512-htFbigc4pZOj/l5LRbXTjqjq+kip9W2bioRLCYfUqePt3XmBmEn+4FqH+90b46pZtjVvWejm4bB3s+cO4W7lSw=="],
+
+    "cron": ["cron@workspace:apps/cron"],
 
     "cross-spawn": ["cross-spawn@7.0.6", "", { "dependencies": { "path-key": "^3.1.0", "shebang-command": "^2.0.0", "which": "^2.0.1" } }, "sha512-uV2QOWP2nWzsy2aMp8aRibhi9dlzF5Hgh5SHaB9OiTGEyDTiJJyx0uy51QXdyWbtAHNua4XJzUKca3OzKUd3vA=="],
 

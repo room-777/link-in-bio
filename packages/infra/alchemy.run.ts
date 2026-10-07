@@ -89,7 +89,7 @@ export const grabbinBucket = Cloudflare.R2.Bucket("grabbin", {
 			maxAgeSeconds: 3600,
 		},
 	],
-}).pipe(Alchemy.remote());
+});
 
 export const server = Cloudflare.Worker("server", {
 	name: "grabbin-server",
@@ -102,7 +102,6 @@ export const server = Cloudflare.Worker("server", {
 	compatibility: {
 		flags: ["nodejs_compat"],
 	},
-	crons: ["0 6 * * *", "*/5 * * * *"],
 	env: {
 		HYPERDRIVE: hyperdrive,
 		R2_BUCKET: grabbinBucket,
@@ -200,6 +199,41 @@ export const server = Cloudflare.Worker("server", {
 	},
 });
 
+export const cron = Cloudflare.Worker("cron", {
+	name: "grabbin-cron",
+	placement: { region: "aws:ap-northeast-2" },
+	main: "../../apps/cron/src/index.ts",
+	bundle: true,
+	compatibility: {
+		flags: ["nodejs_compat"],
+	},
+	crons: ["0 6 * * *"],
+	env: {
+		HYPERDRIVE: hyperdrive,
+		R2_BUCKET: grabbinBucket,
+		CREEM_API_KEY: Config.redacted("CREEM_API_KEY"),
+		CREEM_TEST_MODE: Config.string("CREEM_TEST_MODE"),
+		CREEM_PRO_MONTHLY_PRODUCT_ID: Config.string(
+			"CREEM_PRO_MONTHLY_PRODUCT_ID",
+		).pipe(Config.withDefault("")),
+		CREEM_PRO_YEARLY_PRODUCT_ID: Config.string(
+			"CREEM_PRO_YEARLY_PRODUCT_ID",
+		).pipe(Config.withDefault("")),
+		CLOUDFLARE_SAAS_ZONE_ID: Config.string("CLOUDFLARE_SAAS_ZONE_ID").pipe(
+			Config.withDefault(""),
+		),
+		CLOUDFLARE_SAAS_API_TOKEN: Config.redacted(
+			"CLOUDFLARE_SAAS_API_TOKEN",
+		).pipe(Config.withDefault("")),
+		PAGE_DOMAIN: Config.string("PAGE_DOMAIN").pipe(
+			Config.withDefault("grabbin.me"),
+		),
+		CUSTOM_DOMAIN_TARGET: Config.string("CUSTOM_DOMAIN_TARGET").pipe(
+			Config.withDefault("custom.grabbin.me"),
+		),
+	},
+});
+
 export type ServerEnv = Cloudflare.InferEnv<typeof server>;
 
 export default Alchemy.Stack(
@@ -210,6 +244,7 @@ export default Alchemy.Stack(
 	},
 	Effect.gen(function* () {
 		const serverWorker = yield* server;
+		yield* cron;
 		if (isAlchemyDev) {
 			yield* Command.Dev("web-dev", {
 				command: "bun run dev:bare",

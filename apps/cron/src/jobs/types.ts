@@ -1,0 +1,11 @@
+export type CronBindings = {
+	CLOUDFLARE_SAAS_ZONE_ID?: string;
+	CLOUDFLARE_SAAS_API_TOKEN?: string;
+	CREEM_API_KEY: string;
+	CREEM_TEST_MODE: string;
+	CREEM_PRO_MONTHLY_PRODUCT_ID: string;
+	CREEM_PRO_YEARLY_PRODUCT_ID: string;
+	CUSTOM_DOMAIN_TARGET?: string;
+	PAGE_DOMAIN: string;
+	R2_BUCKET: R2Bucket;
+};

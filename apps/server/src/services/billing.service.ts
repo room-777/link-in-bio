@@ -1,8 +1,8 @@
+import { getAccountPlan } from "@grabbin/application/billing";
 import type { createCreemClient } from "@grabbin/auth/creem-server";
 import { syncCreemCheckout } from "@grabbin/auth/creem-webhook";
 import type { DatabaseClient } from "@grabbin/db";
 import { creemSubscription } from "@grabbin/db/schema/index";
-import { getPlanAccess as resolvePlanAccess } from "@grabbin/plan";
 import { eq, sql } from "drizzle-orm";
 
 type CreemClient = ReturnType<typeof createCreemClient>;
@@ -174,33 +174,6 @@ export async function createOrResumeProCheckout({
 		return { error: "CHECKOUT_PROCESSING" as const };
 	}
 	return result.kind === "url" ? { url: result.url } : { error: result.error };
-}
-
-export async function getAccountPlan({
-	db,
-	userId,
-	proProductIds,
-	now = new Date(),
-}: {
-	db: Pick<DatabaseClient, "query">;
-	userId: string;
-	proProductIds: readonly string[];
-	now?: Date;
-}) {
-	const subscriptions = await db.query.creemSubscription.findMany({
-		where: eq(creemSubscription.referenceId, userId),
-	});
-	return resolvePlanAccess(
-		subscriptions.map((subscription) => ({
-			subscriptionId: subscription.creemSubscriptionId,
-			productId: subscription.productId,
-			status: subscription.status,
-			periodEnd: subscription.periodEnd,
-			cancelAtPeriodEnd: subscription.cancelAtPeriodEnd,
-		})),
-		proProductIds,
-		now,
-	);
 }
 
 export async function scheduleProCancellation({

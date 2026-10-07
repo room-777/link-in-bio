@@ -1,17 +1,21 @@
 import assert from "node:assert/strict";
 import { spawn } from "node:child_process";
 import { setTimeout as sleep } from "node:timers/promises";
+import { reconcileExpiredSubscriptions } from "@grabbin/application/billing-reconciliation";
+import { deleteExpiredPages } from "@grabbin/application/page-lifecycle";
 import * as schema from "@grabbin/db/schema/index";
-import { creemSubscription, pages } from "@grabbin/db/schema/index";
+import {
+	creemSubscription,
+	pageMediaAssets,
+	pages,
+} from "@grabbin/db/schema/index";
 import { betterAuth } from "better-auth";
 import { drizzleAdapter } from "better-auth/adapters/drizzle";
 import { testUtils } from "better-auth/plugins";
 import dotenv from "dotenv";
-import { eq } from "drizzle-orm";
+import { eq, inArray } from "drizzle-orm";
 import { drizzle } from "drizzle-orm/node-postgres";
 import { Client } from "pg";
-import { runScheduledJobs } from "../../src/services/scheduled.service";
-import type { AppEnv } from "../../src/types";
 
 dotenv.config({ path: ".env" });
 
@@ -58,22 +62,7 @@ async function waitFor<T>(
 
 function memoryBucket() {
 	const keys = new Set<string>();
-	return {
-		keys,
-		bucket: {
-			async list({ prefix }: { prefix?: string }) {
-				return {
-					objects: [...keys]
-						.filter((key) => key.startsWith(prefix ?? ""))
-						.map((key) => ({ key })),
-					truncated: false,
-				};
-			},
-			async delete(key: string) {
-				keys.delete(key);
-			},
-		} as unknown as R2Bucket,
-	};
+	return keys;
 }
 
 async function main() {
@@ -370,22 +359,39 @@ async function main() {
 			deleteAt: scheduledExtras[0]?.deletionScheduledAt?.toISOString(),
 		});
 
+		const mediaKeys = scheduledExtras.map(
+			(page) => `users/${user.id}/pages/${page.id}/test-image.png`,
+		);
 		const media = memoryBucket();
-		for (const page of scheduledExtras)
-			media.keys.add(`users/${user.id}/pages/${page.id}/test-image.png`);
+		for (const key of mediaKeys) media.add(key);
 		const cleanupTime = new Date(
 			canceledAtPeriodEnd.periodEnd.getTime() + 8 * 24 * 60 * 60 * 1000,
 		);
-		await runScheduledJobs({
+		await db.insert(pageMediaAssets).values(
+			scheduledExtras.map((page, index) => ({
+				objectKey: mediaKeys[index] as string,
+				userId: user.id,
+				pageId: page.id,
+				status: "attached" as const,
+				deleteAfter: null,
+				uploadExpiresAt: cleanupTime,
+			})),
+		);
+		const skippedUsers = await reconcileExpiredSubscriptions({
 			db,
-			date: cleanupTime,
-			bindings: {
+			now: cleanupTime,
+			env: {
 				CREEM_API_KEY: process.env.CREEM_API_KEY,
 				CREEM_TEST_MODE: "true",
 				CREEM_PRO_MONTHLY_PRODUCT_ID: monthlyProductId,
 				CREEM_PRO_YEARLY_PRODUCT_ID: yearlyProductId,
-				R2_BUCKET: media.bucket,
-			} as AppEnv["Bindings"],
+			},
+		});
+		await deleteExpiredPages({
+			db,
+			now: cleanupTime,
+			proProductIds: [monthlyProductId, yearlyProductId],
+			skipUserIds: skippedUsers,
 		});
 		const remainingPages = await db.query.pages.findMany({
 			where: eq(pages.userId, user.id),
@@ -394,10 +400,18 @@ async function main() {
 			remainingPages.map((page) => page.handle),
 			[handle],
 		);
-		assert.equal(media.keys.size, 0);
+		assert.equal(media.size, 2);
+		const queuedMedia = await db
+			.select({ status: pageMediaAssets.status })
+			.from(pageMediaAssets)
+			.where(inArray(pageMediaAssets.objectKey, mediaKeys));
+		assert.deepEqual(
+			queuedMedia.map(({ status }) => status),
+			["pending_delete", "pending_delete"],
+		);
 		pass("CREEM-E2E-007", {
 			remainingPages: remainingPages.length,
-			removedMediaKeys: 2,
+			queuedMediaKeys: queuedMedia.length,
 		});
 
 		console.log(

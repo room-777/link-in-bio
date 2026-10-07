@@ -3,6 +3,14 @@ import {
 	pageImageContentTypes,
 	type UpdatePageDraft,
 } from "@grabbin/api";
+import {
+	attachPageMedia,
+	queuePageMediaDeletion,
+} from "@grabbin/application/media-assets";
+import {
+	assertPageWritable,
+	PageServiceError,
+} from "@grabbin/application/page-lifecycle";
 import type { DatabaseClient } from "@grabbin/db";
 import { creemSubscription, pages, user } from "@grabbin/db/schema/index";
 import {
@@ -11,11 +19,8 @@ import {
 } from "@grabbin/page-handle";
 import { FREE_PAGE_LIMIT, getPlanAccess, PRO_PAGE_LIMIT } from "@grabbin/plan";
 import { and, eq, inArray, sql } from "drizzle-orm";
-
-import { PageServiceError } from "../exceptions/page.exception";
 import { isOwnedPageMediaKey } from "./media.service";
 import { checkPageHandle } from "./page-handle.service";
-import { assertPageWritable } from "./page-lifecycle.service";
 
 function findPublicPageByHandle(db: DatabaseClient, handle: string) {
 	return db.query.pages.findFirst({
@@ -44,66 +49,6 @@ export function getOwnedPage(
 		),
 		columns: { id: true, handle: true },
 	});
-}
-
-function updateOwnedPage(
-	db: DatabaseClient,
-	input: {
-		userId: string;
-		handle: string;
-		imageKey: string | null;
-		imageSource: string | null;
-		imageCrop: PageProfile["imageCrop"];
-		name: string;
-		bio: string | null;
-	},
-) {
-	return db
-		.update(pages)
-		.set({
-			imageKey: input.imageKey,
-			imageSource: input.imageSource,
-			imageCrop: input.imageCrop,
-			name: input.name,
-			bio: input.bio,
-		})
-		.where(and(eq(pages.handle, input.handle), eq(pages.userId, input.userId)))
-		.returning();
-}
-
-function updateOwnedPageDraft(
-	db: DatabaseClient,
-	input: {
-		userId: string;
-		handle: string;
-		name?: string | null;
-		bio?: string | null;
-		imageKey?: string | null;
-		imageCrop?: PageProfile["imageCrop"];
-	},
-) {
-	const values: {
-		name?: string | null;
-		bio?: string | null;
-		imageKey?: string | null;
-		imageSource?: string | null;
-		imageCrop?: PageProfile["imageCrop"];
-	} = {};
-	if ("name" in input) values.name = input.name;
-	if ("bio" in input) values.bio = input.bio;
-	if ("imageKey" in input) {
-		values.imageKey = input.imageKey;
-		values.imageSource = input.imageKey;
-		values.imageCrop = input.imageKey ? (input.imageCrop ?? null) : null;
-	} else if ("imageCrop" in input) {
-		values.imageCrop = input.imageCrop;
-	}
-
-	return db
-		.update(pages)
-		.set(values)
-		.where(and(eq(pages.handle, input.handle), eq(pages.userId, input.userId)))
-		.returning();
 }
 
 function getHandleError(availability: HandleAvailabilityResponse) {
@@ -326,24 +271,40 @@ export async function completePage({
 		throw new PageServiceError("PAGE_IMAGE_INVALID");
 	}
 
-	const [page] = await updateOwnedPage(db, {
-		userId,
-		handle,
-		imageKey,
-		imageSource: imageKey,
-		imageCrop: imageKey ? (profile.imageCrop ?? null) : null,
-		name: profile.name,
-		bio: profile.bio?.trim() || null,
+	const result = await db.transaction(async (tx) => {
+		if (
+			imageKey &&
+			!(await attachPageMedia({
+				tx,
+				objectKeys: [imageKey],
+				pageId: existingPage.id,
+				userId,
+			}))
+		) {
+			throw new PageServiceError("PAGE_IMAGE_INVALID");
+		}
+		if (existingPage.imageKey && existingPage.imageKey !== imageKey)
+			await queuePageMediaDeletion({
+				tx,
+				objectKeys: [existingPage.imageKey],
+				pageId: existingPage.id,
+				userId,
+			});
+		const [page] = await tx
+			.update(pages)
+			.set({
+				imageKey,
+				imageSource: imageKey,
+				imageCrop: imageKey ? (profile.imageCrop ?? null) : null,
+				name: profile.name,
+				bio: profile.bio?.trim() || null,
+			})
+			.where(and(eq(pages.handle, handle), eq(pages.userId, userId)))
+			.returning();
+		if (!page) throw new PageServiceError("PAGE_NOT_FOUND");
+		return page;
 	});
-
-	if (!page) {
-		throw new PageServiceError("PAGE_NOT_FOUND");
-	}
-	if (existingPage.imageKey && existingPage.imageKey !== imageKey) {
-		await bucket.delete(existingPage.imageKey).catch(() => undefined);
-	}
-
-	return page;
+	return result;
 }
 
 export async function updatePageDraft({
@@ -392,27 +353,56 @@ export async function updatePageDraft({
 		throw new PageServiceError("PAGE_IMAGE_INVALID");
 	}
 
-	const [page] = await updateOwnedPageDraft(db, {
-		userId,
-		handle,
-		...("name" in draft ? { name: draft.name?.trim() || null } : {}),
-		...("bio" in draft ? { bio: draft.bio?.trim() || null } : {}),
-		...("imageKey" in draft ? { imageKey } : {}),
-		...("imageCrop" in draft && !("imageKey" in draft)
-			? { imageCrop: draft.imageCrop }
-			: {}),
+	const result = await db.transaction(async (tx) => {
+		if (
+			"imageKey" in draft &&
+			imageKey &&
+			!(await attachPageMedia({
+				tx,
+				objectKeys: [imageKey],
+				pageId: existingPage.id,
+				userId,
+			}))
+		) {
+			throw new PageServiceError("PAGE_IMAGE_INVALID");
+		}
+		if (
+			"imageKey" in draft &&
+			existingPage.imageKey &&
+			existingPage.imageKey !== imageKey
+		) {
+			await queuePageMediaDeletion({
+				tx,
+				objectKeys: [existingPage.imageKey],
+				pageId: existingPage.id,
+				userId,
+			});
+		}
+		const values: {
+			name?: string | null;
+			bio?: string | null;
+			imageKey?: string | null;
+			imageSource?: string | null;
+			imageCrop?: PageProfile["imageCrop"];
+		} = {};
+		if ("name" in draft) values.name = draft.name?.trim() || null;
+		if ("bio" in draft) values.bio = draft.bio?.trim() || null;
+		if ("imageKey" in draft) {
+			values.imageKey = imageKey;
+			values.imageSource = imageKey;
+			values.imageCrop = imageKey ? (draft.imageCrop ?? null) : null;
+		} else if ("imageCrop" in draft) {
+			values.imageCrop = draft.imageCrop;
+		}
+		const [page] = await tx
+			.update(pages)
+			.set(values)
+			.where(and(eq(pages.handle, handle), eq(pages.userId, userId)))
+			.returning();
+		if (!page) throw new PageServiceError("PAGE_NOT_FOUND");
+		return page;
 	});
-	if (!page) throw new PageServiceError("PAGE_NOT_FOUND");
-
-	if (
-		"imageKey" in draft &&
-		existingPage.imageKey &&
-		existingPage.imageKey !== imageKey
-	) {
-		await bucket.delete(existingPage.imageKey).catch(() => undefined);
-	}
-
-	return page;
+	return result;
 }
 
 export async function getPage(db: DatabaseClient, rawHandle: string) {
@@ -477,4 +467,4 @@ export async function getPublicPageWithPlan(
 	};
 }
 
-export { assertPageWritable } from "./page-lifecycle.service";
+export { assertPageWritable } from "@grabbin/application/page-lifecycle";

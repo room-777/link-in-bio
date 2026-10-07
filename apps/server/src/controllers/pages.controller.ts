@@ -6,13 +6,23 @@ import {
 	pageProfileSchema,
 	updatePageDraftSchema,
 } from "@grabbin/api";
+import {
+	cancelPendingPageMedia,
+	registerPendingPageMedia,
+} from "@grabbin/application/media-assets";
+import {
+	assertPageWritable,
+	changePrimaryPage,
+	deleteOwnedPage,
+	listOwnedPages,
+	listSitemapHandles,
+	PageServiceError,
+} from "@grabbin/application/page-lifecycle";
 import { createDb } from "@grabbin/db";
 import type { Context } from "hono";
 import { Hono } from "hono";
 import * as v from "valibot";
-
 import { jsonApiError } from "../api-error";
-import { PageServiceError } from "../exceptions/page.exception";
 import {
 	optionalSession,
 	requiredSession,
@@ -32,13 +42,6 @@ import {
 } from "../services/page.service";
 import { checkPageHandle } from "../services/page-handle.service";
 import { listPageItems } from "../services/page-item.service";
-import {
-	assertPageWritable,
-	changePrimaryPage,
-	deleteOwnedPage,
-	listOwnedPages,
-	listSitemapHandles,
-} from "../services/page-lifecycle.service";
 import { getPublicViews } from "../services/public-views.service";
 import type { AppEnv } from "../types";
 import { createSitemapController } from "./sitemap.controller";
@@ -223,6 +226,13 @@ export const pagesController = new Hono<AppEnv>()
 			key,
 			contentType: parsed.output.contentType,
 		});
+		await registerPendingPageMedia({
+			db: c.var.db,
+			objectKey: key,
+			pageId: page.id,
+			userId: session.user.id,
+			uploadExpiresAt: new Date(upload.expiresAt),
+		});
 
 		return c.json({
 			key,
@@ -269,7 +279,12 @@ export const pagesController = new Hono<AppEnv>()
 			});
 		}
 
-		await c.env.R2_BUCKET.delete(parsed.output.key);
+		await cancelPendingPageMedia({
+			db: c.var.db,
+			objectKey: parsed.output.key,
+			pageId: page.id,
+			userId: session.user.id,
+		});
 		return c.body(null, 204);
 	})
 	.post("/", requiredSession, async (c) => {
@@ -333,7 +348,6 @@ export const pagesController = new Hono<AppEnv>()
 		try {
 			await deleteOwnedPage({
 				db: c.var.db,
-				bucket: c.env.R2_BUCKET,
 				userId: session.user.id,
 				handle: c.req.param("handle"),
 			});

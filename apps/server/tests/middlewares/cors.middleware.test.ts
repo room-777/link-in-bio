@@ -1,7 +1,7 @@
 import assert from "node:assert/strict";
 import { describe, it, mock } from "node:test";
+import { PageDomainError } from "@grabbin/application/page-domain";
 import { Hono } from "hono";
-import { PageDomainError } from "../../src/exceptions/page-domain.exception";
 import { createApiCors } from "../../src/middlewares/cors.middleware";
 import type { AppEnv } from "../../src/types";
 

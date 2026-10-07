@@ -1,7 +1,7 @@
 import assert from "node:assert/strict";
 import { describe, it } from "node:test";
+import { PageDomainError } from "@grabbin/application/page-domain";
 import { PAGE_GRACE_PERIOD_MS } from "@grabbin/plan";
-import { PageDomainError } from "../../src/exceptions/page-domain.exception";
 import { domainFixture, present } from "../fixtures/page-domain.fixture";
 
 const code = (expected: string) => (error: unknown) =>
@@ -197,7 +197,8 @@ describe("custom domain lifecycle", () => {
 		);
 		f.advance(PAGE_GRACE_PERIOD_MS);
 		assert.equal(await f.service.resolve("hello.example.com"), null);
-		await f.service.reconcile();
+		await f.service.expire();
+		await f.service.cleanupDeleting();
 		assert.equal(f.rows.size, 0);
 		assert.equal(f.providerRows.size, 0);
 	});
@@ -261,7 +262,7 @@ describe("custom domain lifecycle", () => {
 		assert.equal(f.providerRows.size, 1);
 	});
 	/** Case ID: DOMAIN-SVC-012
-	 * Given: an active domain and failed provider deletion. When: a free owner disconnects and a scheduled retry succeeds.
+	 * Given: an active domain and failed provider deletion. When: a free owner disconnects and the daily retry succeeds.
 	 * Then: deny serving immediately, retain the provider ID and reservation until cleanup.
 	 * Evidence: deleting row, null resolution, conflict code and final DB/provider counts. Result: Pass | Fail | Blocked | Not Run
 	 */
@@ -283,8 +284,8 @@ describe("custom domain lifecycle", () => {
 			code("DOMAIN_TAKEN"),
 		);
 		f.failProvider("");
-		f.advance(5 * 60 * 1000);
-		await f.service.reconcile();
+		f.advance(24 * 60 * 60 * 1000);
+		await f.service.cleanupDeleting();
 		assert.equal(f.rows.size, 0);
 		assert.equal(f.providerRows.size, 0);
 		const next = await f.service.connect("owner-b", "blair", row.hostname);
@@ -305,7 +306,8 @@ describe("custom domain lifecycle", () => {
 		f.pages.delete("page-a");
 		await f.store.update(row.id, { pageId: null });
 		assert.equal(await f.service.resolve(row.hostname), null);
-		await f.service.reconcile({ includeActive: false });
+		await f.service.expire();
+		await f.service.cleanupDeleting();
 		assert.equal(f.rows.size, 0);
 		assert.equal(f.providerRows.size, 0);
 	});
@@ -374,7 +376,7 @@ describe("custom domain lifecycle", () => {
 		assert.equal(await f.service.resolve(row.hostname), null);
 	});
 	/** Case ID: DOMAIN-SVC-017
-	 * Given: expired users whose billing refresh failed. When: reconciliation excludes them.
+	 * Given: an expired user's billing refresh failed. When: daily expiry excludes that user.
 	 * Then: keep their records for a later retry. Evidence: retained row/provider counts and zero delete calls. Result: Pass | Fail | Blocked | Not Run
 	 */
 	it("DOMAIN-SVC-017 respects excluded billing users", async () => {
@@ -384,7 +386,7 @@ describe("custom domain lifecycle", () => {
 			f.time.getTime() - PAGE_GRACE_PERIOD_MS,
 		);
 		await f.store.update(row.id, { nextCheckAt: f.time });
-		await f.service.reconcile({ skipUserIds: ["owner-a"] });
+		await f.service.expire({ skipUserIds: ["owner-a"] });
 		assert.equal(f.rows.size, 1);
 		assert.equal(f.providerRows.size, 1);
 		assert.equal(
@@ -393,7 +395,7 @@ describe("custom domain lifecycle", () => {
 		);
 	});
 	/** Case ID: DOMAIN-SVC-018
-	 * Given: an expired domain whose billing refresh has not completed. When: frequent checks and daily expiration run.
+	 * Given: an expired domain whose billing refresh has not completed. When: daily expiration and cleanup run.
 	 * Then: deny serving immediately but delay provider deletion until billing confirmation.
 	 * Evidence: retained rows during skipped refresh, deleting status and final DB/provider counts. Result: Pass | Fail | Blocked | Not Run
 	 */
@@ -404,15 +406,19 @@ describe("custom domain lifecycle", () => {
 			f.time.getTime() - PAGE_GRACE_PERIOD_MS,
 		);
 		await f.store.update(row.id, { nextCheckAt: f.time });
-		await f.service.reconcile({ allowExpiryCleanup: false });
 		assert.equal(await f.service.resolve(row.hostname), null);
+		await f.service.check("owner-a", "avery");
 		assert.equal(f.rows.size, 1);
 		assert.equal(f.providerRows.size, 1);
+		assert.equal(
+			f.calls.some((call) => call.method === "DELETE"),
+			false,
+		);
 		await f.service.expire({ skipUserIds: ["owner-a"] });
 		assert.equal(present(f.rows.get(row.id)).status, "active");
 		await f.service.expire();
 		assert.equal(present(f.rows.get(row.id)).status, "deleting");
-		await f.service.reconcile({ allowExpiryCleanup: false });
+		await f.service.cleanupDeleting();
 		assert.equal(f.rows.size, 0);
 		assert.equal(f.providerRows.size, 0);
 	});

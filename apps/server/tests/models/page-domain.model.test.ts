@@ -1,10 +1,10 @@
 import assert from "node:assert/strict";
 import { describe, it } from "node:test";
+import { createPageDomainRepository } from "@grabbin/application/page-domain";
 import type { DatabaseClient } from "@grabbin/db";
 import { pageDomains } from "@grabbin/db/schema/index";
 import type { SQL } from "drizzle-orm";
 import { getTableConfig, PgDialect } from "drizzle-orm/pg-core";
-import { createPageDomainRepository } from "../../src/models/page-domain.model";
 import { present } from "../fixtures/page-domain.fixture";
 
 describe("page domain storage contract", () => {

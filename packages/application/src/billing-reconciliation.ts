@@ -2,8 +2,14 @@ import { retrieveSubscription } from "@grabbin/auth/creem-server";
 import type { DatabaseClient } from "@grabbin/db";
 import { creemSubscription } from "@grabbin/db/schema/index";
 import { and, eq, inArray, isNull, lte } from "drizzle-orm";
-import type { AppEnv } from "../types";
-import { reconcileUserPageLifecycle } from "./page-lifecycle.service";
+import { reconcileUserPageLifecycle } from "./page-lifecycle";
+
+type BillingBindings = {
+	CREEM_API_KEY: string;
+	CREEM_TEST_MODE: string;
+	CREEM_PRO_MONTHLY_PRODUCT_ID: string;
+	CREEM_PRO_YEARLY_PRODUCT_ID: string;
+};
 
 export async function reconcileExpiredSubscriptions({
 	db,
@@ -12,13 +18,7 @@ export async function reconcileExpiredSubscriptions({
 	fetchSubscription = retrieveSubscription,
 }: {
 	db: DatabaseClient;
-	env: Pick<
-		AppEnv["Bindings"],
-		| "CREEM_API_KEY"
-		| "CREEM_TEST_MODE"
-		| "CREEM_PRO_MONTHLY_PRODUCT_ID"
-		| "CREEM_PRO_YEARLY_PRODUCT_ID"
-	>;
+	env: BillingBindings;
 	now?: Date;
 	fetchSubscription?: typeof retrieveSubscription;
 }) {

@@ -3,21 +3,23 @@ import type { DatabaseClient } from "@grabbin/db";
 import { getPlanAccess, PAGE_GRACE_PERIOD_MS } from "@grabbin/plan";
 import { parse } from "tldts";
 import { PageDomainError } from "../exceptions/page-domain.exception";
-import type {
-	DomainPage,
-	PageDomainRepository,
-	PageDomainRow,
-} from "../models/page-domain.model";
-import { createPageDomainRepository } from "../models/page-domain.model";
-import type { AppEnv } from "../types";
-import type { CloudflareSaas, DomainDns } from "./cloudflare-saas.service";
-import {
-	createCloudflareSaas,
-	createDomainDns,
-} from "./cloudflare-saas.service";
+import type { CloudflareSaas, DomainDns } from "./cloudflare-saas";
+import { createCloudflareSaas, createDomainDns } from "./cloudflare-saas";
+import type { DomainPage, PageDomainRepository, PageDomainRow } from "./model";
+import { createPageDomainRepository } from "./model";
 
-const CHECK_INTERVAL_MS = 5 * 60 * 1000;
-const ACTIVE_CHECK_INTERVAL_MS = 6 * 60 * 60 * 1000;
+export type PageDomainBindings = {
+	CLOUDFLARE_SAAS_ZONE_ID?: string;
+	CLOUDFLARE_SAAS_API_TOKEN?: string;
+	CREEM_PRO_MONTHLY_PRODUCT_ID: string;
+	CREEM_PRO_YEARLY_PRODUCT_ID: string;
+	PAGE_DOMAIN: string;
+	CUSTOM_DOMAIN_TARGET?: string;
+};
+
+// Cron uses nextCheckAt for expiry handling and deletion retries; DNS and SSL checks run on button requests.
+const DOMAIN_EXPIRY_RECHECK_INTERVAL_MS = 5 * 60 * 1000;
+const ACTIVE_DOMAIN_EXPIRY_RECHECK_INTERVAL_MS = 6 * 60 * 60 * 1000;
 
 /** Accepts public subdomains only, including multi-part suffixes such as co.kr. */
 function normalizeHostname(raw: string, serviceDomain: string) {
@@ -170,46 +172,35 @@ export function createPageDomainService(options: DomainOptions) {
 				return repo.update(id, {
 					lastError: "Could not disconnect the domain. We will retry.",
 					lastCheckedAt: now,
-					nextCheckAt: new Date(now.getTime() + CHECK_INTERVAL_MS),
+					nextCheckAt: now,
 				});
 			}
 		});
 	}
 
-	async function process(
-		id: string,
-		now: Date,
-		manual: boolean,
-		allowExpiryCleanup = true,
-	) {
+	async function process(id: string, now: Date) {
 		let shouldProvision = false;
 		// Commit ownership proof before issuing certificates, so interrupted provisioning is recoverable.
 		const checked = await store.lockDomain(id, async (repo) => {
 			let row = await repo.byId(id);
 			if (!row) throw new PageDomainError("DOMAIN_NOT_FOUND");
-			if (
-				!manual &&
-				row.nextCheckAt > now &&
-				row.pageId &&
-				row.status !== "deleting" &&
-				!(allowExpiryCleanup && row.graceEndsAt && row.graceEndsAt <= now)
-			)
-				return row;
 			if (row.status === "deleting") return row;
 			const page = row.pageId ? await repo.pageById(row.pageId) : undefined;
 			const entitlement = page ? await access(repo, page, row, now) : null;
 			if (!entitlement?.canServe) {
-				if (page && !allowExpiryCleanup)
-					return repo.update(id, {
-						nextCheckAt: new Date(now.getTime() + ACTIVE_CHECK_INTERVAL_MS),
-						lastError: "The Pro grace period has ended.",
-					});
-				return repo.update(id, { status: "deleting", nextCheckAt: now });
+				return repo.update(id, {
+					nextCheckAt: new Date(
+						now.getTime() + ACTIVE_DOMAIN_EXPIRY_RECHECK_INTERVAL_MS,
+					),
+					lastError: "The Pro grace period has ended.",
+				});
 			}
 			row = await repo.update(id, {
 				graceEndsAt: entitlement.graceEndsAt,
 				lastCheckedAt: now,
-				nextCheckAt: new Date(now.getTime() + CHECK_INTERVAL_MS),
+				nextCheckAt: new Date(
+					now.getTime() + DOMAIN_EXPIRY_RECHECK_INTERVAL_MS,
+				),
 			});
 			// Grace preserves existing connections; it cannot authorize a new ownership claim.
 			if (!entitlement.canConfigure && !row.verifiedAt)
@@ -253,12 +244,12 @@ export function createPageDomainService(options: DomainOptions) {
 			const page = row.pageId ? await repo.pageById(row.pageId) : undefined;
 			const entitlement = page ? await access(repo, page, row, now) : null;
 			if (!entitlement?.canServe) {
-				if (page && !allowExpiryCleanup)
-					return repo.update(id, {
-						nextCheckAt: new Date(now.getTime() + ACTIVE_CHECK_INTERVAL_MS),
-						lastError: "The Pro grace period has ended.",
-					});
-				return repo.update(id, { status: "deleting", nextCheckAt: now });
+				return repo.update(id, {
+					nextCheckAt: new Date(
+						now.getTime() + ACTIVE_DOMAIN_EXPIRY_RECHECK_INTERVAL_MS,
+					),
+					lastError: "The Pro grace period has ended.",
+				});
 			}
 			try {
 				const provider = row.cloudflareHostnameId
@@ -279,7 +270,9 @@ export function createPageDomainService(options: DomainOptions) {
 					nextCheckAt: new Date(
 						Math.min(
 							now.getTime() +
-								(active ? ACTIVE_CHECK_INTERVAL_MS : CHECK_INTERVAL_MS),
+								(active
+									? ACTIVE_DOMAIN_EXPIRY_RECHECK_INTERVAL_MS
+									: DOMAIN_EXPIRY_RECHECK_INTERVAL_MS),
 							entitlement.graceEndsAt?.getTime() ?? Number.POSITIVE_INFINITY,
 						),
 					),
@@ -347,7 +340,7 @@ export function createPageDomainService(options: DomainOptions) {
 			if (!row) throw new PageDomainError("DOMAIN_NOT_FOUND");
 			if (!options.configured)
 				throw new PageDomainError("DOMAIN_NOT_CONFIGURED");
-			await process(row.id, clock(), true, false);
+			await process(row.id, clock());
 			return store.lockDomain(row.id, async (repo) =>
 				response(repo, page, await repo.byId(row.id), clock()),
 			);
@@ -390,14 +383,14 @@ export function createPageDomainService(options: DomainOptions) {
 				return { pageId: page.id, handle: page.handle };
 			});
 		},
-		/** Mark expired claims only after billing refresh; frequent checks perform provider cleanup. */
+		/** Mark expired claims only after billing refresh; a separate daily pass cleans provider entries. */
 		async expire({
 			skipUserIds = [],
 		}: {
 			skipUserIds?: readonly string[];
 		} = {}) {
 			const now = clock();
-			const rows = await store.due(now, true, 100, true);
+			const rows = await store.dueForExpiry(now, 100);
 			for (const candidate of rows) {
 				await store.lockDomain(candidate.id, async (repo) => {
 					const row = await repo.byId(candidate.id);
@@ -410,42 +403,20 @@ export function createPageDomainService(options: DomainOptions) {
 				});
 			}
 		},
-		async reconcile({
-			allowExpiryCleanup = true,
-			includeActive = true,
-			skipUserIds = [],
-		}: {
-			includeActive?: boolean;
-			allowExpiryCleanup?: boolean;
-			skipUserIds?: readonly string[];
-		} = {}) {
+		async cleanupDeleting() {
 			const now = clock();
-			const rows = await store.due(now, includeActive, 10, allowExpiryCleanup);
-			for (const row of rows) {
-				const page = row.pageId ? await store.pageById(row.pageId) : undefined;
-				if (page && skipUserIds.includes(page.userId)) continue;
-				try {
-					await process(row.id, now, false, allowExpiryCleanup);
-				} catch (error) {
-					if (
-						!(
-							error instanceof PageDomainError &&
-							error.code === "DOMAIN_NOT_FOUND"
-						)
-					)
-						throw error;
-				}
-			}
+			const rows = await store.deleting(now, 100);
+			for (const row of rows) await cleanup(row.id, now);
 		},
 	};
 }
 
 export type PageDomainService = ReturnType<typeof createPageDomainService>;
 
-/** Wires server-only credentials; the fallback origin is configured in Cloudflare's dashboard. */
+/** Connects the domain service to Cloudflare credentials and DNS settings. */
 export function createBoundPageDomainService(
 	db: DatabaseClient,
-	bindings: AppEnv["Bindings"],
+	bindings: PageDomainBindings,
 	now?: () => Date,
 ) {
 	const zoneId = bindings.CLOUDFLARE_SAAS_ZONE_ID ?? "";

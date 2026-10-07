@@ -7,6 +7,10 @@ import {
 	pageItemResponseSchema,
 } from "@grabbin/api";
 import {
+	attachPageMedia,
+	queuePageMediaDeletion,
+} from "@grabbin/application/media-assets";
+import {
 	type BentoBreakpoint,
 	bentoColumnCounts,
 	hasValidBentoLayouts,
@@ -182,14 +186,12 @@ export async function persistPageItemBatch({
 	userId,
 	batch,
 	publicBaseUrl,
-	cleanupMedia,
 }: {
 	db: DatabaseClient;
 	handle: string;
 	userId: string;
 	batch: PageItemBatchRequest;
 	publicBaseUrl?: string;
-	cleanupMedia?: (objectKeys: readonly string[]) => Promise<void>;
 }) {
 	const parsedBatch = v.safeParse(pageItemBatchRequestSchema, batch);
 	if (!parsedBatch.success) {
@@ -241,6 +243,12 @@ export async function persistPageItemBatch({
 		}
 		for (const item of upserts) {
 			const current = existingById.get(item.id);
+			if (
+				current &&
+				item.updatedAt &&
+				current.updatedAt.toISOString() !== item.updatedAt
+			)
+				throw new PageItemServiceError("CONCURRENT_ITEM_UPDATE");
 			if (current && current.type !== item.type) {
 				throw new PageItemServiceError("ITEM_TYPE_IMMUTABLE");
 			}
@@ -248,7 +256,14 @@ export async function persistPageItemBatch({
 		}
 
 		const finalItems = new Map(
-			existing.map((item) => [item.id, { id: item.id, layouts: item.layouts }]),
+			existing.map((item) => [
+				item.id,
+				{
+					id: item.id,
+					layouts: item.layouts,
+					objectKey: getPageItemMediaKey(item),
+				},
+			]),
 		);
 		const mediaKeysToDelete = new Set<string>();
 		const collectMediaKey = (item: (typeof existing)[number]) => {
@@ -280,9 +295,43 @@ export async function persistPageItemBatch({
 		}
 		for (const id of persistableBatch.deletes) finalItems.delete(id);
 		for (const item of upserts) {
-			finalItems.set(item.id, { id: item.id, layouts: item.layouts });
+			finalItems.set(item.id, {
+				id: item.id,
+				layouts: item.layouts,
+				objectKey: getPageItemMediaKey(item),
+			});
 		}
 		assertValidPageLayouts([...finalItems.values()]);
+		const finalMediaKeys = new Set(
+			[...finalItems.values()].flatMap((item) =>
+				typeof item.objectKey === "string" ? [item.objectKey] : [],
+			),
+		);
+		const mediaKeysToAttach = [
+			...new Set(
+				upserts.flatMap((item) => {
+					const objectKey = getPageItemMediaKey(item);
+					return typeof objectKey === "string" ? [objectKey] : [];
+				}),
+			),
+		];
+		for (const objectKey of finalMediaKeys) mediaKeysToDelete.delete(objectKey);
+		if (
+			!(await attachPageMedia({
+				tx,
+				objectKeys: mediaKeysToAttach,
+				pageId: page.id,
+				userId,
+			}))
+		) {
+			throw new PageItemServiceError("INVALID_MEDIA_KEY");
+		}
+		const queuedMediaKeys = await queuePageMediaDeletion({
+			tx,
+			objectKeys: [...mediaKeysToDelete],
+			pageId: page.id,
+			userId,
+		});
 
 		if (persistableBatch.deletes.length) {
 			await tx
@@ -333,12 +382,8 @@ export async function persistPageItemBatch({
 					orderBy: (item, { asc }) => [asc(item.createdAt), asc(item.id)],
 				})
 			: [];
-		return { items: changed, mediaKeysToDelete: [...mediaKeysToDelete] };
+		return { items: changed, mediaKeysToDelete: queuedMediaKeys };
 	});
-
-	if (cleanupMedia && response.mediaKeysToDelete.length) {
-		await cleanupMedia(response.mediaKeysToDelete).catch(() => undefined);
-	}
 
 	return v.parse(pageItemBatchResponseSchema, {
 		items: response.items.map((item) =>

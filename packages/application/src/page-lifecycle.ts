@@ -3,9 +3,11 @@ import { creemSubscription, pages, user } from "@grabbin/db/schema/index";
 import { isReservedPageHandle } from "@grabbin/page-handle";
 import { getPlanAccess, PAGE_GRACE_PERIOD_MS } from "@grabbin/plan";
 import { and, asc, eq, isNotNull, isNull, lte, ne, sql } from "drizzle-orm";
+import { getAccountPlan } from "./billing";
+import { PageServiceError } from "./exceptions/page.exception";
+import { queueAllPageMediaDeletion } from "./media-assets";
 
-import { PageServiceError } from "../exceptions/page.exception";
-import { getAccountPlan } from "./billing.service";
+export { PageServiceError } from "./exceptions/page.exception";
 
 async function lockUser(
 	tx: Parameters<Parameters<DatabaseClient["transaction"]>[0]>[0],
@@ -126,25 +128,12 @@ export async function changePrimaryPage({
 	});
 }
 
-async function deletePageMedia(bucket: R2Bucket, prefix: string) {
-	let cursor: string | undefined;
-	do {
-		const result = await bucket.list({ prefix, cursor, limit: 1000 });
-		await Promise.all(
-			result.objects.map((object) => bucket.delete(object.key)),
-		);
-		cursor = result.truncated ? result.cursor : undefined;
-	} while (cursor);
-}
-
 export async function deleteOwnedPage({
 	db,
-	bucket,
 	userId,
 	handle,
 }: {
 	db: DatabaseClient;
-	bucket: R2Bucket;
 	userId: string;
 	handle: string;
 }) {
@@ -164,6 +153,10 @@ export async function deleteOwnedPage({
 		if (currentUser?.primaryPageHandle === ownedPage.handle) {
 			throw new PageServiceError("PRIMARY_PAGE_CANNOT_DELETE");
 		}
+		await queueAllPageMediaDeletion({
+			tx,
+			pageId: ownedPage.id,
+		});
 		const [deleted] = await tx
 			.delete(pages)
 			.where(and(eq(pages.id, ownedPage.id), eq(pages.userId, userId)))
@@ -171,7 +164,6 @@ export async function deleteOwnedPage({
 		return deleted;
 	});
 	if (!page) throw new PageServiceError("PAGE_NOT_FOUND");
-	await deletePageMedia(bucket, `users/${userId}/pages/${page.id}/`);
 }
 
 export async function reconcileUserPageLifecycle({
@@ -257,13 +249,11 @@ export async function reconcileUserPageLifecycle({
 
 export async function deleteExpiredPages({
 	db,
-	bucket,
 	now = new Date(),
 	proProductIds,
 	skipUserIds = new Set<string>(),
 }: {
 	db: DatabaseClient;
-	bucket: R2Bucket;
 	now?: Date;
 	proProductIds: readonly string[];
 	skipUserIds?: ReadonlySet<string>;
@@ -277,7 +267,7 @@ export async function deleteExpiredPages({
 	});
 	for (const candidate of expiredPages) {
 		if (skipUserIds.has(candidate.userId)) continue;
-		const deleted = await db.transaction(async (tx) => {
+		await db.transaction(async (tx) => {
 			await lockUser(tx, candidate.userId);
 			const [owner, subscriptions, page] = await Promise.all([
 				tx.query.user.findFirst({
@@ -314,14 +304,16 @@ export async function deleteExpiredPages({
 					.where(eq(pages.id, page.id));
 				return false;
 			}
-			await tx.delete(pages).where(eq(pages.id, page.id));
-			return true;
+			await queueAllPageMediaDeletion({
+				tx,
+				pageId: page.id,
+				now,
+			});
+			const [deletedPage] = await tx
+				.delete(pages)
+				.where(eq(pages.id, page.id))
+				.returning({ id: pages.id });
+			return deletedPage;
 		});
-		if (deleted) {
-			await deletePageMedia(
-				bucket,
-				`users/${candidate.userId}/pages/${candidate.id}/`,
-			);
-		}
 	}
 }

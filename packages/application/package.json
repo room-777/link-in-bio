@@ -1,0 +1,45 @@
+{
+	"name": "@grabbin/application",
+	"version": "0.0.0",
+	"private": true,
+	"type": "module",
+	"exports": {
+		"./billing": {
+			"types": "./src/billing.ts",
+			"default": "./src/billing.ts"
+		},
+		"./billing-reconciliation": {
+			"types": "./src/billing-reconciliation.ts",
+			"default": "./src/billing-reconciliation.ts"
+		},
+		"./page-domain": {
+			"types": "./src/page-domain/index.ts",
+			"default": "./src/page-domain/index.ts"
+		},
+		"./page-lifecycle": {
+			"types": "./src/page-lifecycle.ts",
+			"default": "./src/page-lifecycle.ts"
+		},
+		"./media-assets": {
+			"types": "./src/media-assets.ts",
+			"default": "./src/media-assets.ts"
+		}
+	},
+	"scripts": {
+		"check-types": "tsc --noEmit"
+	},
+	"dependencies": {
+		"@grabbin/api": "workspace:*",
+		"@grabbin/auth": "workspace:*",
+		"@grabbin/db": "workspace:*",
+		"@grabbin/page-handle": "workspace:*",
+		"@grabbin/plan": "workspace:*",
+		"drizzle-orm": "^0.45.2",
+		"tldts": "^7.4.16",
+		"valibot": "catalog:runtime"
+	},
+	"devDependencies": {
+		"@grabbin/config": "workspace:*",
+		"typescript": "catalog:tooling"
+	}
+}

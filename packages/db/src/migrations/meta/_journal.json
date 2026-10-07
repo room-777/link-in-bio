@@ -71,6 +71,13 @@
 			"when": 1791114419515,
 			"tag": "0009_protect_page_domain_verification",
 			"breakpoints": true
+		},
+		{
+			"idx": 10,
+			"version": "7",
+			"when": 1791350871802,
+			"tag": "0010_pink_skullbuster",
+			"breakpoints": true
 		}
 	]
 }

@@ -1,9 +1,9 @@
 import assert from "node:assert/strict";
 import { describe, it } from "node:test";
+import { getAccountPlan } from "@grabbin/application/billing";
 import type { DatabaseClient } from "@grabbin/db";
 import {
 	createOrResumeProCheckout,
-	getAccountPlan,
 	scheduleProCancellation,
 } from "../../src/services/billing.service";
 

@@ -1,11 +1,12 @@
 import assert from "node:assert/strict";
 import { describe, it } from "node:test";
-import type { DatabaseClient } from "@grabbin/db";
-import { PgDialect } from "drizzle-orm/pg-core";
 import {
+	deleteOwnedPage,
 	listSitemapHandles,
 	reconcileUserPageLifecycle,
-} from "../../src/services/page-lifecycle.service";
+} from "@grabbin/application/page-lifecycle";
+import type { DatabaseClient } from "@grabbin/db";
+import { PgDialect } from "drizzle-orm/pg-core";
 
 function makeDb(input: {
 	primaryPageHandle: string;
@@ -194,5 +195,53 @@ describe("page lifecycle service", () => {
 		assert.ok(scheduledAt instanceof Date);
 		assert.equal(scheduledAt.toISOString(), "2026-11-03T00:00:00.000Z");
 		assert.deepEqual(updates[1], { deletionScheduledAt: null });
+	});
+
+	/**
+	 * Case ID: PAGE-LIFECYCLE-005
+	 * Given: a page has attached R2 media.
+	 * When: the owner deletes the page.
+	 * Then: media keys remain queued for cron cleanup.
+	 * Evidence: the page deletion commits and its ledger status is pending_delete.
+	 * Result: Pass | Fail | Blocked | Not Run
+	 */
+	it("PAGE-LIFECYCLE-005 queues all page media for cron cleanup", async () => {
+		const queued: Record<string, unknown>[] = [];
+		const mediaKey = "users/user-1/pages/page-2/profile/photo.webp";
+		const tx = {
+			execute: async () => undefined,
+			query: {
+				user: { findFirst: async () => ({ primaryPageHandle: "main" }) },
+				pages: {
+					findFirst: async () => ({ id: "page-2", handle: "extra" }),
+				},
+			},
+			update: () => ({
+				set: (values: Record<string, unknown>) => {
+					queued.push(values);
+					return {
+						where: () => ({
+							returning: async () => [{ objectKey: mediaKey }],
+						}),
+					};
+				},
+			}),
+			delete: () => ({
+				where: () => ({
+					returning: async () => [{ id: "page-2" }],
+				}),
+			}),
+		};
+		const db = {
+			transaction: async (callback: (value: typeof tx) => unknown) =>
+				callback(tx),
+		} as unknown as DatabaseClient;
+		await deleteOwnedPage({
+			db,
+			userId: "user-1",
+			handle: "extra",
+		});
+
+		assert.equal(queued[0]?.status, "pending_delete");
 	});
 });

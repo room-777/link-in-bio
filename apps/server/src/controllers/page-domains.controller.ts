@@ -1,10 +1,10 @@
 import { connectPageDomainSchema } from "@grabbin/api";
+import type { PageDomainService } from "@grabbin/application/page-domain";
+import { PageDomainError } from "@grabbin/application/page-domain";
 import { type Context, Hono, type MiddlewareHandler } from "hono";
 import { bodyLimit } from "hono/body-limit";
 import * as v from "valibot";
 import { jsonApiError } from "../api-error";
-import { PageDomainError } from "../exceptions/page-domain.exception";
-import type { PageDomainService } from "../services/page-domain.service";
 import type { AppEnv } from "../types";
 
 const errors = {

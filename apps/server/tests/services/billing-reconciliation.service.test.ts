@@ -1,7 +1,7 @@
 import assert from "node:assert/strict";
 import { describe, it } from "node:test";
+import { reconcileExpiredSubscriptions } from "@grabbin/application/billing-reconciliation";
 import type { DatabaseClient } from "@grabbin/db";
-import { reconcileExpiredSubscriptions } from "../../src/services/billing-reconciliation.service";
 
 describe("billing reconciliation service", () => {
 	/**

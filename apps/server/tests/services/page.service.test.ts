@@ -2,6 +2,7 @@ import assert from "node:assert/strict";
 import { describe, it } from "node:test";
 import type { R2Bucket } from "@cloudflare/workers-types";
 import type { DatabaseClient } from "@grabbin/db";
+import { pageMediaAssets } from "@grabbin/db/schema/index";
 
 import {
 	assertPageWritable,
@@ -23,6 +24,33 @@ function withPrimaryFreePlan(
 		creemSubscription: { findMany: async () => [] },
 		user: { findFirst: async () => ({ primaryPageHandle }) },
 	};
+	const writable = mock as typeof mock & Record<string, unknown>;
+	if (!writable.transaction) {
+		writable.transaction = async (
+			callback: (tx: Record<string, unknown>) => Promise<unknown>,
+		) =>
+			callback({
+				query: mock.query,
+				update: (table: unknown) =>
+					table === pageMediaAssets
+						? {
+								set: () => ({
+									where: () => ({
+										returning: async () => [{ objectKey: "registered-key" }],
+									}),
+								}),
+							}
+						: (input as { update?: () => unknown }).update?.(),
+				insert: () => ({
+					values: () => ({
+						onConflictDoUpdate: async () => undefined,
+					}),
+				}),
+			});
+	}
+	if (!writable.delete) {
+		writable.delete = () => ({ where: async () => undefined });
+	}
 	return mock as DatabaseClient;
 }
 
@@ -566,7 +594,7 @@ describe("page service", () => {
 		assert.deepEqual(values, { name: null, bio: null });
 	});
 
-	it("PAGE-SERVICE-008 saves a new draft image and removes the old image", async () => {
+	it("PAGE-SERVICE-008 saves a new draft image and queues the old image", async () => {
 		let values: Record<string, unknown> | undefined;
 		const oldImageKey = "users/user-1/pages/page-1/profile/old.webp";
 		const imageKey = "users/user-1/pages/page-1/profile/new.webp";
@@ -594,8 +622,8 @@ describe("page service", () => {
 				size: 100,
 				httpMetadata: { contentType: "image/webp" },
 			}),
-			delete: async (key: string) => {
-				deletedKeys.push(key);
+			delete: async (keys: string[]) => {
+				deletedKeys.push(...keys);
 			},
 		} as unknown as R2Bucket;
 
@@ -613,7 +641,7 @@ describe("page service", () => {
 			imageSource: imageKey,
 			imageCrop: null,
 		});
-		assert.deepEqual(deletedKeys, [oldImageKey]);
+		assert.deepEqual(deletedKeys, []);
 	});
 
 	it("PAGE-SERVICE-010 saves a profile image crop without replacing the image", async () => {

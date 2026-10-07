@@ -34,12 +34,8 @@ export interface PageDomainRepository {
 		id: string,
 		work: (store: PageDomainRepository) => Promise<T>,
 	): Promise<T>;
-	due(
-		now: Date,
-		includeActive: boolean,
-		limit: number,
-		includeExpired?: boolean,
-	): Promise<PageDomainRow[]>;
+	dueForExpiry(now: Date, limit: number): Promise<PageDomainRow[]>;
+	deleting(now: Date, limit: number): Promise<PageDomainRow[]>;
 }
 
 /** Keeps domain SQL and row locks in one place; locks serialize checks and disconnection. */
@@ -98,26 +94,29 @@ export function createPageDomainRepository(
 				);
 				return work(createPageDomainRepository(tx));
 			}),
-		due: (now, includeActive, limit, includeExpired = false) =>
+		dueForExpiry: (now, limit) =>
 			db.query.pageDomains.findMany({
 				where: and(
 					or(
 						isNull(pageDomains.pageId),
 						lte(pageDomains.nextCheckAt, now),
-						includeExpired ? lte(pageDomains.graceEndsAt, now) : undefined,
+						lte(pageDomains.graceEndsAt, now),
 					),
-					includeActive
-						? undefined
-						: or(ne(pageDomains.status, "active"), isNull(pageDomains.pageId)),
+					ne(pageDomains.status, "deleting"),
 				),
 				orderBy: [
-					...(includeExpired
-						? [
-								sql`case when ${pageDomains.graceEndsAt} <= ${now} then 0 else 1 end`,
-							]
-						: []),
+					sql`case when ${pageDomains.graceEndsAt} <= ${now} then 0 else 1 end`,
 					asc(pageDomains.nextCheckAt),
 				],
+				limit,
+			}),
+		deleting: (now, limit) =>
+			db.query.pageDomains.findMany({
+				where: and(
+					eq(pageDomains.status, "deleting"),
+					lte(pageDomains.nextCheckAt, now),
+				),
+				orderBy: [asc(pageDomains.nextCheckAt)],
 				limit,
 			}),
 	};

@@ -1,17 +1,17 @@
 import assert from "node:assert/strict";
-import type { pageDomains } from "@grabbin/db/schema/index";
-import type { PlanSubscription } from "@grabbin/plan";
 import type {
 	DomainPage,
 	PageDomainRepository,
 	PageDomainRow,
-} from "../../src/models/page-domain.model";
+} from "@grabbin/application/page-domain";
 import {
 	type CloudflareHostname,
 	createCloudflareSaas,
 	createDomainDns,
-} from "../../src/services/cloudflare-saas.service";
-import { createPageDomainService } from "../../src/services/page-domain.service";
+	createPageDomainService,
+} from "@grabbin/application/page-domain";
+import type { pageDomains } from "@grabbin/db/schema/index";
+import type { PlanSubscription } from "@grabbin/plan";
 
 export function present<T>(value: T | null | undefined): T {
 	assert.ok(value !== undefined && value !== null);
@@ -117,17 +117,21 @@ export function domainFixture() {
 		},
 		lockPage: (id, work) => lock(`page:${id}`, work),
 		lockDomain: (id, work) => lock(`domain:${id}`, work),
-		async due(now, includeActive, limit, includeExpired = false) {
+		async dueForExpiry(now, limit) {
 			return [...rows.values()]
 				.filter(
 					(row) =>
+						row.status !== "deleting" &&
 						(!row.pageId ||
 							row.nextCheckAt <= now ||
-							(includeExpired &&
-								!!row.graceEndsAt &&
-								row.graceEndsAt <= now)) &&
-						(includeActive || row.status !== "active" || !row.pageId),
+							(!!row.graceEndsAt && row.graceEndsAt <= now)),
 				)
+				.sort((a, b) => a.nextCheckAt.getTime() - b.nextCheckAt.getTime())
+				.slice(0, limit);
+		},
+		async deleting(now, limit) {
+			return [...rows.values()]
+				.filter((row) => row.status === "deleting" && row.nextCheckAt <= now)
 				.sort((a, b) => a.nextCheckAt.getTime() - b.nextCheckAt.getTime())
 				.slice(0, limit);
 		},
