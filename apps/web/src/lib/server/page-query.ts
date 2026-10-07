@@ -19,7 +19,23 @@ export async function fetchPage(
 		throw new Error(await getApiErrorMessage(response));
 	}
 
-	const body = await response.json();
+	const body: unknown = await response.json();
+	if (body === null || typeof body !== "object" || Array.isArray(body)) {
+		const path = response.url
+			? new URL(response.url, "http://localhost").pathname
+			: "unknown path";
+		const bodyType =
+			body === null ? "null" : Array.isArray(body) ? "array" : typeof body;
+		console.error("Page API returned a non-object response.", {
+			status: response.status,
+			url: response.url,
+			contentType: response.headers.get("content-type"),
+			bodyType,
+		});
+		throw new Error(
+			`Page API returned ${bodyType} instead of an object (HTTP ${response.status}, ${path}).`,
+		);
+	}
 	return "page" in body ? v.parse(pageByHandleResponseSchema, body) : null;
 }
 

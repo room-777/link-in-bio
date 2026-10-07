@@ -17,7 +17,17 @@ export function getPageQueryOptions(handle: string) {
 				throw new Error(await getApiErrorMessage(response));
 			}
 
-			const body = await response.json();
+			const body: unknown = await response.json();
+			if (body === null || typeof body !== "object" || Array.isArray(body)) {
+				const path = response.url
+					? new URL(response.url).pathname
+					: "unknown path";
+				const bodyType =
+					body === null ? "null" : Array.isArray(body) ? "array" : typeof body;
+				throw new Error(
+					`Page API returned ${bodyType} instead of an object (HTTP ${response.status}, ${path}).`,
+				);
+			}
 			return "page" in body ? v.parse(pageByHandleResponseSchema, body) : null;
 		},
 	});

@@ -80,6 +80,29 @@ const httpsUrlSchema = v.pipe(
 	v.check((value) => value.startsWith("https://"), "HTTPS URL required."),
 );
 
+const mediaDeliveryUrlSchema = v.pipe(
+	v.string(),
+	v.trim(),
+	v.url(),
+	v.check((value) => {
+		try {
+			const url = new URL(value);
+			return (
+				url.protocol === "https:" ||
+				(url.protocol === "http:" &&
+					["localhost", "127.0.0.1"].includes(url.hostname) &&
+					url.pathname.startsWith("/media/users/") &&
+					!url.username &&
+					!url.password &&
+					!url.search &&
+					!url.hash)
+			);
+		} catch {
+			return false;
+		}
+	}, "HTTPS or local media URL required."),
+);
+
 const faviconUrlSchema = v.union([
 	httpsUrlSchema,
 	v.pipe(
@@ -135,7 +158,7 @@ export const pageItemMediaDataSchema = v.object({
 
 export const pageItemMediaResponseDataSchema = v.object({
 	...pageItemMediaDataSchema.entries,
-	mediaUrl: v.optional(httpsUrlSchema),
+	mediaUrl: v.optional(mediaDeliveryUrlSchema),
 });
 
 export const pageItemMapDataSchema = v.object({
@@ -192,7 +215,7 @@ export const pageItemLinkPresentationSchema = v.object({
 	actionVariant: v.optional(v.picklist(["solid", "outline"])),
 	actionDetail: v.optional(v.pipe(v.string(), v.minLength(1))),
 	actionIcon: v.optional(v.literal("upvote")),
-	imageUrls: v.optional(v.array(httpsUrlSchema)),
+	imageUrls: v.optional(v.array(mediaDeliveryUrlSchema)),
 	githubContributionGraph: v.optional(v.string()),
 });
 

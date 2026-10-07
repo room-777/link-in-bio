@@ -13,6 +13,7 @@ import { timing } from "hono/timing";
 import { trimTrailingSlash } from "hono/trailing-slash";
 import { jsonApiError } from "./api-error";
 import { billingController } from "./controllers/billing.controller";
+import { localMediaController } from "./controllers/local-media.controller";
 import { createPageDomainsController } from "./controllers/page-domains.controller";
 import { pageItemsController } from "./controllers/page-items.route";
 import { pagesController } from "./controllers/pages.controller";
@@ -99,6 +100,7 @@ const app = createFactory<AppEnv>({
 	.route("/", createRoutes)
 	.route("/pages", pagesController)
 	.route("/pages", pageItemsController)
+	.route("/media", localMediaController)
 	.route("/provider-icons", providerIconsController)
 	.route(
 		"/pages",

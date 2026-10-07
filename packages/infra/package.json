@@ -14,11 +14,11 @@
 		"dotenv": "catalog:runtime"
 	},
 	"devDependencies": {
-		"@effect/platform-bun": "4.0.0-rc.108",
-		"@effect/platform-node": "4.0.0-rc.108",
+		"@effect/platform-bun": "4.0.0",
+		"@effect/platform-node": "4.0.0",
 		"@grabbin/config": "workspace:*",
-		"alchemy": "2.0.0-beta.72",
-		"effect": "4.0.0-rc.108",
+		"alchemy": "2.0.0-beta.80",
+		"effect": "4.0.0",
 		"typescript": "catalog:tooling"
 	}
 }

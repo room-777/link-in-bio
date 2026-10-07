@@ -51,12 +51,12 @@ const parseDatabaseOrigin = (connectionString: Redacted.Redacted<string>) => {
 	};
 };
 
-const databaseOrigin = Config.redacted("DATABASE_URL").pipe(
+const databaseOrigin = Config.Redacted("DATABASE_URL").pipe(
 	Config.map(parseDatabaseOrigin),
 	Effect.orDie,
 );
 
-const databaseLocalOrigin = Config.redacted("DATABASE_URL_LOCAL").pipe(
+const databaseLocalOrigin = Config.Redacted("DATABASE_URL_LOCAL").pipe(
 	Config.map(parseDatabaseOrigin),
 	Config.map((origin) => ({
 		...origin,
@@ -105,92 +105,92 @@ export const server = Cloudflare.Worker("server", {
 	env: {
 		HYPERDRIVE: hyperdrive,
 		R2_BUCKET: grabbinBucket,
-		R2_PUBLIC_URL: Config.string("R2_PUBLIC_URL").pipe(
-			Config.orElse(() => Config.string("NEXT_PUBLIC_R2_PUBLIC_URL")),
-			Config.withDefault(""),
-		),
-		R2_ACCOUNT_ID: Config.string("R2_ACCOUNT_ID"),
-		R2_BUCKET_NAME: Config.string("R2_BUCKET_NAME").pipe(
-			Config.withDefault("grabbin"),
-		),
-		R2_ACCESS_KEY_ID: Config.string("R2_ACCESS_KEY_ID"),
-		R2_SECRET_ACCESS_KEY: Config.redacted("R2_SECRET_ACCESS_KEY"),
-		CORS_ORIGIN: Config.string("CORS_ORIGIN"),
-		SENTRY_DSN: Config.string("SENTRY_DSN").pipe(Config.withDefault("")),
-		BETTER_AUTH_SECRET: Config.redacted("BETTER_AUTH_SECRET"),
+		R2_S3_CREDENTIALS: Cloudflare.R2.S3Credentials(grabbinBucket, {
+			access: "write",
+		}),
+		R2_LOCAL_MODE: isAlchemyDev ? "true" : "false",
+		R2_PUBLIC_URL: isAlchemyDev
+			? Cloudflare.Worker.URL
+			: Config.String("R2_PUBLIC_URL").pipe(
+					Config.orElse(() => Config.String("NEXT_PUBLIC_R2_PUBLIC_URL")),
+					Config.withDefault(""),
+				),
+		CORS_ORIGIN: Config.String("CORS_ORIGIN"),
+		SENTRY_DSN: Config.String("SENTRY_DSN").pipe(Config.withDefault("")),
+		BETTER_AUTH_SECRET: Config.Redacted("BETTER_AUTH_SECRET"),
 		BETTER_AUTH_URL: Cloudflare.Worker.URL,
-		GOOGLE_CLIENT_ID: Config.string("GOOGLE_CLIENT_ID").pipe(
+		GOOGLE_CLIENT_ID: Config.String("GOOGLE_CLIENT_ID").pipe(
 			Config.withDefault(""),
 		),
-		GOOGLE_CLIENT_SECRET: Config.redacted("GOOGLE_CLIENT_SECRET").pipe(
+		GOOGLE_CLIENT_SECRET: Config.Redacted("GOOGLE_CLIENT_SECRET").pipe(
 			Config.withDefault(""),
 		),
-		GITHUB_CLIENT_ID: Config.string("GITHUB_CLIENT_ID").pipe(
+		GITHUB_CLIENT_ID: Config.String("GITHUB_CLIENT_ID").pipe(
 			Config.withDefault(""),
 		),
-		GITHUB_CLIENT_SECRET: Config.redacted("GITHUB_CLIENT_SECRET").pipe(
+		GITHUB_CLIENT_SECRET: Config.Redacted("GITHUB_CLIENT_SECRET").pipe(
 			Config.withDefault(""),
 		),
-		TWITTER_CLIENT_ID: Config.string("TWITTER_CLIENT_ID").pipe(
+		TWITTER_CLIENT_ID: Config.String("TWITTER_CLIENT_ID").pipe(
 			Config.withDefault(""),
 		),
-		TWITTER_CLIENT_SECRET: Config.redacted("TWITTER_CLIENT_SECRET").pipe(
+		TWITTER_CLIENT_SECRET: Config.Redacted("TWITTER_CLIENT_SECRET").pipe(
 			Config.withDefault(""),
 		),
-		CREEM_API_KEY: Config.redacted("CREEM_API_KEY"),
-		CREEM_WEBHOOK_SECRET: Config.redacted("CREEM_WEBHOOK_SECRET"),
-		CREEM_TEST_MODE: Config.string("CREEM_TEST_MODE"),
-		CREEM_SUCCESS_URL: Config.string("CREEM_SUCCESS_URL"),
-		CREEM_PRO_MONTHLY_PRODUCT_ID: Config.string(
+		CREEM_API_KEY: Config.Redacted("CREEM_API_KEY"),
+		CREEM_WEBHOOK_SECRET: Config.Redacted("CREEM_WEBHOOK_SECRET"),
+		CREEM_TEST_MODE: Config.String("CREEM_TEST_MODE"),
+		CREEM_SUCCESS_URL: Config.String("CREEM_SUCCESS_URL"),
+		CREEM_PRO_MONTHLY_PRODUCT_ID: Config.String(
 			"CREEM_PRO_MONTHLY_PRODUCT_ID",
 		).pipe(Config.withDefault("")),
-		CREEM_PRO_YEARLY_PRODUCT_ID: Config.string(
+		CREEM_PRO_YEARLY_PRODUCT_ID: Config.String(
 			"CREEM_PRO_YEARLY_PRODUCT_ID",
 		).pipe(Config.withDefault("")),
-		RESEND_API_KEY: Config.redacted("RESEND_API_KEY").pipe(
+		RESEND_API_KEY: Config.Redacted("RESEND_API_KEY").pipe(
 			Config.withDefault(""),
 		),
-		RESEND_FROM_EMAIL: Config.string("RESEND_FROM_EMAIL").pipe(
+		RESEND_FROM_EMAIL: Config.String("RESEND_FROM_EMAIL").pipe(
 			Config.withDefault(""),
 		),
-		RESEND_OTP_TEMPLATE_ID: Config.string("RESEND_OTP_TEMPLATE_ID").pipe(
+		RESEND_OTP_TEMPLATE_ID: Config.String("RESEND_OTP_TEMPLATE_ID").pipe(
 			Config.withDefault(""),
 		),
-		RESEND_ACCOUNT_DELETION_TEMPLATE_ID: Config.string(
+		RESEND_ACCOUNT_DELETION_TEMPLATE_ID: Config.String(
 			"RESEND_ACCOUNT_DELETION_TEMPLATE_ID",
 		).pipe(Config.withDefault("")),
-		YOUTUBE_API_KEY: Config.string("YOUTUBE_API_KEY").pipe(
+		YOUTUBE_API_KEY: Config.String("YOUTUBE_API_KEY").pipe(
 			Config.withDefault(""),
 		),
-		CHZZK_CLIENT_ID: Config.string("CHZZK_CLIENT_ID").pipe(
+		CHZZK_CLIENT_ID: Config.String("CHZZK_CLIENT_ID").pipe(
 			Config.withDefault(""),
 		),
-		CHZZK_CLIENT_SECRET: Config.redacted("CHZZK_CLIENT_SECRET").pipe(
+		CHZZK_CLIENT_SECRET: Config.Redacted("CHZZK_CLIENT_SECRET").pipe(
 			Config.withDefault(""),
 		),
-		TWITCH_CLIENT_ID: Config.string("TWITCH_CLIENT_ID").pipe(
+		TWITCH_CLIENT_ID: Config.String("TWITCH_CLIENT_ID").pipe(
 			Config.withDefault(""),
 		),
-		TWITCH_CLIENT_SECRET: Config.redacted("TWITCH_CLIENT_SECRET").pipe(
+		TWITCH_CLIENT_SECRET: Config.Redacted("TWITCH_CLIENT_SECRET").pipe(
 			Config.withDefault(""),
 		),
-		TWITCH_USER_ACCESS_TOKEN: Config.redacted("TWITCH_USER_ACCESS_TOKEN").pipe(
+		TWITCH_USER_ACCESS_TOKEN: Config.Redacted("TWITCH_USER_ACCESS_TOKEN").pipe(
 			Config.withDefault(""),
 		),
-		GITHUB_TOKEN: Config.redacted("GITHUB_TOKEN").pipe(Config.withDefault("")),
-		PRODUCT_HUNT_TOKEN: Config.redacted("PRODUCT_HUNT_TOKEN").pipe(
+		GITHUB_TOKEN: Config.Redacted("GITHUB_TOKEN").pipe(Config.withDefault("")),
+		PRODUCT_HUNT_TOKEN: Config.Redacted("PRODUCT_HUNT_TOKEN").pipe(
 			Config.withDefault(""),
 		),
-		CLOUDFLARE_SAAS_ZONE_ID: Config.string("CLOUDFLARE_SAAS_ZONE_ID").pipe(
+		CLOUDFLARE_SAAS_ZONE_ID: Config.String("CLOUDFLARE_SAAS_ZONE_ID").pipe(
 			Config.withDefault(""),
 		),
-		CLOUDFLARE_SAAS_API_TOKEN: Config.redacted(
+		CLOUDFLARE_SAAS_API_TOKEN: Config.Redacted(
 			"CLOUDFLARE_SAAS_API_TOKEN",
 		).pipe(Config.withDefault("")),
-		CUSTOM_DOMAIN_TARGET: Config.string("CUSTOM_DOMAIN_TARGET").pipe(
+		CUSTOM_DOMAIN_TARGET: Config.String("CUSTOM_DOMAIN_TARGET").pipe(
 			Config.withDefault("custom.grabbin.me"),
 		),
-		PAGE_DOMAIN: Config.string("PAGE_DOMAIN").pipe(
+		PAGE_DOMAIN: Config.String("PAGE_DOMAIN").pipe(
 			Config.withDefault("grabbin.me"),
 		),
 	},
@@ -211,24 +211,24 @@ export const cron = Cloudflare.Worker("cron", {
 	env: {
 		HYPERDRIVE: hyperdrive,
 		R2_BUCKET: grabbinBucket,
-		CREEM_API_KEY: Config.redacted("CREEM_API_KEY"),
-		CREEM_TEST_MODE: Config.string("CREEM_TEST_MODE"),
-		CREEM_PRO_MONTHLY_PRODUCT_ID: Config.string(
+		CREEM_API_KEY: Config.Redacted("CREEM_API_KEY"),
+		CREEM_TEST_MODE: Config.String("CREEM_TEST_MODE"),
+		CREEM_PRO_MONTHLY_PRODUCT_ID: Config.String(
 			"CREEM_PRO_MONTHLY_PRODUCT_ID",
 		).pipe(Config.withDefault("")),
-		CREEM_PRO_YEARLY_PRODUCT_ID: Config.string(
+		CREEM_PRO_YEARLY_PRODUCT_ID: Config.String(
 			"CREEM_PRO_YEARLY_PRODUCT_ID",
 		).pipe(Config.withDefault("")),
-		CLOUDFLARE_SAAS_ZONE_ID: Config.string("CLOUDFLARE_SAAS_ZONE_ID").pipe(
+		CLOUDFLARE_SAAS_ZONE_ID: Config.String("CLOUDFLARE_SAAS_ZONE_ID").pipe(
 			Config.withDefault(""),
 		),
-		CLOUDFLARE_SAAS_API_TOKEN: Config.redacted(
+		CLOUDFLARE_SAAS_API_TOKEN: Config.Redacted(
 			"CLOUDFLARE_SAAS_API_TOKEN",
 		).pipe(Config.withDefault("")),
-		PAGE_DOMAIN: Config.string("PAGE_DOMAIN").pipe(
+		PAGE_DOMAIN: Config.String("PAGE_DOMAIN").pipe(
 			Config.withDefault("grabbin.me"),
 		),
-		CUSTOM_DOMAIN_TARGET: Config.string("CUSTOM_DOMAIN_TARGET").pipe(
+		CUSTOM_DOMAIN_TARGET: Config.String("CUSTOM_DOMAIN_TARGET").pipe(
 			Config.withDefault("custom.grabbin.me"),
 		),
 	},
@@ -251,6 +251,7 @@ export default Alchemy.Stack(
 				cwd: "../../apps/web",
 				env: {
 					NEXT_PUBLIC_SERVER_URL: serverWorker.url.as<string>(),
+					NEXT_PUBLIC_R2_PUBLIC_URL: serverWorker.url.as<string>(),
 				},
 			});
 			return {
@@ -275,25 +276,25 @@ export default Alchemy.Stack(
 				CF_VERSION_METADATA: Cloudflare.Workers.VersionMetadata(),
 				SERVER: serverWorker,
 				NEXT_PUBLIC_SERVER_URL: serverWorker.url.as<string>(),
-				NEXT_PUBLIC_PAGE_DOMAIN: Config.string("NEXT_PUBLIC_PAGE_DOMAIN").pipe(
+				NEXT_PUBLIC_PAGE_DOMAIN: Config.String("NEXT_PUBLIC_PAGE_DOMAIN").pipe(
 					Config.withDefault("grabbin.me"),
 				),
-				NEXT_PUBLIC_R2_PUBLIC_URL: Config.string(
+				NEXT_PUBLIC_R2_PUBLIC_URL: Config.String(
 					"NEXT_PUBLIC_R2_PUBLIC_URL",
 				).pipe(Config.withDefault("")),
-				NEXT_PUBLIC_CREEM_PRODUCT_ID: Config.string(
+				NEXT_PUBLIC_CREEM_PRODUCT_ID: Config.String(
 					"NEXT_PUBLIC_CREEM_PRODUCT_ID",
 				).pipe(Config.withDefault("")),
-				NEXT_PUBLIC_CREEM_PRO_MONTHLY_PRODUCT_ID: Config.string(
+				NEXT_PUBLIC_CREEM_PRO_MONTHLY_PRODUCT_ID: Config.String(
 					"CREEM_PRO_MONTHLY_PRODUCT_ID",
 				).pipe(Config.withDefault("")),
-				NEXT_PUBLIC_CREEM_PRO_YEARLY_PRODUCT_ID: Config.string(
+				NEXT_PUBLIC_CREEM_PRO_YEARLY_PRODUCT_ID: Config.String(
 					"CREEM_PRO_YEARLY_PRODUCT_ID",
 				).pipe(Config.withDefault("")),
-				SENTRY_DSN: Config.string("NEXT_PUBLIC_SENTRY_DSN").pipe(
+				SENTRY_DSN: Config.String("NEXT_PUBLIC_SENTRY_DSN").pipe(
 					Config.withDefault(""),
 				),
-				NEXT_PUBLIC_SENTRY_DSN: Config.string("NEXT_PUBLIC_SENTRY_DSN").pipe(
+				NEXT_PUBLIC_SENTRY_DSN: Config.String("NEXT_PUBLIC_SENTRY_DSN").pipe(
 					Config.withDefault(""),
 				),
 			},

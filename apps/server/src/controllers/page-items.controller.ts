@@ -214,10 +214,7 @@ export function createPageItemsController({
 
 			try {
 				const upload = await createItemMediaUpload({
-					accountId: c.env.R2_ACCOUNT_ID,
-					bucketName: c.env.R2_BUCKET_NAME,
-					accessKeyId: c.env.R2_ACCESS_KEY_ID,
-					secretAccessKey: c.env.R2_SECRET_ACCESS_KEY,
+					s3Credentials: c.env.R2_S3_CREDENTIALS,
 					userId: session.user.id,
 					pageId: page.id,
 					request: parsed.output,

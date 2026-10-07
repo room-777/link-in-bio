@@ -16,13 +16,20 @@ export function getPageImageUrl(
 
 	const publicUrl = env.NEXT_PUBLIC_R2_PUBLIC_URL?.replace(/\/$/, "");
 	if (!publicUrl) return null;
+	const isLocalR2 = /^http:\/\/(localhost|127\.0\.0\.1)(:\d+)?$/i.test(
+		publicUrl,
+	);
 
-	const source = `${publicUrl}/${key
+	const source = `${publicUrl}${isLocalR2 ? "/media" : ""}/${key
 		.split("/")
 		.map((part) => encodeURIComponent(part))
 		.join("/")}`;
 	const pageDomain = env.NEXT_PUBLIC_PAGE_DOMAIN;
-	if (!pageDomain || /^(localhost|127\.0\.0\.1)/.test(pageDomain)) {
+	if (
+		isLocalR2 ||
+		!pageDomain ||
+		/^(localhost|127\.0\.0\.1)/.test(pageDomain)
+	) {
 		return source;
 	}
 

@@ -219,10 +219,7 @@ export const pagesController = new Hono<AppEnv>()
 			contentType: parsed.output.contentType,
 		});
 		const upload = await createPresignedPutUrl({
-			accountId: c.env.R2_ACCOUNT_ID,
-			bucketName: c.env.R2_BUCKET_NAME,
-			accessKeyId: c.env.R2_ACCESS_KEY_ID,
-			secretAccessKey: c.env.R2_SECRET_ACCESS_KEY,
+			s3Credentials: c.env.R2_S3_CREDENTIALS,
 			key,
 			contentType: parsed.output.contentType,
 		});

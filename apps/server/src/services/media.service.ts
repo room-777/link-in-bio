@@ -17,6 +17,27 @@ const imageExtensions = {
 	"image/webp": "webp",
 } as const;
 
+const r2S3CredentialsSchema = v.object({
+	endpoint: v.pipe(v.string(), v.url()),
+	bucketName: v.pipe(v.string(), v.minLength(1)),
+	region: v.literal("auto"),
+	accessKeyId: v.pipe(v.string(), v.minLength(1)),
+	secretAccessKey: v.pipe(v.string(), v.minLength(1)),
+});
+
+function parseR2S3Credentials(value: string) {
+	let credentials: unknown;
+	try {
+		credentials = JSON.parse(value);
+	} catch {
+		throw new Error("R2 upload credentials are invalid.");
+	}
+
+	const parsed = v.safeParse(r2S3CredentialsSchema, credentials);
+	if (!parsed.success) throw new Error("R2 upload credentials are invalid.");
+	return parsed.output;
+}
+
 export function createPageImageKey(input: {
 	userId: string;
 	pageId: string;
@@ -117,37 +138,46 @@ export function getPublicPageItemMediaUrl(
 	if (!base) return undefined;
 
 	try {
-		if (new URL(base).protocol !== "https:") return undefined;
+		const url = new URL(base);
+		const isLocalhost = ["localhost", "127.0.0.1"].includes(url.hostname);
+		if (
+			url.protocol !== "https:" &&
+			!(url.protocol === "http:" && isLocalhost)
+		) {
+			return undefined;
+		}
+		const localMediaPath = isLocalhost ? "/media/" : "/";
+		return `${base}${localMediaPath}${objectKey
+			.split("/")
+			.map((segment) => encodeURIComponent(segment))
+			.join("/")}`;
 	} catch {
 		return undefined;
 	}
-
-	return `${base}/${objectKey
-		.split("/")
-		.map((segment) => encodeURIComponent(segment))
-		.join("/")}`;
 }
 
 export async function createPresignedPutUrl(input: {
-	accountId: string;
-	bucketName: string;
-	accessKeyId: string;
-	secretAccessKey: string;
+	s3Credentials: string;
 	key: string;
 	contentType: string;
 	expiresInSeconds?: number;
 }) {
+	const credentials = parseR2S3Credentials(input.s3Credentials);
 	const expiresInSeconds = input.expiresInSeconds ?? 900;
+	const objectKey = input.key
+		.split("/")
+		.map((segment) => encodeURIComponent(segment))
+		.join("/");
 	const endpoint = new URL(
-		`https://${input.accountId}.r2.cloudflarestorage.com/${input.bucketName}/${input.key}`,
+		`${credentials.endpoint.replace(/\/+$/, "")}/${encodeURIComponent(credentials.bucketName)}/${objectKey}`,
 	);
 	endpoint.searchParams.set("X-Amz-Expires", String(expiresInSeconds));
 
 	const request = await new AwsClient({
-		accessKeyId: input.accessKeyId,
-		secretAccessKey: input.secretAccessKey,
+		accessKeyId: credentials.accessKeyId,
+		secretAccessKey: credentials.secretAccessKey,
 		service: "s3",
-		region: "auto",
+		region: credentials.region,
 	}).sign(
 		new Request(endpoint, {
 			method: "PUT",
@@ -163,10 +193,7 @@ export async function createPresignedPutUrl(input: {
 }
 
 export async function createItemMediaUpload(input: {
-	accountId: string;
-	bucketName: string;
-	accessKeyId: string;
-	secretAccessKey: string;
+	s3Credentials: string;
 	userId: string;
 	pageId: string;
 	request: PageItemUploadRequest;
@@ -199,10 +226,7 @@ export async function createItemMediaUpload(input: {
 		});
 	}
 	const upload = await createPresignedPutUrl({
-		accountId: input.accountId,
-		bucketName: input.bucketName,
-		accessKeyId: input.accessKeyId,
-		secretAccessKey: input.secretAccessKey,
+		s3Credentials: input.s3Credentials,
 		key: objectKey,
 		contentType: parsed.output.contentType,
 	});
