@@ -125,7 +125,7 @@ export default function HandlePage({
 										delay: PROFILE_BIO_ENTER_DELAY_SECONDS,
 									}}
 									onAnimationComplete={() => setProfileEntryComplete(true)}
-									className="whitespace-pre-wrap px-0.5 page-wide:text-xl text-base text-primary/80 leading-6 page-wide:leading-8"
+									className="whitespace-pre-wrap px-0.5 page-wide:text-xl text-base text-primary/70 leading-6 page-wide:leading-8 page-wide:tracking-tight tracking-normal"
 								>
 									{page.bio}
 								</motion.p>
