@@ -3,7 +3,7 @@ import type { PresetName } from "@grabbin/bento-layout";
 import { Button, buttonVariants } from "@grabbin/ui/components/button";
 import { Textarea } from "@grabbin/ui/components/textarea";
 import { cn } from "@grabbin/ui/lib/utils";
-import { CircleFadingArrowUp, Trash, TriangleIcon } from "lucide-react";
+import { CircleFadingArrowUp, TriangleIcon } from "lucide-react";
 import { AnimatePresence, motion } from "motion/react";
 import {
 	type CSSProperties,
@@ -12,6 +12,7 @@ import {
 	useRef,
 	useState,
 } from "react";
+import { Trash2 } from "reicon-react/icons/Trash2";
 import { useBentoLineHeight } from "@/hooks/use-bento-line-height";
 import type { BentoCommand } from "@/lib/bento/bento-types";
 import { getPageImageUrl } from "@/lib/page-image-url";
@@ -392,7 +393,7 @@ function LinkImageControls({
 						className="size-7 cursor-pointer! rounded-md text-white hover:bg-white/20 hover:text-white focus-visible:ring-2 focus-visible:ring-white/60 disabled:cursor-not-allowed! disabled:opacity-40 disabled:hover:bg-transparent"
 						onClick={onDelete}
 					>
-						<Trash className="size-5" aria-hidden="true" />
+						<Trash2 className="size-5" aria-hidden="true" />
 					</Button>
 				) : null}
 			</div>

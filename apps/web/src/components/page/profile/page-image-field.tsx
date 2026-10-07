@@ -6,7 +6,7 @@ import {
 	bentoWideMediaQuery,
 } from "@grabbin/bento-layout";
 import { Button } from "@grabbin/ui/components/button";
-import { CircleFadingArrowUp, Crop, Trash } from "lucide-react";
+import { CircleFadingArrowUp, Crop } from "lucide-react";
 import { motion, useReducedMotion } from "motion/react";
 import Image from "next/image";
 import {
@@ -17,6 +17,7 @@ import {
 	useRef,
 	useState,
 } from "react";
+import { Trash2 } from "reicon-react/icons/Trash2";
 import {
 	getCenteredMediaCrop,
 	getMediaCropStyle,
@@ -364,7 +365,7 @@ export default function PageImageField({
 							height: profileImageControlSize,
 						}}
 					>
-						<Trash
+						<Trash2
 							className="stroke-[2.5px]"
 							style={{
 								width: profileImageControlIconSize,

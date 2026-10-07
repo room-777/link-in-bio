@@ -7,9 +7,9 @@ import {
 	inferPresetFromLayout,
 } from "@grabbin/bento-layout";
 import { Button } from "@grabbin/ui/components/button";
-import { TrashIcon } from "lucide-react";
 import { motion } from "motion/react";
 import { type CSSProperties, useEffect, useRef, useState } from "react";
+import { Trash2 } from "reicon-react/icons/Trash2";
 import type { BentoCommand, BentoItem } from "@/lib/bento/bento-types";
 import BentoItemControls from "./bento-item-controls";
 import { RuntimeFallback, renderItem } from "./bento-item-registry";
@@ -231,7 +231,7 @@ export function BentoItemShell({
 						onClick={() => onCommand({ type: "delete-item", itemId: item.id })}
 						className={`pointer-events-none absolute -top-4 -right-4 z-20 size-10 cursor-pointer! rounded-full p-1 opacity-0 transition-[opacity,transform,scale] duration-150 focus-visible:pointer-events-auto focus-visible:scale-100 focus-visible:opacity-100 group-hover/bento-item:pointer-events-auto group-hover/bento-item:scale-100 group-hover/bento-item:opacity-100 motion-reduce:transition-none ${isAnyItemDragging || isExiting ? "pointer-events-none! opacity-0!" : ""}`}
 					>
-						<TrashIcon className="size-5 stroke-[2.5px]" />
+						<Trash2 className="size-5 stroke-[3px]" />
 					</Button>
 					{showControls ? (
 						<BentoItemControls
