@@ -17,7 +17,7 @@ import {
 	useRef,
 	useState,
 } from "react";
-import { Trash2 } from "reicon-react/icons/Trash2";
+import { Trash } from "@/components/trash";
 import {
 	getCenteredMediaCrop,
 	getMediaCropStyle,
@@ -31,6 +31,7 @@ const maxImageSize = 5 * 1024 * 1024;
 
 function PageProfileImage({
 	src,
+	fallbackSrc,
 	sizes,
 	className,
 	reduceMotion,
@@ -38,12 +39,18 @@ function PageProfileImage({
 	onLoad,
 }: {
 	src: string;
+	fallbackSrc: string;
 	sizes: string;
 	className: string;
 	reduceMotion: boolean | null;
 	imageRef: RefObject<HTMLImageElement | null>;
-	onLoad: (event: SyntheticEvent<HTMLImageElement>) => void;
+	onLoad: (image: HTMLImageElement) => void;
 }) {
+	const [loadedSrc, setLoadedSrc] = useState("");
+	const [fallbackLoadedSrc, setFallbackLoadedSrc] = useState("");
+	const isLoaded = loadedSrc === src;
+	const skipFade =
+		(fallbackSrc && fallbackSrc !== src) || fallbackLoadedSrc === src;
 	const animation = {
 		initial: reduceMotion ? false : { opacity: 0 },
 		animate: { opacity: 1 },
@@ -52,6 +59,22 @@ function PageProfileImage({
 			: { duration: 0.85, ease: [0.22, 1, 0.36, 1] as const },
 	};
 	const isLocalPreview = src.startsWith("blob:") || src.startsWith("data:");
+	const handleLoad = (event: SyntheticEvent<HTMLImageElement>) => {
+		const image = event.currentTarget;
+		if (isLocalPreview) {
+			setLoadedSrc(src);
+			onLoad(image);
+			return;
+		}
+		void image
+			.decode()
+			.then(() => {
+				setLoadedSrc(src);
+				if (fallbackSrc && fallbackSrc !== src) setFallbackLoadedSrc(src);
+				onLoad(image);
+			})
+			.catch(() => undefined);
+	};
 
 	return isLocalPreview ? (
 		<motion.img
@@ -62,28 +85,40 @@ function PageProfileImage({
 			animate={animation.animate}
 			transition={animation.transition}
 			className={className}
-			onLoad={onLoad}
+			onLoad={handleLoad}
 		/>
 	) : (
-		<MotionImage
-			ref={imageRef}
-			fill
-			src={src}
-			alt=""
-			sizes={sizes}
-			initial={animation.initial}
-			animate={animation.animate}
-			transition={animation.transition}
-			className={className}
-			quality={65}
-			loading="lazy"
-			onLoad={onLoad}
-		/>
+		<>
+			{fallbackSrc && fallbackSrc !== src && !isLoaded ? (
+				<img
+					aria-hidden="true"
+					alt=""
+					src={fallbackSrc}
+					className={`absolute inset-0 ${className}`}
+				/>
+			) : null}
+			<MotionImage
+				ref={imageRef}
+				fill
+				src={src}
+				alt=""
+				sizes={sizes}
+				initial={skipFade ? { opacity: 0 } : animation.initial}
+				animate={skipFade ? { opacity: isLoaded ? 1 : 0 } : animation.animate}
+				transition={skipFade ? { duration: 0 } : animation.transition}
+				className={className}
+				quality={65}
+				loading="eager"
+				onLoad={handleLoad}
+			/>
+		</>
 	);
 }
 
 export default function PageImageField({
 	value,
+	fallbackImageUrl,
+	onImageLoaded,
 	crop,
 	onCropChange,
 	onSelect,
@@ -93,6 +128,8 @@ export default function PageImageField({
 	breakpoint = "wide",
 }: {
 	value: string;
+	fallbackImageUrl: string;
+	onImageLoaded: (loadedUrl: string) => void;
 	crop?: PageImageCrop | null;
 	onCropChange?: (crop: PageImageCrop | null) => void;
 	onSelect: (file: File) => void;
@@ -131,11 +168,11 @@ export default function PageImageField({
 	}, []);
 
 	const handleImageLoad = useCallback(
-		(event: SyntheticEvent<HTMLImageElement>) => {
-			const image = event.currentTarget;
+		(image: HTMLImageElement) => {
 			setSourceSize({ width: image.naturalWidth, height: image.naturalHeight });
+			onImageLoaded(value);
 		},
-		[],
+		[onImageLoaded, value],
 	);
 	useEffect(() => {
 		const image = imageRef.current;
@@ -265,6 +302,7 @@ export default function PageImageField({
 							>
 								<PageProfileImage
 									src={value}
+									fallbackSrc={fallbackImageUrl}
 									sizes={
 										isWide ? `${bentoWideMediaQuery} 184px, 112px` : "112px"
 									}
@@ -294,6 +332,7 @@ export default function PageImageField({
 						) : (
 							<PageProfileImage
 								src={value}
+								fallbackSrc={fallbackImageUrl}
 								sizes={isWide ? `${bentoWideMediaQuery} 184px, 112px` : "112px"}
 								reduceMotion={reduceMotion}
 								imageRef={imageRef}
@@ -365,7 +404,7 @@ export default function PageImageField({
 							height: profileImageControlSize,
 						}}
 					>
-						<Trash2
+						<Trash
 							className="stroke-[2.5px]"
 							style={{
 								width: profileImageControlIconSize,

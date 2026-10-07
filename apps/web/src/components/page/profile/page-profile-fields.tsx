@@ -13,6 +13,8 @@ import PageImageField from "./page-image-field";
 
 export default function PageProfileFields({
 	imageUrl,
+	fallbackImageUrl,
+	onImageLoaded,
 	demoMode = false,
 	isImageUploading,
 	onSelectImage,
@@ -29,6 +31,8 @@ export default function PageProfileFields({
 	breakpoint = "wide",
 }: {
 	imageUrl: string;
+	fallbackImageUrl: string;
+	onImageLoaded: (loadedUrl: string) => void;
 	demoMode?: boolean;
 	isImageUploading: boolean;
 	onSelectImage: (file: File) => void;
@@ -51,6 +55,8 @@ export default function PageProfileFields({
 				<div className="flex w-full items-center page-wide:justify-start justify-between">
 					<PageImageField
 						value={imageUrl}
+						fallbackImageUrl={fallbackImageUrl}
+						onImageLoaded={onImageLoaded}
 						isUploading={isImageUploading}
 						onSelect={onSelectImage}
 						onRemove={onRemoveImage}

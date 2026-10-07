@@ -56,8 +56,10 @@ export default function PageProfileForm({
 			fit: "scale-down",
 		}) ?? "",
 	);
+	const [previewImageUrl, setPreviewImageUrl] = useState("");
 	const [isImageUploading, setIsImageUploading] = useState(false);
 	const uploadVersionRef = useRef(0);
+	const imageUrlRef = useRef(imageUrl);
 
 	const cleanupUploadedImage = useCallback(
 		async (key: string) => {
@@ -97,6 +99,9 @@ export default function PageProfileForm({
 		},
 	});
 	const isSaving = autoSaveStatus === "saving";
+	useLayoutEffect(() => {
+		imageUrlRef.current = imageUrl;
+	}, [imageUrl]);
 
 	useEffect(() => {
 		onSavingChange?.(isSaving);
@@ -109,9 +114,11 @@ export default function PageProfileForm({
 
 	useEffect(() => {
 		return () => {
-			if (imageUrl.startsWith("blob:")) URL.revokeObjectURL(imageUrl);
+			if (previewImageUrl.startsWith("blob:")) {
+				URL.revokeObjectURL(previewImageUrl);
+			}
 		};
-	}, [imageUrl]);
+	}, [previewImageUrl]);
 
 	useEffect(() => {
 		if (!isImageUploading) {
@@ -168,12 +175,15 @@ export default function PageProfileForm({
 			return;
 		}
 		if (demoMode) {
-			setImageUrl(URL.createObjectURL(file));
+			const previewUrl = URL.createObjectURL(file);
+			setPreviewImageUrl(previewUrl);
+			setImageUrl(previewUrl);
 			return;
 		}
 
 		const uploadVersion = ++uploadVersionRef.current;
 		const previewUrl = URL.createObjectURL(file);
+		setPreviewImageUrl(previewUrl);
 		setImageUrl(previewUrl);
 		setIsImageUploading(true);
 		let uploadedKey = "";
@@ -231,6 +241,12 @@ export default function PageProfileForm({
 			}
 		}
 	};
+	const handleImageLoaded = useCallback((loadedUrl: string) => {
+		if (imageUrlRef.current !== loadedUrl) return;
+		setPreviewImageUrl((current) =>
+			current && current !== loadedUrl ? "" : current,
+		);
+	}, []);
 
 	return (
 		<div className="w-full">
@@ -243,11 +259,14 @@ export default function PageProfileForm({
 				<div className="mb-4 flex flex-col gap-8">
 					<PageProfileFields
 						imageUrl={imageUrl}
+						fallbackImageUrl={previewImageUrl}
+						onImageLoaded={handleImageLoaded}
 						demoMode={demoMode}
 						isImageUploading={isImageUploading || isSaving}
 						onSelectImage={handleImageSelect}
 						onRemoveImage={() => {
 							uploadVersionRef.current += 1;
+							setPreviewImageUrl("");
 							updateField("imageKey", "");
 							updateField("imageCrop", null);
 							setImageUrl("");
