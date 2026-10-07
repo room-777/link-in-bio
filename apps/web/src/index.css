@@ -1,10 +1,6 @@
 @import "@grabbin/ui/globals.css";
-@import "react-grid-layout/css/styles.css";
-@import "@grabbin/ui/styles/bento-motion.css";
 @import "@grabbin/ui/styles/bento-layout.css";
 @import "./fonts.css";
-@import "@grabbin/ui/styles/map-widget.css";
-@import "@grabbin/ui/styles/legal.css";
 
 @theme inline {
 	--font-open-runde: "Open Runde", var(--font-sans), sans-serif;

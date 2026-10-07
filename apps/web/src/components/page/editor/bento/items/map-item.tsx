@@ -1,5 +1,7 @@
 "use client";
 
+import "@grabbin/ui/styles/map-widget.css";
+
 import { getBentoItemRadius, type PresetName } from "@grabbin/bento-layout";
 import { env } from "@grabbin/env/web";
 import { buttonVariants } from "@grabbin/ui/components/button";

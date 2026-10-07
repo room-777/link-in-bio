@@ -1,5 +1,7 @@
 "use client";
 
+import "@grabbin/ui/styles/bento-motion.css";
+
 import {
 	getBentoItemRadius,
 	inferPresetFromLayout,

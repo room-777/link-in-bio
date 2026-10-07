@@ -1,3 +1,6 @@
+/_next/static/*
+	Cache-Control: public, max-age=31556952, immutable
+
 /images/landing/hero-sky-*.png
 	Cache-Control: public, max-age=31556952, immutable
 

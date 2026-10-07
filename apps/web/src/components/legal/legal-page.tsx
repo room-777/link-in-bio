@@ -1,6 +1,8 @@
 import type { MDXContent } from "mdx/types.js";
 import MdxContent from "@/components/mdx/mdx-content";
 
+import "@grabbin/ui/styles/legal.css";
+
 type LegalPageProps = {
 	Document: MDXContent;
 	title: string;

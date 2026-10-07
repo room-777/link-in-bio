@@ -1,5 +1,7 @@
 "use client";
 
+import "react-grid-layout/css/styles.css";
+
 import type { BentoBreakpoint } from "@grabbin/bento-layout";
 import {
 	bentoContainerPadding,
