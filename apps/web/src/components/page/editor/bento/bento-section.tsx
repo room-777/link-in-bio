@@ -44,7 +44,6 @@ type BentoSectionProps = {
 	entryAnimationRevision?: number;
 	entryReady?: boolean;
 	onReady?: () => void;
-	onEntryComplete?: () => void;
 	mode?: "view" | "edit";
 	breakpoint?: BentoBreakpoint;
 	autoFocusItemId?: string | null;
@@ -62,7 +61,6 @@ export default function BentoSection({
 	entryAnimationRevision = 0,
 	entryReady = true,
 	onReady,
-	onEntryComplete,
 	mode = "view",
 	breakpoint: requestedBreakpoint,
 	autoFocusItemId = null,
@@ -127,32 +125,11 @@ export default function BentoSection({
 		previousEntryAnimationRevisionRef.current = entryAnimationRevision;
 		setInitialEntryItemIds(new Set(items.map((item) => item.id)));
 	}, [entryAnimationRevision, items]);
-	const emptyEntryCompletedRevisionRef = useRef<number | null>(null);
 	useEffect(() => {
-		if (
-			mode !== "edit" ||
-			!entryReady ||
-			reduceMotion ||
-			initialEntryItemIds.size > 0 ||
-			items.length > 0 ||
-			emptyEntryCompletedRevisionRef.current === entryAnimationRevision
-		) {
-			return;
+		if (reduceMotion && entryReady && initialEntryItemIds.size > 0) {
+			setInitialEntryItemIds(new Set());
 		}
-		emptyEntryCompletedRevisionRef.current = entryAnimationRevision;
-		onEntryComplete?.();
-	}, [
-		entryAnimationRevision,
-		entryReady,
-		initialEntryItemIds.size,
-		items.length,
-		mode,
-		reduceMotion,
-		onEntryComplete,
-	]);
-	useEffect(() => {
-		if (reduceMotion && entryReady) onEntryComplete?.();
-	}, [entryReady, onEntryComplete, reduceMotion]);
+	}, [entryReady, initialEntryItemIds.size, reduceMotion]);
 	const displayItems = useMemo(() => {
 		const itemIds = new Set(items.map((item) => item.id));
 		return [
@@ -418,7 +395,6 @@ export default function BentoSection({
 									!reduceMotion && item.id === lastInitialEntryItemId
 										? () => {
 												setInitialEntryItemIds(new Set());
-												onEntryComplete?.();
 											}
 										: undefined
 								}

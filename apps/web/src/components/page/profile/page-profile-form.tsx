@@ -38,7 +38,6 @@ export default function PageProfileForm({
 	entryReady = true,
 	entryAnimationRevision = 0,
 	onSavingChange,
-	onEntryComplete,
 }: {
 	page: PageData;
 	demoMode?: boolean;
@@ -46,7 +45,6 @@ export default function PageProfileForm({
 	entryReady?: boolean;
 	entryAnimationRevision?: number;
 	onSavingChange?: (isSaving: boolean) => void;
-	onEntryComplete?: () => void;
 }) {
 	const reduceMotion = useReducedMotion();
 	const entryAnimation = useAnimationControls();
@@ -105,10 +103,6 @@ export default function PageProfileForm({
 	}, [isSaving, onSavingChange]);
 
 	useEffect(() => {
-		if (reduceMotion && entryReady) onEntryComplete?.();
-	}, [entryReady, onEntryComplete, reduceMotion]);
-
-	useEffect(() => {
 		if (!autoSaveError) return;
 		toast({ message: autoSaveError, state: "error" });
 	}, [autoSaveError]);
@@ -143,7 +137,6 @@ export default function PageProfileForm({
 		}
 		if (reduceMotion) {
 			entryAnimation.set(PROFILE_ENTRY_END);
-			if (entryAnimationRevision > 0) onEntryComplete?.();
 			return;
 		}
 
@@ -159,7 +152,6 @@ export default function PageProfileForm({
 		entryAnimationRevision,
 		entryAnimation,
 		entryReady,
-		onEntryComplete,
 		reduceMotion,
 		transition,
 	]);
@@ -246,7 +238,6 @@ export default function PageProfileForm({
 				initial={reduceMotion ? false : PROFILE_ENTRY_START}
 				animate={entryAnimation}
 				transition={transition}
-				onAnimationComplete={entryReady ? onEntryComplete : undefined}
 				className="w-full"
 			>
 				<div className="mb-4 flex flex-col gap-8">

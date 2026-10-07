@@ -28,8 +28,6 @@ export default function OwnerPage({
 	const [isSaving, setIsSaving] = useState(false);
 	const [isGridSaving, setIsGridSaving] = useState(false);
 	const [isBentoReady, setIsBentoReady] = useState(!demoPreview);
-	const [profileEntryComplete, setProfileEntryComplete] = useState(false);
-	const [bentoEntryComplete, setBentoEntryComplete] = useState(false);
 	const [entryAnimationRevision, setEntryAnimationRevision] = useState(0);
 	const [layoutBreakpoint, setLayoutBreakpoint] =
 		useState<BentoBreakpoint>("wide");
@@ -60,18 +58,9 @@ export default function OwnerPage({
 		setCurrentPage((page) => ({ ...page, handle }));
 		window.history.replaceState(null, "", `/${encodeURIComponent(handle)}`);
 	};
-	const handleProfileEntryComplete = useCallback(
-		() => setProfileEntryComplete(true),
-		[],
-	);
-	const handleBentoEntryComplete = useCallback(
-		() => setBentoEntryComplete(true),
-		[],
-	);
 	const handleBentoReady = useCallback(() => setIsBentoReady(true), []);
 	const handleLayoutBreakpointChange = useCallback(
 		(breakpoint: BentoBreakpoint) => {
-			setProfileEntryComplete(false);
 			setLayoutBreakpoint(breakpoint);
 			setEntryAnimationRevision((revision) => revision + 1);
 		},
@@ -137,7 +126,6 @@ export default function OwnerPage({
 							demoMode={demoMode}
 							entryReady={isBentoReady}
 							entryAnimationRevision={entryAnimationRevision}
-							onEntryComplete={handleProfileEntryComplete}
 							onSavingChange={setIsSaving}
 						/>
 					</div>
@@ -150,16 +138,15 @@ export default function OwnerPage({
 					isAutoSaving={isAutoSaving}
 					profileImageUrl={profileImageUrl}
 					entryAnimationRevision={entryAnimationRevision}
-					entryReady={profileEntryComplete}
+					entryReady={isBentoReady}
 					onReady={handleBentoReady}
-					onEntryComplete={handleBentoEntryComplete}
 					onGridSavingChange={setIsGridSaving}
 					onWidgetActionsChange={setWidgetActions}
 				/>
 				{isViewportCompact && isViewportReady ? pageFooter : null}
 			</div>
 			{!isViewportCompact && isViewportReady ? pageFooter : null}
-			{!isViewportCompact && bentoEntryComplete ? (
+			{!isViewportCompact && isBentoReady ? (
 				<PageLayoutPreset
 					value={layoutBreakpoint}
 					onChange={handleLayoutBreakpointChange}

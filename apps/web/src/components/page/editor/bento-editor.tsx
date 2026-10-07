@@ -23,7 +23,6 @@ export default function BentoEditor({
 	entryAnimationRevision,
 	entryReady,
 	onReady,
-	onEntryComplete,
 	onGridSavingChange,
 	onWidgetActionsChange,
 }: {
@@ -36,7 +35,6 @@ export default function BentoEditor({
 	entryAnimationRevision: number;
 	entryReady: boolean;
 	onReady?: () => void;
-	onEntryComplete?: () => void;
 	onGridSavingChange?: (isSaving: boolean) => void;
 	onWidgetActionsChange?: (actions: AddWidgetButtonProps) => void;
 }) {
@@ -122,7 +120,6 @@ export default function BentoEditor({
 				entryAnimationRevision={entryAnimationRevision}
 				entryReady={entryReady}
 				onReady={onReady}
-				onEntryComplete={onEntryComplete}
 				autoFocusItemId={store.autoFocusItemId}
 				onAutoFocus={store.clearAutoFocusItem}
 				onCommand={store.dispatchCommand}
