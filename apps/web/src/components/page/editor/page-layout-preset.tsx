@@ -15,6 +15,9 @@ import { Laptop, Smartphone } from "lucide-react";
 import { motion, useReducedMotion } from "motion/react";
 import { startTransition, useEffect, useState } from "react";
 import ShareLinkContent from "../sharing/share-link-content";
+import AddWidgetButton, {
+	type AddWidgetButtonProps,
+} from "./add-widget-button";
 
 type PageLayoutPresetProps = {
 	value: BentoBreakpoint;
@@ -22,6 +25,7 @@ type PageLayoutPresetProps = {
 	isAutoSaving: boolean;
 	profileImageUrl: string | null;
 	demoPreview?: boolean;
+	widgetActions: AddWidgetButtonProps | null;
 };
 
 export default function PageLayoutPreset({
@@ -30,6 +34,7 @@ export default function PageLayoutPreset({
 	isAutoSaving,
 	profileImageUrl,
 	demoPreview = false,
+	widgetActions,
 }: PageLayoutPresetProps) {
 	const reduceMotion = useReducedMotion();
 	const [activeBreakpoint, setActiveBreakpoint] = useState(value);
@@ -103,7 +108,12 @@ export default function PageLayoutPreset({
 				</Dialog>
 				<Separator
 					orientation="vertical"
-					className="mx-2 rounded-lg data-vertical:my-2 data-vertical:w-[2.5px]"
+					className="mx-2 rounded-lg bg-border/80 data-vertical:my-2 data-vertical:w-[2.5px]"
+				/>
+				{widgetActions ? <AddWidgetButton {...widgetActions} /> : null}
+				<Separator
+					orientation="vertical"
+					className="mx-2 rounded-lg bg-border/80 data-vertical:my-2 data-vertical:w-[2.5px]"
 				/>
 				<Tabs
 					value={activeBreakpoint}

@@ -10,6 +10,7 @@ import { useCallback, useEffect, useState } from "react";
 import { getPageImageUrl } from "@/lib/page-image-url";
 import PageProfileForm from "../profile/page-profile-form";
 import PageFooter from "../shared/page-footer";
+import type { AddWidgetButtonProps } from "./add-widget-button";
 import BentoEditor from "./bento-editor";
 import PageLayoutPreset from "./page-layout-preset";
 
@@ -35,6 +36,8 @@ export default function OwnerPage({
 	const [viewportBreakpoint, setViewportBreakpoint] =
 		useState<BentoBreakpoint>("wide");
 	const [isViewportReady, setIsViewportReady] = useState(false);
+	const [widgetActions, setWidgetActions] =
+		useState<AddWidgetButtonProps | null>(null);
 
 	useEffect(() => {
 		const mediaQuery = window.matchMedia(bentoWideMediaQuery);
@@ -151,6 +154,7 @@ export default function OwnerPage({
 					onReady={handleBentoReady}
 					onEntryComplete={handleBentoEntryComplete}
 					onGridSavingChange={setIsGridSaving}
+					onWidgetActionsChange={setWidgetActions}
 				/>
 				{isViewportCompact && isViewportReady ? pageFooter : null}
 			</div>
@@ -162,6 +166,7 @@ export default function OwnerPage({
 					isAutoSaving={isAutoSaving}
 					profileImageUrl={profileImageUrl}
 					demoPreview={demoPreview}
+					widgetActions={widgetActions}
 				/>
 			) : null}
 		</div>

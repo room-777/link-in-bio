@@ -4,9 +4,9 @@ import type { ItemType, PageByHandleResponse } from "@grabbin/api";
 import type { BentoBreakpoint } from "@grabbin/bento-layout";
 import { toast } from "@grabbin/ui/components/toast";
 import dynamic from "next/dynamic";
-import { useEffect } from "react";
+import { useCallback, useEffect } from "react";
 import { useBentoStore } from "@/lib/bento/bento-store";
-import AddWidgetDialog from "./add-widget-dialog";
+import type { AddWidgetButtonProps } from "./add-widget-button";
 import EditMobileShareLinkButton from "./edit-mobile-share-link-button";
 
 const BentoSection = dynamic(() => import("./bento/bento-section"), {
@@ -25,6 +25,7 @@ export default function BentoEditor({
 	onReady,
 	onEntryComplete,
 	onGridSavingChange,
+	onWidgetActionsChange,
 }: {
 	items: PageByHandleResponse["items"];
 	handle: string;
@@ -37,6 +38,7 @@ export default function BentoEditor({
 	onReady?: () => void;
 	onEntryComplete?: () => void;
 	onGridSavingChange?: (isSaving: boolean) => void;
+	onWidgetActionsChange?: (actions: AddWidgetButtonProps) => void;
 }) {
 	const store = useBentoStore({
 		initialItems: items,
@@ -47,46 +49,55 @@ export default function BentoEditor({
 		onGridSavingChange?.(store.status === "saving");
 	}, [onGridSavingChange, store.status]);
 
-	const addItem = (itemType: ItemType, url?: string) => {
-		if (itemType === "link") {
-			try {
-				if (new URL(url?.trim() ?? "").protocol !== "https:") {
-					throw new Error();
+	const addItem = useCallback(
+		(itemType: ItemType, url?: string) => {
+			if (itemType === "link") {
+				try {
+					if (new URL(url?.trim() ?? "").protocol !== "https:") {
+						throw new Error();
+					}
+				} catch {
+					toast({ message: "Enter a valid HTTPS link.", state: "error" });
+					return;
 				}
-			} catch {
-				toast({ message: "Enter a valid HTTPS link.", state: "error" });
-				return;
 			}
-		}
-		const addedItem = store.dispatchCommand({
-			type: "add-item",
-			itemType,
-			url,
-		});
-		if (itemType === "link" && addedItem?.type === "link") {
-			void store.refreshLinkMetadata(addedItem.id).catch(() => {});
-		}
-	};
+			const addedItem = store.dispatchCommand({
+				type: "add-item",
+				itemType,
+				url,
+			});
+			if (itemType === "link" && addedItem?.type === "link") {
+				void store.refreshLinkMetadata(addedItem.id).catch(() => {});
+			}
+		},
+		[store.dispatchCommand, store.refreshLinkMetadata],
+	);
 	const editorClassName =
 		breakpoint === "compact"
 			? "relative flex w-full max-w-lg shrink-0 flex-col overflow-visible bg-transparent px-6 pb-0 no-scrollbar"
 			: "relative flex min-w-0 flex-1 flex-col overflow-visible bg-background px-6 pt-12 pb-0 no-scrollbar page-wide:w-4xl page-wide:max-w-none page-wide:flex-none page-wide:pt-16";
 
-	const selectMedia = async (file: File) => {
-		if (!/^(image|video)\//i.test(file.type)) {
-			toast({ message: "Choose an image or video file.", state: "error" });
-			return;
-		}
-		try {
-			await store.addMediaUpload(file);
-		} catch (error) {
-			toast({
-				message:
-					error instanceof Error ? error.message : "The media upload failed.",
-				state: "error",
-			});
-		}
-	};
+	const selectMedia = useCallback(
+		async (file: File) => {
+			if (!/^(image|video)\//i.test(file.type)) {
+				toast({ message: "Choose an image or video file.", state: "error" });
+				return;
+			}
+			try {
+				await store.addMediaUpload(file);
+			} catch (error) {
+				toast({
+					message:
+						error instanceof Error ? error.message : "The media upload failed.",
+					state: "error",
+				});
+			}
+		},
+		[store.addMediaUpload],
+	);
+	useEffect(() => {
+		onWidgetActionsChange?.({ onItemAdd: addItem, onMediaSelect: selectMedia });
+	}, [addItem, onWidgetActionsChange, selectMedia]);
 	const selectLinkImage = async (itemId: string, file: File) => {
 		if (!/^image\//i.test(file.type)) {
 			toast({ message: "Choose an image file.", state: "error" });
@@ -122,7 +133,6 @@ export default function BentoEditor({
 				isAutoSaving={isAutoSaving}
 				profileImageUrl={profileImageUrl}
 			/>
-			<AddWidgetDialog onItemAdd={addItem} onMediaSelect={selectMedia} />
 		</section>
 	);
 }
