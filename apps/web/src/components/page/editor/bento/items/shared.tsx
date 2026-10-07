@@ -26,7 +26,7 @@ export const textSizeClassByPreset: Record<PresetName, string> = {
 };
 
 const mediaCaptionClassName =
-	"field-sizing-content h-7.5 w-fit max-w-full rounded-md border border-border bg-white/80 px-2 py-0 font-medium text-foreground text-sm backdrop-blur-sm";
+	"field-sizing-content h-8 w-fit min-w-24 max-w-full rounded-xl bg-background px-2 py-0 font-medium text-foreground text-sm outline-solid! outline-1! outline-black/10!";
 
 export function ExternalAction({
 	href,
@@ -41,13 +41,13 @@ export function ExternalAction({
 			target="_blank"
 			rel="noreferrer"
 			aria-label={label}
-			className="group inline-flex size-7 shrink-0 cursor-pointer! items-center justify-center rounded-full bg-white font-medium text-black text-xs shadow-md backdrop-blur-sm transition-colors hover:bg-white/60"
+			className="group inline-flex size-7 shrink-0 cursor-pointer! items-center justify-center rounded-full bg-white/60 font-medium text-xs transition-colors hover:bg-white"
 		>
 			<CircleArrowRightUp
 				aria-hidden="true"
 				size={28}
 				weight="Filled"
-				className="text-black!"
+				className="text-black/60 group-hover:text-black!"
 			/>
 		</a>
 	);
@@ -72,14 +72,14 @@ export function MediaCaption({
 				value={value ?? ""}
 				placeholder="Caption"
 				aria-label="Media caption"
-				className={`pointer-events-auto min-w-24 truncate ${mediaCaptionClassName} ${className ?? ""}`}
+				className={`pointer-events-auto truncate ${mediaCaptionClassName} ${className ?? ""}`}
 				onChange={(event) => onChange?.(event.target.value)}
 			/>
 		);
 	}
 	return caption ? (
 		<p
-			className={`${mediaCaptionClassName} flex min-w-0 items-center ${className ?? ""}`}
+			className={`${mediaCaptionClassName} flex items-center ${className ?? ""}`}
 		>
 			<span className="block min-w-0 flex-1 truncate">{caption}</span>
 		</p>

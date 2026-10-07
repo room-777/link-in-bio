@@ -562,11 +562,11 @@ export function MapItem({
 					Couldn’t determine your location. Try again.
 				</output>
 			) : null}
-			<div className="pointer-events-none absolute right-[52px] bottom-4 left-4 z-10 flex min-w-0 text-white">
+			<div className="pointer-events-none absolute right-3 bottom-4 left-4 z-20 flex min-w-0 items-center justify-between gap-3 text-white">
 				<MediaCaption
 					value={item.data.caption}
 					mode={mode}
-					className="min-w-0 max-w-full"
+					className="max-w-[calc(100%-2.5rem)]"
 					onChange={(caption) =>
 						onCommand?.({
 							type: "update-data",
@@ -575,9 +575,7 @@ export function MapItem({
 						})
 					}
 				/>
-			</div>
-			<div className="pointer-events-none absolute right-3 bottom-4 z-20">
-				<div className="pointer-events-auto flex h-fit items-center">
+				<div className="pointer-events-auto flex h-fit shrink-0 items-center">
 					<ExternalAction href={mapsUrl} label="Open location in Google Maps" />
 				</div>
 			</div>

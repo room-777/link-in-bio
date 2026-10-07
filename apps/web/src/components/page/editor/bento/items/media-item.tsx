@@ -247,7 +247,7 @@ export function MediaItem({
 					/>
 				</>
 			) : null}
-			<div className="pointer-events-none absolute inset-x-0 bottom-0 flex min-w-0 items-center justify-between gap-3 p-4 text-white">
+			<div className="pointer-events-none absolute inset-x-0 bottom-4 z-20 flex min-w-0 items-center justify-between gap-3 pr-3 pl-4 text-white">
 				<MediaCaption
 					value={item.data.caption}
 					mode={mode}
@@ -260,14 +260,12 @@ export function MediaItem({
 						})
 					}
 				/>
-			</div>
-			{item.data.link ? (
-				<div className="pointer-events-none absolute right-3 bottom-4 z-20">
-					<div className="pointer-events-auto flex h-fit items-center">
+				{item.data.link ? (
+					<div className="pointer-events-auto flex h-fit shrink-0 items-center">
 						<ExternalAction href={item.data.link} label="Open media" />
 					</div>
-				</div>
-			) : null}
+				) : null}
+			</div>
 		</div>
 	);
 }
