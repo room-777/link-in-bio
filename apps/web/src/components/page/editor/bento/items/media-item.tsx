@@ -15,12 +15,7 @@ import {
 
 import type { BentoCommand, BentoItem } from "@/lib/bento/bento-types";
 import { getPageMediaUrl } from "@/lib/page-media-url";
-import {
-	ExternalAction,
-	getScrollTarget,
-	MapViewportGate,
-	MediaCaption,
-} from "./shared";
+import { ExternalAction, getScrollTarget, MediaCaption } from "./shared";
 import { useMediaCropEditor } from "./use-media-crop-editor";
 
 export function MediaItem({
@@ -124,8 +119,15 @@ export function MediaItem({
 
 	const handleImageLoadAndMeasure = useCallback(
 		(event: SyntheticEvent<HTMLImageElement>) => {
-			setImageLoaded(true);
+			const image = event.currentTarget;
+			const loadedSource = image.currentSrc;
 			handleImageLoad(event);
+			void image
+				.decode()
+				.catch(() => {})
+				.then(() => {
+					if (image.currentSrc === loadedSource) setImageLoaded(true);
+				});
 		},
 		[handleImageLoad],
 	);
@@ -137,13 +139,14 @@ export function MediaItem({
 	);
 
 	const isMediaLoaded = isVideo ? videoLoaded : imageLoaded;
+	const mediaOpacityClassName = isMediaLoaded ? "opacity-100" : "opacity-0";
 	const media = !item.data.mediaUrl ? null : (
 		<>
-			{item.data.placeholderDataUrl && !isMediaLoaded ? (
+			{item.data.placeholderDataUrl ? (
 				<img
 					alt=""
 					aria-hidden="true"
-					className="pointer-events-none absolute inset-0 size-full scale-110 object-cover blur-md"
+					className={`pointer-events-none absolute inset-0 size-full scale-110 object-cover blur-md transition-opacity duration-[250ms] ease-out ${isMediaLoaded ? "opacity-0" : "opacity-100"}`}
 					src={item.data.placeholderDataUrl}
 				/>
 			) : null}
@@ -162,7 +165,7 @@ export function MediaItem({
 							setVideoTransformFailed(true);
 						}
 					}}
-					className={`pointer-events-none absolute inset-0 transition-opacity ${cropStyle ? "size-full" : "size-full object-cover"} ${videoLoaded || !item.data.placeholderDataUrl ? "opacity-100" : "opacity-0"}`}
+					className={`pointer-events-none absolute inset-0 transition-opacity duration-[250ms] ease-out ${cropStyle ? "size-full" : "size-full object-cover"} ${mediaOpacityClassName}`}
 				>
 					{hasEnteredViewport && videoSrc ? (
 						<source
@@ -178,7 +181,7 @@ export function MediaItem({
 				<img
 					ref={imageRef}
 					alt={item.data.caption ?? "Media item"}
-					className={`pointer-events-none absolute inset-0 transition-opacity ${cropStyle ? "size-full" : "size-full object-cover"} ${imageLoaded || !item.data.placeholderDataUrl ? "opacity-100" : "opacity-0"}`}
+					className={`pointer-events-none absolute inset-0 transition-opacity duration-[250ms] ease-out ${cropStyle ? "size-full" : "size-full object-cover"} ${mediaOpacityClassName}`}
 					decoding="async"
 					fetchPriority="low"
 					loading="lazy"
@@ -196,23 +199,6 @@ export function MediaItem({
 	);
 
 	const frameRadius = getBentoItemRadius(item.type, preset);
-	const gatedMedia = (
-		<MapViewportGate
-			placeholder={
-				item.data.placeholderDataUrl ? (
-					<img
-						alt=""
-						aria-hidden="true"
-						className="absolute inset-0 size-full scale-110 object-cover blur-md"
-						src={item.data.placeholderDataUrl}
-					/>
-				) : null
-			}
-			forceMount={isLocalPreview || isCropOpen}
-		>
-			{media}
-		</MapViewportGate>
-	);
 
 	return (
 		<div
@@ -228,7 +214,7 @@ export function MediaItem({
 					className={`absolute overflow-hidden rounded-[inherit] ${isCropOpen ? "smooth-shadow-lg" : ""}`}
 					style={cropStyle}
 				>
-					{gatedMedia}
+					{media}
 					{isCropOpen && currentCrop ? (
 						<div
 							aria-hidden="true"
@@ -248,7 +234,7 @@ export function MediaItem({
 					) : null}
 				</div>
 			) : (
-				gatedMedia
+				media
 			)}
 			{isCropOpen && cropStyle ? (
 				<>

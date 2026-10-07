@@ -413,7 +413,7 @@ export function MapItem({
 					</div>
 				) : (
 					<div
-						className={`absolute inset-0 ${interactive ? "" : "pointer-events-none"}`}
+						className={`absolute inset-0 transition-opacity duration-200 ease-out ${mapReady ? "opacity-100" : "opacity-0"} ${interactive ? "" : "pointer-events-none"}`}
 					>
 						<MapViewportGate
 							forceMount={interactive}
