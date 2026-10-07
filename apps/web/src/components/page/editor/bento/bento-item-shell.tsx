@@ -271,13 +271,15 @@ export function BentoItemShell({
 					: false
 			}
 			animate={
-				isInitialEntryItem && entryReady
-					? { opacity: 1, transform: "translateY(0px)" }
-					: undefined
+				isExiting
+					? { opacity: 0, filter: "blur(2px)", y: 8, scale: 0.88 }
+					: isInitialEntryItem && entryReady
+						? { opacity: 1, transform: "translateY(0px)" }
+						: undefined
 			}
 			transition={{
-				duration: reduceMotion ? 0 : 0.8,
-				delay: reduceMotion ? 0 : entryDelay,
+				duration: reduceMotion ? 0 : isExiting ? 0.18 : 0.8,
+				delay: isExiting || reduceMotion ? 0 : entryDelay,
 				ease: [0.2, 1, 0.3, 1],
 			}}
 			onAnimationComplete={onEntryComplete}

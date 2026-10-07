@@ -207,7 +207,7 @@ export function MediaItem({
 			data-media-preset={preset}
 			data-bento-item-crop-open={isCropOpen ? "true" : undefined}
 			style={{ borderRadius: frameRadius }}
-			className={`relative size-full overflow-hidden rounded-[inherit] bg-muted/30 ${!isCropOpen && hasSourceSize && item.data.mediaUrl && !item.data.mediaUrl.startsWith("data:") ? "surface-line outline-depth" : ""} ${isCropOpen ? "overflow-visible!" : ""}`}
+			className={`relative size-full overflow-hidden rounded-[inherit] bg-muted/30 ${!isCropOpen && hasSourceSize && item.data.mediaUrl && !item.data.mediaUrl.startsWith("data:") ? "surface-line outline-depth [--outline-depth-shadow:inset_0_0_0_0.5px_var(--outline-depth-color)]" : ""} ${isCropOpen ? "overflow-visible!" : ""}`}
 		>
 			{cropStyle ? (
 				<div
