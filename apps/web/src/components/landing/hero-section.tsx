@@ -127,7 +127,8 @@ export default function HeroSection() {
 					animate={animate}
 					transition={transition}
 				>
-					Your link in bio. Made to feel like you.
+					Your <span className="rounded-3xl bg-brand/20 px-2">link in bio</span>{" "}
+					Made to feel like you.
 				</motion.h1>
 				<motion.p
 					className="mx-auto mt-5 max-w-xl text-pretty text-center font-medium text-base text-primary/80 leading-7 sm:text-xl"
