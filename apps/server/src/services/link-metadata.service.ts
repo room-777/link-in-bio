@@ -4,8 +4,8 @@ import {
 	pageItemLinkUrlSchema,
 } from "@grabbin/api";
 import type { DatabaseClient } from "@grabbin/db";
+import { and, eq } from "@grabbin/db/drizzle";
 import { pageItems } from "@grabbin/db/schema/index";
-import { and, eq } from "drizzle-orm";
 import * as v from "valibot";
 
 import { PageItemServiceError } from "../exceptions/page-item.exception";

@@ -12,13 +12,13 @@ import {
 	PageServiceError,
 } from "@grabbin/application/page-lifecycle";
 import type { DatabaseClient } from "@grabbin/db";
+import { and, eq, inArray, sql } from "@grabbin/db/drizzle";
 import { creemSubscription, pages, user } from "@grabbin/db/schema/index";
 import {
 	type HandleAvailabilityResponse,
 	normalizePageHandle,
 } from "@grabbin/page-handle";
 import { FREE_PAGE_LIMIT, getPlanAccess, PRO_PAGE_LIMIT } from "@grabbin/plan";
-import { and, eq, inArray, sql } from "drizzle-orm";
 import { isOwnedPageMediaKey } from "./media.service";
 import { checkPageHandle } from "./page-handle.service";
 

@@ -1,6 +1,6 @@
 import type { DatabaseClient } from "@grabbin/db";
+import { and, eq, inArray, lte } from "@grabbin/db/drizzle";
 import { pageMediaAssets } from "@grabbin/db/schema/index";
-import { and, eq, inArray, lte } from "drizzle-orm";
 
 const MEDIA_CLEANUP_BATCH_SIZE = 1000;
 

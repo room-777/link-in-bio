@@ -1,4 +1,5 @@
 import type { DatabaseClient } from "@grabbin/db";
+import { eq } from "@grabbin/db/drizzle";
 import { pages } from "@grabbin/db/schema/index";
 import {
 	handleAvailabilityResponseSchema,
@@ -6,7 +7,6 @@ import {
 	normalizePageHandle,
 	pageHandleSchema,
 } from "@grabbin/page-handle";
-import { eq } from "drizzle-orm";
 import * as v from "valibot";
 
 type CheckPageHandleInput = {

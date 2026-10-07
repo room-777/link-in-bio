@@ -3,6 +3,7 @@ import { spawn } from "node:child_process";
 import { setTimeout as sleep } from "node:timers/promises";
 import { reconcileExpiredSubscriptions } from "@grabbin/application/billing-reconciliation";
 import { deleteExpiredPages } from "@grabbin/application/page-lifecycle";
+import { drizzle, eq, inArray } from "@grabbin/db/drizzle";
 import * as schema from "@grabbin/db/schema/index";
 import {
 	creemSubscription,
@@ -13,8 +14,6 @@ import { betterAuth } from "better-auth";
 import { drizzleAdapter } from "better-auth/adapters/drizzle";
 import { testUtils } from "better-auth/plugins";
 import dotenv from "dotenv";
-import { eq, inArray } from "drizzle-orm";
-import { drizzle } from "drizzle-orm/node-postgres";
 import { Client } from "pg";
 
 dotenv.config({ path: ".env" });

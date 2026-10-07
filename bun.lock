@@ -26,7 +26,6 @@
       "dependencies": {
         "@grabbin/application": "workspace:*",
         "@grabbin/db": "workspace:*",
-        "drizzle-orm": "^0.45.2",
       },
       "devDependencies": {
         "@cloudflare/workers-types": "catalog:cloudflare",
@@ -51,7 +50,6 @@
         "aws4fetch": "^1.0.20",
         "better-auth": "catalog:auth",
         "dotenv": "catalog:runtime",
-        "drizzle-orm": "^0.45.2",
         "evlog": "catalog:runtime",
         "hono": "catalog:runtime",
         "valibot": "catalog:runtime",

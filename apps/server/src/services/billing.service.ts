@@ -2,8 +2,8 @@ import { getAccountPlan } from "@grabbin/application/billing";
 import type { createCreemClient } from "@grabbin/auth/creem-server";
 import { syncCreemCheckout } from "@grabbin/auth/creem-webhook";
 import type { DatabaseClient } from "@grabbin/db";
+import { eq, sql } from "@grabbin/db/drizzle";
 import { creemSubscription } from "@grabbin/db/schema/index";
-import { eq, sql } from "drizzle-orm";
 
 type CreemClient = ReturnType<typeof createCreemClient>;
 type CheckoutTransactionResult =

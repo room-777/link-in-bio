@@ -17,9 +17,9 @@ import {
 	inferPresetFromLayout,
 } from "@grabbin/bento-layout";
 import type { DatabaseClient } from "@grabbin/db";
+import { and, eq, inArray, sql } from "@grabbin/db/drizzle";
 import { pageItems } from "@grabbin/db/schema/index";
 import { resolveLinkMetadata } from "@grabbin/page-link";
-import { and, eq, inArray, sql } from "drizzle-orm";
 import * as v from "valibot";
 import { PageItemServiceError } from "../exceptions/page-item.exception";
 import {

@@ -6,7 +6,7 @@ import {
 	reconcileUserPageLifecycle,
 } from "@grabbin/application/page-lifecycle";
 import type { DatabaseClient } from "@grabbin/db";
-import { PgDialect } from "drizzle-orm/pg-core";
+import { PgDialect } from "@grabbin/db/drizzle";
 
 function makeDb(input: {
 	primaryPageHandle: string;
