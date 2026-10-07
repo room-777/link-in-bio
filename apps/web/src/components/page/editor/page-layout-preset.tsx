@@ -71,7 +71,7 @@ export default function PageLayoutPreset({
 					<Button
 						type="button"
 						size="default"
-						variant="ghost"
+						variant="outline"
 						disabled={isAutoSaving}
 						onClick={() => {
 							if (demoPreview) {
@@ -83,7 +83,7 @@ export default function PageLayoutPreset({
 							}
 							setShareDialogOpen(true);
 						}}
-						className="relative z-10 h-9 w-28 border-brand-green bg-brand-green! px-3 text-white! hover:bg-brand-green/80! hover:text-white!"
+						className="relative z-10 h-9 w-28 px-3 font-semibold"
 					>
 						{isAutoSaving ? (
 							<>
@@ -108,12 +108,12 @@ export default function PageLayoutPreset({
 				</Dialog>
 				<Separator
 					orientation="vertical"
-					className="mx-2 rounded-lg bg-border/80 data-vertical:my-2 data-vertical:w-[2.5px]"
+					className="mx-2 rounded-lg bg-border/80 data-vertical:my-2.5 data-vertical:w-[2.5px]"
 				/>
 				{widgetActions ? <AddWidgetButton {...widgetActions} /> : null}
 				<Separator
 					orientation="vertical"
-					className="mx-2 rounded-lg bg-border/80 data-vertical:my-2 data-vertical:w-[2.5px]"
+					className="mx-2 rounded-lg bg-border/80 data-vertical:my-2.5 data-vertical:w-[2.5px]"
 				/>
 				<Tabs
 					value={activeBreakpoint}
