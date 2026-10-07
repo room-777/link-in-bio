@@ -15,7 +15,12 @@ import {
 
 import type { BentoCommand, BentoItem } from "@/lib/bento/bento-types";
 import { getPageMediaUrl } from "@/lib/page-media-url";
-import { ExternalAction, getScrollTarget, MediaCaption } from "./shared";
+import {
+	ExternalAction,
+	getScrollTarget,
+	MapViewportGate,
+	MediaCaption,
+} from "./shared";
 import { useMediaCropEditor } from "./use-media-crop-editor";
 
 export function MediaItem({
@@ -191,6 +196,23 @@ export function MediaItem({
 	);
 
 	const frameRadius = getBentoItemRadius(item.type, preset);
+	const gatedMedia = (
+		<MapViewportGate
+			placeholder={
+				item.data.placeholderDataUrl ? (
+					<img
+						alt=""
+						aria-hidden="true"
+						className="absolute inset-0 size-full scale-110 object-cover blur-md"
+						src={item.data.placeholderDataUrl}
+					/>
+				) : null
+			}
+			forceMount={isLocalPreview || isCropOpen}
+		>
+			{media}
+		</MapViewportGate>
+	);
 
 	return (
 		<div
@@ -206,7 +228,7 @@ export function MediaItem({
 					className={`absolute overflow-hidden rounded-[inherit] ${isCropOpen ? "smooth-shadow-lg" : ""}`}
 					style={cropStyle}
 				>
-					{media}
+					{gatedMedia}
 					{isCropOpen && currentCrop ? (
 						<div
 							aria-hidden="true"
@@ -226,7 +248,7 @@ export function MediaItem({
 					) : null}
 				</div>
 			) : (
-				media
+				gatedMedia
 			)}
 			{isCropOpen && cropStyle ? (
 				<>
