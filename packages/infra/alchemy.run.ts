@@ -116,7 +116,9 @@ export const server = Cloudflare.Worker("server", {
 					Config.withDefault(""),
 				),
 		CORS_ORIGIN: Config.String("CORS_ORIGIN"),
-		SENTRY_DSN: Config.String("SENTRY_DSN").pipe(Config.withDefault("")),
+		SENTRY_DSN: isAlchemyDev
+			? ""
+			: Config.String("SENTRY_DSN").pipe(Config.withDefault("")),
 		BETTER_AUTH_SECRET: Config.Redacted("BETTER_AUTH_SECRET"),
 		BETTER_AUTH_URL: Cloudflare.Worker.URL,
 		GOOGLE_CLIENT_ID: Config.String("GOOGLE_CLIENT_ID").pipe(
