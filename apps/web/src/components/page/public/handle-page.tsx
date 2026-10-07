@@ -52,7 +52,6 @@ export default function HandlePage({
 				duration: PROFILE_ENTER_DURATION_SECONDS,
 				ease: [0.22, 1, 0.36, 1] as const,
 			};
-	const [profileEntryComplete, setProfileEntryComplete] = useState(false);
 	useEffect(() => {
 		const mediaQuery = window.matchMedia(bentoWideMediaQuery);
 		const syncBreakpoint = () =>
@@ -109,9 +108,6 @@ export default function HandlePage({
 									...enterTransition,
 									delay: PROFILE_TITLE_ENTER_DELAY_SECONDS,
 								}}
-								onAnimationComplete={
-									bio ? undefined : () => setProfileEntryComplete(true)
-								}
 								className="break-words font-bold page-wide:text-profile-name-desktop text-profile-name leading-tight tracking-tight"
 							>
 								{title}
@@ -124,7 +120,6 @@ export default function HandlePage({
 										...enterTransition,
 										delay: PROFILE_BIO_ENTER_DELAY_SECONDS,
 									}}
-									onAnimationComplete={() => setProfileEntryComplete(true)}
 									className="whitespace-pre-wrap px-0.5 page-wide:text-xl text-base text-primary/70 leading-6 page-wide:leading-8 page-wide:tracking-tight tracking-normal"
 								>
 									{page.bio}
@@ -135,10 +130,7 @@ export default function HandlePage({
 				</div>
 				<section className="bento-content-scroll-shell no-scrollbar order-2 page-wide:order-none page-wide:h-full min-h-[calc(100dvh-3rem)] page-wide:min-h-[calc(100dvh-4rem)] page-wide:w-4xl w-full max-w-md page-wide:max-w-none page-wide:shrink-0 overflow-visible page-wide:px-0 px-6 page-wide:pt-16 pt-0 page-wide:pb-24">
 					<div className="flex flex-col gap-4">
-						<BentoSection
-							items={pageResponse.items.map(toBentoItem)}
-							entryReady={reduceMotion || profileEntryComplete}
-						/>
+						<BentoSection items={pageResponse.items.map(toBentoItem)} />
 					</div>
 				</section>
 			</div>
