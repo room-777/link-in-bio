@@ -1,12 +1,17 @@
+import { dehydrate, HydrationBoundary } from "@tanstack/react-query";
 import type { Metadata } from "next";
 import { headers } from "next/headers";
 import { notFound } from "next/navigation";
-import { cache } from "react";
+import { cache, Suspense } from "react";
 import { getCustomDomainHostname } from "@/lib/custom-domain-host";
 import { getPageImageUrl } from "@/lib/page-image-url";
+import { getPageQueryOptions } from "@/lib/page-query";
+import { makeQueryClient } from "@/lib/query-client";
 import { fetchPage } from "@/lib/server/page-query";
-import OwnerPage from "../../components/page/editor/owner-page";
-import HandlePage from "../../components/page/public/handle-page";
+import {
+	OwnerPageQueryView,
+	PublicPageQueryView,
+} from "../../components/page/page-query-view";
 
 const getPageForRequest = cache((handle: string, cookie: string) =>
 	fetchPage(handle, { cookie }),
@@ -71,16 +76,26 @@ export default async function Page({ params }: PageProps<"/[handle]">) {
 	const { handle } = await params;
 	const requestHeaders = await headers();
 	if (getCustomDomainHostname(requestHeaders.get("host"))) notFound();
-	const page = await getPageForRequest(
-		handle,
-		requestHeaders.get("cookie") ?? "",
-	);
+	const queryClient = makeQueryClient();
+	const pageQueryOptions = getPageQueryOptions(handle);
+	const cookie = requestHeaders.get("cookie") ?? "";
+	const page = await queryClient.query({
+		...pageQueryOptions,
+		queryFn: () => getPageForRequest(handle, cookie),
+	});
 
 	if (!page) notFound();
 
-	if (page.page.canEdit) {
-		return <OwnerPage pageResponse={page} />;
-	}
-
-	return <HandlePage pageResponse={page} />;
+	const canEdit = page.page.canEdit;
+	return (
+		<HydrationBoundary state={dehydrate(queryClient)}>
+			<Suspense fallback={null}>
+				{canEdit ? (
+					<OwnerPageQueryView handle={handle} />
+				) : (
+					<PublicPageQueryView handle={handle} />
+				)}
+			</Suspense>
+		</HydrationBoundary>
+	);
 }
