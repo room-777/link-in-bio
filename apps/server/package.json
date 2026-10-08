@@ -16,22 +16,23 @@
 	},
 	"dependencies": {
 		"@grabbin/api": "workspace:*",
-		"@sentry/cloudflare": "catalog:sentry",
-		"@sentry/hono": "catalog:sentry",
+		"@grabbin/application": "workspace:*",
 		"@grabbin/auth": "workspace:*",
+		"@grabbin/bento-layout": "workspace:*",
 		"@grabbin/db": "workspace:*",
 		"@grabbin/env": "workspace:*",
-		"@grabbin/bento-layout": "workspace:*",
 		"@grabbin/page-handle": "workspace:*",
 		"@grabbin/page-link": "workspace:*",
 		"@grabbin/plan": "workspace:*",
+		"@sentry/cloudflare": "catalog:sentry",
+		"@sentry/hono": "catalog:sentry",
 		"aws4fetch": "^1.0.20",
 		"better-auth": "catalog:auth",
 		"dotenv": "catalog:runtime",
 		"evlog": "catalog:runtime",
 		"hono": "catalog:runtime",
-		"valibot": "catalog:runtime",
-		"@grabbin/application": "workspace:*"
+		"rss-parser": "^3.13.0",
+		"valibot": "catalog:runtime"
 	},
 	"devDependencies": {
 		"@cloudflare/workers-types": "catalog:cloudflare",

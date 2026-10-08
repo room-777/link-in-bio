@@ -3,6 +3,7 @@ import type {
 	PageItemBatchResponse,
 	PageItemMetadataRequest,
 	PageItemResponse,
+	RssFeedResponse,
 } from "@grabbin/api";
 import {
 	pageItemBatchRequestSchema,
@@ -29,6 +30,7 @@ import {
 	createItemMediaUpload,
 } from "../services/media.service";
 import { getOwnedPage } from "../services/page.service";
+import { RssServiceError } from "../services/rss/rss.service";
 import type { AppEnv } from "../types";
 
 const pageItemErrorDetails = {
@@ -46,6 +48,9 @@ const pageItemErrorDetails = {
 	ITEM_MEDIA_NOT_FOUND: "Uploaded item media was not found.",
 	CONCURRENT_ITEM_UPDATE: "The item changed before this update was saved.",
 	INVALID_LINK_METADATA: "Invalid link metadata request.",
+	UNSUPPORTED_RSS_URL: "This address is not a supported RSS source.",
+	RSS_FEED_UNAVAILABLE: "The RSS feed could not be loaded.",
+	INVALID_RSS_FEED: "The RSS feed returned invalid data.",
 	ITEM_NOT_LINK: "The item is not a link.",
 	STALE_LINK_METADATA: "The link URL changed before metadata completed.",
 } as const;
@@ -124,12 +129,19 @@ export type PageItemsControllerOptions = {
 	sessionMiddleware: MiddlewareHandler<AppEnv>;
 	persist: PersistPageItemBatch;
 	enrichMetadata: EnrichPageItemMetadata;
+	fetchRss?: (input: {
+		url: string;
+		fetch: typeof fetch;
+	}) => Promise<RssFeedResponse>;
 };
 
 export function createPageItemsController({
 	sessionMiddleware,
 	persist,
 	enrichMetadata,
+	fetchRss = async () => {
+		throw new RssServiceError("RSS_FEED_UNAVAILABLE");
+	},
 }: PageItemsControllerOptions) {
 	return new Hono<AppEnv>()
 		.post("/:handle/metadata", sessionMiddleware, async (c) => {
@@ -158,6 +170,35 @@ export function createPageItemsController({
 			});
 			if (!page)
 				return jsonApiError(c, { status: 404, detail: "Page not found." });
+
+			if ("kind" in parsed.output && parsed.output.kind === "rss") {
+				try {
+					return c.json({
+						rss: await fetchRss({
+							url: parsed.output.url,
+							fetch: (input, init) => fetch(input, init),
+						}),
+					});
+				} catch (error) {
+					if (error instanceof RssServiceError) {
+						return jsonApiError(c, {
+							status: error.code === "UNSUPPORTED_RSS_URL" ? 422 : 502,
+							code: error.code,
+							detail: pageItemErrorDetails[error.code],
+						});
+					}
+					throw error;
+				}
+			}
+
+			if (!("itemId" in parsed.output)) {
+				return jsonApiError(c, {
+					status: 422,
+					code: "INVALID_LINK_METADATA",
+					detail: pageItemErrorDetails.INVALID_LINK_METADATA,
+				});
+			}
+
 			const writeError = await pageWriteError(c, session.user.id, page);
 			if (writeError) return writeError;
 
