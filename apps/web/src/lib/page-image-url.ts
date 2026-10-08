@@ -14,7 +14,13 @@ export function getPageImageUrl(
 	if (!key) return null;
 	if (/^https?:\/\//.test(key)) return key;
 
-	const publicUrl = env.NEXT_PUBLIC_R2_PUBLIC_URL?.replace(/\/$/, "");
+	const serverUrl = env.NEXT_PUBLIC_SERVER_URL?.replace(/\/$/, "");
+	const isLocalServer = /^http:\/\/(localhost|127\.0\.0\.1)(:\d+)?$/i.test(
+		serverUrl ?? "",
+	);
+	const publicUrl = (
+		isLocalServer ? serverUrl : env.NEXT_PUBLIC_R2_PUBLIC_URL
+	)?.replace(/\/$/, "");
 	if (!publicUrl) return null;
 	const isLocalR2 = /^http:\/\/(localhost|127\.0\.0\.1)(:\d+)?$/i.test(
 		publicUrl,
