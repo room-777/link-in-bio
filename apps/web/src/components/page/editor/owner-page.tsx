@@ -39,7 +39,10 @@ export default function OwnerPage({
 		() => ({
 			onItemAdd: (itemType, url) =>
 				widgetActionsRef.current?.onItemAdd(itemType, url),
-			onCalendlyAdd: (event) => widgetActionsRef.current?.onCalendlyAdd(event),
+			onCalendlyAdd: (event) =>
+				widgetActionsRef.current?.onCalendlyAdd(event) ?? Promise.resolve(),
+			onRssFeedAdd: (url) =>
+				widgetActionsRef.current?.onRssFeedAdd(url) ?? Promise.resolve(false),
 			onMediaSelect: (file) => widgetActionsRef.current?.onMediaSelect(file),
 		}),
 		[],

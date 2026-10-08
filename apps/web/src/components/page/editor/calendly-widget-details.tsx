@@ -14,6 +14,7 @@ import {
 	ItemTitle,
 } from "@grabbin/ui/components/item";
 import { Label } from "@grabbin/ui/components/label";
+import Loading from "@grabbin/ui/components/loading";
 import { ScrollArea } from "@grabbin/ui/components/scroll-area";
 import { Skeleton } from "@grabbin/ui/components/skeleton";
 import { useQuery } from "@tanstack/react-query";
@@ -72,10 +73,11 @@ function CalendlyEventContent({
 export default function CalendlyWidgetDetails({
 	onAdd,
 }: {
-	onAdd: (event: import("@grabbin/api").CalendlyEventType) => void;
+	onAdd: (event: import("@grabbin/api").CalendlyEventType) => Promise<void>;
 }) {
 	const { data: session } = authClient.useSession();
 	const [selectedEventUri, setSelectedEventUri] = useState<string | null>(null);
+	const [isAdding, setIsAdding] = useState(false);
 	const [timeZone, setTimeZone] = useState<string | null>(null);
 	useEffect(() => {
 		setTimeZone(Intl.DateTimeFormat().resolvedOptions().timeZone || "UTC");
@@ -219,11 +221,26 @@ export default function CalendlyWidgetDetails({
 					type="button"
 					variant="outline"
 					size={"xl"}
-					disabled={!selectedEvent}
-					className={"px-5 text-base"}
-					onClick={() => selectedEvent && onAdd(selectedEvent)}
+					aria-busy={isAdding}
+					aria-label={isAdding ? "Adding Calendly event" : undefined}
+					disabled={!selectedEvent || isAdding}
+					className="relative px-5 text-base"
+					onClick={async () => {
+						if (!selectedEvent) return;
+						setIsAdding(true);
+						try {
+							await onAdd(selectedEvent);
+						} catch {
+							// The save flow already reports its error.
+						} finally {
+							setIsAdding(false);
+						}
+					}}
 				>
-					Add
+					<span className={isAdding ? "opacity-0" : ""}>Add</span>
+					{isAdding ? (
+						<Loading aria-hidden="true" className="absolute size-4" />
+					) : null}
 				</Button>
 			</div>
 		</div>

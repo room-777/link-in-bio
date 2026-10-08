@@ -8,7 +8,13 @@ import {
 } from "@grabbin/bento-layout";
 import { Button } from "@grabbin/ui/components/button";
 import { motion } from "motion/react";
-import { type CSSProperties, useEffect, useRef, useState } from "react";
+import {
+	type CSSProperties,
+	type ReactNode,
+	useEffect,
+	useRef,
+	useState,
+} from "react";
 import { Trash } from "@/components/trash";
 import type { BentoCommand, BentoItem } from "@/lib/bento/bento-types";
 import BentoItemControls from "./bento-item-controls";
@@ -71,6 +77,7 @@ function getForegroundColor(value: string | undefined) {
 
 export function BentoItemShell({
 	item,
+	children,
 	handle,
 	breakpoint,
 	mode,
@@ -80,6 +87,8 @@ export function BentoItemShell({
 	onRefreshLinkMetadata,
 	onLinkImageSelect,
 	cardClassName,
+	hasNestedLinks = false,
+	disableCardLink = false,
 	isAnyItemDragging = false,
 	disableLocationSearch = false,
 	isEntering = false,
@@ -91,6 +100,7 @@ export function BentoItemShell({
 	onEntryComplete,
 }: {
 	item: BentoItem;
+	children?: ReactNode;
 	handle?: string;
 	breakpoint: "wide" | "compact";
 	mode: "view" | "edit";
@@ -100,6 +110,8 @@ export function BentoItemShell({
 	onRefreshLinkMetadata?: (itemId: string) => Promise<void>;
 	onLinkImageSelect?: (itemId: string, file: File) => void | Promise<void>;
 	cardClassName?: string;
+	hasNestedLinks?: boolean;
+	disableCardLink?: boolean;
 	isAnyItemDragging?: boolean;
 	disableLocationSearch?: boolean;
 	isEntering?: boolean;
@@ -122,14 +134,21 @@ export function BentoItemShell({
 		: undefined;
 	const cardBackground =
 		getBackgroundColor(item.style.backgroundColor) ?? linkTheme?.cardBackground;
+	const isRssFeedWidget =
+		item.type === "link" && item.data.metadata?.provider === "rss-feed";
 	const publicLink =
-		mode === "view" && item.type === "link"
+		mode === "view" &&
+		!disableCardLink &&
+		item.type === "link" &&
+		!isRssFeedWidget
 			? {
 					href: item.data.url,
 					title: item.data.metadata?.title?.trim() || item.data.url,
 				}
 			: undefined;
-	const Card = publicLink ? "a" : "div";
+	const usesNestedLinks = hasNestedLinks;
+	const usesCardLink = Boolean(publicLink && !usesNestedLinks);
+	const Card = usesCardLink ? "a" : "div";
 	const cardRadius = getBentoItemRadius(item.type, preset);
 	const cardStyle: CSSProperties = {
 		borderRadius: cardRadius,
@@ -199,15 +218,46 @@ export function BentoItemShell({
 		<>
 			<Card
 				data-bento-item-card="true"
-				href={publicLink?.href}
-				target={publicLink ? "_blank" : undefined}
-				rel={publicLink ? "noreferrer" : undefined}
+				href={usesCardLink ? publicLink?.href : undefined}
+				target={usesCardLink ? "_blank" : undefined}
+				rel={usesCardLink ? "noreferrer" : undefined}
 				aria-label={publicLink ? `Open ${publicLink.title}` : undefined}
+				role={publicLink && usesNestedLinks ? "link" : undefined}
+				tabIndex={publicLink && usesNestedLinks ? 0 : undefined}
+				onClick={
+					publicLink && usesNestedLinks
+						? (event) => {
+								if (
+									event.target instanceof Element &&
+									event.target.closest("a[href]")
+								) {
+									return;
+								}
+								window.open(publicLink.href, "_blank", "noopener,noreferrer");
+							}
+						: undefined
+				}
+				onKeyDown={
+					publicLink && usesNestedLinks
+						? (event) => {
+								if (
+									event.target !== event.currentTarget ||
+									event.key !== "Enter"
+								) {
+									return;
+								}
+								event.preventDefault();
+								window.open(publicLink.href, "_blank", "noopener,noreferrer");
+							}
+						: undefined
+				}
 				className={`bento-item-card relative size-full overflow-hidden bg-background ${publicLink ? "bento-link-card block cursor-pointer! touch-manipulation outline-none focus-visible:outline-2 focus-visible:outline-ring focus-visible:outline-offset-2" : ""} ${hasTextSurface ? "surface-line" : ""} ${linkTheme ? "link-card-themed" : ""} ${cardClassName ?? ""}`}
 				style={cardStyle}
 			>
 				<div className="relative z-10 size-full min-h-0 rounded-[inherit]">
-					{preset ? (
+					{children !== undefined ? (
+						children
+					) : preset ? (
 						renderItem(item, preset, {
 							handle,
 							mode,

@@ -19,13 +19,15 @@ import AdvancedWidgetsDialog from "./advanced-widgets-dialog";
 
 export type AddWidgetButtonProps = {
 	onItemAdd: (itemType: Exclude<ItemType, "calendly">, url?: string) => void;
-	onCalendlyAdd: (event: CalendlyEventType) => void;
+	onCalendlyAdd: (event: CalendlyEventType) => Promise<void>;
+	onRssFeedAdd: (url: string) => Promise<boolean>;
 	onMediaSelect: (file: File) => void;
 };
 
 export default function AddWidgetButton({
 	onItemAdd,
 	onCalendlyAdd,
+	onRssFeedAdd,
 	onMediaSelect,
 }: AddWidgetButtonProps) {
 	const fileInputRef = useRef<HTMLInputElement>(null);
@@ -133,7 +135,10 @@ export default function AddWidgetButton({
 					</form>
 				</PopoverContent>
 			</Popover>
-			<AdvancedWidgetsDialog onCalendlyAdd={onCalendlyAdd} />
+			<AdvancedWidgetsDialog
+				onCalendlyAdd={onCalendlyAdd}
+				onRssFeedAdd={onRssFeedAdd}
+			/>
 		</div>
 	);
 }

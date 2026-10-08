@@ -156,6 +156,7 @@ export async function parseRssFeed(
 		return {
 			source: {
 				inputUrl: source.inputUrl,
+				pageUrl: source.pageUrl,
 				feedUrl: source.feedUrl,
 				platform: source.platform,
 				type: source.type,

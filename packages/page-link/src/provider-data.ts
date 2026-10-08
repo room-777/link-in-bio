@@ -51,6 +51,10 @@ export type LinkProviderDefinition = {
 	hosts: readonly string[];
 	label: string;
 	faviconUrl?: string;
+	advancedWidget?: {
+		category: string;
+		badgeProviderIds?: readonly string[];
+	};
 	theme?: ProviderTheme;
 	countKey?: string;
 	resolveTarget?: (url: URL) => LinkTargetMatch | undefined;
@@ -624,8 +628,19 @@ export const providerDefinitions = [
 		hosts: ["calendly.com"],
 		label: "Calendly",
 		faviconUrl: providerIconUrl("calendly"),
+		advancedWidget: { category: "Scheduling", badgeProviderIds: [] },
 		theme: {
 			faviconBackground: "#006BFF",
+		},
+	},
+	{
+		id: "rss-feed",
+		hosts: [],
+		label: "RSS Feed",
+		faviconUrl: providerIconUrl("rss-feed"),
+		advancedWidget: {
+			category: "Content",
+			badgeProviderIds: ["substack", "hashnode", "note", "ghost"],
 		},
 	},
 	{

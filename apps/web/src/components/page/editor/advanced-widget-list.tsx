@@ -1,13 +1,16 @@
-import type { LinkProviderId } from "@grabbin/page-link";
 import { Button } from "@grabbin/ui/components/button";
 import { ScrollArea } from "@grabbin/ui/components/scroll-area";
 import { advancedWidgetCategories } from "@/constant/widget/advanced-widget-registry";
+import {
+	AdvancedWidgetBadges,
+	AdvancedWidgetIcon,
+} from "./advanced-widget-visuals";
 
 export default function AdvancedWidgetList({
 	onSelect,
 	searchQuery,
 }: {
-	onSelect: (providerId: LinkProviderId) => void;
+	onSelect: (widgetId: string) => void;
 	searchQuery: string;
 }) {
 	const normalizedQuery = searchQuery.trim().toLowerCase();
@@ -15,12 +18,12 @@ export default function AdvancedWidgetList({
 		const categoryMatches = category.name
 			.toLowerCase()
 			.includes(normalizedQuery);
-		const providers = categoryMatches
-			? category.providers
-			: category.providers.filter((provider) =>
-					provider.label.toLowerCase().includes(normalizedQuery),
+		const items = categoryMatches
+			? category.items
+			: category.items.filter((item) =>
+					item.label.toLowerCase().includes(normalizedQuery),
 				);
-		return providers.length > 0 ? [{ ...category, providers }] : [];
+		return items.length > 0 ? [{ ...category, items }] : [];
 	});
 
 	return (
@@ -31,20 +34,22 @@ export default function AdvancedWidgetList({
 						<section key={category.name} className="space-y-2">
 							<h2 className="px-1 font-medium text-sm">{category.name}</h2>
 							<div className="grid grid-cols-2 gap-2">
-								{category.providers.map((provider) => (
+								{category.items.map((item) => (
 									<Button
-										key={provider.id}
+										key={item.id}
 										type="button"
 										variant="outline"
-										className="h-11 min-w-0 justify-start gap-2 px-2.5"
-										onClick={() => onSelect(provider.id)}
+										className={`h-11 min-w-0 gap-2 px-2.5 ${item.badges.length ? "justify-between" : "justify-start"}`}
+										onClick={() => onSelect(item.id)}
 									>
-										<img
-											src={provider.faviconUrl}
-											alt=""
-											className="size-5 shrink-0 object-contain"
+										<span className="flex min-w-0 items-center gap-2">
+											<AdvancedWidgetIcon widget={item} className="size-5" />
+											<span className="truncate text-sm">{item.label}</span>
+										</span>
+										<AdvancedWidgetBadges
+											badges={item.badges}
+											sizeClassName="size-5.5"
 										/>
-										<span className="truncate text-sm">{provider.label}</span>
 									</Button>
 								))}
 							</div>

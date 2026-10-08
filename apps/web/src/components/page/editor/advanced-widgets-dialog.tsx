@@ -1,8 +1,6 @@
 "use client";
 
 import type { CalendlyEventType } from "@grabbin/api";
-import type { LinkProviderId } from "@grabbin/page-link";
-import { providerDefinitions } from "@grabbin/page-link";
 import { Button } from "@grabbin/ui/components/button";
 import {
 	Dialog,
@@ -27,25 +25,29 @@ import { cn } from "@grabbin/ui/lib/utils";
 import { ChevronLeft, Search, SlidersHorizontal, XIcon } from "lucide-react";
 import { useReducedMotion } from "motion/react";
 import { Activity, useLayoutEffect, useRef, useState } from "react";
+import { advancedWidgetModules } from "@/constant/widget/advanced-widget-registry";
 import AdvancedWidgetActivity from "./advanced-widget-activity";
 import AdvancedWidgetList from "./advanced-widget-list";
+import { AdvancedWidgetIcon } from "./advanced-widget-visuals";
 
 export default function AdvancedWidgetsDialog({
 	onCalendlyAdd,
+	onRssFeedAdd,
 }: {
-	onCalendlyAdd: (event: CalendlyEventType) => void;
+	onCalendlyAdd: (event: CalendlyEventType) => Promise<void>;
+	onRssFeedAdd: (url: string) => Promise<boolean>;
 }) {
 	const isMobile = useIsMobile();
 	const reduceMotion = useReducedMotion() ?? false;
 	const [open, setOpen] = useState(false);
-	const [providerId, setProviderId] = useState<LinkProviderId | null>(null);
+	const [widgetId, setWidgetId] = useState<string | null>(null);
 	const [isDetailActivity, setIsDetailActivity] = useState(false);
 	const [isTransitioning, setIsTransitioning] = useState(false);
 	const [activePage, setActivePage] = useState("1");
 	const [searchQuery, setSearchQuery] = useState("");
 	const pageSlideRef = useRef<HTMLDivElement>(null);
-	const providerDefinition = providerDefinitions.find(
-		({ id }) => id === providerId,
+	const selectedWidget = advancedWidgetModules.find(
+		({ id }) => id === widgetId,
 	);
 
 	useLayoutEffect(() => {
@@ -54,8 +56,8 @@ export default function AdvancedWidgetsDialog({
 		setActivePage(isDetailActivity ? "2" : "1");
 	}, [isDetailActivity, isTransitioning, reduceMotion]);
 
-	const showProvider = (providerId: LinkProviderId) => {
-		setProviderId(providerId);
+	const showWidget = (widgetId: string) => {
+		setWidgetId(widgetId);
 		setIsDetailActivity(true);
 		setIsTransitioning(!reduceMotion);
 		if (reduceMotion) setActivePage("2");
@@ -66,7 +68,7 @@ export default function AdvancedWidgetsDialog({
 		setIsTransitioning(!reduceMotion);
 		if (reduceMotion) {
 			setActivePage("1");
-			setProviderId(null);
+			setWidgetId(null);
 		}
 	};
 
@@ -77,12 +79,12 @@ export default function AdvancedWidgetsDialog({
 			event.currentTarget.dataset.pageId === activePage
 		) {
 			setIsTransitioning(false);
-			if (!isDetailActivity) setProviderId(null);
+			if (!isDetailActivity) setWidgetId(null);
 		}
 	};
 
 	const reset = () => {
-		setProviderId(null);
+		setWidgetId(null);
 		setIsDetailActivity(false);
 		setIsTransitioning(false);
 		setActivePage("1");
@@ -166,7 +168,7 @@ export default function AdvancedWidgetsDialog({
 					</header>
 					<div className="min-h-0 flex-1">
 						<AdvancedWidgetList
-							onSelect={showProvider}
+							onSelect={showWidget}
 							searchQuery={searchQuery}
 						/>
 					</div>
@@ -192,15 +194,13 @@ export default function AdvancedWidgetsDialog({
 							id="advanced-widget-detail-title"
 							className="flex min-w-0 items-center justify-center gap-2 px-12 text-center font-heading font-medium text-base leading-normal"
 						>
-							{providerDefinition?.faviconUrl && (
-								<img
-									src={providerDefinition.faviconUrl}
-									alt=""
-									aria-hidden="true"
-									className="size-5 shrink-0 object-contain"
+							{selectedWidget && (
+								<AdvancedWidgetIcon
+									widget={selectedWidget}
+									className="size-5"
 								/>
 							)}
-							<span className="truncate">{providerDefinition?.label}</span>
+							<span className="truncate">{selectedWidget?.label}</span>
 						</h2>
 						<Button
 							type="button"
@@ -221,13 +221,18 @@ export default function AdvancedWidgetsDialog({
 						</Button>
 						{dialogCloseButton()}
 					</header>
-					{providerId && (
+					{widgetId && (
 						<div className="min-h-0 flex-1">
 							<AdvancedWidgetActivity
-								providerId={providerId}
-								onCalendlyAdd={(event) => {
-									onCalendlyAdd(event);
+								widgetId={widgetId}
+								onCalendlyAdd={async (event) => {
+									await onCalendlyAdd(event);
 									handleOpenChange(false);
+								}}
+								onRssFeedAdd={async (url) => {
+									const added = await onRssFeedAdd(url);
+									if (added) handleOpenChange(false);
+									return added;
 								}}
 							/>
 						</div>
@@ -249,7 +254,7 @@ export default function AdvancedWidgetsDialog({
 			>
 				<DrawerHeader className="sr-only">
 					<DrawerTitle>
-						{isDetailActivity ? providerDefinition?.label : "Advanced widgets"}
+						{isDetailActivity ? selectedWidget?.label : "Advanced widgets"}
 					</DrawerTitle>
 				</DrawerHeader>
 				<div className="min-h-0 flex-1 p-5">{content}</div>

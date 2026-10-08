@@ -9,6 +9,7 @@ import type { BentoCommand, BentoItem } from "@/lib/bento/bento-types";
 import { LinkItem } from "./bento-link";
 import { CalendlyItem } from "./items/calendly-item";
 import { MediaItem } from "./items/media-item";
+import { RssFeedItem } from "./items/rss-feed-item";
 import { SectionItem } from "./items/section-item";
 import { TextItem } from "./items/text-item";
 
@@ -69,6 +70,16 @@ function renderSection({ item, options }: Parameters<ItemRenderer>[0]) {
 
 function renderLink({ item, preset, options }: Parameters<ItemRenderer>[0]) {
 	if (item.type !== "link") return null;
+	if (item.data.metadata?.provider === "rss-feed") {
+		return (
+			<RssFeedItem
+				item={item}
+				preset={preset}
+				mode={options.mode}
+				onCommand={options.onCommand}
+			/>
+		);
+	}
 	return (
 		<LinkItem
 			item={item}

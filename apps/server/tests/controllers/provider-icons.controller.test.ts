@@ -30,10 +30,10 @@ describe("provider icons controller", () => {
 			},
 		} as unknown as R2Bucket);
 
-		const response = await app.request("/provider-icons/x.svg", {}, env);
+		const response = await app.request("/provider-icons/rss-feed.svg", {}, env);
 
 		assert.equal(response.status, 200);
-		assert.equal(requestedKey, "provider-icons/v1/x.svg");
+		assert.equal(requestedKey, "provider-icons/v1/rss-feed.svg");
 		assert.equal(
 			response.headers.get("cache-control"),
 			"public, max-age=31536000, immutable",

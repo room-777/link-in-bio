@@ -698,7 +698,10 @@ describe("link provider metadata", () => {
 			["notion", "https://www.notion.so/"],
 		] as const;
 
-		assert.equal(cases.length, providerDefinitionList.length);
+		assert.equal(
+			cases.length,
+			providerDefinitionList.filter(({ hosts }) => hosts.length > 0).length,
+		);
 		for (const [expectedProvider, url] of cases) {
 			const resolved = resolveLinkProvider(new URL(url));
 			const metadata = resolveLinkMetadata(url);
@@ -729,6 +732,38 @@ describe("link provider metadata", () => {
 				?.faviconBackground,
 			"#181717",
 		);
+	});
+
+	it("keeps RSS Feed in the shared catalog without treating it as a link host", () => {
+		const rssFeed = providerDefinitionList.find(({ id }) => id === "rss-feed");
+
+		assert.equal(rssFeed?.label, "RSS Feed");
+		assert.deepEqual(rssFeed?.hosts, []);
+		assert.equal(
+			resolveLinkProvider(new URL("https://grabbin.substack.com/")).id,
+			"substack",
+		);
+		assert.equal(
+			resolveLinkProvider(new URL("https://example.com/")).id,
+			"generic-web",
+		);
+	});
+
+	/**
+	 * Case ID: RSS-LINK-001
+	 * Given: an RSS widget uses a Substack feed URL.
+	 * When: saved link metadata is resolved for the response.
+	 * Then: provider stays rss-feed while the presentation identifies Substack.
+	 * Evidence: resolved provider and presentation provider.
+	 * Result: Pass | Fail | Blocked | Not Run
+	 */
+	it("RSS-LINK-001 preserves RSS widget identity after resolving its URL", () => {
+		const metadata = resolveLinkMetadata("https://braggb.substack.com/feed", {
+			provider: "rss-feed",
+		});
+
+		assert.equal(metadata.provider, "rss-feed");
+		assert.equal(metadata.presentation.provider, "substack");
 	});
 
 	it("enriches Pinterest profiles, boards, and Pins", async () => {

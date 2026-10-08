@@ -5,6 +5,7 @@ import type { BentoBreakpoint } from "@grabbin/bento-layout";
 import { toast } from "@grabbin/ui/components/toast";
 import dynamic from "next/dynamic";
 import { useCallback, useEffect } from "react";
+import { fetchBentoRss } from "@/lib/bento/bento-api";
 import { useBentoStore } from "@/lib/bento/bento-store";
 import type { AddWidgetButtonProps } from "./add-widget-button";
 import EditMobileShareLinkButton from "./edit-mobile-share-link-button";
@@ -71,10 +72,53 @@ export default function BentoEditor({
 		[store.dispatchCommand, store.refreshLinkMetadata],
 	);
 	const addCalendlyItem = useCallback(
-		(event: import("@grabbin/api").CalendlyEventType) => {
+		async (event: import("@grabbin/api").CalendlyEventType) => {
 			store.dispatchCommand({ type: "add-calendly-item", event });
+			await store.flushPendingChanges();
 		},
-		[store.dispatchCommand],
+		[store.dispatchCommand, store.flushPendingChanges],
+	);
+	const addRssFeed = useCallback(
+		async (url: string) => {
+			try {
+				const parsedUrl = new URL(url.trim());
+				if (parsedUrl.protocol !== "https:") {
+					throw new Error("Enter a supported RSS feed URL.");
+				}
+				const normalizedUrl = parsedUrl.toString();
+				const { rss } = await fetchBentoRss(handle, normalizedUrl);
+				const addedItem = store.dispatchCommand({
+					type: "add-item",
+					itemType: "link",
+					url: normalizedUrl,
+				});
+				if (addedItem?.type !== "link") return false;
+				store.dispatchCommand({
+					type: "update-data",
+					itemId: addedItem.id,
+					data: {
+						...addedItem.data,
+						metadata: {
+							title: "RSS Feed",
+							faviconUrl: "/api/provider-icons/rss-feed.svg",
+							provider: "rss-feed",
+							rss,
+						},
+					},
+				});
+				return true;
+			} catch (error) {
+				toast({
+					message:
+						error instanceof Error
+							? error.message
+							: "Enter a supported RSS feed URL.",
+					state: "error",
+				});
+				return false;
+			}
+		},
+		[handle, store.dispatchCommand],
 	);
 	const editorClassName =
 		breakpoint === "compact"
@@ -103,9 +147,16 @@ export default function BentoEditor({
 		onWidgetActionsChange?.({
 			onItemAdd: addItem,
 			onCalendlyAdd: addCalendlyItem,
+			onRssFeedAdd: addRssFeed,
 			onMediaSelect: selectMedia,
 		});
-	}, [addCalendlyItem, addItem, onWidgetActionsChange, selectMedia]);
+	}, [
+		addCalendlyItem,
+		addItem,
+		addRssFeed,
+		onWidgetActionsChange,
+		selectMedia,
+	]);
 	const selectLinkImage = async (itemId: string, file: File) => {
 		if (!/^image\//i.test(file.type)) {
 			toast({ message: "Choose an image file.", state: "error" });

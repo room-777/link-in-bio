@@ -1,39 +1,66 @@
 import type { CalendlyEventType } from "@grabbin/api";
-import type { LinkProviderId } from "@grabbin/page-link";
 import { providerDefinitions } from "@grabbin/page-link";
 import type { ComponentType } from "react";
 import CalendlyWidgetDetails from "@/components/page/editor/calendly-widget-details";
+import RssFeedWidgetDetails from "@/components/page/editor/rss-feed-widget-details";
 
-const widgetCategoryNames = ["Scheduling"] as const;
-type WidgetCategory = (typeof widgetCategoryNames)[number];
-
-export type AdvancedWidgetModule = {
-	providerId: Exclude<LinkProviderId, "generic-web">;
-	category: WidgetCategory;
-	details?: ComponentType<{ onAdd: (event: CalendlyEventType) => void }>;
+type AdvancedWidgetDetailsProps = {
+	onAdd: (event: CalendlyEventType) => Promise<void>;
+	onRssFeedAdd: (url: string) => Promise<boolean>;
 };
 
-export const advancedWidgetModules = [
-	{
-		providerId: "calendly",
-		category: "Scheduling",
-		details: CalendlyWidgetDetails,
-	},
-] satisfies readonly AdvancedWidgetModule[];
+export type AdvancedWidgetModule = {
+	id: string;
+	category: string;
+	label: string;
+	iconUrl: string;
+	badges: readonly { id: string; label: string; iconUrl: string }[];
+	details: ComponentType<AdvancedWidgetDetailsProps>;
+};
 
-const categories = [
+type ConfiguredProvider = (typeof providerDefinitions)[number];
+type AdvancedWidgetProvider = Extract<
+	ConfiguredProvider,
+	{ advancedWidget: { category: string } }
+>;
+type AdvancedWidgetId = AdvancedWidgetProvider["id"];
+
+const advancedWidgetDetails: Record<
+	AdvancedWidgetId,
+	ComponentType<AdvancedWidgetDetailsProps>
+> = {
+	calendly: CalendlyWidgetDetails,
+	"rss-feed": RssFeedWidgetDetails,
+};
+
+const badgeProvider = (id: string) =>
+	providerDefinitions.find((provider) => provider.id === id);
+
+export const advancedWidgetModules: readonly AdvancedWidgetModule[] =
+	providerDefinitions
+		.filter(
+			(provider): provider is AdvancedWidgetProvider =>
+				"advancedWidget" in provider,
+		)
+		.map((provider) => ({
+			id: provider.id,
+			category: provider.advancedWidget.category,
+			label: provider.label,
+			iconUrl: provider.faviconUrl ?? `/api/provider-icons/${provider.id}.svg`,
+			badges: provider.advancedWidget.badgeProviderIds.map((id) => {
+				const badge = badgeProvider(id);
+				return {
+					id,
+					label: badge?.label ?? id,
+					iconUrl: badge?.faviconUrl ?? `/api/provider-icons/${id}.svg`,
+				};
+			}),
+			details: advancedWidgetDetails[provider.id],
+		}));
+
+export const advancedWidgetCategories = [
 	...new Set(advancedWidgetModules.map(({ category }) => category)),
-];
-const providersById = new Map(
-	providerDefinitions.map((provider) => [provider.id, provider]),
-);
-
-export const advancedWidgetCategories = categories.map((category) => ({
-	name: category,
-	providers: advancedWidgetModules
-		.filter((widget) => widget.category === category)
-		.flatMap((widget) => {
-			const provider = providersById.get(widget.providerId);
-			return provider ? [{ ...provider, details: widget.details }] : [];
-		}),
+].map((name) => ({
+	name,
+	items: advancedWidgetModules.filter((item) => item.category === name),
 }));

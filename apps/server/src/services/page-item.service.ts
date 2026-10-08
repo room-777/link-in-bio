@@ -4,6 +4,7 @@ import {
 	type PageItemResponse,
 	pageItemBatchRequestSchema,
 	pageItemBatchResponseSchema,
+	pageItemLinkDataSchema,
 	pageItemResponseSchema,
 } from "@grabbin/api";
 import {
@@ -27,7 +28,7 @@ import {
 	isOwnedPageLinkImageKey,
 	isOwnedPageMediaKey,
 } from "./media.service";
-import { getOwnedPage } from "./page.service";
+import { getOwnedPage, getPage } from "./page.service";
 
 type PageItemLayouts = PageItemBatchRequest["upserts"][number]["layouts"];
 
@@ -178,6 +179,30 @@ export async function listPageItems({
 		orderBy: (item, { asc }) => [asc(item.createdAt), asc(item.id)],
 	});
 	return items.map((item) => mapPageItemResponse(item, publicBaseUrl));
+}
+
+export async function getPageItemRssUrl({
+	db,
+	handle,
+	itemId,
+}: {
+	db: DatabaseClient;
+	handle: string;
+	itemId: string;
+}) {
+	const page = await getPage(db, handle);
+	if (!page) return undefined;
+
+	const item = await db.query.pageItems.findFirst({
+		where: and(eq(pageItems.id, itemId), eq(pageItems.pageId, page.id)),
+		columns: { type: true, data: true },
+	});
+	if (item?.type !== "link") return undefined;
+
+	const parsed = v.safeParse(pageItemLinkDataSchema, item.data);
+	return parsed.success && parsed.output.metadata?.provider === "rss-feed"
+		? parsed.output.url
+		: undefined;
 }
 
 export async function persistPageItemBatch({

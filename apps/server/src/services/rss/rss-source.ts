@@ -6,6 +6,7 @@ type RssSourceType = RssFeedResponse["source"]["type"];
 
 export type RssSource = {
 	inputUrl: string;
+	pageUrl: string;
 	feedUrl: string;
 	platform: RssPlatform;
 	type: RssSourceType;
@@ -17,20 +18,104 @@ function getPathSegments(url: URL) {
 }
 
 function buildSource(
-	inputUrl: URL,
+	pageUrl: URL,
 	feedPath: string,
 	platform: RssPlatform,
 	type: RssSourceType,
 ): RssSource {
 	return {
-		inputUrl: inputUrl.toString(),
-		feedUrl: new URL(feedPath, inputUrl.origin).toString(),
+		inputUrl: pageUrl.toString(),
+		pageUrl: pageUrl.toString(),
+		feedUrl: new URL(feedPath, pageUrl.origin).toString(),
 		platform,
 		type,
 		iconUrl:
-			resolveLinkProvider(inputUrl).definition?.faviconUrl ??
+			resolveLinkProvider(pageUrl).definition?.faviconUrl ??
 			`/api/provider-icons/${platform}.svg`,
 	};
+}
+
+function resolveFeedUrl(url: URL, segments: string[]) {
+	if (url.hostname === "medium.com" && segments[0] === "feed") {
+		const path = segments[1];
+		if (segments.length !== 2 || !path) return undefined;
+		if (path.startsWith("@"))
+			return buildSource(
+				new URL(`/${path}`, url.origin),
+				url.pathname,
+				"medium",
+				"profile",
+			);
+		if (!/(?:^|-)\w{12,}$/.test(path))
+			return buildSource(
+				new URL(`/${path}`, url.origin),
+				url.pathname,
+				"medium",
+				"publication",
+			);
+	}
+	if (
+		url.hostname.endsWith(".substack.com") &&
+		segments.length === 1 &&
+		segments[0] === "feed"
+	)
+		return buildSource(
+			new URL("/", url.origin),
+			url.pathname,
+			"substack",
+			"publication",
+		);
+	if (url.hostname === "note.com" && segments.at(-1) === "rss") {
+		const pagePath = `/${segments.slice(0, -1).join("/")}`;
+		if (segments.length === 2)
+			return buildSource(
+				new URL(pagePath, url.origin),
+				url.pathname,
+				"note",
+				"profile",
+			);
+		if (
+			segments.length === 4 &&
+			segments[1] === "m" &&
+			segments[2]?.startsWith("m")
+		)
+			return buildSource(
+				new URL(pagePath, url.origin),
+				url.pathname,
+				"note",
+				"magazine",
+			);
+	}
+	if (url.hostname.endsWith(".ghost.io") && segments.at(-1) === "rss") {
+		const pagePath = `/${segments.slice(0, -1).join("/")}`;
+		if (segments.length === 1)
+			return buildSource(
+				new URL(pagePath, url.origin),
+				url.pathname,
+				"ghost",
+				"blog",
+			);
+		if (segments.length === 3 && segments[0] === "author")
+			return buildSource(
+				new URL(pagePath, url.origin),
+				url.pathname,
+				"ghost",
+				"profile",
+			);
+	}
+	if (
+		(url.hostname.endsWith(".hashnode.dev") ||
+			url.hostname.endsWith(".hashnode.com")) &&
+		segments.length === 1 &&
+		segments[0] === "rss.xml"
+	)
+		return buildSource(
+			new URL("/", url.origin),
+			url.pathname,
+			"hashnode",
+			"publication",
+		);
+	return undefined;
 }
 
 function resolveMediumSource(url: URL, segments: string[]) {
@@ -111,11 +196,12 @@ export function resolveRssSource(input: string): RssSource | undefined {
 	url.hash = "";
 	url.search = "";
 	const segments = getPathSegments(url);
-	return (
+	const source =
+		resolveFeedUrl(url, segments) ??
 		resolveMediumSource(url, segments) ??
 		resolveSubstackSource(url, segments) ??
 		resolveNoteSource(url, segments) ??
 		resolveGhostSource(url, segments) ??
-		resolveHashnodeSource(url, segments)
-	);
+		resolveHashnodeSource(url, segments);
+	return source ? { ...source, inputUrl: input } : undefined;
 }

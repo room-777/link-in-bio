@@ -199,6 +199,7 @@ export const pageItemLinkMetadataSchema = v.object({
 	faviconUrl: v.optional(faviconUrlSchema),
 	imageUrl: v.optional(httpsUrlSchema),
 	provider: v.optional(v.string()),
+	rss: v.optional(rssFeedResponseSchema),
 	providerData: v.optional(
 		v.record(
 			v.string(),

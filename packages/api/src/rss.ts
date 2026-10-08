@@ -36,6 +36,7 @@ export const rssFeedItemSchema = v.object({
 export const rssFeedResponseSchema = v.object({
 	source: v.object({
 		inputUrl: rssHttpsUrlSchema,
+		pageUrl: rssHttpsUrlSchema,
 		feedUrl: rssHttpsUrlSchema,
 		platform: rssPlatformSchema,
 		type: rssSourceTypeSchema,

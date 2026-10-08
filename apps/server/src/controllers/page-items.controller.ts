@@ -23,6 +23,7 @@ import { Hono } from "hono";
 import * as v from "valibot";
 import { jsonApiError } from "../api-error";
 import { PageItemServiceError } from "../exceptions/page-item.exception";
+import { optionalSession } from "../middlewares/session.middleware";
 import type { LinkProviderEnvironment } from "../services/link-providers";
 import {
 	cancelItemMediaUpload,
@@ -30,6 +31,7 @@ import {
 	createItemMediaUpload,
 } from "../services/media.service";
 import { getOwnedPage } from "../services/page.service";
+import { getPageItemRssUrl } from "../services/page-item.service";
 import { RssServiceError } from "../services/rss/rss.service";
 import type { AppEnv } from "../types";
 
@@ -125,6 +127,28 @@ async function pageWriteError(
 	}
 }
 
+async function rssFeedResponse(
+	c: Context<AppEnv>,
+	fetchRss: NonNullable<PageItemsControllerOptions["fetchRss"]>,
+	url: string,
+) {
+	try {
+		return c.json({
+			rss: await fetchRss({
+				url,
+				fetch: (input, init) => fetch(input, init),
+			}),
+		});
+	} catch (error) {
+		if (!(error instanceof RssServiceError)) throw error;
+		return jsonApiError(c, {
+			status: error.code === "UNSUPPORTED_RSS_URL" ? 422 : 502,
+			code: error.code,
+			detail: pageItemErrorDetails[error.code],
+		});
+	}
+}
+
 export type PageItemsControllerOptions = {
 	sessionMiddleware: MiddlewareHandler<AppEnv>;
 	persist: PersistPageItemBatch;
@@ -144,6 +168,16 @@ export function createPageItemsController({
 	},
 }: PageItemsControllerOptions) {
 	return new Hono<AppEnv>()
+		.get("/:handle/items/:itemId/rss", optionalSession, async (c) => {
+			const url = await getPageItemRssUrl({
+				db: c.var.db,
+				handle: c.req.param("handle"),
+				itemId: c.req.param("itemId"),
+			});
+			if (!url) return jsonApiError(c, { status: 404, code: "NOT_FOUND" });
+
+			return rssFeedResponse(c, fetchRss, url);
+		})
 		.post("/:handle/metadata", sessionMiddleware, async (c) => {
 			const session = c.var.session;
 			if (!session) {
@@ -172,23 +206,7 @@ export function createPageItemsController({
 				return jsonApiError(c, { status: 404, detail: "Page not found." });
 
 			if ("kind" in parsed.output && parsed.output.kind === "rss") {
-				try {
-					return c.json({
-						rss: await fetchRss({
-							url: parsed.output.url,
-							fetch: (input, init) => fetch(input, init),
-						}),
-					});
-				} catch (error) {
-					if (error instanceof RssServiceError) {
-						return jsonApiError(c, {
-							status: error.code === "UNSUPPORTED_RSS_URL" ? 422 : 502,
-							code: error.code,
-							detail: pageItemErrorDetails[error.code],
-						});
-					}
-					throw error;
-				}
+				return rssFeedResponse(c, fetchRss, parsed.output.url);
 			}
 
 			if (!("itemId" in parsed.output)) {
