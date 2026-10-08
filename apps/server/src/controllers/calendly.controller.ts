@@ -1,8 +1,15 @@
+import { pageItemCalendlyDataSchema } from "@grabbin/api";
+import { and, eq } from "@grabbin/db/drizzle";
+import { pageItems } from "@grabbin/db/schema/index";
 import { env } from "@grabbin/env/server";
 import { Hono } from "hono";
 import { deleteCookie, getCookie, setCookie } from "hono/cookie";
+import * as v from "valibot";
 import { jsonApiError } from "../api-error";
-import { requiredSession } from "../middlewares/session.middleware";
+import {
+	optionalSession,
+	requiredSession,
+} from "../middlewares/session.middleware";
 import {
 	canConnectCalendly,
 	createCalendlyAuthorizationUrl,
@@ -12,6 +19,7 @@ import {
 	listCalendlyEventTypeAvailability,
 	listCalendlyEventTypes,
 } from "../services/calendly.service";
+import { getPage } from "../services/page.service";
 import type { AppEnv } from "../types";
 
 const oauthCookie = "calendly_oauth";
@@ -106,12 +114,20 @@ function returnUrl(
 
 export function createCalendlyController({
 	sessionMiddleware = requiredSession,
+	publicSessionMiddleware = optionalSession,
 	exchangeCode = exchangeCalendlyCode,
 	canConnect = canConnectCalendly,
+	getPublicPage = getPage,
+	listEvents = listCalendlyEventTypes,
+	listAvailability = listCalendlyEventTypeAvailability,
 }: {
 	sessionMiddleware?: typeof requiredSession;
+	publicSessionMiddleware?: typeof optionalSession;
 	exchangeCode?: typeof exchangeCalendlyCode;
 	canConnect?: typeof canConnectCalendly;
+	getPublicPage?: typeof getPage;
+	listEvents?: typeof listCalendlyEventTypes;
+	listAvailability?: typeof listCalendlyEventTypeAvailability;
 } = {}) {
 	const webOrigin = env.CORS_ORIGIN.split(",")[0]?.trim() ?? "";
 	return new Hono<AppEnv>()
@@ -374,6 +390,75 @@ export function createCalendlyController({
 				});
 			}
 		})
+		.get(
+			"/pages/:handle/items/:itemId/calendly",
+			publicSessionMiddleware,
+			async (c) => {
+				const startValue = c.req.query("start_time") ?? "";
+				const endValue = c.req.query("end_time") ?? "";
+				const dateTimePattern =
+					/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(?:\.\d{1,3})?Z$/;
+				const startTime = new Date(startValue);
+				const endTime = new Date(endValue);
+				if (
+					!dateTimePattern.test(startValue) ||
+					!dateTimePattern.test(endValue) ||
+					!Number.isFinite(startTime.getTime()) ||
+					!Number.isFinite(endTime.getTime()) ||
+					startTime.getTime() < Date.now() ||
+					endTime.getTime() <= startTime.getTime() ||
+					endTime.getTime() - startTime.getTime() > 31 * 24 * 60 * 60 * 1000
+				)
+					return jsonApiError(c, {
+						status: 400,
+						code: "CALENDLY_AVAILABILITY_RANGE_INVALID",
+						detail: "Choose a future date range of 31 days or less.",
+					});
+
+				const page = await getPublicPage(c.var.db, c.req.param("handle"));
+				if (!page) return jsonApiError(c, { status: 404, code: "NOT_FOUND" });
+				const item = await c.var.db.query.pageItems.findFirst({
+					where: and(
+						eq(pageItems.id, c.req.param("itemId")),
+						eq(pageItems.pageId, page.id),
+					),
+					columns: { type: true, data: true },
+				});
+				const parsedItem =
+					item?.type === "calendly"
+						? v.safeParse(pageItemCalendlyDataSchema, item.data)
+						: null;
+				if (!parsedItem?.success)
+					return jsonApiError(c, { status: 404, code: "NOT_FOUND" });
+
+				try {
+					const input = {
+						db: c.var.db,
+						userId: page.userId,
+						credentials: credentials(c),
+					};
+					const events = await listEvents(input);
+					const event = events?.find(
+						(candidate) => candidate.uri === parsedItem.output.eventTypeUri,
+					);
+					if (!event?.active)
+						return c.json({ event: event ?? null, times: [] });
+					const times = await listAvailability({
+						...input,
+						eventTypeUri: event.uri,
+						startTime,
+						endTime,
+					});
+					return c.json({ event, times: times ?? [] });
+				} catch {
+					return jsonApiError(c, {
+						status: 502,
+						code: "CALENDLY_REQUEST_FAILED",
+						detail: "Could not load Calendly availability.",
+					});
+				}
+			},
+		)
 		.post("/auth/calendly/disconnect", sessionMiddleware, async (c) => {
 			try {
 				await disconnectCalendly({
