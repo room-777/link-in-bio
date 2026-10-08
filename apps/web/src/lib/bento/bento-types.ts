@@ -1,4 +1,5 @@
 import type {
+	CalendlyEventType,
 	ItemType,
 	PageItemResponse,
 	PageItemStyle,
@@ -15,7 +16,8 @@ export type BentoItem = PageItemResponse & {
 };
 
 export type BentoCommand =
-	| { type: "add-item"; itemType: ItemType; url?: string }
+	| { type: "add-item"; itemType: Exclude<ItemType, "calendly">; url?: string }
+	| { type: "add-calendly-item"; event: CalendlyEventType }
 	| {
 			type: "replace-layout";
 			breakpoint: BentoBreakpoint;

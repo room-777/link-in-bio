@@ -1,5 +1,6 @@
 "use client";
 
+import type { CalendlyEventType } from "@grabbin/api";
 import type { LinkProviderId } from "@grabbin/page-link";
 import { providerDefinitions } from "@grabbin/page-link";
 import { Button } from "@grabbin/ui/components/button";
@@ -28,7 +29,11 @@ import { Activity, useLayoutEffect, useRef, useState } from "react";
 import AdvancedWidgetActivity from "./advanced-widget-activity";
 import AdvancedWidgetList from "./advanced-widget-list";
 
-export default function AdvancedWidgetsDialog() {
+export default function AdvancedWidgetsDialog({
+	onCalendlyAdd,
+}: {
+	onCalendlyAdd: (event: CalendlyEventType) => void;
+}) {
 	const isMobile = useIsMobile();
 	const reduceMotion = useReducedMotion() ?? false;
 	const [open, setOpen] = useState(false);
@@ -197,7 +202,13 @@ export default function AdvancedWidgetsDialog() {
 					</header>
 					{providerId && (
 						<div className="min-h-0 flex-1">
-							<AdvancedWidgetActivity providerId={providerId} />
+							<AdvancedWidgetActivity
+								providerId={providerId}
+								onCalendlyAdd={(event) => {
+									onCalendlyAdd(event);
+									handleOpenChange(false);
+								}}
+							/>
 						</div>
 					)}
 				</section>

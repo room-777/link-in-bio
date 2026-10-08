@@ -39,6 +39,7 @@ export default function OwnerPage({
 		() => ({
 			onItemAdd: (itemType, url) =>
 				widgetActionsRef.current?.onItemAdd(itemType, url),
+			onCalendlyAdd: (event) => widgetActionsRef.current?.onCalendlyAdd(event),
 			onMediaSelect: (file) => widgetActionsRef.current?.onMediaSelect(file),
 		}),
 		[],

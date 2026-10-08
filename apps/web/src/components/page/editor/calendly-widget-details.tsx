@@ -69,7 +69,11 @@ function CalendlyEventContent({
 	);
 }
 
-export default function CalendlyWidgetDetails() {
+export default function CalendlyWidgetDetails({
+	onAdd,
+}: {
+	onAdd: (event: import("@grabbin/api").CalendlyEventType) => void;
+}) {
 	const { data: session } = authClient.useSession();
 	const [selectedEventUri, setSelectedEventUri] = useState<string | null>(null);
 	const [timeZone, setTimeZone] = useState<string | null>(null);
@@ -217,6 +221,7 @@ export default function CalendlyWidgetDetails() {
 					size={"xl"}
 					disabled={!selectedEvent}
 					className={"px-5 text-base"}
+					onClick={() => selectedEvent && onAdd(selectedEvent)}
 				>
 					Add
 				</Button>

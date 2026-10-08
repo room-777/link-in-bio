@@ -1,6 +1,6 @@
 "use client";
 
-import type { ItemType } from "@grabbin/api";
+import type { CalendlyEventType, ItemType } from "@grabbin/api";
 import { Button } from "@grabbin/ui/components/button";
 import {
 	InputGroup,
@@ -18,12 +18,14 @@ import { normalizeHttpsUrl } from "@/lib/normalize-https-url";
 import AdvancedWidgetsDialog from "./advanced-widgets-dialog";
 
 export type AddWidgetButtonProps = {
-	onItemAdd: (itemType: ItemType, url?: string) => void;
+	onItemAdd: (itemType: Exclude<ItemType, "calendly">, url?: string) => void;
+	onCalendlyAdd: (event: CalendlyEventType) => void;
 	onMediaSelect: (file: File) => void;
 };
 
 export default function AddWidgetButton({
 	onItemAdd,
+	onCalendlyAdd,
 	onMediaSelect,
 }: AddWidgetButtonProps) {
 	const fileInputRef = useRef<HTMLInputElement>(null);
@@ -121,7 +123,7 @@ export default function AddWidgetButton({
 					</form>
 				</PopoverContent>
 			</Popover>
-			<AdvancedWidgetsDialog />
+			<AdvancedWidgetsDialog onCalendlyAdd={onCalendlyAdd} />
 		</div>
 	);
 }

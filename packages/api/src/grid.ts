@@ -6,6 +6,7 @@ export const itemTypeSchema = v.union([
 	v.literal("map"),
 	v.literal("section"),
 	v.literal("link"),
+	v.literal("calendly"),
 ]);
 
 export type ItemType = v.InferOutput<typeof itemTypeSchema>;
@@ -172,6 +173,25 @@ export const pageItemSectionDataSchema = v.object({
 	title: v.pipe(v.string(), v.trim()),
 });
 
+export const pageItemCalendlyDataSchema = v.object({
+	eventTypeUri: v.pipe(
+		v.string(),
+		v.regex(/^https:\/\/api\.calendly\.com\/event_types\/[A-Za-z0-9_-]+$/),
+	),
+	schedulingUrl: v.pipe(
+		v.string(),
+		v.url(),
+		v.check((value) => {
+			try {
+				const url = new URL(value);
+				return url.protocol === "https:" && url.hostname === "calendly.com";
+			} catch {
+				return false;
+			}
+		}, "Valid Calendly scheduling URL required."),
+	),
+});
+
 export const pageItemLinkMetadataSchema = v.object({
 	title: v.optional(v.string()),
 	description: v.optional(v.string()),
@@ -258,6 +278,7 @@ export const pageItemDataSchemas = {
 	map: pageItemMapDataSchema,
 	section: pageItemSectionDataSchema,
 	link: pageItemLinkDataSchema,
+	calendly: pageItemCalendlyDataSchema,
 } as const;
 
 const pageItemResponseBaseSchema = v.object({
@@ -276,6 +297,10 @@ const pageItemResponseVariantSchema = v.variant("type", [
 	v.object({
 		type: v.literal("link"),
 		data: pageItemLinkResponseDataSchema,
+	}),
+	v.object({
+		type: v.literal("calendly"),
+		data: pageItemCalendlyDataSchema,
 	}),
 ]);
 
@@ -301,6 +326,7 @@ export const pageItemUpsertSchema = v.intersect([
 		v.object({ type: v.literal("map"), data: pageItemMapDataSchema }),
 		v.object({ type: v.literal("section"), data: pageItemSectionDataSchema }),
 		v.object({ type: v.literal("link"), data: pageItemLinkDataSchema }),
+		v.object({ type: v.literal("calendly"), data: pageItemCalendlyDataSchema }),
 	]),
 ]);
 

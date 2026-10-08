@@ -48,7 +48,7 @@ export default function BentoEditor({
 	}, [onGridSavingChange, store.status]);
 
 	const addItem = useCallback(
-		(itemType: ItemType, url?: string) => {
+		(itemType: Exclude<ItemType, "calendly">, url?: string) => {
 			if (itemType === "link") {
 				try {
 					if (new URL(url?.trim() ?? "").protocol !== "https:") {
@@ -69,6 +69,12 @@ export default function BentoEditor({
 			}
 		},
 		[store.dispatchCommand, store.refreshLinkMetadata],
+	);
+	const addCalendlyItem = useCallback(
+		(event: import("@grabbin/api").CalendlyEventType) => {
+			store.dispatchCommand({ type: "add-calendly-item", event });
+		},
+		[store.dispatchCommand],
 	);
 	const editorClassName =
 		breakpoint === "compact"
@@ -94,8 +100,12 @@ export default function BentoEditor({
 		[store.addMediaUpload],
 	);
 	useEffect(() => {
-		onWidgetActionsChange?.({ onItemAdd: addItem, onMediaSelect: selectMedia });
-	}, [addItem, onWidgetActionsChange, selectMedia]);
+		onWidgetActionsChange?.({
+			onItemAdd: addItem,
+			onCalendlyAdd: addCalendlyItem,
+			onMediaSelect: selectMedia,
+		});
+	}, [addCalendlyItem, addItem, onWidgetActionsChange, selectMedia]);
 	const selectLinkImage = async (itemId: string, file: File) => {
 		if (!/^image\//i.test(file.type)) {
 			toast({ message: "Choose an image file.", state: "error" });
@@ -114,6 +124,7 @@ export default function BentoEditor({
 	return (
 		<section className={`bento-editor ${editorClassName}`}>
 			<BentoSection
+				handle={handle}
 				items={store.items}
 				mode="edit"
 				breakpoint={breakpoint}

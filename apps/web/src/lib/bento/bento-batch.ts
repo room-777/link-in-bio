@@ -66,6 +66,8 @@ export function toBatchItem(item: BentoItem): BentoBatchItem {
 				},
 			};
 		}
+		case "calendly":
+			return { ...base, type: item.type, data: item.data };
 	}
 }
 

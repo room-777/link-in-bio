@@ -1,10 +1,13 @@
+import type { CalendlyEventType } from "@grabbin/api";
 import { type LinkProviderId, providerDefinitions } from "@grabbin/page-link";
 import { advancedWidgetModules } from "@/constant/widget/advanced-widget-registry";
 
 export default function AdvancedWidgetActivity({
 	providerId,
+	onCalendlyAdd,
 }: {
 	providerId: LinkProviderId;
+	onCalendlyAdd: (event: CalendlyEventType) => void;
 }) {
 	const provider = providerDefinitions.find(({ id }) => id === providerId);
 	if (!provider) return null;
@@ -15,7 +18,7 @@ export default function AdvancedWidgetActivity({
 	if (Details) {
 		return (
 			<div className="h-full min-h-0">
-				<Details />
+				<Details onAdd={onCalendlyAdd} />
 			</div>
 		);
 	}

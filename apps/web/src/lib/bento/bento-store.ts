@@ -251,9 +251,13 @@ export function useBentoStore({
 				deletedIdsRef.current.add(command.itemId);
 			}
 
-			if (command.type === "add-item" && result.addedItem) {
+			if (
+				(command.type === "add-item" || command.type === "add-calendly-item") &&
+				result.addedItem
+			) {
 				setAutoFocusItemId(
-					command.itemType === "text" || command.itemType === "section"
+					command.type === "add-item" &&
+						(command.itemType === "text" || command.itemType === "section")
 						? result.addedItem.id
 						: null,
 				);

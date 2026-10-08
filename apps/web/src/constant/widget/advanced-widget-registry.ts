@@ -1,3 +1,4 @@
+import type { CalendlyEventType } from "@grabbin/api";
 import type { LinkProviderId } from "@grabbin/page-link";
 import { providerDefinitions } from "@grabbin/page-link";
 import type { ComponentType } from "react";
@@ -9,7 +10,7 @@ type WidgetCategory = (typeof widgetCategoryNames)[number];
 export type AdvancedWidgetModule = {
 	providerId: Exclude<LinkProviderId, "generic-web">;
 	category: WidgetCategory;
-	details?: ComponentType;
+	details?: ComponentType<{ onAdd: (event: CalendlyEventType) => void }>;
 };
 
 export const advancedWidgetModules = [

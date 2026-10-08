@@ -25,6 +25,14 @@ export function reduceBentoItems(
 		});
 		return { items: [...items, addedItem], addedItem };
 	}
+	if (command.type === "add-calendly-item") {
+		const addedItem = createBentoItem({
+			items,
+			itemType: "calendly",
+			calendlyEvent: command.event,
+		});
+		return { items: [...items, addedItem], addedItem };
+	}
 
 	if (command.type === "replace-layout") {
 		if (!validateBentoLayout(command.layout, getColumns(command.breakpoint))) {

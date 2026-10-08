@@ -7,6 +7,7 @@ import type { ReactNode } from "react";
 
 import type { BentoCommand, BentoItem } from "@/lib/bento/bento-types";
 import { LinkItem } from "./bento-link";
+import { CalendlyItem } from "./items/calendly-item";
 import { MediaItem } from "./items/media-item";
 import { SectionItem } from "./items/section-item";
 import { TextItem } from "./items/text-item";
@@ -17,6 +18,7 @@ const LazyMapItem = dynamic(
 );
 
 type ItemRendererOptions = {
+	handle?: string;
 	mode: "view" | "edit";
 	autoFocus: boolean;
 	isAnyItemDragging: boolean;
@@ -83,12 +85,22 @@ function renderLink({ item, preset, options }: Parameters<ItemRenderer>[0]) {
 	);
 }
 
+function renderCalendly({
+	item,
+	preset,
+	options,
+}: Parameters<ItemRenderer>[0]) {
+	if (item.type !== "calendly") return null;
+	return <CalendlyItem item={item} preset={preset} handle={options.handle} />;
+}
+
 const itemRendererRegistry: Record<BentoItem["type"], ItemRenderer> = {
 	text: renderText,
 	section: renderSection,
 	link: renderLink,
 	media: renderMedia,
 	map: renderMap,
+	calendly: renderCalendly,
 };
 
 export function RuntimeFallback({ item }: { item: PageItemResponse }) {

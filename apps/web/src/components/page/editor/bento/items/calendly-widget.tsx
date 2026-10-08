@@ -13,6 +13,7 @@ export type AvailabilityView = "slots" | "calendar";
 export type CalendlyAvailability = {
 	loading: boolean;
 	error: boolean;
+	errorMessage?: string;
 	times: CalendlyAvailabilityTime[];
 	displayTimeZone?: string;
 	bookingUrl: string;
@@ -113,21 +114,21 @@ function CalendlyMonthCalendar({
 			const date = new Date(time.startTime);
 			if (!Number.isFinite(date.getTime())) return [];
 			date.setHours(0, 0, 0, 0);
-			return date >= availability.timespanStart &&
-				date <= availability.timespanEnd
-				? [localDateKey(date)]
-				: [];
+			return [localDateKey(date)];
 		}),
 	);
 	return (
-		<div className="flex min-h-0 w-full flex-1 flex-col gap-2">
+		<div
+			data-bento-item-drag-cancel="true"
+			className="flex min-h-0 w-full flex-1 cursor-auto! flex-col gap-2"
+		>
 			<div className="flex shrink-0 items-center justify-between gap-2">
 				<button
 					type="button"
 					aria-label="Previous month"
 					disabled={!availability.canGoToPreviousMonth}
 					onClick={() => availability.onChangeMonth(-1)}
-					className="flex size-7 shrink-0 items-center justify-center rounded-md text-primary hover:bg-neutral-100 disabled:cursor-not-allowed disabled:text-muted-foreground disabled:opacity-40"
+					className="flex size-7 shrink-0 cursor-pointer! items-center justify-center rounded-md text-primary hover:bg-neutral-100 disabled:cursor-not-allowed disabled:text-muted-foreground disabled:opacity-40"
 				>
 					<ChevronLeft aria-hidden="true" className="size-4" />
 				</button>
@@ -139,7 +140,7 @@ function CalendlyMonthCalendar({
 					aria-label="Next month"
 					disabled={!availability.canGoToNextMonth}
 					onClick={() => availability.onChangeMonth(1)}
-					className="flex size-7 shrink-0 items-center justify-center rounded-md text-primary hover:bg-neutral-100 disabled:cursor-not-allowed disabled:text-muted-foreground disabled:opacity-40"
+					className="flex size-7 shrink-0 cursor-pointer! items-center justify-center rounded-md text-primary hover:bg-neutral-100 disabled:cursor-not-allowed disabled:text-muted-foreground disabled:opacity-40"
 				>
 					<ChevronRight aria-hidden="true" className="size-4" />
 				</button>
@@ -189,7 +190,7 @@ function CalendlyMonthCalendar({
 							target="_blank"
 							rel="noreferrer"
 							aria-label={`${selectedDateFormatter.format(date)}, book on Calendly`}
-							className="flex aspect-square items-center justify-center rounded-full font-medium text-xs focus-visible:outline-2 focus-visible:outline-[#006bff] focus-visible:outline-offset-2"
+							className="flex aspect-square cursor-pointer! items-center justify-center rounded-full font-medium text-xs focus-visible:outline-2 focus-visible:outline-[#006bff] focus-visible:outline-offset-2"
 						>
 							{dayContent}
 						</a>
@@ -243,14 +244,17 @@ function CalendlyAvailabilityPicker({
 	});
 
 	return (
-		<div className="flex h-full min-h-0 w-full flex-1 flex-col gap-2">
+		<div
+			data-bento-item-drag-cancel="true"
+			className="flex h-full min-h-0 w-full flex-1 cursor-auto! flex-col gap-2"
+		>
 			<div className="flex shrink-0 items-center justify-between gap-2">
 				<button
 					type="button"
 					aria-label="Previous day"
 					disabled={!availability.canGoToPreviousDay}
 					onClick={() => availability.onChangeDay(-1)}
-					className="flex size-7 shrink-0 items-center justify-center rounded-md text-primary hover:bg-neutral-100 disabled:cursor-not-allowed disabled:text-muted-foreground disabled:opacity-40"
+					className="flex size-7 shrink-0 cursor-pointer! items-center justify-center rounded-md text-primary hover:bg-neutral-100 disabled:cursor-not-allowed disabled:text-muted-foreground disabled:opacity-40"
 				>
 					<ChevronLeft aria-hidden="true" className="size-4" />
 				</button>
@@ -262,7 +266,7 @@ function CalendlyAvailabilityPicker({
 					aria-label="Next day"
 					disabled={!availability.canGoToNextDay}
 					onClick={() => availability.onChangeDay(1)}
-					className="flex size-7 shrink-0 items-center justify-center rounded-md text-primary hover:bg-neutral-100 disabled:cursor-not-allowed disabled:text-muted-foreground disabled:opacity-40"
+					className="flex size-7 shrink-0 cursor-pointer! items-center justify-center rounded-md text-primary hover:bg-neutral-100 disabled:cursor-not-allowed disabled:text-muted-foreground disabled:opacity-40"
 				>
 					<ChevronRight aria-hidden="true" className="size-4" />
 				</button>
@@ -290,7 +294,7 @@ function CalendlyAvailabilityPicker({
 								href={slot.schedulingUrl}
 								target="_blank"
 								rel="noreferrer"
-								className="flex h-8 min-w-0 items-center justify-center rounded-md border border-border/80 px-1.5 py-1.5 text-center font-medium text-neutral-800 text-xs hover:border-[#006bff] hover:bg-[#006bff]/5 focus-visible:border-[#006bff] focus-visible:bg-[#006bff]/5 focus-visible:outline-2 focus-visible:outline-[#006bff] focus-visible:outline-offset-2"
+								className="smooth-shadow-xs flex h-8 min-w-0 cursor-pointer! items-center justify-center rounded-md border border-border/80 px-1.5 py-1.5 text-center font-medium text-neutral-800 text-xs hover:border-[#006bff] hover:bg-[#006bff]/5 focus-visible:border-[#006bff] focus-visible:bg-[#006bff]/5 focus-visible:outline-2 focus-visible:outline-[#006bff] focus-visible:outline-offset-2"
 							>
 								{timeFormatter.format(new Date(slot.startTime))}
 							</a>
@@ -333,7 +337,14 @@ function CalendlyPresetPreview({
 		preset === "squareLarge";
 	const bookButton = (
 		<Button
-			render={<a href={event.schedulingUrl} target="_blank" rel="noreferrer" />}
+			render={
+				<a
+					className="cursor-pointer!"
+					href={event.schedulingUrl}
+					target="_blank"
+					rel="noreferrer"
+				/>
+			}
 			variant="outline"
 			size={fullWidthButton ? "xl" : "sm"}
 			className={`rounded-md font-medium ${fullWidthButton ? "h-10 w-full" : "h-8"}`}
@@ -363,13 +374,13 @@ function CalendlyPresetPreview({
 			style={{
 				borderRadius: getBentoItemRadius("link", preset),
 			}}
-			className={`smooth-shadow-xs flex size-full min-h-0 gap-3 overflow-hidden border border-black/8 bg-white p-5 ${cardLayoutClass}`}
+			className={`flex size-full min-h-0 gap-3 overflow-hidden bg-white p-5 ${cardLayoutClass}`}
 		>
 			<div className={`flex min-w-0 gap-2 ${infoLayoutClass}`}>
 				<div
 					className={`flex min-w-0 flex-row items-stretch gap-2 ${preset === "landscape" ? "" : "flex-1"}`}
 				>
-					<div className="smooth-shadow-xs flex size-9.5 shrink-0 items-center justify-center rounded-md border border-border bg-white">
+					<div className="smooth-shadow-xs flex size-9.5 shrink-0 items-center justify-center rounded-lg border border-border bg-white">
 						<img
 							src="/api/provider-icons/calendly.svg?v=3"
 							alt=""
@@ -404,8 +415,10 @@ function CalendlyPresetPreview({
 						role="alert"
 						className={`text-center font-medium text-muted-foreground/50 text-sm ${preset === "portrait" ? "flex min-h-0 flex-1 flex-col items-center justify-center" : ""}`}
 					>
-						<span className="block">Something's wrong.</span>
-						<span className="block">Please book on Calendly.</span>
+						<span className="block">
+							{availability.errorMessage ?? "Could not load availability."}
+						</span>
+						<span className="block">Book directly on Calendly.</span>
 					</p>
 				) : showAvailability ? (
 					<CalendlyAvailabilityPicker

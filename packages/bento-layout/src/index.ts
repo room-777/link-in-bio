@@ -63,6 +63,13 @@ const allowedPresets: Record<ItemType, readonly PresetName[]> = {
 	media: ["squareSmall", "landscape", "portrait", "squareLarge"],
 	map: ["squareSmall", "landscape", "portrait", "squareLarge"],
 	link: ["squareSmall", "halfBanner", "landscape", "portrait", "squareLarge"],
+	calendly: [
+		"squareSmall",
+		"halfBanner",
+		"landscape",
+		"portrait",
+		"squareLarge",
+	],
 	text: ["squareSmall", "halfBanner", "landscape", "portrait", "squareLarge"],
 };
 

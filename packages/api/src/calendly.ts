@@ -31,3 +31,8 @@ export type CalendlyAvailabilityTime = v.InferOutput<
 export const calendlyAvailabilityResponseSchema = v.object({
 	times: v.array(calendlyAvailabilityTimeSchema),
 });
+
+export const calendlyWidgetResponseSchema = v.object({
+	event: v.nullable(calendlyEventTypeSchema),
+	times: v.array(calendlyAvailabilityTimeSchema),
+});

@@ -1,4 +1,8 @@
-import { createInitialLinkMetadata, type ItemType } from "@grabbin/api";
+import {
+	type CalendlyEventType,
+	createInitialLinkMetadata,
+	type ItemType,
+} from "@grabbin/api";
 import {
 	type BentoBreakpoint,
 	getColumns,
@@ -45,11 +49,13 @@ export function createBentoItem({
 	itemType,
 	url,
 	media,
+	calendlyEvent,
 }: {
 	items: readonly BentoItem[];
 	itemType: ItemType;
 	url?: string;
 	media?: { mimeType: string; previewUrl: string };
+	calendlyEvent?: CalendlyEventType;
 }): BentoItem {
 	const id = createBentoItemId();
 	const preset = getDefaultPreset(itemType);
@@ -92,6 +98,17 @@ export function createBentoItem({
 				data: {
 					url: linkUrl,
 					metadata: createInitialLinkMetadata(linkUrl),
+				},
+			};
+		}
+		case "calendly": {
+			if (!calendlyEvent) throw new Error("Calendly event required.");
+			return {
+				...base,
+				type: itemType,
+				data: {
+					eventTypeUri: calendlyEvent.uri,
+					schedulingUrl: calendlyEvent.schedulingUrl,
 				},
 			};
 		}

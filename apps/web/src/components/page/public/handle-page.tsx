@@ -130,7 +130,10 @@ export default function HandlePage({
 				</div>
 				<section className="bento-content-scroll-shell no-scrollbar order-2 page-wide:order-none page-wide:h-full min-h-[calc(100dvh-3rem)] page-wide:min-h-[calc(100dvh-4rem)] page-wide:w-4xl w-full max-w-md page-wide:max-w-none page-wide:shrink-0 overflow-visible page-wide:px-0 px-6 page-wide:pt-16 pt-0 page-wide:pb-24">
 					<div className="flex flex-col gap-4">
-						<BentoSection items={pageResponse.items.map(toBentoItem)} />
+						<BentoSection
+							handle={pageResponse.page.handle}
+							items={pageResponse.items.map(toBentoItem)}
+						/>
 					</div>
 				</section>
 			</div>

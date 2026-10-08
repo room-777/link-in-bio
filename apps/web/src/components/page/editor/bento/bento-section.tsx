@@ -39,6 +39,7 @@ import type {
 import { BentoItemShell } from "./bento-item-shell";
 
 type BentoSectionProps = {
+	handle?: string;
 	items: readonly BentoItemData[];
 	entryAnimationRevision?: number;
 	entryReady?: boolean;
@@ -56,6 +57,7 @@ const WIDE_CONTAINER_MIN_WIDTH = getBentoWidth("wide");
 const BENTO_ITEM_EXIT_DURATION = 180;
 
 export default function BentoSection({
+	handle,
 	items,
 	entryAnimationRevision = 0,
 	entryReady = true,
@@ -368,6 +370,7 @@ export default function BentoSection({
 						const itemShell = (
 							<BentoItemShell
 								item={item}
+								handle={handle}
 								breakpoint={breakpoint}
 								mode={mode}
 								autoFocus={item.id === autoFocusItemId}
