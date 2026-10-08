@@ -96,7 +96,7 @@ export function CalendlyItem({
 			event={event}
 			timeZone={timeZone ? { name: timeZone, label: timeZone } : null}
 			availability={{
-				loading: query.isPending,
+				loading: query.isLoading,
 				error: query.isError || query.data?.event === null,
 				errorMessage: "Could not load availability.",
 				times: query.data?.times ?? [],

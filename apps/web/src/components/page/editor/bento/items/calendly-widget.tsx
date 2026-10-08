@@ -389,22 +389,30 @@ function CalendlyPresetPreview({
 						/>
 					</div>
 					<div className="flex min-w-0 flex-1 flex-col gap-0.5">
-						<h3 className="truncate font-medium text-neutral-900 text-sm">
-							{event.name}
-						</h3>
-						<div className="flex min-w-0 items-center gap-0.5 text-neutral-500 text-xs">
-							<p className="shrink-0 whitespace-nowrap">
-								{formatSessionDuration(event.duration)}
-							</p>
-							{timeZone ? (
-								<>
-									<span aria-hidden="true">·</span>
-									<span className="truncate" title={timeZone.name}>
-										{timeZone.label}
-									</span>
-								</>
-							) : null}
-						</div>
+						{availability.loading ? (
+							<Skeleton aria-hidden="true" className="h-4 w-3/4 rounded-sm" />
+						) : (
+							<h3 className="truncate font-medium text-neutral-900 text-sm">
+								{event.name}
+							</h3>
+						)}
+						{availability.loading ? (
+							<Skeleton aria-hidden="true" className="h-3 w-1/2 rounded-sm" />
+						) : (
+							<div className="flex min-w-0 items-center gap-0.5 text-neutral-500 text-xs">
+								<p className="shrink-0 whitespace-nowrap">
+									{formatSessionDuration(event.duration)}
+								</p>
+								{timeZone ? (
+									<>
+										<span aria-hidden="true">·</span>
+										<span className="truncate" title={timeZone.name}>
+											{timeZone.label}
+										</span>
+									</>
+								) : null}
+							</div>
+						)}
 					</div>
 				</div>
 				{preset === "landscape" ? bookButton : null}
