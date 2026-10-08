@@ -20,6 +20,7 @@ import {
 	getPageImagePlaceholderUrl,
 	getPageMediaUrl,
 } from "@/lib/page-media-url";
+import { LinkAuthorByline } from "./items/link-author-byline";
 
 function LinkAction({
 	href,
@@ -595,6 +596,24 @@ export function LinkItem({
 }) {
 	const metadata = item.data.metadata;
 	const presentation = metadata?.presentation;
+	const authorData =
+		metadata?.provider === "behance" ? metadata.providerData : undefined;
+	const authorName =
+		typeof authorData?.authorName === "string"
+			? authorData.authorName
+			: undefined;
+	const authorProfileImageUrl =
+		typeof authorData?.authorProfileImageUrl === "string"
+			? authorData.authorProfileImageUrl
+			: undefined;
+	const renderAuthor = (showName: boolean) =>
+		authorName ? (
+			<LinkAuthorByline
+				name={authorName}
+				imageUrl={authorProfileImageUrl}
+				showName={showName}
+			/>
+		) : null;
 	const title = metadata?.title?.trim() || item.data.url;
 	const linkCardClassName = presentation?.cardBackground
 		? "link-card-themed"
@@ -688,7 +707,18 @@ export function LinkItem({
 					onCommit={updateTitle}
 				/>
 			</div>
-			{shouldShowLinkAction ? (
+			{authorName ? (
+				<div className="flex w-full min-w-0 flex-row items-center justify-between gap-2">
+					{shouldShowLinkAction ? (
+						<LinkAction
+							href={item.data.url}
+							{...linkActionProps}
+							className="self-center"
+						/>
+					) : null}
+					{renderAuthor(preset === "squareLarge")}
+				</div>
+			) : shouldShowLinkAction ? (
 				<LinkAction href={item.data.url} {...linkActionProps} />
 			) : null}
 		</div>
@@ -712,7 +742,18 @@ export function LinkItem({
 							/>
 						</div>
 					</div>
-					{shouldShowLinkAction ? (
+					{authorName ? (
+						<div className="flex w-full flex-row items-center justify-between gap-2">
+							{shouldShowLinkAction ? (
+								<LinkAction
+									href={item.data.url}
+									{...linkActionProps}
+									className="self-center"
+								/>
+							) : null}
+							{renderAuthor(false)}
+						</div>
+					) : shouldShowLinkAction ? (
 						<LinkAction href={item.data.url} {...linkActionProps} />
 					) : null}
 				</div>

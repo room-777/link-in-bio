@@ -31,7 +31,7 @@ function createFetch() {
 		if (requestUrl.hostname === "www.behance.net") {
 			if (requestUrl.pathname.startsWith("/embed/project/")) {
 				return new Response(
-					'<html><head><title>Portfolio Project :: Behance</title><meta name="description" content="Behance is the world&#039;s largest creative network for showcasing and discovering creative work"></head><body><img alt="Project Cover: Portfolio Project" srcset="https://mir-s3-cdn-cf.behance.net/project-small.jpg 115w, https://mir-s3-cdn-cf.behance.net/project-cover.jpg 808w"></body></html>',
+					'<html><head><title>Portfolio Project :: Behance</title><meta name="description" content="Behance is the world&#039;s largest creative network for showcasing and discovering creative work"></head><body><img alt="Project Cover: Portfolio Project" srcset="https://mir-s3-cdn-cf.behance.net/project-small.jpg 115w, https://mir-s3-cdn-cf.behance.net/project-cover.jpg 808w"><img alt="Anna Krupkin&#39;s profile" src="https://pps.services.adobe.com/anna.jpg" srcset="https://pps.services.adobe.com/anna.jpg 50w"></body></html>',
 					{ headers: { "content-type": "text/html" } },
 				);
 			}
@@ -427,6 +427,11 @@ describe("link provider metadata", () => {
 		);
 		assert.equal(project.title, "Portfolio Project");
 		assert.equal(project.description, undefined);
+		assert.equal(project.providerData?.authorName, "Anna Krupkin");
+		assert.equal(
+			project.providerData?.authorProfileImageUrl,
+			"https://pps.services.adobe.com/anna.jpg",
+		);
 		assert.equal(
 			resolveLinkMetadata(projectUrl.toString(), project).presentation
 				.actionLabel,

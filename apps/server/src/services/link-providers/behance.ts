@@ -39,6 +39,29 @@ function getProjectCoverUrl(html: string) {
 	return getHttpsUrl(largest);
 }
 
+function getProjectAuthorData(html: string) {
+	const profileImage = [...html.matchAll(/<img\b[^>]*>/gi)]
+		.map((match) => match[0])
+		.find((tag) =>
+			decodeHtmlEntities(getAttributeValue(tag, "alt") ?? "").match(
+				/'s profile$/i,
+			),
+		);
+	if (!profileImage) return undefined;
+
+	const alt = decodeHtmlEntities(getAttributeValue(profileImage, "alt") ?? "");
+	const authorName = alt.replace(/'s profile$/i, "").trim();
+	const authorProfileImageUrl = getHttpsUrl(
+		getAttributeValue(profileImage, "srcset")?.match(
+			/https:\/\/[^\s,]+/,
+		)?.[0] ?? getAttributeValue(profileImage, "src"),
+	);
+	return getProviderData({
+		authorName: authorName || undefined,
+		authorProfileImageUrl,
+	});
+}
+
 export async function enrichBehance(
 	url: URL,
 	target: LinkProviderTarget,
@@ -56,6 +79,7 @@ export async function enrichBehance(
 	if (!document) return {};
 	const metadata = parseHtmlMetadata(document.html, new URL(document.url));
 	if (target.kind === "project") {
+		const authorData = getProjectAuthorData(document.html);
 		return {
 			...metadata,
 			title: metadata.title?.replace(/\s+:: Behance$/i, ""),
@@ -65,6 +89,7 @@ export async function enrichBehance(
 				? undefined
 				: metadata.description,
 			imageUrl: getProjectCoverUrl(document.html) ?? metadata.imageUrl,
+			...(authorData ? { providerData: authorData } : {}),
 		};
 	}
 
