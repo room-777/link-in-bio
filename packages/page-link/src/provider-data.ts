@@ -99,6 +99,25 @@ const youtubeImageUrls = ({
 	return typeof metadata?.imageUrl === "string" ? [metadata.imageUrl] : [];
 };
 
+const instagramImageUrls = ({
+	metadata,
+	providerData,
+}: LinkProviderPresentationContext) => {
+	const recentPostThumbnailUrls = Array.isArray(
+		providerData?.recentPostThumbnailUrls,
+	)
+		? providerData.recentPostThumbnailUrls.filter(
+				(value): value is string =>
+					typeof value === "string" && value.startsWith("https://"),
+			)
+		: [];
+	return recentPostThumbnailUrls.length > 0
+		? recentPostThumbnailUrls
+		: typeof metadata?.imageUrl === "string"
+			? [metadata.imageUrl]
+			: [];
+};
+
 const behanceImageUrls = ({
 	metadata,
 	providerData,
@@ -294,6 +313,7 @@ export const providerDefinitions = [
 		},
 		countKey: "followerCount",
 		resolveTarget: getInstagramTarget,
+		getImageUrls: instagramImageUrls,
 	},
 	{
 		id: "buy-me-a-coffee",

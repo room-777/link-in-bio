@@ -579,6 +579,47 @@ describe("link provider metadata", () => {
 	});
 
 	/**
+	 * Case ID: LINK-PROVIDERS-006
+	 * Given: an Instagram profile page with more than four post cards.
+	 * When: provider enrichment reads the page.
+	 * Then: it returns the four newest HTTPS post thumbnails for presentation.
+	 * Evidence: providerData URLs, imageUrl, and resolved presentation imageUrls.
+	 * Result: Pass | Fail | Blocked | Not Run
+	 */
+	it("LINK-PROVIDERS-006 loads four recent Instagram post thumbnails", async () => {
+		const postCards = Array.from(
+			{ length: 5 },
+			(_, index) =>
+				`<a href="/kinwooky/p/post-${index}/"><img src="https://cdn.instagram.com/post-${index}.jpg"></a>`,
+		).join("");
+		const metadata = await enrichLinkProvider(
+			new URL("https://instagram.com/kinwooky"),
+			{
+				fetch: async () =>
+					new Response(
+						`<html><head><meta property="og:title" content="Profile"><meta property="og:description" content="2M Followers"></head><body>${postCards}</body></html>`,
+						{ headers: { "content-type": "text/html" } },
+					),
+			},
+		);
+
+		const expectedUrls = Array.from(
+			{ length: 4 },
+			(_, index) => `https://cdn.instagram.com/post-${index}.jpg`,
+		);
+		assert.deepEqual(
+			metadata.providerData?.recentPostThumbnailUrls,
+			expectedUrls,
+		);
+		assert.equal(metadata.imageUrl, expectedUrls[0]);
+		assert.deepEqual(
+			resolveLinkMetadata("https://instagram.com/kinwooky", metadata)
+				.presentation.imageUrls,
+			expectedUrls,
+		);
+	});
+
+	/**
 	 * Case ID: LINK-PROVIDERS-002
 	 * Given: one real provider-shaped link for every supported provider.
 	 * When: the shared provider registry resolves the links.
