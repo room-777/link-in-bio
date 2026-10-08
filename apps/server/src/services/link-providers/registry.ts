@@ -2,6 +2,7 @@ import type { LinkProviderId } from "@grabbin/page-link";
 import { enrichBehance } from "./behance";
 import { enrichChzzk } from "./chzzk";
 import { enrichDiscord } from "./discord";
+import { enrichDribbble } from "./dribbble";
 import { enrichGithub } from "./github";
 import { enrichInstagram } from "./instagram";
 import { enrichProductHunt } from "./product-hunt";
@@ -28,6 +29,7 @@ const providerEnrichers: Partial<Record<LinkProviderId, LinkProviderEnricher>> =
 		twitch: enrichTwitch,
 		"product-hunt": enrichProductHunt,
 		behance: enrichBehance,
+		dribbble: enrichDribbble,
 	};
 
 export function getProviderEnricher(

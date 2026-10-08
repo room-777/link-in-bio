@@ -53,6 +53,26 @@ export function getBehanceTarget(url: URL): LinkTargetMatch | undefined {
 		: undefined;
 }
 
+export function getDribbbleTarget(url: URL): LinkTargetMatch | undefined {
+	if (!isHostname(url, ["dribbble.com", "www.dribbble.com"])) return undefined;
+	const shot = url.pathname.match(/^\/shots\/(\d+)(?:-([^/]*))?\/?$/i);
+	if (shot)
+		return {
+			kind: "shot",
+			params: {
+				id: shot[1] as string,
+				...(shot[2] ? { slug: decodeSegment(shot[2]) } : {}),
+			},
+		};
+	const username = url.pathname.match(/^\/([a-z\d_-]+)\/?$/i)?.[1];
+	return username &&
+		!["shots", "search", "tags", "hire", "designers", "services"].includes(
+			username.toLowerCase(),
+		)
+		? { kind: "profile", params: { username } }
+		: undefined;
+}
+
 export function getThreadsTarget(url: URL): LinkTargetMatch | undefined {
 	if (
 		!isHostname(url, [

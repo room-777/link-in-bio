@@ -234,7 +234,7 @@ export const pageItemLinkPresentationSchema = v.object({
 	actionLabel: v.optional(v.pipe(v.string(), v.minLength(1))),
 	actionVariant: v.optional(v.picklist(["solid", "outline"])),
 	actionDetail: v.optional(v.pipe(v.string(), v.minLength(1))),
-	actionIcon: v.optional(v.literal("upvote")),
+	actionIcon: v.optional(v.picklist(["upvote", "like2"])),
 	imageUrls: v.optional(v.array(mediaDeliveryUrlSchema)),
 	githubContributionGraph: v.optional(v.string()),
 });

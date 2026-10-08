@@ -12,6 +12,7 @@ import {
 	useRef,
 	useState,
 } from "react";
+import { Like2 } from "reicon-react/icons/Like2";
 import { Trash } from "@/components/trash";
 import { useBentoLineHeight } from "@/hooks/use-bento-line-height";
 import type { BentoCommand } from "@/lib/bento/bento-types";
@@ -649,7 +650,12 @@ export function LinkItem({
 			preset === "squareLarge") &&
 		Boolean(githubGraph);
 	const shouldShowLinkAction = Boolean(presentation?.actionLabel);
-	const isProductHuntUpvote = presentation?.actionIcon === "upvote";
+	const actionIcon =
+		presentation?.actionIcon === "upvote" ? (
+			<TriangleIcon className="size-3 fill-current" />
+		) : presentation?.actionIcon === "like2" ? (
+			<Like2 weight="Filled" className="size-3" />
+		) : undefined;
 	const updateTitle = (value: string) =>
 		onCommand?.({
 			type: "update-data",
@@ -674,9 +680,7 @@ export function LinkItem({
 		mode,
 		label: presentation?.actionLabel ?? "Open",
 		detail: presentation?.actionDetail,
-		icon: isProductHuntUpvote ? (
-			<TriangleIcon className="size-3 fill-current" />
-		) : undefined,
+		icon: actionIcon,
 		actionBackground: presentation?.actionBackground,
 		actionText: presentation?.actionText,
 		actionVariant: presentation?.actionVariant,

@@ -8,6 +8,7 @@ export type LinkProviderEnvironment = Partial<
 	Pick<
 		AppEnv["Bindings"],
 		| "YOUTUBE_API_KEY"
+		| "DRIBBBLE_ACCESS_TOKEN"
 		| "CHZZK_CLIENT_ID"
 		| "CHZZK_CLIENT_SECRET"
 		| "TWITCH_CLIENT_ID"

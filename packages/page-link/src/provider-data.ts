@@ -6,6 +6,7 @@ import {
 	getBehanceTarget,
 	getChzzkTarget,
 	getDiscordTarget,
+	getDribbbleTarget,
 	getGithubTarget,
 	getInstagramTarget,
 	getProductHuntTarget,
@@ -112,6 +113,25 @@ const behanceImageUrls = ({
 		: [];
 	return recentProjectThumbnailUrls.length > 0
 		? recentProjectThumbnailUrls
+		: typeof metadata?.imageUrl === "string"
+			? [metadata.imageUrl]
+			: [];
+};
+
+const dribbbleImageUrls = ({
+	metadata,
+	providerData,
+}: LinkProviderPresentationContext) => {
+	const recentShotThumbnailUrls = Array.isArray(
+		providerData?.recentShotThumbnailUrls,
+	)
+		? providerData.recentShotThumbnailUrls.filter(
+				(value): value is string =>
+					typeof value === "string" && value.startsWith("https://"),
+			)
+		: [];
+	return recentShotThumbnailUrls.length > 0
+		? recentShotThumbnailUrls
 		: typeof metadata?.imageUrl === "string"
 			? [metadata.imageUrl]
 			: [];
@@ -501,6 +521,22 @@ export const providerDefinitions = [
 		hosts: ["dribbble.com"],
 		label: "Dribbble",
 		faviconUrl: providerIconUrl("dribbble"),
+		resolveTarget: getDribbbleTarget,
+		getImageUrls: dribbbleImageUrls,
+		present: ({ target, providerData }) => {
+			if (target?.kind === "shot") return { actionLabel: "View" };
+			if (target?.kind !== "profile") return {};
+			const countLabel =
+				typeof providerData?.likeCountLabel === "string"
+					? providerData.likeCountLabel
+					: typeof providerData?.likeCount === "number"
+						? new Intl.NumberFormat("en-US").format(providerData.likeCount)
+						: undefined;
+			return {
+				actionIcon: "like2",
+				actionLabel: countLabel ? `${countLabel} Likes` : "Likes",
+			};
+		},
 		theme: {
 			faviconBackground: "#EA4C89",
 			cardBackground: "#fff2f7",

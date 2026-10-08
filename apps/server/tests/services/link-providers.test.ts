@@ -28,6 +28,31 @@ function createFetch() {
 	return async (input: RequestInfo | URL) => {
 		const requestUrl = new URL(input.toString());
 
+		if (requestUrl.hostname === "dribbble.com") {
+			if (requestUrl.pathname === "/shots/27791477-AI-Mental-Health-Platform") {
+				return new Response(
+					'<html><head><meta property="og:title" content="AI Mental Health Platform by NexUX Product for NexUX Lab on Dribbble"><meta property="og:description" content="An AI mental health platform."><meta property="og:image" content="https://cdn.dribbble.com/shot.png"></head><body><a href="/nexuxproduct"><img class="profile-avatar" alt="NexUX Product" src="https://cdn.dribbble.com/creator.png"></a><a href="/nexuxlab">NexUX Lab</a></body></html>',
+					{ headers: { "content-type": "text/html" } },
+				);
+			}
+			if (requestUrl.pathname === "/nexuxproduct") {
+				return new Response(
+					'<html><head><title>NexUX Product</title></head><body><img class="profile-avatar" alt="NexUX Product" src="https://cdn.dribbble.com/creator.png"></body></html>',
+					{ headers: { "content-type": "text/html" } },
+				);
+			}
+			if (requestUrl.pathname === "/nexuxlab") {
+				return new Response(
+					`<html><head><meta property="og:title" content="NexUX Lab"></head><body><img class="profile-avatar" alt="NexUX Lab" src="https://cdn.dribbble.com/team.png">254 followers 337 following 1,750 likes${Array.from(
+						{ length: 5 },
+						(_, index) =>
+							`<li class="shot-thumbnail" id="screenshot-${100 - index}"><img src="https://cdn.dribbble.com/shot-${index}.png"><a href="/shots/${100 - index}-recent-shot-${index}">View shot</a></li>`,
+					).join("")}</body></html>`,
+					{ headers: { "content-type": "text/html" } },
+				);
+			}
+		}
+
 		if (requestUrl.hostname === "www.behance.net") {
 			if (requestUrl.pathname.startsWith("/embed/project/")) {
 				return new Response(
@@ -454,6 +479,91 @@ describe("link provider metadata", () => {
 		assert.equal(behanceTheme?.actionBackground, "#1769ff");
 	});
 
+	/**
+	 * Case ID: LINK-PROVIDERS-005
+	 * Given: a Dribbble profile and a shot page with its creator profile.
+	 * When: the shared provider metadata collector reads both pages with an API token configured.
+	 * Then: it returns profile counts and avatar, plus shot title and creator details.
+	 * Evidence: provider targets and enriched metadata values from mocked HTML pages.
+	 * Result: Pass | Fail | Blocked | Not Run
+	 */
+	it("LINK-PROVIDERS-005 collects Dribbble profile and shot metadata", async () => {
+		const requestedUrls: URL[] = [];
+		const baseFetch = createFetch();
+		const fetch = async (input: RequestInfo | URL) => {
+			requestedUrls.push(new URL(input.toString()));
+			return baseFetch(input);
+		};
+		const profileUrl = new URL("https://dribbble.com/nexuxlab");
+		const shotUrl = new URL(
+			"https://dribbble.com/shots/27791477-AI-Mental-Health-Platform",
+		);
+		const profile = await enrichLinkProvider(profileUrl, { fetch });
+		const shot = await enrichLinkProvider(shotUrl, {
+			fetch,
+			env: { DRIBBBLE_ACCESS_TOKEN: "unused-token" },
+		});
+
+		assert.equal(resolveLinkProvider(profileUrl).target?.kind, "profile");
+		assert.equal(resolveLinkProvider(shotUrl).target?.kind, "shot");
+		assert.equal(profile.providerData?.followerCount, 254);
+		assert.equal(profile.providerData?.followingCount, 337);
+		assert.equal(profile.providerData?.likeCount, 1750);
+		assert.equal(
+			resolveLinkMetadata(profileUrl.toString(), profile).presentation
+				.actionIcon,
+			"like2",
+		);
+		assert.equal(
+			resolveLinkMetadata(profileUrl.toString(), profile).presentation
+				.actionLabel,
+			"1,750 Likes",
+		);
+		assert.equal(
+			profile.providerData?.profileImageUrl,
+			"https://cdn.dribbble.com/team.png",
+		);
+		assert.deepEqual(profile.providerData?.recentShotThumbnailUrls, [
+			"https://cdn.dribbble.com/shot-0.png",
+			"https://cdn.dribbble.com/shot-1.png",
+			"https://cdn.dribbble.com/shot-2.png",
+			"https://cdn.dribbble.com/shot-3.png",
+		]);
+		assert.deepEqual(
+			resolveLinkMetadata(profileUrl.toString(), profile).presentation
+				.imageUrls,
+			profile.providerData?.recentShotThumbnailUrls,
+		);
+		assert.equal(shot.title, "AI Mental Health Platform");
+		assert.equal(shot.imageUrl, "https://cdn.dribbble.com/shot.png");
+		assert.equal(shot.providerData?.authorName, "NexUX Product");
+		assert.equal(
+			shot.providerData?.authorProfileUrl,
+			"https://dribbble.com/nexuxproduct",
+		);
+		assert.equal(
+			shot.providerData?.authorProfileImageUrl,
+			"https://cdn.dribbble.com/creator.png",
+		);
+		assert.equal(
+			requestedUrls.some(
+				(requestUrl) => requestUrl.hostname === "api.dribbble.com",
+			),
+			false,
+		);
+
+		const challengeShot = await enrichLinkProvider(
+			new URL("https://dribbble.com/shots/12345-Case-Study"),
+			{
+				fetch: async () =>
+					new Response("<html><body>Challenge</body></html>", {
+						status: 202,
+						headers: { "content-type": "text/html" },
+					}),
+			},
+		);
+		assert.equal(challengeShot.title, "Case Study");
+	});
 	it("LINK-PROVIDERS-003 loads four recent YouTube channel thumbnails", async () => {
 		const metadata = await enrichLinkProvider(
 			new URL("https://youtube.com/@kinwooky"),

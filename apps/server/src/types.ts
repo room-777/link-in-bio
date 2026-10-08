@@ -16,6 +16,7 @@ export type AppEnv = EvlogVariables & {
 		R2_PUBLIC_URL: string;
 		R2_LOCAL_MODE: string;
 		YOUTUBE_API_KEY: string;
+		DRIBBBLE_ACCESS_TOKEN: string;
 		CHZZK_CLIENT_ID: string;
 		CHZZK_CLIENT_SECRET: string;
 		CREEM_API_KEY: string;
