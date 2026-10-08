@@ -186,7 +186,7 @@ function LinkControl({
 						aria-expanded={open}
 						aria-label={ariaLabel}
 						className={cn(
-							"size-8 cursor-pointer! rounded-[0.5rem] border-0 bg-transparent p-1 text-primary-foreground shadow-none hover:bg-primary-foreground hover:text-primary focus-visible:ring-2 focus-visible:ring-ring/60",
+							"size-8! cursor-pointer! rounded-md! bg-transparent p-0 text-primary-foreground shadow-none hover:bg-primary-foreground hover:text-primary focus-visible:ring-2 focus-visible:ring-ring/60",
 							hasUrl && "!bg-green-400 !text-white hover:!bg-green-400",
 						)}
 						size="icon"
