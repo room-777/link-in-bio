@@ -1,4 +1,5 @@
 import * as v from "valibot";
+import { rssFeedResponseSchema } from "./rss";
 
 export const itemTypeSchema = v.union([
 	v.literal("text"),
@@ -360,10 +361,16 @@ export type PageItemBatchResponse = v.InferOutput<
 	typeof pageItemBatchResponseSchema
 >;
 
-export const pageItemMetadataRequestSchema = v.object({
-	itemId: v.pipe(v.string(), v.minLength(1)),
-	url: pageItemLinkUrlSchema,
-});
+export const pageItemMetadataRequestSchema = v.union([
+	v.object({
+		itemId: v.pipe(v.string(), v.minLength(1)),
+		url: pageItemLinkUrlSchema,
+	}),
+	v.object({
+		kind: v.literal("rss"),
+		url: pageItemLinkUrlSchema,
+	}),
+]);
 
 export type PageItemMetadataRequest = v.InferOutput<
 	typeof pageItemMetadataRequestSchema
@@ -372,6 +379,14 @@ export type PageItemMetadataRequest = v.InferOutput<
 export const pageItemMetadataResponseSchema = v.object({
 	item: pageItemResponseSchema,
 });
+
+export const pageItemRssResponseSchema = v.object({
+	rss: rssFeedResponseSchema,
+});
+
+export type PageItemRssResponse = v.InferOutput<
+	typeof pageItemRssResponseSchema
+>;
 
 export type PageItemMetadataResponse = v.InferOutput<
 	typeof pageItemMetadataResponseSchema
