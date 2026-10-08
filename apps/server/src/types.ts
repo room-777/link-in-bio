@@ -26,6 +26,8 @@ export type AppEnv = EvlogVariables & {
 		TWITCH_CLIENT_ID: string;
 		TWITCH_CLIENT_SECRET: string;
 		TWITCH_USER_ACCESS_TOKEN: string;
+		CALENDLY_CLIENT_ID: string;
+		CALENDLY_CLIENT_SECRET: string;
 		GITHUB_TOKEN: string;
 		PRODUCT_HUNT_TOKEN: string;
 		PAGE_DOMAIN: string;

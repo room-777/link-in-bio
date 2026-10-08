@@ -176,6 +176,12 @@ export const server = Cloudflare.Worker("server", {
 		TWITCH_CLIENT_SECRET: Config.Redacted("TWITCH_CLIENT_SECRET").pipe(
 			Config.withDefault(""),
 		),
+		CALENDLY_CLIENT_ID: Config.String("CALENDLY_CLIENT_ID").pipe(
+			Config.withDefault(""),
+		),
+		CALENDLY_CLIENT_SECRET: Config.Redacted("CALENDLY_CLIENT_SECRET").pipe(
+			Config.withDefault(""),
+		),
 		TWITCH_USER_ACCESS_TOKEN: Config.Redacted("TWITCH_USER_ACCESS_TOKEN").pipe(
 			Config.withDefault(""),
 		),

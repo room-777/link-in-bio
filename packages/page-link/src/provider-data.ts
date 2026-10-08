@@ -473,6 +473,15 @@ export const providerDefinitions = [
 		},
 	},
 	{
+		id: "calendly",
+		hosts: ["calendly.com"],
+		label: "Calendly",
+		faviconUrl: providerIconUrl("calendly"),
+		theme: {
+			faviconBackground: "#006BFF",
+		},
+	},
+	{
 		id: "notion",
 		hosts: ["notion.so"],
 		label: "Notion",

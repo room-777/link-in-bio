@@ -13,6 +13,7 @@ import { timing } from "hono/timing";
 import { trimTrailingSlash } from "hono/trailing-slash";
 import { jsonApiError } from "./api-error";
 import { billingController } from "./controllers/billing.controller";
+import { calendlyController } from "./controllers/calendly.controller";
 import { localMediaController } from "./controllers/local-media.controller";
 import { createPageDomainsController } from "./controllers/page-domains.controller";
 import { pageItemsController } from "./controllers/page-items.route";
@@ -94,6 +95,7 @@ const app = createFactory<AppEnv>({
 		return jsonApiError(c, { status: 500 });
 	})
 	.route("/", billingController)
+	.route("/", calendlyController)
 	.on(["POST", "GET"], "/auth/*", async (c) =>
 		(await authWithBillingSync(await createDb(), c.env)).handler(c.req.raw),
 	)

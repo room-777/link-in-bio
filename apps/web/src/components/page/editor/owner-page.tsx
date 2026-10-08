@@ -6,13 +6,13 @@ import {
 	bentoWideMediaQuery,
 	getBentoWidth,
 } from "@grabbin/bento-layout";
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { getPageImageUrl } from "@/lib/page-image-url";
 import PageProfileForm from "../profile/page-profile-form";
 import PageFooter from "../shared/page-footer";
 import type { AddWidgetButtonProps } from "./add-widget-button";
 import BentoEditor from "./bento-editor";
-import PageLayoutPreset from "./page-layout-preset";
+import PageEditorToolbar from "./page-editor-toolbar";
 
 export default function OwnerPage({
 	pageResponse,
@@ -34,8 +34,21 @@ export default function OwnerPage({
 	const [viewportBreakpoint, setViewportBreakpoint] =
 		useState<BentoBreakpoint>("wide");
 	const [isViewportReady, setIsViewportReady] = useState(false);
-	const [widgetActions, setWidgetActions] =
-		useState<AddWidgetButtonProps | null>(null);
+	const widgetActionsRef = useRef<AddWidgetButtonProps | null>(null);
+	const widgetActions = useMemo<AddWidgetButtonProps>(
+		() => ({
+			onItemAdd: (itemType, url) =>
+				widgetActionsRef.current?.onItemAdd(itemType, url),
+			onMediaSelect: (file) => widgetActionsRef.current?.onMediaSelect(file),
+		}),
+		[],
+	);
+	const handleWidgetActionsChange = useCallback(
+		(actions: AddWidgetButtonProps) => {
+			widgetActionsRef.current = actions;
+		},
+		[],
+	);
 
 	useEffect(() => {
 		const mediaQuery = window.matchMedia(bentoWideMediaQuery);
@@ -141,21 +154,19 @@ export default function OwnerPage({
 					entryReady={isBentoReady}
 					onReady={handleBentoReady}
 					onGridSavingChange={setIsGridSaving}
-					onWidgetActionsChange={setWidgetActions}
+					onWidgetActionsChange={handleWidgetActionsChange}
 				/>
 				{isViewportCompact && isViewportReady ? pageFooter : null}
 			</div>
 			{!isViewportCompact && isViewportReady ? pageFooter : null}
-			{!isViewportCompact && isBentoReady ? (
-				<PageLayoutPreset
-					value={layoutBreakpoint}
-					onChange={handleLayoutBreakpointChange}
-					isAutoSaving={isAutoSaving}
-					profileImageUrl={profileImageUrl}
-					demoPreview={demoPreview}
-					widgetActions={widgetActions}
-				/>
-			) : null}
+			<PageEditorToolbar
+				value={layoutBreakpoint}
+				onChange={handleLayoutBreakpointChange}
+				isAutoSaving={isAutoSaving}
+				profileImageUrl={profileImageUrl}
+				demoPreview={demoPreview}
+				widgetActions={widgetActions}
+			/>
 		</div>
 	);
 }
