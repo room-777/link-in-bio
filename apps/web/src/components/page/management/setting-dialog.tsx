@@ -1,6 +1,5 @@
 "use client";
 
-import { Button } from "@grabbin/ui/components/button";
 import {
 	Dialog,
 	DialogContent,
@@ -15,19 +14,16 @@ import {
 	DrawerHeader,
 	DrawerTitle,
 } from "@grabbin/ui/components/drawer";
-import {
-	Tabs,
-	TabsContent,
-	TabsList,
-	TabsTrigger,
-} from "@grabbin/ui/components/tabs";
+import { Tabs, TabsList, TabsTrigger } from "@grabbin/ui/components/tabs";
 import { toast } from "@grabbin/ui/components/toast";
 import { useIsMobile } from "@grabbin/ui/components/use-mobile";
-import { useState } from "react";
-import { CheckCircle } from "reicon-react/icons/CheckCircle";
+import { useReducedMotion } from "motion/react";
+import { Activity, useLayoutEffect, useRef, useState } from "react";
 import { authClient } from "@/lib/auth-client";
 import { isMultiPageEnabled } from "@/lib/feature-flags";
 import { PlanDialog } from "../../billing/plan-dialog";
+import { AccountTabContent } from "./account-tab-content";
+import { BillingTabContent } from "./billing-tab-content";
 import CustomDomainTabContent from "./custom-domain-tab-content";
 import PageTabContent from "./page-tab-content";
 
@@ -44,8 +40,51 @@ export default function SettingDialog({
 	const { data: session } = authClient.useSession();
 	const isPro = session?.plan.tier === "pro";
 	const [activeTab, setActiveTab] = useState("account");
+	const [outgoingTab, setOutgoingTab] = useState<string | null>(null);
+	const [isTransitioning, setIsTransitioning] = useState(false);
+	const [activePage, setActivePage] = useState("1");
 	const [isCheckoutDialogOpen, setIsCheckoutDialogOpen] = useState(false);
 	const [isOpeningPortal, setIsOpeningPortal] = useState(false);
+	const reduceMotion = useReducedMotion() ?? false;
+	const pageSlideRef = useRef<HTMLDivElement>(null);
+	const tabOrder = isMultiPageEnabled
+		? ["account", "page", "billing", "custom-domain"]
+		: ["account", "billing", "custom-domain"];
+	const isMovingForward =
+		tabOrder.indexOf(activeTab) > tabOrder.indexOf(outgoingTab ?? "account");
+	const incomingPage = isMovingForward ? "2" : "1";
+	const outgoingPage = incomingPage === "2" ? "1" : "2";
+
+	useLayoutEffect(() => {
+		if (!isTransitioning || reduceMotion || !pageSlideRef.current) return;
+		void pageSlideRef.current.offsetHeight;
+		setActivePage(incomingPage);
+	}, [incomingPage, isTransitioning, reduceMotion]);
+
+	const changeTab = (value: string | number) => {
+		const nextTab = String(value);
+		if (nextTab === activeTab || !tabOrder.includes(nextTab)) return;
+		const movingForward =
+			tabOrder.indexOf(nextTab) > tabOrder.indexOf(activeTab);
+		setOutgoingTab(activeTab);
+		setActiveTab(nextTab);
+		setIsTransitioning(!reduceMotion);
+		setActivePage(
+			reduceMotion ? (movingForward ? "2" : "1") : movingForward ? "1" : "2",
+		);
+		if (reduceMotion) setOutgoingTab(null);
+	};
+
+	const finishTransition = (event: React.TransitionEvent<HTMLElement>) => {
+		if (
+			event.target === event.currentTarget &&
+			event.propertyName === "transform" &&
+			event.currentTarget.dataset.pageId === activePage
+		) {
+			setIsTransitioning(false);
+			setOutgoingTab(null);
+		}
+	};
 
 	const handlePlanAction = async () => {
 		if (!session) return;
@@ -73,12 +112,63 @@ export default function SettingDialog({
 	};
 	const tabTriggerClassName =
 		"min-w-0 py-2.5 bg-background hover:bg-muted/80 hover:text-[var(--tabs-text-muted)] data-active:bg-background data-active:text-foreground data-active:hover:bg-muted/80 data-active:hover:text-foreground data-active:smooth-shadow-xs data-active:border data-active:border-border group-data-[size=xl]/tabs-list:px-1 group-data-[size=xl]/tabs-list:text-sm md:group-data-[size=xl]/tabs-list:px-2 md:group-data-[size=xl]/tabs-list:text-base";
+	const tabs = [
+		{
+			value: "account",
+			label: "Account",
+			content: (
+				<AccountTabContent
+					email={session?.user.email}
+					isPro={isPro}
+					onUpgrade={() => setIsCheckoutDialogOpen(true)}
+				/>
+			),
+		},
+		...(isMultiPageEnabled
+			? [
+					{
+						value: "page",
+						label: "Page",
+						content: (
+							<PageTabContent
+								active={open && activeTab === "page"}
+								onClose={() => onOpenChange(false)}
+							/>
+						),
+					},
+				]
+			: []),
+		{
+			value: "billing",
+			label: "Billing",
+			content: (
+				<BillingTabContent
+					isPro={isPro}
+					disabled={!session}
+					isOpeningPortal={isOpeningPortal}
+					onPlanAction={() => void handlePlanAction()}
+				/>
+			),
+		},
+		{
+			value: "custom-domain",
+			label: "Custom domain",
+			content: (
+				<CustomDomainTabContent
+					active={open && activeTab === "custom-domain"}
+					handle={handle}
+					isPro={isPro}
+					onUpgrade={() => setIsCheckoutDialogOpen(true)}
+				/>
+			),
+		},
+	];
 
 	const content = (
 		<div className="flex min-h-0 min-w-0 flex-1 flex-col gap-5">
 			<Tabs
 				value={activeTab}
-				onValueChange={(value) => setActiveTab(String(value))}
+				onValueChange={changeTab}
 				className="flex min-h-0 min-w-0 flex-1 flex-col gap-4"
 			>
 				<TabsList
@@ -87,75 +177,58 @@ export default function SettingDialog({
 					size="xl"
 					className={`grid w-full max-w-full shrink-0 ${isMultiPageEnabled ? "grid-cols-[repeat(4,auto)]" : "grid-cols-[repeat(3,auto)]"} items-center justify-stretch gap-1 overflow-visible bg-background px-0 [&>[data-slot=tabs-indicator]]:hidden`}
 				>
-					<TabsTrigger className={tabTriggerClassName} value="account">
-						Account
-					</TabsTrigger>
-					{isMultiPageEnabled && (
-						<TabsTrigger className={tabTriggerClassName} value="page">
-							Page
+					{tabs.map((tab) => (
+						<TabsTrigger
+							key={tab.value}
+							id={`settings-tab-${tab.value}`}
+							aria-controls={`settings-panel-${tab.value}`}
+							className={tabTriggerClassName}
+							value={tab.value}
+						>
+							{tab.label}
 						</TabsTrigger>
-					)}
-					<TabsTrigger className={tabTriggerClassName} value="billing">
-						Billing
-					</TabsTrigger>
-					<TabsTrigger className={tabTriggerClassName} value="custom-domain">
-						Custom domain
-					</TabsTrigger>
+					))}
 				</TabsList>
-				<div className="-mx-3 min-h-0 min-w-0 flex-1 overflow-y-auto px-4">
-					<TabsContent value="account" className="m-0 h-full w-full">
-						<section className="flex min-w-0 flex-col gap-3">
-							<h2 className="font-medium text-base">Your email</h2>
-							<div className="flex h-11 min-w-0 items-center justify-between gap-2 rounded-lg bg-secondary p-3 pl-3.5">
-								<p className="truncate text-base text-primary">
-									{session?.user.email}
-								</p>
-								<CheckCircle
-									aria-hidden="true"
-									weight="Filled"
-									className="size-6 shrink-0 text-brand-green"
-								/>
-							</div>
-						</section>
-					</TabsContent>
-					{isMultiPageEnabled && (
-						<TabsContent value="page" className="m-0 h-full w-full">
-							<PageTabContent
-								active={open && activeTab === "page"}
-								onClose={() => onOpenChange(false)}
-							/>
-						</TabsContent>
-					)}
-					<TabsContent value="billing" className="m-0 h-full">
-						<section className="flex items-center justify-between gap-4">
-							<div>
-								<h2 className="font-medium text-base">Plan</h2>
-								<p className="text-muted-foreground text-sm">
-									{isPro ? "Pro" : "Free"}
-								</p>
-							</div>
-							<Button
-								variant="outline"
-								disabled={isOpeningPortal || !session}
-								onClick={() => void handlePlanAction()}
-								className="rounded-md"
-							>
-								{isOpeningPortal
-									? "Opening…"
-									: isPro
-										? "Manage plan"
-										: "Upgrade"}
-							</Button>
-						</section>
-					</TabsContent>
-					<TabsContent value="custom-domain" className="m-0 h-full p-1">
-						<CustomDomainTabContent
-							active={open && activeTab === "custom-domain"}
-							handle={handle}
-							isPro={isPro}
-							onUpgrade={() => setIsCheckoutDialogOpen(true)}
-						/>
-					</TabsContent>
+				<div className="-mx-3 min-h-0 min-w-0 flex-1 px-4">
+					<div
+						ref={pageSlideRef}
+						className="t-page-slide relative h-full min-h-0"
+						data-page={activePage}
+					>
+						{tabs.map((tab) => {
+							const isActive = tab.value === activeTab;
+							const isOutgoing = isTransitioning && tab.value === outgoingTab;
+							const pageId = isTransitioning
+								? isActive
+									? incomingPage
+									: outgoingPage
+								: isActive
+									? activePage
+									: activePage === "1"
+										? "2"
+										: "1";
+
+							return (
+								<Activity
+									key={tab.value}
+									mode={isActive || isOutgoing ? "visible" : "hidden"}
+								>
+									<section
+										id={`settings-panel-${tab.value}`}
+										role="tabpanel"
+										aria-labelledby={`settings-tab-${tab.value}`}
+										aria-hidden={!isActive}
+										inert={!isActive}
+										className={`t-page flex h-full flex-col overflow-y-auto ${tab.value === "custom-domain" ? "p-1" : ""}`}
+										data-page-id={pageId}
+										onTransitionEnd={finishTransition}
+									>
+										{tab.content}
+									</section>
+								</Activity>
+							);
+						})}
+					</div>
 				</div>
 			</Tabs>
 		</div>
