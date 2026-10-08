@@ -616,6 +616,11 @@ export function LinkItem({
 				name={authorName}
 				imageUrl={authorProfileImageUrl}
 				showName={showName}
+				className={
+					metadata?.provider === "behance"
+						? "text-muted-foreground/60"
+						: undefined
+				}
 			/>
 		) : null;
 	const title = metadata?.title?.trim() || item.data.url;
