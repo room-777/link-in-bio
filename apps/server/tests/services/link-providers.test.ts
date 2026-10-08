@@ -533,7 +533,6 @@ describe("link provider metadata", () => {
 		const profile = await enrichLinkProvider(profileUrl, { fetch });
 		const shot = await enrichLinkProvider(shotUrl, {
 			fetch,
-			env: { DRIBBBLE_ACCESS_TOKEN: "unused-token" },
 		});
 
 		assert.equal(resolveLinkProvider(profileUrl).target?.kind, "profile");
