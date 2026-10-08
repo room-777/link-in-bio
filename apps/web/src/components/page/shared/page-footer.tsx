@@ -413,7 +413,7 @@ export default function PageFooter({
 	hasProAccess?: boolean;
 }) {
 	return (
-		<footer className="page-wide:fixed page-wide:bottom-6 page-wide:left-16 page-wide:z-30 -mx-4 page-wide:-mx-2 mb-4 flex min-h-10 page-wide:w-auto w-full flex-col page-wide:items-start items-center justify-start gap-2 page-wide:py-0 py-12">
+		<footer className="page-wide:fixed page-wide:bottom-6 page-wide:left-16 page-wide:z-30 -mx-4 page-wide:-mx-2 mb-20 page-wide:mb-4 flex min-h-10 page-wide:w-auto w-full flex-col page-wide:items-start items-center justify-start gap-2 page-wide:py-0 py-12">
 			{!demoMode ? (
 				<div className="page-wide:block hidden">
 					<MadeWithGrabbinBadge hasProAccess={hasProAccess} />
