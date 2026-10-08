@@ -6,6 +6,7 @@ import { providerDefinitions } from "@grabbin/page-link";
 import { Button } from "@grabbin/ui/components/button";
 import {
 	Dialog,
+	DialogClose,
 	DialogContent,
 	DialogTrigger,
 } from "@grabbin/ui/components/dialog";
@@ -23,7 +24,7 @@ import {
 } from "@grabbin/ui/components/input-group";
 import { useIsMobile } from "@grabbin/ui/components/use-mobile";
 import { cn } from "@grabbin/ui/lib/utils";
-import { ChevronLeft, Search, SlidersHorizontal } from "lucide-react";
+import { ChevronLeft, Search, SlidersHorizontal, XIcon } from "lucide-react";
 import { useReducedMotion } from "motion/react";
 import { Activity, useLayoutEffect, useRef, useState } from "react";
 import AdvancedWidgetActivity from "./advanced-widget-activity";
@@ -108,6 +109,24 @@ export default function AdvancedWidgetsDialog({
 			<SlidersHorizontal className="size-4" aria-hidden="true" />
 		</Trigger>
 	);
+	const dialogCloseButton = () =>
+		!isMobile ? (
+			<DialogClose
+				render={
+					<Button
+						variant="secondary"
+						size="icon-lg"
+						className="absolute top-1/2 right-2.5 z-10 -translate-y-1/2 rounded-full"
+					/>
+				}
+			>
+				<XIcon
+					className="size-5 stroke-[2.5] text-muted-foreground/80"
+					aria-hidden="true"
+				/>
+				<span className="sr-only">Close</span>
+			</DialogClose>
+		) : null;
 
 	const content = (
 		<div
@@ -127,11 +146,11 @@ export default function AdvancedWidgetsDialog({
 				>
 					<header
 						className={cn(
-							"relative z-10 -mx-3 flex h-9 shrink-0 items-center",
+							"relative z-10 -mx-3 flex h-10 shrink-0 items-center",
 							!isMobile && "-mt-3",
 						)}
 					>
-						<InputGroup className="mx-auto h-9 w-2/3 max-w-xs bg-secondary dark:bg-secondary">
+						<InputGroup className="mx-auto h-10 w-2/3 max-w-xs bg-secondary dark:bg-secondary">
 							<InputGroupAddon align="inline-start">
 								<Search className="size-4" aria-hidden="true" />
 							</InputGroupAddon>
@@ -143,6 +162,7 @@ export default function AdvancedWidgetsDialog({
 								className="h-full text-sm"
 							/>
 						</InputGroup>
+						{dialogCloseButton()}
 					</header>
 					<div className="min-h-0 flex-1">
 						<AdvancedWidgetList
@@ -187,7 +207,7 @@ export default function AdvancedWidgetsDialog({
 							variant="secondary"
 							size="icon-lg"
 							className={cn(
-								"absolute top-0 z-10 rounded-full",
+								"absolute top-1/2 z-10 -translate-y-1/2 rounded-full",
 								isMobile ? "left-2" : "left-3",
 							)}
 							aria-label="Back to widgets"
@@ -199,6 +219,7 @@ export default function AdvancedWidgetsDialog({
 								aria-hidden="true"
 							/>
 						</Button>
+						{dialogCloseButton()}
 					</header>
 					{providerId && (
 						<div className="min-h-0 flex-1">
@@ -238,11 +259,12 @@ export default function AdvancedWidgetsDialog({
 		<Dialog open={open} onOpenChange={handleOpenChange}>
 			{trigger(DialogTrigger)}
 			<DialogContent
+				showCloseButton={false}
 				aria-labelledby={
 					isDetailActivity ? "advanced-widget-detail-title" : undefined
 				}
 				aria-label={!isDetailActivity ? "Advanced widgets" : undefined}
-				className="aspect-square max-h-[calc(100dvh-2rem)] min-h-0 grid-rows-[minmax(0,1fr)] gap-4 p-5 pt-8 sm:max-w-lg [&_[data-slot=dialog-close]]:top-5 [&_[data-slot=dialog-close]]:right-5"
+				className="aspect-square max-h-[calc(100dvh-2rem)] min-h-0 grid-rows-[minmax(0,1fr)] gap-4 p-5 pt-8 sm:max-w-lg"
 			>
 				{content}
 			</DialogContent>
