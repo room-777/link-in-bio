@@ -598,7 +598,9 @@ export function LinkItem({
 	const metadata = item.data.metadata;
 	const presentation = metadata?.presentation;
 	const authorData =
-		metadata?.provider === "behance" ? metadata.providerData : undefined;
+		metadata?.provider === "behance" || metadata?.provider === "pinterest"
+			? metadata.providerData
+			: undefined;
 	const authorName =
 		typeof authorData?.authorName === "string"
 			? authorData.authorName
@@ -607,6 +609,7 @@ export function LinkItem({
 		typeof authorData?.authorProfileImageUrl === "string"
 			? authorData.authorProfileImageUrl
 			: undefined;
+	const showAuthorName = preset === "squareLarge";
 	const renderAuthor = (showName: boolean) =>
 		authorName ? (
 			<LinkAuthorByline
@@ -720,7 +723,7 @@ export function LinkItem({
 							className="self-center"
 						/>
 					) : null}
-					{renderAuthor(preset === "squareLarge")}
+					{renderAuthor(showAuthorName)}
 				</div>
 			) : shouldShowLinkAction ? (
 				<LinkAction href={item.data.url} {...linkActionProps} />
@@ -755,7 +758,7 @@ export function LinkItem({
 									className="self-center"
 								/>
 							) : null}
-							{renderAuthor(false)}
+							{renderAuthor(showAuthorName)}
 						</div>
 					) : shouldShowLinkAction ? (
 						<LinkAction href={item.data.url} {...linkActionProps} />

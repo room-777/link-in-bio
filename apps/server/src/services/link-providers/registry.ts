@@ -5,6 +5,7 @@ import { enrichDiscord } from "./discord";
 import { enrichDribbble } from "./dribbble";
 import { enrichGithub } from "./github";
 import { enrichInstagram } from "./instagram";
+import { enrichPinterest } from "./pinterest";
 import { enrichProductHunt } from "./product-hunt";
 import { enrichSoop } from "./soop";
 import { enrichThreads } from "./threads";
@@ -28,6 +29,7 @@ const providerEnrichers: Partial<Record<LinkProviderId, LinkProviderEnricher>> =
 		soop: enrichSoop,
 		twitch: enrichTwitch,
 		"product-hunt": enrichProductHunt,
+		pinterest: enrichPinterest,
 		behance: enrichBehance,
 		dribbble: enrichDribbble,
 	};

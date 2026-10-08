@@ -73,6 +73,49 @@ export function getDribbbleTarget(url: URL): LinkTargetMatch | undefined {
 		: undefined;
 }
 
+export function getPinterestTarget(url: URL): LinkTargetMatch | undefined {
+	const hostname = url.hostname.toLowerCase();
+	if (hostname === "pin.it")
+		return url.pathname.split("/").filter(Boolean).length === 1
+			? { kind: "short-link", params: {} }
+			: undefined;
+	if (hostname !== "pinterest.com" && !hostname.endsWith(".pinterest.com"))
+		return undefined;
+
+	const segments = url.pathname.split("/").filter(Boolean).map(decodeSegment);
+	if (segments[0] === "pin" && segments[1]) {
+		const pinId = segments[1].match(/^(?:.*--)?(\d+)$/)?.[1];
+		return pinId ? { kind: "pin", params: { id: pinId } } : undefined;
+	}
+	if (
+		segments.length === 1 &&
+		![
+			"about",
+			"business",
+			"categories",
+			"explore",
+			"ideas",
+			"login",
+			"search",
+			"settings",
+			"signup",
+			"today",
+		].includes(segments[0]?.toLowerCase() ?? "")
+	)
+		return { kind: "profile", params: { username: segments[0] as string } };
+	if (
+		segments.length === 2 &&
+		["_created", "_saved", "pins"].includes(segments[1]?.toLowerCase() ?? "")
+	)
+		return { kind: "profile", params: { username: segments[0] as string } };
+	if (segments.length === 2)
+		return {
+			kind: "board",
+			params: { username: segments[0] as string, slug: segments[1] as string },
+		};
+	return undefined;
+}
+
 export function getThreadsTarget(url: URL): LinkTargetMatch | undefined {
 	if (
 		!isHostname(url, [

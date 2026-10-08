@@ -9,6 +9,7 @@ import {
 	getDribbbleTarget,
 	getGithubTarget,
 	getInstagramTarget,
+	getPinterestTarget,
 	getProductHuntTarget,
 	getSoopTarget,
 	getThreadsTarget,
@@ -564,7 +565,29 @@ export const providerDefinitions = [
 		id: "pinterest",
 		hosts: ["pinterest.com", "pin.it"],
 		label: "Pinterest",
-		faviconUrl: providerIconUrl("pinterest"),
+		faviconUrl: "/api/provider-icons/pinterest.svg",
+		countKey: "followerCount",
+		resolveTarget: getPinterestTarget,
+		present: ({ target }) =>
+			target?.kind === "profile"
+				? { actionLabel: "Follow" }
+				: target?.kind === "board" || target?.kind === "pin"
+					? { actionLabel: "View" }
+					: {},
+		theme: {
+			faviconBackground: "#E60023",
+			actionBackground: "#E60023",
+			actionText: "#ffffff",
+			actionLabel: "Open",
+			actionVariant: "solid",
+		},
+		getImageUrls: ({ target, providerData }) =>
+			target?.kind === "board" &&
+			Array.isArray(providerData?.recentBoardThumbnailUrls)
+				? providerData.recentBoardThumbnailUrls.filter(
+						(value): value is string => typeof value === "string",
+					)
+				: [],
 	},
 	{
 		id: "dribbble",

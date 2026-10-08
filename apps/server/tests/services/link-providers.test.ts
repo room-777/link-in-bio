@@ -69,6 +69,38 @@ function createFetch() {
 				{ headers: { "content-type": "text/html" } },
 			);
 		}
+		if (requestUrl.hostname.endsWith("pinterest.com")) {
+			if (requestUrl.pathname === "/pinterest/") {
+				return new Response(
+					'<html><head><meta property="og:title" content="Pinterest"><meta property="og:image" content="https://i.pinimg.com/profile.jpg"></head><body><h1>Pinterest</h1><img alt="Pinterest profile" src="https://i.pinimg.com/profile.jpg"><span>팔로워 626.7만명</span></body></html>',
+					{ headers: { "content-type": "text/html" } },
+				);
+			}
+			if (requestUrl.pathname === "/dlvveee/") {
+				return new Response(
+					'<html><head><meta property="og:title" content="qlaucusx (dlvveee) - Profile | Pinterest"><meta property="og:image" content="https://i.pinimg.com/author-profile.jpg"></head><body><h1>qlaucusx</h1><img alt="qlaucusx" src="https://i.pinimg.com/author-profile.jpg"></body></html>',
+					{ headers: { "content-type": "text/html" } },
+				);
+			}
+			if (requestUrl.pathname === "/wrong-user/") {
+				return new Response(
+					'<html><head><meta property="og:title" content="Wrong user"><meta property="og:image" content="https://i.pinimg.com/wrong-profile.jpg"></head><body><h1>Wrong user</h1></body></html>',
+					{ headers: { "content-type": "text/html" } },
+				);
+			}
+			if (requestUrl.pathname === "/pinterest/girls-night-in/") {
+				return new Response(
+					'<html><head><meta property="og:title" content="Girls night in"><meta property="og:image" content="https://i.pinimg.com/board.jpg"></head><body><h1>Girls night in</h1><a href="/explore/">Explore</a><a href="/wrong-user/">Wrong user</a><a href="/pinterest/">Pinterest</a><a href="/pin/111/"><img src="https://i.pinimg.com/pin-1.jpg"></a><a href="/pin/222/"><img src="https://i.pinimg.com/pin-2.jpg"></a><a href="/pin/333/"><img src="https://i.pinimg.com/pin-3.jpg"></a><a href="/pin/444/"><img src="https://i.pinimg.com/pin-4.jpg"></a><a href="/pin/555/"><img src="https://i.pinimg.com/pin-5.jpg"></a></body></html>',
+					{ headers: { "content-type": "text/html" } },
+				);
+			}
+			if (requestUrl.pathname.startsWith("/pin/")) {
+				return new Response(
+					'<html><head><meta property="og:title" content="The Outsiders"><meta property="og:image" content="https://i.pinimg.com/the-outsiders.jpg"></head><body><h1>The Outsiders</h1><a href="/explore/">Explore</a><a href="/dlvveee/">dlvveee</a></body></html>',
+					{ headers: { "content-type": "text/html" } },
+				);
+			}
+		}
 		if (requestUrl.hostname === "x.com") {
 			return new Response(
 				'<html><head><meta property="og:title" content="Profile"></head><script>followers:101909,following:168</script></html>',
@@ -657,6 +689,7 @@ describe("link provider metadata", () => {
 			["tiktok", "https://www.tiktok.com/@tiktok"],
 			["twitch", "https://www.twitch.tv/kinwooky"],
 			["behance", "https://www.behance.net/kinwooky"],
+			["pinterest", "https://www.pinterest.com/pinterest/"],
 			["dribbble", "https://dribbble.com/kinwooky"],
 			["calendly", "https://calendly.com/kinwooky"],
 			["notion", "https://www.notion.so/"],
@@ -692,6 +725,110 @@ describe("link provider metadata", () => {
 			providerDefinitionList.find(({ id }) => id === "github")?.theme
 				?.faviconBackground,
 			"#181717",
+		);
+	});
+
+	it("enriches Pinterest profiles, boards, and Pins", async () => {
+		const context = { fetch: createFetch() };
+		assert.equal(
+			resolveLinkProvider(
+				new URL("https://www.pinterest.com/pinterest/_created/"),
+			).target?.kind,
+			"profile",
+		);
+		assert.equal(
+			resolveLinkProvider(new URL("https://pin.it/abc123")).target?.kind,
+			"short-link",
+		);
+		const profile = await enrichLinkProvider(
+			new URL("https://kr.pinterest.com/pinterest/"),
+			context,
+		);
+		assert.equal(profile.title, "Pinterest");
+		assert.equal(
+			resolveLinkMetadata("https://kr.pinterest.com/pinterest/", profile)
+				.presentation.actionLabel,
+			"Follow",
+		);
+		assert.equal(profile.providerData?.followerCount, 6_267_000);
+		assert.equal(
+			profile.providerData?.profileImageUrl,
+			"https://i.pinimg.com/profile.jpg",
+		);
+
+		const boardUrl = "https://www.pinterest.com/pinterest/girls-night-in/";
+		const board = await enrichLinkProvider(new URL(boardUrl), context);
+		const boardThumbnails = [1, 2, 3, 4].map(
+			(index) => `https://i.pinimg.com/pin-${index}.jpg`,
+		);
+		assert.equal(board.title, "Girls night in");
+		assert.equal(
+			resolveLinkMetadata(boardUrl, board).presentation.actionLabel,
+			"View",
+		);
+		assert.equal(board.providerData?.authorName, "Pinterest");
+		assert.equal(
+			board.providerData?.authorProfileImageUrl,
+			"https://i.pinimg.com/profile.jpg",
+		);
+		assert.equal(board.providerData?.ownerName, "Pinterest");
+		assert.equal(
+			board.providerData?.ownerProfileImageUrl,
+			"https://i.pinimg.com/profile.jpg",
+		);
+		assert.deepEqual(
+			board.providerData?.recentBoardThumbnailUrls,
+			boardThumbnails,
+		);
+		assert.deepEqual(
+			resolveLinkMetadata(boardUrl, board).presentation.imageUrls,
+			boardThumbnails,
+		);
+
+		const pin = await enrichLinkProvider(
+			new URL("https://www.pinterest.com/pin/the-outsiders--123456789/"),
+			context,
+		);
+		assert.equal(pin.title, "The Outsiders");
+		assert.equal(
+			resolveLinkMetadata(
+				"https://www.pinterest.com/pin/the-outsiders--123456789/",
+				pin,
+			).presentation.actionLabel,
+			"View",
+		);
+		assert.equal(pin.imageUrl, "https://i.pinimg.com/the-outsiders.jpg");
+		assert.equal(pin.providerData?.authorName, "qlaucusx");
+		assert.equal(
+			pin.providerData?.authorProfileImageUrl,
+			"https://i.pinimg.com/author-profile.jpg",
+		);
+		const shortPin = await enrichLinkProvider(
+			new URL("https://pin.it/abc123"),
+			{
+				fetch: async (input) => {
+					const requestUrl = new URL(input.toString());
+					const isAuthor = requestUrl.pathname === "/dlvveee/";
+					const response = new Response(
+						isAuthor
+							? '<html><head><meta property="og:title" content="qlaucusx (dlvveee) - Profile | Pinterest"><meta property="og:image" content="https://i.pinimg.com/author-profile.jpg"></head><body><h1>qlaucusx</h1><img alt="qlaucusx" src="https://i.pinimg.com/author-profile.jpg"></body></html>'
+							: '<html><head><meta property="og:title" content="The Outsiders"><meta property="og:image" content="https://i.pinimg.com/the-outsiders.jpg"></head><body><h1>The Outsiders</h1><a href="/dlvveee/">dlvveee</a></body></html>',
+						{ headers: { "content-type": "text/html" } },
+					);
+					Object.defineProperty(response, "url", {
+						value: isAuthor
+							? requestUrl.toString()
+							: "https://kr.pinterest.com/pin/123456789/",
+					});
+					return response;
+				},
+			},
+		);
+		assert.equal(shortPin.title, "The Outsiders");
+		assert.equal(shortPin.providerData?.authorName, "qlaucusx");
+		assert.equal(
+			shortPin.providerData?.authorProfileImageUrl,
+			"https://i.pinimg.com/author-profile.jpg",
 		);
 	});
 });
