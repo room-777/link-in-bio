@@ -33,10 +33,10 @@ export default function AddWidgetButton({
 	const [linkValue, setLinkValue] = useState("");
 	const [linkError, setLinkError] = useState(false);
 
-	const addLink = (event: React.FormEvent<HTMLFormElement>) => {
-		event.preventDefault();
-		const url = normalizeHttpsUrl(linkValue);
+	const commitLink = (value: string) => {
+		const url = normalizeHttpsUrl(value);
 		if (!url) {
+			setLinkValue(value);
 			setLinkError(true);
 			return;
 		}
@@ -45,6 +45,10 @@ export default function AddWidgetButton({
 		setLinkValue("");
 		setLinkError(false);
 		setLinkPopoverOpen(false);
+	};
+	const addLink = (event: React.FormEvent<HTMLFormElement>) => {
+		event.preventDefault();
+		commitLink(linkValue);
 	};
 
 	return (
@@ -106,6 +110,12 @@ export default function AddWidgetButton({
 								onChange={(event) => {
 									setLinkValue(event.target.value);
 									setLinkError(false);
+								}}
+								onPaste={(event) => {
+									const pastedValue = event.clipboardData.getData("text");
+									if (!pastedValue) return;
+									event.preventDefault();
+									commitLink(pastedValue);
 								}}
 								className="text-sm placeholder:text-muted-foreground/60"
 							/>
