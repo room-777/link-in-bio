@@ -141,6 +141,19 @@ function createFetch() {
 			});
 		}
 		if (
+			requestUrl.hostname === "api-channel.sooplive.com" &&
+			requestUrl.pathname === "/v1.1/channel/kinwooky/station"
+		) {
+			return json({
+				station: {
+					userId: "kinwooky",
+					userNick: "Kin Wooky",
+					profileImage: "https://profile.soop.example/kinwooky.jpg",
+				},
+				upd: { fanCnt: 12345 },
+			});
+		}
+		if (
 			requestUrl.hostname === "api.twitch.tv" &&
 			requestUrl.pathname === "/helix/users"
 		) {
@@ -194,6 +207,12 @@ describe("link provider metadata", () => {
 			provider: string;
 			key: string;
 			expected: number;
+			expectedTitle?: string;
+			expectedActionLabel?: string;
+			expectedActionBackground?: string;
+			expectedCardBackground?: string;
+			expectedActionDetail?: string;
+			expectedImageUrl?: string;
 			env?: LinkProviderEnvironment;
 		}> = [
 			{
@@ -277,6 +296,19 @@ describe("link provider metadata", () => {
 				},
 			},
 			{
+				name: "SOOP",
+				url: "https://www.sooplive.com/station/kinwooky",
+				provider: "soop",
+				key: "favoriteCount",
+				expected: 12345,
+				expectedTitle: "Kin Wooky",
+				expectedActionLabel: "Watch",
+				expectedActionBackground: "#1C44AB",
+				expectedCardBackground: "#F4F6FB",
+				expectedActionDetail: "12.3K",
+				expectedImageUrl: "https://profile.soop.example/kinwooky.jpg",
+			},
+			{
 				name: "Product Hunt",
 				url: "https://producthunt.com/products/grabbin",
 				provider: "product-hunt",
@@ -292,6 +324,46 @@ describe("link provider metadata", () => {
 				env: testCase.env,
 			});
 			assert.equal(metadata.provider, testCase.provider, testCase.name);
+			if (testCase.expectedTitle)
+				assert.equal(metadata.title, testCase.expectedTitle, testCase.name);
+			if (testCase.expectedActionLabel)
+				assert.equal(
+					resolveLinkMetadata(testCase.url, metadata).presentation.actionLabel,
+					testCase.expectedActionLabel,
+					testCase.name,
+				);
+			if (testCase.expectedActionBackground)
+				assert.equal(
+					resolveLinkMetadata(testCase.url, metadata).presentation
+						.actionBackground,
+					testCase.expectedActionBackground,
+					testCase.name,
+				);
+			if (testCase.expectedCardBackground)
+				assert.equal(
+					resolveLinkMetadata(testCase.url, metadata).presentation
+						.cardBackground,
+					testCase.expectedCardBackground,
+					testCase.name,
+				);
+			if (testCase.expectedActionDetail)
+				assert.equal(
+					resolveLinkMetadata(testCase.url, metadata).presentation.actionDetail,
+					testCase.expectedActionDetail,
+					testCase.name,
+				);
+			if (testCase.expectedImageUrl) {
+				assert.equal(
+					metadata.imageUrl,
+					testCase.expectedImageUrl,
+					testCase.name,
+				);
+				assert.deepEqual(
+					resolveLinkMetadata(testCase.url, metadata).presentation.imageUrls,
+					[testCase.expectedImageUrl],
+					testCase.name,
+				);
+			}
 			assert.equal(
 				metadata.providerData?.[testCase.key],
 				testCase.expected,
@@ -341,6 +413,7 @@ describe("link provider metadata", () => {
 			["buy-me-a-coffee", "https://www.buymeacoffee.com/kinwooky"],
 			["linkedin", "https://www.linkedin.com/in/kinwooky"],
 			["chzzk", "https://chzzk.naver.com/0123456789abcdef0123456789abcdef"],
+			["soop", "https://www.sooplive.com/station/devil0108"],
 			["figma", "https://www.figma.com/file/abc"],
 			["ko-fi", "https://ko-fi.com/kinwooky"],
 			["gumroad", "https://gumroad.com/l/grabbin"],
@@ -352,6 +425,7 @@ describe("link provider metadata", () => {
 			["twitch", "https://www.twitch.tv/kinwooky"],
 			["behance", "https://www.behance.net/kinwooky"],
 			["dribbble", "https://dribbble.com/kinwooky"],
+			["calendly", "https://calendly.com/kinwooky"],
 			["notion", "https://www.notion.so/"],
 		] as const;
 
@@ -373,7 +447,8 @@ describe("link provider metadata", () => {
 			);
 			assert.equal(
 				metadata.faviconUrl,
-				`${providerIconBaseUrl}/${expectedProvider}.svg`,
+				definition?.faviconUrl ??
+					`${providerIconBaseUrl}/${expectedProvider}.svg`,
 				url,
 			);
 			const enriched = await enrichLinkProvider(new URL(url), {

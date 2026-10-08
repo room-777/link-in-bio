@@ -143,4 +143,42 @@ describe("link metadata service", () => {
 			},
 		});
 	});
+
+	it("LINK-METADATA-SERVICE-004 falls back to regular HTML metadata when SOOP API fails", async () => {
+		const url = "https://www.sooplive.com/station/devil0108";
+		const { db, current } = createDatabase(url);
+		const result = await enrichPageItemMetadata({
+			db,
+			handle: "jane",
+			userId: "user-1",
+			itemId: "item-1",
+			url,
+			fetch: async (input) => {
+				if (new URL(input.toString()).hostname === "api-channel.sooplive.com")
+					throw new Error("SOOP API unavailable");
+				return new Response(
+					'<html><head><meta property="og:title" content="SOOP station"><meta property="og:image" content="https://cdn.example.com/soop.png"></head></html>',
+					{ headers: { "content-type": "text/html" } },
+				);
+			},
+		});
+
+		assert.equal(result.type, "link");
+		if (result.type !== "link") return;
+		assert.equal(result.data.metadata?.title, "SOOP station");
+		assert.equal(
+			result.data.metadata?.imageUrl,
+			"https://cdn.example.com/soop.png",
+		);
+		assert.equal(result.data.metadata?.provider, "soop");
+		assert.equal(result.data.metadata?.presentation?.actionLabel, "Watch");
+		assert.deepEqual(current.data, {
+			url,
+			metadata: {
+				title: "SOOP station",
+				imageUrl: "https://cdn.example.com/soop.png",
+				provider: "soop",
+			},
+		});
+	});
 });

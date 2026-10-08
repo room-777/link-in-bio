@@ -145,6 +145,12 @@ export function getChzzkTarget(url: URL): LinkTargetMatch | undefined {
 	return undefined;
 }
 
+export function getSoopTarget(url: URL): LinkTargetMatch | undefined {
+	if (!isHostname(url, ["sooplive.com", "www.sooplive.com"])) return undefined;
+	const userId = url.pathname.match(/^\/station\/([a-z\d_-]+)\/?$/i)?.[1];
+	return userId ? { kind: "channel", params: { userId } } : undefined;
+}
+
 export function getTwitchTarget(url: URL): LinkTargetMatch | undefined {
 	if (!isHostname(url, ["twitch.tv", "www.twitch.tv", "m.twitch.tv"]))
 		return undefined;

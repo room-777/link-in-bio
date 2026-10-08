@@ -4,6 +4,7 @@ import { enrichDiscord } from "./discord";
 import { enrichGithub } from "./github";
 import { enrichInstagram } from "./instagram";
 import { enrichProductHunt } from "./product-hunt";
+import { enrichSoop } from "./soop";
 import { enrichThreads } from "./threads";
 import { enrichTikTok } from "./tiktok";
 import { enrichTwitch } from "./twitch";
@@ -22,6 +23,7 @@ const providerEnrichers: Partial<Record<LinkProviderId, LinkProviderEnricher>> =
 		"youtube-music": enrichYoutube,
 		discord: enrichDiscord,
 		chzzk: enrichChzzk,
+		soop: enrichSoop,
 		twitch: enrichTwitch,
 		"product-hunt": enrichProductHunt,
 	};
