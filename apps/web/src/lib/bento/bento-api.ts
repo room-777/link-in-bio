@@ -3,6 +3,7 @@ import {
 	type PageItemUploadResponse,
 	pageItemBatchResponseSchema,
 	pageItemMetadataResponseSchema,
+	pageItemRssResponseSchema,
 	pageItemUploadCompleteResponseSchema,
 	pageItemUploadResponseSchema,
 } from "@grabbin/api";
@@ -41,6 +42,20 @@ export async function refreshBentoLinkMetadata(
 	);
 	if (!response.ok) throw new Error(await getApiErrorMessage(response));
 	return v.parse(pageItemMetadataResponseSchema, await response.json());
+}
+
+export async function fetchBentoRss(handle: string, url: string) {
+	const response = await apiClient.pages[":handle"].metadata.$post(
+		{ param: { handle } },
+		{
+			init: {
+				body: JSON.stringify({ kind: "rss", url }),
+				headers: { "Content-Type": "application/json" },
+			},
+		},
+	);
+	if (!response.ok) throw new Error(await getApiErrorMessage(response));
+	return v.parse(pageItemRssResponseSchema, await response.json());
 }
 
 export async function uploadBentoMedia(
