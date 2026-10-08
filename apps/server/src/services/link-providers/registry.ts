@@ -1,4 +1,5 @@
 import type { LinkProviderId } from "@grabbin/page-link";
+import { enrichBehance } from "./behance";
 import { enrichChzzk } from "./chzzk";
 import { enrichDiscord } from "./discord";
 import { enrichGithub } from "./github";
@@ -26,6 +27,7 @@ const providerEnrichers: Partial<Record<LinkProviderId, LinkProviderEnricher>> =
 		soop: enrichSoop,
 		twitch: enrichTwitch,
 		"product-hunt": enrichProductHunt,
+		behance: enrichBehance,
 	};
 
 export function getProviderEnricher(

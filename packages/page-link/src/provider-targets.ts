@@ -42,6 +42,17 @@ export function getInstagramTarget(url: URL): LinkTargetMatch | undefined {
 		: undefined;
 }
 
+export function getBehanceTarget(url: URL): LinkTargetMatch | undefined {
+	if (!isHostname(url, ["behance.net", "www.behance.net"])) return undefined;
+	const project = url.pathname.match(/^\/gallery\/(\d+)(?:\/[^/]*)?\/?$/i);
+	if (project) return { kind: "project", params: { id: project[1] as string } };
+	const username = url.pathname.match(/^\/([a-z\d_-]+)\/?$/i)?.[1];
+	return username &&
+		!["gallery", "search", "jobs", "hire"].includes(username.toLowerCase())
+		? { kind: "profile", params: { username } }
+		: undefined;
+}
+
 export function getThreadsTarget(url: URL): LinkTargetMatch | undefined {
 	if (
 		!isHostname(url, [

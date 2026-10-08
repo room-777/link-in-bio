@@ -28,6 +28,22 @@ function createFetch() {
 	return async (input: RequestInfo | URL) => {
 		const requestUrl = new URL(input.toString());
 
+		if (requestUrl.hostname === "www.behance.net") {
+			if (requestUrl.pathname.startsWith("/embed/project/")) {
+				return new Response(
+					'<html><head><title>Portfolio Project :: Behance</title><meta name="description" content="Behance is the world&#039;s largest creative network for showcasing and discovering creative work"></head><body><img alt="Project Cover: Portfolio Project" srcset="https://mir-s3-cdn-cf.behance.net/project-small.jpg 115w, https://mir-s3-cdn-cf.behance.net/project-cover.jpg 808w"></body></html>',
+					{ headers: { "content-type": "text/html" } },
+				);
+			}
+			return new Response(
+				`<html><head><meta property="og:title" content="Artist Profile"><meta property="og:description" content="Graphic designer"></head><body>2.4M Followers${Array.from(
+					{ length: 4 },
+					(_, index) =>
+						`<article><a href="/gallery/${index + 1}/project-${index + 1}"><picture><source srcset="https://mir-s3-cdn-cf.behance.net/projects/thumb-${index + 1}.webp 808w"></picture></a></article>`,
+				).join("")}</body></html>`,
+				{ headers: { "content-type": "text/html" } },
+			);
+		}
 		if (requestUrl.hostname === "x.com") {
 			return new Response(
 				'<html><head><meta property="og:title" content="Profile"></head><script>followers:101909,following:168</script></html>',
@@ -372,6 +388,67 @@ describe("link provider metadata", () => {
 		}
 	});
 
+	/**
+	 * Case ID: LINK-PROVIDERS-004
+	 * Given: a Behance profile URL and a public project URL.
+	 * When: the shared provider metadata collector reads both pages.
+	 * Then: it returns profile metadata and follower count, and project title, description, and image.
+	 * Evidence: enriched metadata for each URL and resolved target kind.
+	 * Result: Pass | Fail | Blocked | Not Run
+	 */
+	it("LINK-PROVIDERS-004 collects Behance profile and project metadata", async () => {
+		const fetch = createFetch();
+		const profileUrl = new URL("https://www.behance.net/kinwooky");
+		const projectUrl = new URL(
+			"https://www.behance.net/gallery/123456789/portfolio-project",
+		);
+		const profile = await enrichLinkProvider(profileUrl, { fetch });
+		const project = await enrichLinkProvider(projectUrl, { fetch });
+
+		assert.equal(resolveLinkProvider(profileUrl).target?.kind, "profile");
+		assert.equal(resolveLinkProvider(projectUrl).target?.kind, "project");
+		assert.equal(profile.title, "Artist Profile");
+		assert.equal(profile.providerData?.followerCount, 2_400_000);
+		assert.equal(
+			resolveLinkMetadata(profileUrl.toString(), profile).presentation
+				.actionDetail,
+			"2.4M",
+		);
+		assert.deepEqual(profile.providerData?.recentProjectThumbnailUrls, [
+			"https://mir-s3-cdn-cf.behance.net/projects/thumb-1.webp",
+			"https://mir-s3-cdn-cf.behance.net/projects/thumb-2.webp",
+			"https://mir-s3-cdn-cf.behance.net/projects/thumb-3.webp",
+			"https://mir-s3-cdn-cf.behance.net/projects/thumb-4.webp",
+		]);
+		assert.deepEqual(
+			resolveLinkMetadata(profileUrl.toString(), profile).presentation
+				.imageUrls,
+			profile.providerData?.recentProjectThumbnailUrls,
+		);
+		assert.equal(project.title, "Portfolio Project");
+		assert.equal(project.description, undefined);
+		assert.equal(
+			resolveLinkMetadata(projectUrl.toString(), project).presentation
+				.actionLabel,
+			"View",
+		);
+		assert.equal(
+			resolveLinkMetadata(profileUrl.toString(), profile).presentation
+				.actionLabel,
+			"Follow",
+		);
+		assert.equal(
+			project.imageUrl,
+			"https://mir-s3-cdn-cf.behance.net/project-cover.jpg",
+		);
+		const behanceTheme = providerDefinitionList.find(
+			({ id }) => id === "behance",
+		)?.theme;
+		assert.equal(behanceTheme?.faviconBackground, undefined);
+		assert.equal(behanceTheme?.cardBackground, undefined);
+		assert.equal(behanceTheme?.actionBackground, "#1769ff");
+	});
+
 	it("LINK-PROVIDERS-003 loads four recent YouTube channel thumbnails", async () => {
 		const metadata = await enrichLinkProvider(
 			new URL("https://youtube.com/@kinwooky"),
@@ -439,7 +516,6 @@ describe("link provider metadata", () => {
 			assert.equal(resolved.id, expectedProvider, url);
 			assert.equal(metadata.presentation.provider, expectedProvider, url);
 			assert.ok(metadata.presentation.providerLabel, url);
-			assert.ok(definition?.theme?.faviconBackground, url);
 			assert.equal(
 				metadata.presentation.faviconBackground,
 				definition?.theme?.faviconBackground,

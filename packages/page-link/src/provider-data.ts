@@ -3,6 +3,7 @@ import type {
 	PageItemLinkPresentation,
 } from "@grabbin/api";
 import {
+	getBehanceTarget,
 	getChzzkTarget,
 	getDiscordTarget,
 	getGithubTarget,
@@ -25,9 +26,7 @@ export type ProviderTheme = Pick<
 	| "actionText"
 	| "actionLabel"
 	| "actionVariant"
-> & {
-	faviconBackground: string;
-};
+>;
 
 type ProviderData = NonNullable<PageItemLinkMetadata["providerData"]>;
 
@@ -97,6 +96,25 @@ const youtubeImageUrls = ({
 			: [];
 	if (channelImageUrl.length > 0) return channelImageUrl;
 	return typeof metadata?.imageUrl === "string" ? [metadata.imageUrl] : [];
+};
+
+const behanceImageUrls = ({
+	metadata,
+	providerData,
+}: LinkProviderPresentationContext) => {
+	const recentProjectThumbnailUrls = Array.isArray(
+		providerData?.recentProjectThumbnailUrls,
+	)
+		? providerData.recentProjectThumbnailUrls.filter(
+				(value): value is string =>
+					typeof value === "string" && value.startsWith("https://"),
+			)
+		: [];
+	return recentProjectThumbnailUrls.length > 0
+		? recentProjectThumbnailUrls
+		: typeof metadata?.imageUrl === "string"
+			? [metadata.imageUrl]
+			: [];
 };
 
 export const providerDefinitions = [
@@ -466,9 +484,12 @@ export const providerDefinitions = [
 		hosts: ["behance.net"],
 		label: "Behance",
 		faviconUrl: providerIconUrl("behance"),
+		countKey: "followerCount",
+		resolveTarget: getBehanceTarget,
+		getImageUrls: behanceImageUrls,
+		present: ({ target }) =>
+			target?.kind === "project" ? { actionLabel: "View" } : {},
 		theme: {
-			faviconBackground: "#1769FF",
-			cardBackground: "#f0f5ff",
 			actionBackground: "#1769ff",
 			actionText: "#ffffff",
 			actionLabel: "Follow",
