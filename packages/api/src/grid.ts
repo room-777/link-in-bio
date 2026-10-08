@@ -109,7 +109,7 @@ const faviconUrlSchema = v.union([
 	v.pipe(
 		v.string(),
 		v.trim(),
-		v.regex(/^\/api\/provider-icons\/[a-z0-9-]+\.svg$/i),
+		v.regex(/^\/api\/provider-icons\/[a-z0-9-]+\.(?:svg|webp)$/i),
 	),
 ]);
 

@@ -7,9 +7,8 @@ export async function GET(
 	{ params }: { params: Promise<{ provider: string }> },
 ) {
 	const { provider: rawProvider } = await params;
-	const provider = rawProvider.endsWith(".svg")
-		? rawProvider.slice(0, -4)
-		: rawProvider;
+	const extension = rawProvider.endsWith(".webp") ? "webp" : "svg";
+	const provider = rawProvider.replace(/\.(?:svg|webp)$/, "");
 	if (!providerDefinitionList.some(({ id }) => id === provider)) {
 		return new Response("Provider icon not found.", { status: 404 });
 	}
@@ -23,13 +22,16 @@ export async function GET(
 		const server = (env as { SERVER?: Fetcher }).SERVER;
 		response = server
 			? await server.fetch(
-					new Request(`https://server/provider-icons/${provider}.svg`, {
-						headers,
-					}),
+					new Request(
+						`https://server/provider-icons/${provider}.${extension}`,
+						{
+							headers,
+						},
+					),
 				)
 			: await fetch(
 					new URL(
-						`/provider-icons/${provider}.svg`,
+						`/provider-icons/${provider}.${extension}`,
 						webEnv.NEXT_PUBLIC_SERVER_URL,
 					),
 					{ headers },

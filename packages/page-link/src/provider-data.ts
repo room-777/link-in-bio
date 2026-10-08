@@ -432,6 +432,30 @@ export const providerDefinitions = [
 		},
 	},
 	{
+		id: "substack",
+		hosts: ["substack.com"],
+		label: "Substack",
+		faviconUrl: providerIconUrl("substack"),
+	},
+	{
+		id: "note",
+		hosts: ["note.com"],
+		label: "note",
+		faviconUrl: providerIconUrl("note"),
+	},
+	{
+		id: "ghost",
+		hosts: ["ghost.io"],
+		label: "Ghost",
+		faviconUrl: "/api/provider-icons/ghost.webp",
+	},
+	{
+		id: "hashnode",
+		hosts: ["hashnode.dev"],
+		label: "Hashnode",
+		faviconUrl: providerIconUrl("hashnode"),
+	},
+	{
 		id: "patreon",
 		hosts: ["patreon.com"],
 		label: "Patreon",
