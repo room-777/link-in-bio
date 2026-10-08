@@ -1,5 +1,4 @@
 import type { Metadata } from "next";
-import Image from "next/image";
 import { redirect } from "next/navigation";
 
 import LoginForm from "@/components/auth/login-form";
@@ -26,18 +25,6 @@ export default async function LoginPage({
 	return (
 		<main className="relative grid min-h-svh w-full place-items-center">
 			<LoginForm returnTo={returnTo} />
-			<div className="pointer-events-none absolute inset-x-0 bottom-0 aspect-[1.25/1] w-full overflow-hidden sm:aspect-[5/1]">
-				<Image
-					alt=""
-					aria-hidden="true"
-					width={2171}
-					height={724}
-					loading="lazy"
-					sizes="100vw"
-					src="/images/footer-doodles-bf164e2b806327c8.png"
-					className="absolute inset-0 -z-10 h-full w-full select-none object-cover object-bottom"
-				/>
-			</div>
 		</main>
 	);
 }

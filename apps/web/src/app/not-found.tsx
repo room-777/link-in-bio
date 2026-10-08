@@ -3,7 +3,6 @@
 import { env } from "@grabbin/env/web";
 import { Button } from "@grabbin/ui/components/button";
 import { Globe } from "lucide-react";
-import Image from "next/image";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 
@@ -13,18 +12,6 @@ export default function NotFound() {
 
 	return (
 		<main className="relative isolate grid min-h-svh place-items-center overflow-x-clip bg-background px-6 py-16 text-center font-open-runde">
-			<div className="pointer-events-none absolute inset-x-0 bottom-0 z-0 aspect-[1.5/1] w-full overflow-hidden sm:aspect-[5/1]">
-				<Image
-					alt=""
-					aria-hidden="true"
-					width={2171}
-					height={724}
-					loading="lazy"
-					sizes="100vw"
-					src="/images/footer-doodles-bf164e2b806327c8.png"
-					className="absolute inset-0 h-full w-full select-none object-cover object-bottom"
-				/>
-			</div>
 			<section className="z-10 flex flex-col items-center">
 				<h1 className="mb-4 font-semibold text-[clamp(4.5rem,13vw,6.25rem)] text-primary/90 leading-none tracking-tight">
 					404
