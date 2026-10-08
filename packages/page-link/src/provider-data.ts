@@ -561,6 +561,12 @@ export const providerDefinitions = [
 		},
 	},
 	{
+		id: "pinterest",
+		hosts: ["pinterest.com", "pin.it"],
+		label: "Pinterest",
+		faviconUrl: providerIconUrl("pinterest"),
+	},
+	{
 		id: "dribbble",
 		hosts: ["dribbble.com"],
 		label: "Dribbble",
