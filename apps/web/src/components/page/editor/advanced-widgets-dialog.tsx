@@ -225,7 +225,7 @@ export default function AdvancedWidgetsDialog({
 							{selectedWidget && (
 								<AdvancedWidgetIcon
 									widget={selectedWidget}
-									className="size-5"
+									className="size-7"
 								/>
 							)}
 							<span className="truncate">{selectedWidget?.label}</span>

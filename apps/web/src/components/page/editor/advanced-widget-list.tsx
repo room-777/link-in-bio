@@ -28,16 +28,16 @@ export default function AdvancedWidgetList({
 								key={item.id}
 								type="button"
 								variant="outline"
-								className={`h-11 min-w-0 gap-2 px-2.5 ${item.badges.length ? "justify-between" : "justify-start"}`}
+								className={`h-14 min-w-0 gap-3 px-3 ${item.badges.length ? "justify-between" : "justify-start"}`}
 								onClick={() => onSelect(item.id)}
 							>
-								<span className="flex min-w-0 items-center gap-2">
-									<AdvancedWidgetIcon widget={item} className="size-5" />
-									<span className="truncate text-sm">{item.label}</span>
+								<span className="flex min-w-0 items-center gap-2.5">
+									<AdvancedWidgetIcon widget={item} className="size-7" />
+									<span className="truncate text-base">{item.label}</span>
 								</span>
 								<AdvancedWidgetBadges
 									badges={item.badges}
-									sizeClassName="size-5.5"
+									sizeClassName="size-7"
 								/>
 							</Button>
 						))}

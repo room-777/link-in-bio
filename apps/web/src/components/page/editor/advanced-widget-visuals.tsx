@@ -1,3 +1,4 @@
+import { cn } from "@grabbin/ui/lib/utils";
 import type { AdvancedWidgetModule } from "@/constant/widget/advanced-widget-registry";
 
 export function AdvancedWidgetIcon({
@@ -8,7 +9,13 @@ export function AdvancedWidgetIcon({
 	className: string;
 }) {
 	return (
-		<span className="inline-flex shrink-0" aria-hidden="true">
+		<span
+			className={cn(
+				"inline-flex shrink-0",
+				widget.iconFrame && "overflow-hidden rounded-md outline-depth",
+			)}
+			aria-hidden="true"
+		>
 			<img
 				src={widget.iconUrl}
 				alt=""
@@ -27,7 +34,7 @@ export function AdvancedWidgetBadges({
 }) {
 	if (!badges.length) return null;
 	return (
-		<span className="flex shrink-0 -space-x-2 rounded-full" aria-hidden="true">
+		<span className="flex shrink-0 -space-x-3 rounded-md" aria-hidden="true">
 			{badges.map((badge, index) => (
 				<span
 					key={badge.id}
