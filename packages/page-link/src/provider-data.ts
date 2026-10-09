@@ -245,7 +245,7 @@ export const providerDefinitions = [
 		id: "tweet",
 		hosts: [],
 		label: "Tweet",
-		faviconUrl: providerIconUrl("tweet"),
+		faviconUrl: `${providerIconUrl("tweet")}?v=2`,
 		advancedWidget: { badgeProviderIds: [], brandColor: "#1DA1F2" },
 	},
 	{
