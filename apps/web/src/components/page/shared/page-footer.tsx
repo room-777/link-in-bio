@@ -270,7 +270,7 @@ function OwnerFooter({
 						side="top"
 						sideOffset={8}
 						initialFocus={false}
-						className="smooth-shadow-ring-2xl w-60 items-center gap-1 rounded-2xl p-2"
+						className="smooth-shadow-ring-md w-60 items-center gap-1 rounded-3xl p-2"
 					>
 						<PopoverTitle className="sr-only">Page options</PopoverTitle>
 						<Button
