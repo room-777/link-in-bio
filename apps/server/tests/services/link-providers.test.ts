@@ -766,6 +766,15 @@ describe("link provider metadata", () => {
 		assert.equal(metadata.presentation.provider, "substack");
 	});
 
+	it("preserves Tweet widget identity after resolving its X URL", () => {
+		const metadata = resolveLinkMetadata("https://x.com/i/status/123", {
+			provider: "tweet",
+		});
+
+		assert.equal(metadata.provider, "tweet");
+		assert.equal(metadata.presentation.provider, "x");
+	});
+
 	it("enriches Pinterest profiles, boards, and Pins", async () => {
 		const context = { fetch: createFetch() };
 		assert.equal(

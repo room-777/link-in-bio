@@ -114,7 +114,9 @@ export function resolveLinkMetadata(
 			metadata?.faviconUrl ??
 			`https://icons.duckduckgo.com/ip3/${hostname}.ico`,
 		provider:
-			metadata?.provider === "rss-feed" ? "rss-feed" : presentation.provider,
+			metadata?.provider === "rss-feed" || metadata?.provider === "tweet"
+				? metadata.provider
+				: presentation.provider,
 		presentation,
 	};
 }
