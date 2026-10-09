@@ -28,7 +28,7 @@ export default function AdvancedWidgetList({
 
 	return (
 		<ScrollArea className="[&_[data-slot=scroll-area-viewport]]:scroll-fade-y [&_[data-slot=scroll-area-viewport]]:scrollbar-none size-full min-h-0 [&_[data-slot=scroll-area-scrollbar]]:hidden">
-			<div className="space-y-5 py-1 pr-3">
+			<div className="space-y-5 py-1">
 				{categories.length > 0 ? (
 					categories.map((category) => (
 						<section key={category.name} className="space-y-2">
