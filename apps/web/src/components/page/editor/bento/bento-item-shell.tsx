@@ -153,8 +153,13 @@ export function BentoItemShell({
 	const usesCardLink = Boolean(publicLink && !usesNestedLinks);
 	const Card = usesCardLink ? "a" : "div";
 	const cardRadius = getBentoItemRadius(item.type, preset);
+	const cardBorderColor =
+		item.type === "map" || item.type === "media" || item.type === "section"
+			? undefined
+			: "var(--bento-item-border-color)";
 	const cardStyle: CSSProperties = {
 		borderRadius: cardRadius,
+		...(cardBorderColor ? { borderColor: cardBorderColor } : {}),
 		backgroundColor: publicLink ? undefined : cardBackground,
 		...(item.type === "text"
 			? ({

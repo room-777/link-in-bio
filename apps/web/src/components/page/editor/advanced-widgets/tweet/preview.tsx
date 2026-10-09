@@ -58,7 +58,7 @@ export function TweetAdvancedWidgetPreview({
 					className="size-full min-h-0 max-w-none"
 				/>
 			) : (
-				<TweetSkeleton className="size-full max-w-none p-3" />
+				<TweetSkeleton className="size-full max-w-none" />
 			)}
 		</AdvancedWidgetPreviewFrame>
 	);

@@ -2,7 +2,7 @@
 
 import { cn } from "@grabbin/ui/lib/utils";
 import { Check, Link2 } from "lucide-react";
-import { useState } from "react";
+import { useLayoutEffect, useRef, useState } from "react";
 import { type EnrichedTweet, enrichTweet, useTweet } from "react-tweet";
 
 const VerifiedBadge = ({ className }: { className?: string }) => (
@@ -39,10 +39,16 @@ const formatDate = (dateString: string): string => {
 	return `${hour12}:${minutes.toString().padStart(2, "0")} ${ampm} · ${month} ${date.getDate()}, ${date.getFullYear()}`;
 };
 
-export const TweetSkeleton = ({ className }: { className?: string }) => (
+export const TweetSkeleton = ({
+	className,
+	isPortrait = false,
+}: {
+	className?: string;
+	isPortrait?: boolean;
+}) => (
 	<div
 		className={cn(
-			"flex size-full min-h-0 w-full max-w-[590px] flex-col overflow-hidden rounded-xl p-4 not-dark:shadow-[0_0_0_1px_rgba(0,0,0,.08),_0px_2px_2px_rgba(0,0,0,.04)] dark:border dark:border-muted",
+			"flex size-full min-h-0 w-full max-w-[590px] flex-col overflow-hidden rounded-[inherit] bg-white p-4",
 			className,
 		)}
 	>
@@ -54,16 +60,38 @@ export const TweetSkeleton = ({ className }: { className?: string }) => (
 					<div className="-mt-0.5 h-[15px] w-16 animate-pulse rounded bg-muted" />
 				</div>
 			</div>
-			<div className="size-5 animate-pulse rounded bg-muted" />
+			{!isPortrait ? (
+				<div className="size-5 animate-pulse rounded bg-muted" />
+			) : null}
 		</div>
-		<div className="mt-3 flex h-12 shrink-0 flex-col justify-between">
+		<div
+			className={cn("mt-3 shrink-0 space-y-2", isPortrait ? "h-24" : "h-12")}
+		>
 			<div className="h-4 w-full animate-pulse rounded bg-muted" />
 			<div className="h-4 w-3/4 animate-pulse rounded bg-muted" />
+			{isPortrait ? (
+				<>
+					<div className="h-4 w-5/6 animate-pulse rounded bg-muted" />
+					<div className="h-4 w-2/3 animate-pulse rounded bg-muted" />
+				</>
+			) : null}
 		</div>
 		<div className="mt-3 min-h-0 flex-1 animate-pulse rounded-lg bg-muted" />
-		<div className="mt-3 flex shrink-0 items-center justify-between border-muted border-t pt-2">
+		<div
+			className={cn(
+				"mt-3 flex shrink-0 items-center justify-between border-muted border-t pt-2",
+				isPortrait && "flex-col items-stretch gap-2",
+			)}
+		>
 			<div className="h-3 w-28 animate-pulse rounded bg-muted" />
-			<div className="h-[18px] w-10 animate-pulse rounded bg-muted" />
+			{isPortrait ? (
+				<div className="flex items-center justify-between">
+					<div className="h-[18px] w-10 animate-pulse rounded bg-muted" />
+					<div className="size-8 animate-pulse rounded-full bg-muted" />
+				</div>
+			) : (
+				<div className="h-[18px] w-10 animate-pulse rounded bg-muted" />
+			)}
 		</div>
 	</div>
 );
@@ -71,7 +99,7 @@ export const TweetSkeleton = ({ className }: { className?: string }) => (
 const TweetNotFound = ({ className }: { className?: string }) => (
 	<div
 		className={cn(
-			"flex w-full max-w-[590px] flex-col items-center justify-center gap-2 rounded-xl p-6 text-muted-foreground not-dark:shadow-[0_0_0_1px_rgba(0,0,0,.08),_0px_2px_2px_rgba(0,0,0,.04)] dark:border dark:border-muted",
+			"flex w-full max-w-[590px] flex-col items-center justify-center gap-2 rounded-[inherit] bg-white p-6 text-[#536471]",
 			className,
 		)}
 	>
@@ -79,9 +107,37 @@ const TweetNotFound = ({ className }: { className?: string }) => (
 	</div>
 );
 
-const TweetHeader = ({ tweet }: { tweet: EnrichedTweet }) => (
-	<div className="flex items-start justify-between">
-		<div className="flex items-center gap-2">
+const TweetPostLink = ({ tweet }: { tweet: EnrichedTweet }) => (
+	<a
+		href={tweet.url}
+		target="_blank"
+		rel="noopener noreferrer"
+		className="pointer-events-auto inline-flex size-8 shrink-0 cursor-pointer! items-center justify-center rounded-full transition-transform duration-150 hover:scale-125 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/60 motion-reduce:transition-none"
+	>
+		<span className="sr-only">Open post on X</span>
+		<svg
+			viewBox="0 0 256 209"
+			preserveAspectRatio="xMidYMid"
+			className="size-5"
+			aria-hidden="true"
+		>
+			<path
+				d="M256 25.45c-9.42 4.177-19.542 7-30.166 8.27 10.845-6.5 19.172-16.793 23.093-29.057a105.183 105.183 0 0 1-33.351 12.745C205.995 7.201 192.346.822 177.239.822c-29.006 0-52.523 23.516-52.523 52.52 0 4.117.465 8.125 1.36 11.97-43.65-2.191-82.35-23.1-108.255-54.876-4.52 7.757-7.11 16.78-7.11 26.404 0 18.222 9.273 34.297 23.365 43.716a52.312 52.312 0 0 1-23.79-6.57c-.003.22-.003.44-.003.661 0 25.447 18.104 46.675 42.13 51.5a52.592 52.592 0 0 1-23.718.9c6.683 20.866 26.08 36.05 49.062 36.475-17.975 14.086-40.622 22.483-65.228 22.483-4.24 0-8.42-.249-12.529-.734 23.243 14.902 50.85 23.597 80.51 23.597 96.607 0 149.434-80.031 149.434-149.435 0-2.278-.05-4.543-.152-6.795A106.748 106.748 0 0 0 256 25.45"
+				fill="#55acee"
+			/>
+		</svg>
+	</a>
+);
+
+const TweetHeader = ({
+	tweet,
+	isPortrait,
+}: {
+	tweet: EnrichedTweet;
+	isPortrait: boolean;
+}) => (
+	<div className="flex min-w-0 items-start justify-between">
+		<div className="flex min-w-0 flex-1 items-center gap-2">
 			<div className="size-[38px] shrink-0 overflow-hidden rounded-full">
 				<img
 					src={tweet.user.profile_image_url_https}
@@ -92,75 +148,102 @@ const TweetHeader = ({ tweet }: { tweet: EnrichedTweet }) => (
 					className="size-full rounded-full outline-depth"
 				/>
 			</div>
-			<div className="flex flex-col">
-				<span className="flex items-center gap-1 font-semibold text-[15px] text-primary">
-					{tweet.user.name}
+			<div className="flex min-w-0 flex-col">
+				<span className="flex min-w-0 items-center gap-1 font-semibold text-[#0f1419] text-[15px]">
+					<span className={cn("min-w-0", isPortrait && "truncate")}>
+						{tweet.user.name}
+					</span>
 					{(tweet.user.verified || tweet.user.is_blue_verified) && (
-						<VerifiedBadge className="size-4 text-[#1C9BF1]" />
+						<VerifiedBadge className="size-4 shrink-0 text-[#1C9BF1]" />
 					)}
 				</span>
-				<span className="-mt-0.5 text-[13px] text-muted-foreground">
+				<span
+					className={cn(
+						"-mt-0.5 text-[#536471] text-[13px]",
+						isPortrait && "truncate",
+					)}
+				>
 					@{tweet.user.screen_name}
 				</span>
 			</div>
 		</div>
-		<a href={tweet.url} target="_blank" rel="noopener noreferrer">
-			<span className="sr-only">Open post on X</span>
-			<svg
-				viewBox="0 0 256 209"
-				preserveAspectRatio="xMidYMid"
-				className="size-5"
-				aria-hidden="true"
-			>
-				<path
-					d="M256 25.45c-9.42 4.177-19.542 7-30.166 8.27 10.845-6.5 19.172-16.793 23.093-29.057a105.183 105.183 0 0 1-33.351 12.745C205.995 7.201 192.346.822 177.239.822c-29.006 0-52.523 23.516-52.523 52.52 0 4.117.465 8.125 1.36 11.97-43.65-2.191-82.35-23.1-108.255-54.876-4.52 7.757-7.11 16.78-7.11 26.404 0 18.222 9.273 34.297 23.365 43.716a52.312 52.312 0 0 1-23.79-6.57c-.003.22-.003.44-.003.661 0 25.447 18.104 46.675 42.13 51.5a52.592 52.592 0 0 1-23.718.9c6.683 20.866 26.08 36.05 49.062 36.475-17.975 14.086-40.622 22.483-65.228 22.483-4.24 0-8.42-.249-12.529-.734 23.243 14.902 50.85 23.597 80.51 23.597 96.607 0 149.434-80.031 149.434-149.435 0-2.278-.05-4.543-.152-6.795A106.748 106.748 0 0 0 256 25.45"
-					fill="#55acee"
-				/>
-			</svg>
-		</a>
+		{isPortrait ? null : <TweetPostLink tweet={tweet} />}
 	</div>
 );
 
 const TweetBody = ({
 	tweet,
-	hasMedia,
+	isPortrait,
 }: {
 	tweet: EnrichedTweet;
-	hasMedia: boolean;
-}) => (
-	<p
-		className={cn(
-			"mt-3 min-h-0 text-primary leading-6",
-			hasMedia
-				? "line-clamp-2 shrink-0 overflow-hidden"
-				: "flex-1 overflow-y-auto",
-		)}
-	>
-		{tweet.entities.map((entity, idx) => {
-			switch (entity.type) {
-				case "url":
-				case "symbol":
-				case "hashtag":
-				case "mention":
-					return (
-						<a
-							key={idx}
-							href={entity.href}
-							target="_blank"
-							rel="noopener noreferrer"
-							className="text-[#1C9BF1] hover:underline"
-						>
-							{entity.text}
-						</a>
-					);
-				case "text":
-					return <span key={idx}>{entity.text}</span>;
-				default:
-					return null;
-			}
-		})}
-	</p>
-);
+	isPortrait: boolean;
+}) => {
+	const bodyContainerRef = useRef<HTMLDivElement>(null);
+	const bodyTextRef = useRef<HTMLParagraphElement>(null);
+	const [lineClamp, setLineClamp] = useState(1);
+
+	useLayoutEffect(() => {
+		const container = bodyContainerRef.current;
+		const body = bodyTextRef.current;
+		if (!container || !body) return;
+
+		const updateLineClamp = () => {
+			const lineHeight = Number.parseFloat(getComputedStyle(body).lineHeight);
+			if (!Number.isFinite(lineHeight) || lineHeight <= 0) return;
+
+			const nextLineClamp = Math.max(
+				1,
+				Math.floor(container.clientHeight / lineHeight),
+			);
+			setLineClamp((current) =>
+				current === nextLineClamp ? current : nextLineClamp,
+			);
+		};
+
+		updateLineClamp();
+		const observer = new ResizeObserver(updateLineClamp);
+		observer.observe(container);
+		return () => observer.disconnect();
+	}, []);
+
+	return (
+		<div ref={bodyContainerRef} className="mt-3 min-h-0 flex-1 overflow-hidden">
+			<p
+				ref={bodyTextRef}
+				style={{ WebkitLineClamp: lineClamp }}
+				className={cn(
+					"line-clamp-1",
+					"text-[#0f1419]",
+					isPortrait ? "leading-[1.4]" : "leading-6",
+				)}
+			>
+				{tweet.entities.map((entity, idx) => {
+					switch (entity.type) {
+						case "url":
+						case "symbol":
+						case "hashtag":
+						case "mention":
+							return (
+								<a
+									key={idx}
+									href={entity.href}
+									target="_blank"
+									rel="noopener noreferrer"
+									className="text-[#1C9BF1] hover:underline"
+								>
+									{entity.text}
+								</a>
+							);
+						case "text":
+							return <span key={idx}>{entity.text}</span>;
+						default:
+							return null;
+					}
+				})}
+			</p>
+		</div>
+	);
+};
 
 const TweetMedia = ({ tweet }: { tweet: EnrichedTweet }) => {
 	if (!tweet.video?.variants?.length && !tweet.photos?.length) return null;
@@ -241,6 +324,7 @@ const TweetMedia = ({ tweet }: { tweet: EnrichedTweet }) => {
 
 interface TweetFooterProps {
 	tweet: EnrichedTweet;
+	isPortrait: boolean;
 	showDate?: boolean;
 	showLikeButton?: boolean;
 	showCopyLink?: boolean;
@@ -248,6 +332,7 @@ interface TweetFooterProps {
 
 const TweetFooter = ({
 	tweet,
+	isPortrait,
 	showDate = true,
 	showLikeButton = true,
 	showCopyLink = true,
@@ -267,23 +352,36 @@ const TweetFooter = ({
 	return (
 		<div className="mt-3 shrink-0">
 			{showDate || showActions ? (
-				<div className="flex min-w-0 items-center justify-between gap-2 border-muted border-t pt-2">
+				<div
+					className={cn(
+						"flex min-w-0 items-center justify-between gap-2 border-muted border-t pt-2",
+						isPortrait && "flex-col items-stretch gap-2",
+					)}
+				>
 					{showDate ? (
 						<time
-							className="truncate text-muted-foreground text-xs"
+							className={cn(
+								"truncate text-[#536471] text-xs",
+								isPortrait && "w-full",
+							)}
 							dateTime={tweet.created_at}
 						>
 							{formatDate(tweet.created_at)}
 						</time>
 					) : null}
 					{showActions ? (
-						<div className="flex shrink-0 gap-4">
+						<div
+							className={cn(
+								"flex shrink-0 gap-4",
+								isPortrait && "w-full items-center justify-between",
+							)}
+						>
 							{showLikeButton && (
 								<a
 									href={`https://x.com/intent/like?tweet_id=${tweet.id_str}`}
 									target="_blank"
 									rel="noopener noreferrer"
-									className="flex items-center gap-1.5 text-muted-foreground"
+									className="flex items-center gap-1.5 text-[#536471]"
 								>
 									<svg
 										className="text-[#F91880]"
@@ -305,11 +403,12 @@ const TweetFooter = ({
 									</span>
 								</a>
 							)}
+							{isPortrait ? <TweetPostLink tweet={tweet} /> : null}
 							{showCopyLink && (
 								<button
 									type="button"
 									onClick={handleCopyLink}
-									className="flex cursor-pointer items-center gap-1.5 text-muted-foreground"
+									className="flex cursor-pointer items-center gap-1.5 text-[#536471]"
 								>
 									{isCopied ? (
 										<Check className="size-4 text-emerald-500" />
@@ -330,6 +429,7 @@ const TweetFooter = ({
 interface TweetContentProps {
 	tweet: EnrichedTweet;
 	className?: string;
+	isPortrait?: boolean;
 	showDate?: boolean;
 	showLikeButton?: boolean;
 	showCopyLink?: boolean;
@@ -338,26 +438,24 @@ interface TweetContentProps {
 const TweetContent = ({
 	tweet,
 	className,
+	isPortrait = false,
 	showDate,
 	showLikeButton,
 	showCopyLink,
 }: TweetContentProps) => {
-	const hasMedia = Boolean(
-		tweet.video?.variants?.length || tweet.photos?.length,
-	);
-
 	return (
 		<div
 			className={cn(
-				"flex size-full min-h-0 w-full max-w-[590px] flex-col overflow-hidden rounded-xl p-4 not-dark:shadow-[0_0_0_1px_rgba(0,0,0,.08),_0px_2px_2px_rgba(0,0,0,.04)] dark:border dark:border-muted",
+				"flex size-full min-h-0 w-full max-w-[590px] flex-col overflow-hidden rounded-[inherit] bg-white p-4",
 				className,
 			)}
 		>
-			<TweetHeader tweet={tweet} />
-			<TweetBody tweet={tweet} hasMedia={hasMedia} />
+			<TweetHeader tweet={tweet} isPortrait={isPortrait} />
+			<TweetBody tweet={tweet} isPortrait={isPortrait} />
 			<TweetMedia tweet={tweet} />
 			<TweetFooter
 				tweet={tweet}
+				isPortrait={isPortrait}
 				showDate={showDate}
 				showLikeButton={showLikeButton}
 				showCopyLink={showCopyLink}
@@ -369,6 +467,7 @@ const TweetContent = ({
 interface TweetProps {
 	id: string;
 	className?: string;
+	isPortrait?: boolean;
 	showDate?: boolean;
 	showLikeButton?: boolean;
 	showCopyLink?: boolean;
@@ -377,6 +476,7 @@ interface TweetProps {
 export function Tweet({
 	id,
 	className,
+	isPortrait = false,
 	showDate = true,
 	showLikeButton = true,
 	showCopyLink = true,
@@ -384,7 +484,7 @@ export function Tweet({
 	const { data: tweet, isLoading, error } = useTweet(id);
 
 	if (isLoading) {
-		return <TweetSkeleton className={className} />;
+		return <TweetSkeleton className={className} isPortrait={isPortrait} />;
 	}
 
 	if (error || !tweet) {
@@ -419,6 +519,7 @@ export function Tweet({
 		<TweetContent
 			tweet={enrichedTweet}
 			className={className}
+			isPortrait={isPortrait}
 			showDate={showDate}
 			showLikeButton={showLikeButton}
 			showCopyLink={showCopyLink}
