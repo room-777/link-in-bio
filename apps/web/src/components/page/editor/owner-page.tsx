@@ -166,9 +166,6 @@ export default function OwnerPage({
 			<PageEditorToolbar
 				value={layoutBreakpoint}
 				onChange={handleLayoutBreakpointChange}
-				isAutoSaving={isAutoSaving}
-				profileImageUrl={profileImageUrl}
-				demoPreview={demoPreview}
 				widgetActions={widgetActions}
 			/>
 		</div>
