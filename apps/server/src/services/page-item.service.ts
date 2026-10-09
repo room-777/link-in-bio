@@ -113,10 +113,13 @@ function assertValidItemPayload(
 	userId: string,
 	pageId: string,
 ) {
+	const isTweet =
+		item.type === "link" && item.data.metadata?.provider === "tweet";
 	for (const [breakpoint, layout] of Object.entries(item.layouts) as Array<
 		[BentoBreakpoint, PageItemLayouts[BentoBreakpoint]]
 	>) {
-		if (!inferPresetFromLayout(item.type, layout, breakpoint)) {
+		const preset = inferPresetFromLayout(item.type, layout, breakpoint);
+		if (!preset || (isTweet && !["squareLarge", "portrait"].includes(preset))) {
 			throw new PageItemServiceError("INVALID_ITEM_LAYOUT");
 		}
 	}

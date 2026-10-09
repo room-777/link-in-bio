@@ -480,6 +480,60 @@ describe("page item service", () => {
 	});
 
 	/**
+	 * Case ID: PAGE-ITEM-SERVICE-011
+	 * Given: a Tweet link uses a preset outside its supported sizes.
+	 * When: persistPageItemBatch validates the item payload.
+	 * Then: it rejects the layout before writing.
+	 * Evidence: PageItemServiceError.code=INVALID_ITEM_LAYOUT.
+	 * Result: Pass | Fail | Blocked | Not Run
+	 */
+	it("PAGE-ITEM-SERVICE-011 rejects unsupported Tweet sizes", async () => {
+		const tx = {
+			query: {
+				pages: { findFirst: async () => ({ id: "page-1" }) },
+				pageItems: { findMany: async () => [] },
+			},
+		};
+		const db = {
+			transaction: async (callback: (value: typeof tx) => unknown) =>
+				callback(tx),
+		} as unknown as DatabaseClient;
+
+		await assert.rejects(
+			persistPageItemBatch({
+				db,
+				handle: "jane",
+				userId: "user-1",
+				batch: {
+					upserts: [
+						{
+							id: "tweet-1",
+							type: "link",
+							data: {
+								url: "https://x.com/i/status/123",
+								metadata: {
+									title: "X post",
+									faviconUrl: "/api/provider-icons/tweet.svg",
+									provider: "tweet",
+								},
+							},
+							style: {},
+							layouts: {
+								wide: { x: 0, y: 0, w: 1, h: 2 },
+								compact: { x: 0, y: 0, w: 1, h: 2 },
+							},
+						},
+					],
+					deletes: [],
+				},
+			}),
+			(error: unknown) =>
+				error instanceof PageItemServiceError &&
+				error.code === "INVALID_ITEM_LAYOUT",
+		);
+	});
+
+	/**
 	 * Case ID: PAGE-ITEM-SERVICE-006
 	 * Given: a media or link item references a key outside its owned prefix.
 	 * When: persistPageItemBatch validates the item.

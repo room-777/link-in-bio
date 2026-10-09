@@ -144,7 +144,7 @@ export default function BentoEditor({
 					...addedItem.data,
 					metadata: {
 						title: "X post",
-						faviconUrl: "/twitter.svg",
+						faviconUrl: "/api/provider-icons/tweet.svg",
 						provider: "tweet",
 					},
 				},
