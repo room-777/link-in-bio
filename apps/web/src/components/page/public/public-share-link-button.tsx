@@ -8,7 +8,6 @@ import {
 	DrawerHeader,
 	DrawerTitle,
 } from "@grabbin/ui/components/drawer";
-import { useIsMobile } from "@grabbin/ui/components/use-mobile";
 import { QrCode } from "lucide-react";
 import { overlay } from "overlay-kit";
 import ShareLinkContent from "../sharing/share-link-content";
@@ -18,17 +17,13 @@ export default function PublicShareLinkButton({
 }: {
 	profileImageUrl: string | null;
 }) {
-	const isMobile = useIsMobile();
-
-	if (!isMobile) return null;
-
 	return (
 		<>
 			<Button
 				type="button"
 				variant="default"
 				size="icon-lg"
-				className="fixed right-6 bottom-6 z-50 size-15 rounded-full"
+				className="fixed right-6 bottom-9 z-50 page-wide:hidden size-15 rounded-full"
 				aria-label="Share link"
 				onClick={() =>
 					overlay.open(({ isOpen, close, unmount }) => (

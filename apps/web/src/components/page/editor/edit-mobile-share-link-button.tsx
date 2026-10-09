@@ -9,7 +9,6 @@ import {
 	DrawerTitle,
 } from "@grabbin/ui/components/drawer";
 import Loading from "@grabbin/ui/components/loading";
-import { useIsMobile } from "@grabbin/ui/components/use-mobile";
 import { QrCode } from "lucide-react";
 import { AnimatePresence, motion, useReducedMotion } from "motion/react";
 import { overlay } from "overlay-kit";
@@ -22,10 +21,7 @@ export default function MobileShareLinkButton({
 	isAutoSaving: boolean;
 	profileImageUrl: string | null;
 }) {
-	const isMobile = useIsMobile();
 	const reduceMotion = useReducedMotion();
-
-	if (!isMobile) return null;
 
 	return (
 		<>
@@ -33,7 +29,7 @@ export default function MobileShareLinkButton({
 				type="button"
 				variant="default"
 				size="icon-lg"
-				className="fixed right-6 bottom-[6.5rem] z-50 size-13 rounded-full"
+				className="fixed right-6 bottom-9 z-50 page-wide:hidden size-15 rounded-full"
 				aria-label={isAutoSaving ? "Saving..." : "Share link"}
 				disabled={isAutoSaving}
 				onClick={() =>
@@ -59,7 +55,7 @@ export default function MobileShareLinkButton({
 					))
 				}
 			>
-				<span className="relative inline-grid size-5 place-items-center">
+				<span className="relative inline-grid size-6 place-items-center">
 					<AnimatePresence initial={false} mode="popLayout">
 						<motion.span
 							key={isAutoSaving ? "loading" : "qr-code"}
@@ -77,7 +73,7 @@ export default function MobileShareLinkButton({
 							{isAutoSaving ? (
 								<Loading className="size-5" />
 							) : (
-								<QrCode className="size-5" />
+								<QrCode className="size-6" />
 							)}
 						</motion.span>
 					</AnimatePresence>
