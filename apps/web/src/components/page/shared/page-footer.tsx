@@ -38,14 +38,15 @@ import { useQuery } from "@tanstack/react-query";
 import { ShareIcon, SlidersHorizontal } from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
+import { overlay } from "overlay-kit";
 import type { ComponentPropsWithoutRef } from "react";
 import { forwardRef, useEffect, useState } from "react";
 import { authClient, getAuthErrorMessage } from "@/lib/auth-client";
 import { getSignInHref } from "@/lib/auth-redirect";
 import { getPublicViewsQueryOptions } from "@/lib/public-views-api";
-import ChangeHandleDialog from "../management/change-handle-dialog";
-import DeleteAccountDialog from "../management/delete-account-dialog";
-import SettingDialog from "../management/setting-dialog";
+import { openChangeHandleDialog } from "../management/change-handle-dialog";
+import { openDeleteAccountDialog } from "../management/delete-account-dialog";
+import { openSettingDialog } from "../management/setting-dialog";
 import SpinningCounter from "../management/spinning-counter";
 import ShareLinkContent from "../sharing/share-link-content";
 
@@ -105,19 +106,19 @@ function getShareTooltipControl(onClick: () => void): AnimatedTooltipControl {
 	};
 }
 
-function PageShareDialog({
-	open,
-	onOpenChange,
-	profileImageUrl,
-}: {
-	open: boolean;
-	onOpenChange: (open: boolean) => void;
-	profileImageUrl: string | null;
-}) {
-	const isMobile = useIsMobile();
-	if (isMobile) {
-		return (
-			<Drawer open={open} onOpenChange={onOpenChange} showSwipeHandle>
+function openPageShareDialog(
+	profileImageUrl: string | null,
+	isMobile: boolean,
+) {
+	overlay.open(({ isOpen, close, unmount }) => {
+		const overlayProps = {
+			open: isOpen,
+			onOpenChange: (nextOpen: boolean) => !nextOpen && close(),
+			onOpenChangeComplete: (nextOpen: boolean) => !nextOpen && unmount(),
+		};
+
+		return isMobile ? (
+			<Drawer {...overlayProps} showSwipeHandle>
 				<DrawerContent className="max-h-[calc(100dvh-2rem)]">
 					<DrawerHeader className="sr-only">
 						<DrawerTitle>Share your page</DrawerTitle>
@@ -130,23 +131,21 @@ function PageShareDialog({
 					</div>
 				</DrawerContent>
 			</Drawer>
+		) : (
+			<Dialog {...overlayProps}>
+				<DialogContent
+					className="aspect-square gap-5 p-5"
+					aria-describedby="share-qr-description"
+				>
+					<DialogTitle className="sr-only">Share your page</DialogTitle>
+					<DialogDescription id="share-qr-description" className="sr-only">
+						Scan this QR code to open your page.
+					</DialogDescription>
+					<ShareLinkContent profileImageUrl={profileImageUrl} />
+				</DialogContent>
+			</Dialog>
 		);
-	}
-
-	return (
-		<Dialog open={open} onOpenChange={onOpenChange}>
-			<DialogContent
-				className="aspect-square gap-5 p-5"
-				aria-describedby="share-qr-description"
-			>
-				<DialogTitle className="sr-only">Share your page</DialogTitle>
-				<DialogDescription id="share-qr-description" className="sr-only">
-					Scan this QR code to open your page.
-				</DialogDescription>
-				<ShareLinkContent profileImageUrl={profileImageUrl} />
-			</DialogContent>
-		</Dialog>
-	);
+	});
 }
 
 function usePublicViewsTooltip(handle?: string) {
@@ -211,12 +210,9 @@ function OwnerFooter({
 	profileImageUrl: string | null;
 }) {
 	const router = useRouter();
-	const [isHandleDialogOpen, setIsHandleDialogOpen] = useState(false);
-	const [isSettingDialogOpen, setIsSettingDialogOpen] = useState(false);
+	const isMobile = useIsMobile();
 	const [isOpen, setIsOpen] = useState(false);
 	const [isSigningOut, setIsSigningOut] = useState(false);
-	const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
-	const [isShareDialogOpen, setIsShareDialogOpen] = useState(false);
 	const viewsTooltip = usePublicViewsTooltip(handle);
 	async function handleSignOut() {
 		setIsSigningOut(true);
@@ -262,7 +258,9 @@ function OwnerFooter({
 							},
 							getDiscordTooltipControl(),
 							...(viewsTooltip.control ? [viewsTooltip.control] : []),
-							getShareTooltipControl(() => setIsShareDialogOpen(true)),
+							getShareTooltipControl(() =>
+								openPageShareDialog(profileImageUrl, isMobile),
+							),
 						]}
 					/>
 					<PopoverContent
@@ -278,7 +276,7 @@ function OwnerFooter({
 							className="h-16 w-full justify-start px-3"
 							onClick={() => {
 								setIsOpen(false);
-								setIsHandleDialogOpen(true);
+								openChangeHandleDialog(handle, onHandleChange);
 							}}
 						>
 							<span className="flex flex-col items-start gap-0.5 text-left">
@@ -297,7 +295,7 @@ function OwnerFooter({
 							className="h-12 w-full justify-start px-3"
 							onClick={() => {
 								setIsOpen(false);
-								setIsSettingDialogOpen(true);
+								openSettingDialog(handle);
 							}}
 						>
 							Setting
@@ -315,7 +313,7 @@ function OwnerFooter({
 							className="h-12 w-full justify-start px-3 text-primary"
 							onClick={() => {
 								setIsOpen(false);
-								setIsDeleteDialogOpen(true);
+								openDeleteAccountDialog();
 							}}
 						>
 							Delete account
@@ -324,26 +322,6 @@ function OwnerFooter({
 				</Popover>
 				{viewsTooltip.fallback}
 			</div>
-			<ChangeHandleDialog
-				handle={handle}
-				onHandleChange={onHandleChange}
-				onOpenChange={setIsHandleDialogOpen}
-				open={isHandleDialogOpen}
-			/>
-			<SettingDialog
-				handle={handle}
-				open={isSettingDialogOpen}
-				onOpenChange={setIsSettingDialogOpen}
-			/>
-			<DeleteAccountDialog
-				onOpenChange={setIsDeleteDialogOpen}
-				open={isDeleteDialogOpen}
-			/>
-			<PageShareDialog
-				open={isShareDialogOpen}
-				onOpenChange={setIsShareDialogOpen}
-				profileImageUrl={profileImageUrl}
-			/>
 		</>
 	);
 }
@@ -356,8 +334,8 @@ function ViewerFooter({
 	profileImageUrl: string | null;
 }) {
 	const { data: session, isPending } = authClient.useSession();
+	const isMobile = useIsMobile();
 	const [isHydrated, setIsHydrated] = useState(false);
-	const [isShareDialogOpen, setIsShareDialogOpen] = useState(false);
 	const viewsTooltip = usePublicViewsTooltip(handle);
 
 	useEffect(() => setIsHydrated(true), []);
@@ -382,13 +360,10 @@ function ViewerFooter({
 					controls={[
 						getDiscordTooltipControl(),
 						...(viewsTooltip.control ? [viewsTooltip.control] : []),
-						getShareTooltipControl(() => setIsShareDialogOpen(true)),
+						getShareTooltipControl(() =>
+							openPageShareDialog(profileImageUrl, isMobile),
+						),
 					]}
-				/>
-				<PageShareDialog
-					open={isShareDialogOpen}
-					onOpenChange={setIsShareDialogOpen}
-					profileImageUrl={profileImageUrl}
 				/>
 				{viewsTooltip.fallback}
 			</div>
@@ -429,13 +404,10 @@ function ViewerFooter({
 				controls={[
 					getDiscordTooltipControl(),
 					...(viewsTooltip.control ? [viewsTooltip.control] : []),
-					getShareTooltipControl(() => setIsShareDialogOpen(true)),
+					getShareTooltipControl(() =>
+						openPageShareDialog(profileImageUrl, isMobile),
+					),
 				]}
-			/>
-			<PageShareDialog
-				open={isShareDialogOpen}
-				onOpenChange={setIsShareDialogOpen}
-				profileImageUrl={profileImageUrl}
 			/>
 			{viewsTooltip.fallback}
 		</div>

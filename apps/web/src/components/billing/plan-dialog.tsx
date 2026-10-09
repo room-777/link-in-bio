@@ -11,6 +11,7 @@ import {
 } from "@grabbin/ui/components/dialog";
 import { toast } from "@grabbin/ui/components/toast";
 import { useRouter } from "next/navigation";
+import { overlay } from "overlay-kit";
 import { useState } from "react";
 import { authClient, getAuthErrorMessage } from "@/lib/auth-client";
 import { getSignInHref } from "@/lib/auth-redirect";
@@ -129,15 +130,21 @@ function PlanPickerContent({
 	);
 }
 
-export function PlanDialog({
+function PlanDialog({
 	open,
 	onOpenChange,
+	onOpenChangeComplete,
 }: {
 	open: boolean;
 	onOpenChange: (open: boolean) => void;
+	onOpenChangeComplete: (open: boolean) => void;
 }) {
 	return (
-		<Dialog open={open} onOpenChange={onOpenChange}>
+		<Dialog
+			open={open}
+			onOpenChange={onOpenChange}
+			onOpenChangeComplete={onOpenChangeComplete}
+		>
 			<DialogContent className="max-h-[calc(100dvh-2rem)] overflow-y-auto p-2 sm:max-w-sm">
 				<DialogHeader className="sr-only">
 					<DialogTitle className="sr-only">Upgrade to Pro</DialogTitle>
@@ -151,17 +158,23 @@ export function PlanDialog({
 	);
 }
 
+export function openPlanDialog() {
+	overlay.open(({ isOpen, close, unmount }) => (
+		<PlanDialog
+			open={isOpen}
+			onOpenChange={(nextOpen) => !nextOpen && close()}
+			onOpenChangeComplete={(nextOpen) => !nextOpen && unmount()}
+		/>
+	));
+}
+
 export function PlanDialogButton({
 	children = "Get Pro",
 	...buttonProps
 }: React.ComponentProps<typeof Button>) {
-	const [open, setOpen] = useState(false);
 	return (
-		<>
-			<Button {...buttonProps} onClick={() => setOpen(true)}>
-				{children}
-			</Button>
-			<PlanDialog open={open} onOpenChange={setOpen} />
-		</>
+		<Button {...buttonProps} onClick={openPlanDialog}>
+			{children}
+		</Button>
 	);
 }

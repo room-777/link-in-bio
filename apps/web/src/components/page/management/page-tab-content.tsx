@@ -25,14 +25,81 @@ import { useQuery } from "@tanstack/react-query";
 import { Plus } from "lucide-react";
 import { AnimatePresence, motion, useReducedMotion } from "motion/react";
 import { useRouter } from "next/navigation";
-import { useEffect, useState } from "react";
+import { overlay } from "overlay-kit";
+import { type MouseEvent, useEffect, useState } from "react";
 import { Trash } from "@/components/trash";
 import { apiClient, getApiErrorMessage } from "@/lib/api-client";
 import { getPageImageUrl } from "@/lib/page-image-url";
-import { PlanDialog } from "../../billing/plan-dialog";
+import { openPlanDialog } from "../../billing/plan-dialog";
 import CreatePageForm from "./create-page-form";
 
 type Activity = "manage" | "create";
+
+function DeletePageDialog({
+	handle,
+	open,
+	close,
+	unmount,
+	onConfirm,
+}: {
+	handle: string;
+	open: boolean;
+	close: () => void;
+	unmount: () => void;
+	onConfirm: () => Promise<boolean>;
+}) {
+	const [isDeleting, setIsDeleting] = useState(false);
+	const confirm = async (event: MouseEvent) => {
+		event.preventDefault();
+		setIsDeleting(true);
+		const deleted = await onConfirm();
+		setIsDeleting(false);
+		if (deleted) close();
+	};
+
+	return (
+		<AlertDialog
+			open={open}
+			onOpenChange={(nextOpen) => !nextOpen && !isDeleting && close()}
+			onOpenChangeComplete={(nextOpen) => !nextOpen && unmount()}
+		>
+			<AlertDialogContent
+				overlayProps={{ forceRender: true, className: "z-[60]" }}
+				className="z-[70] gap-0 overflow-hidden p-5"
+			>
+				<div className="flex h-full w-full min-w-0 flex-col gap-4">
+					<AlertDialogHeader>
+						<AlertDialogTitle>Delete this page?</AlertDialogTitle>
+						<AlertDialogDescription>
+							This will permanently delete{" "}
+							<span className="font-medium text-primary">/{handle}</span> and
+							its content. This action can&apos;t be undone.
+						</AlertDialogDescription>
+					</AlertDialogHeader>
+					<AlertDialogFooter className="mx-0 mt-auto w-full! flex-col-reverse! items-end rounded-b-xl border-0 bg-transparent px-0 sm:justify-end">
+						<AlertDialogCancel
+							className="w-full min-w-0 whitespace-nowrap sm:max-w-36"
+							size="xl"
+							variant="outline"
+							disabled={isDeleting}
+						>
+							Cancel
+						</AlertDialogCancel>
+						<AlertDialogAction
+							variant="destructive"
+							size="xl"
+							disabled={isDeleting}
+							onClick={(event) => void confirm(event)}
+							className="relative w-full min-w-0 overflow-hidden whitespace-nowrap bg-destructive text-white hover:bg-destructive/80 motion-safe:active:scale-100 sm:max-w-36"
+						>
+							{isDeleting ? "Deleting…" : "Delete page"}
+						</AlertDialogAction>
+					</AlertDialogFooter>
+				</div>
+			</AlertDialogContent>
+		</AlertDialog>
+	);
+}
 
 export default function PageTabContent({
 	active,
@@ -45,9 +112,7 @@ export default function PageTabContent({
 	const isMobile = useIsMobile();
 	const reduceMotion = useReducedMotion() ?? false;
 	const [activity, setActivity] = useState<Activity>("manage");
-	const [isPlanDialogOpen, setIsPlanDialogOpen] = useState(false);
 	const [busyHandle, setBusyHandle] = useState<string | null>(null);
-	const [deletePageHandle, setDeletePageHandle] = useState<string | null>(null);
 	useEffect(() => {
 		if (active) return;
 		setActivity("manage");
@@ -92,9 +157,7 @@ export default function PageTabContent({
 		}
 	};
 
-	const confirmDeletePage = async () => {
-		if (!deletePageHandle) return;
-		const handle = deletePageHandle;
+	const confirmDeletePage = async (handle: string) => {
 		setBusyHandle(handle);
 		try {
 			const response = await apiClient.pages[":handle"].$delete({
@@ -102,21 +165,34 @@ export default function PageTabContent({
 			});
 			if (!response.ok) throw new Error(await getApiErrorMessage(response));
 			await pagesQuery.refetch();
-			setDeletePageHandle(null);
+			return true;
 		} catch (error) {
 			toast({
 				message: error instanceof Error ? error.message : "Please try again.",
 				state: "error",
 			});
+			return false;
 		} finally {
 			setBusyHandle(null);
 		}
 	};
 
+	const requestDeletePage = (handle: string) => {
+		overlay.open(({ isOpen, close, unmount }) => (
+			<DeletePageDialog
+				handle={handle}
+				open={isOpen}
+				close={close}
+				unmount={unmount}
+				onConfirm={() => confirmDeletePage(handle)}
+			/>
+		));
+	};
+
 	const requestPrimaryChange = (handle: string) => {
 		if (pagesQuery.data?.plan.hasAccess) void changePrimary(handle);
 		else {
-			setIsPlanDialogOpen(true);
+			openPlanDialog();
 		}
 	};
 
@@ -124,7 +200,7 @@ export default function PageTabContent({
 		if (pagesQuery.data?.plan.hasAccess) {
 			setActivity("create");
 		} else {
-			setIsPlanDialogOpen(true);
+			openPlanDialog();
 		}
 	};
 
@@ -231,7 +307,7 @@ export default function PageTabContent({
 															aria-label={`Delete /${page.handle}`}
 															className="size-6! min-w-0 rounded-full border-0 bg-destructive p-0 text-white hover:bg-destructive/80 hover:text-white"
 															disabled={busyHandle !== null}
-															onClick={() => setDeletePageHandle(page.handle)}
+															onClick={() => requestDeletePage(page.handle)}
 														>
 															<Trash aria-hidden="true" className="size-4" />
 														</Button>
@@ -276,55 +352,5 @@ export default function PageTabContent({
 		</div>
 	);
 
-	return (
-		<>
-			{content}
-			<AlertDialog
-				open={deletePageHandle !== null}
-				onOpenChange={(nextOpen) => {
-					if (!nextOpen && busyHandle === null) setDeletePageHandle(null);
-				}}
-			>
-				<AlertDialogContent
-					overlayProps={{ forceRender: true, className: "z-[60]" }}
-					className="z-[70] gap-0 overflow-hidden p-5"
-				>
-					<div className="flex h-full w-full min-w-0 flex-col gap-4">
-						<AlertDialogHeader>
-							<AlertDialogTitle>Delete this page?</AlertDialogTitle>
-							<AlertDialogDescription>
-								This will permanently delete{" "}
-								<span className="font-medium text-primary">
-									/{deletePageHandle}
-								</span>{" "}
-								and its content. This action can&apos;t be undone.
-							</AlertDialogDescription>
-						</AlertDialogHeader>
-						<AlertDialogFooter className="mx-0 mt-auto w-full! flex-col-reverse! items-end rounded-b-xl border-0 bg-transparent px-0 sm:justify-end">
-							<AlertDialogCancel
-								className="w-full min-w-0 whitespace-nowrap sm:max-w-36"
-								size="xl"
-								variant="outline"
-								disabled={busyHandle !== null}
-							>
-								Cancel
-							</AlertDialogCancel>
-							<AlertDialogAction
-								variant="destructive"
-								size="xl"
-								disabled={busyHandle !== null}
-								onClick={() => void confirmDeletePage()}
-								className="relative w-full min-w-0 overflow-hidden whitespace-nowrap bg-destructive text-white hover:bg-destructive/80 motion-safe:active:scale-100 sm:max-w-36"
-							>
-								{busyHandle !== null && busyHandle === deletePageHandle
-									? "Deleting…"
-									: "Delete page"}
-							</AlertDialogAction>
-						</AlertDialogFooter>
-					</div>
-				</AlertDialogContent>
-			</AlertDialog>
-			<PlanDialog open={isPlanDialogOpen} onOpenChange={setIsPlanDialogOpen} />
-		</>
-	);
+	return <>{content}</>;
 }

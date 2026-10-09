@@ -10,6 +10,7 @@ import {
 } from "@grabbin/ui/components/drawer";
 import { useIsMobile } from "@grabbin/ui/components/use-mobile";
 import { useRouter } from "next/navigation";
+import { overlay } from "overlay-kit";
 import { apiClient, getApiErrorMessage } from "@/lib/api-client";
 import { PageHandleForm } from "./create-page-form";
 
@@ -18,12 +19,14 @@ type ChangeHandleDialogProps = {
 	onHandleChange?: (handle: string) => void;
 	onOpenChange: (open: boolean) => void;
 	open: boolean;
+	onOpenChangeComplete: (open: boolean) => void;
 };
 
 export default function ChangeHandleDialog({
 	handle,
 	onHandleChange,
 	onOpenChange,
+	onOpenChangeComplete,
 	open,
 }: ChangeHandleDialogProps) {
 	const router = useRouter();
@@ -75,7 +78,12 @@ export default function ChangeHandleDialog({
 	);
 
 	return isMobile ? (
-		<Drawer open={open} onOpenChange={onOpenChange} showSwipeHandle>
+		<Drawer
+			open={open}
+			onOpenChange={onOpenChange}
+			onOpenChangeComplete={onOpenChangeComplete}
+			showSwipeHandle
+		>
 			<DrawerContent className="max-h-[calc(100dvh-2rem)]">
 				<DrawerHeader className="sr-only">
 					<DrawerTitle>Change your handle</DrawerTitle>
@@ -89,7 +97,11 @@ export default function ChangeHandleDialog({
 			</DrawerContent>
 		</Drawer>
 	) : (
-		<Dialog open={open} onOpenChange={onOpenChange}>
+		<Dialog
+			open={open}
+			onOpenChange={onOpenChange}
+			onOpenChangeComplete={onOpenChangeComplete}
+		>
 			<DialogContent
 				showCloseButton={false}
 				className="smooth-shadow-md aspect-square gap-0 overflow-hidden p-5 ring-0"
@@ -100,4 +112,19 @@ export default function ChangeHandleDialog({
 			</DialogContent>
 		</Dialog>
 	);
+}
+
+export function openChangeHandleDialog(
+	handle?: string,
+	onHandleChange?: (handle: string) => void,
+) {
+	overlay.open(({ isOpen, close, unmount }) => (
+		<ChangeHandleDialog
+			handle={handle}
+			onHandleChange={onHandleChange}
+			open={isOpen}
+			onOpenChange={(nextOpen) => !nextOpen && close()}
+			onOpenChangeComplete={(nextOpen) => !nextOpen && unmount()}
+		/>
+	));
 }

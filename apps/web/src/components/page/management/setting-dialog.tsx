@@ -18,10 +18,11 @@ import { Tabs, TabsList, TabsTrigger } from "@grabbin/ui/components/tabs";
 import { toast } from "@grabbin/ui/components/toast";
 import { useIsMobile } from "@grabbin/ui/components/use-mobile";
 import { useReducedMotion } from "motion/react";
+import { overlay } from "overlay-kit";
 import { Activity, useLayoutEffect, useRef, useState } from "react";
 import { authClient } from "@/lib/auth-client";
 import { isMultiPageEnabled } from "@/lib/feature-flags";
-import { PlanDialog } from "../../billing/plan-dialog";
+import { openPlanDialog } from "../../billing/plan-dialog";
 import { AccountTabContent } from "./account-tab-content";
 import { BillingTabContent } from "./billing-tab-content";
 import CustomDomainTabContent from "./custom-domain-tab-content";
@@ -30,10 +31,12 @@ import PageTabContent from "./page-tab-content";
 export default function SettingDialog({
 	open,
 	onOpenChange,
+	onOpenChangeComplete,
 	handle,
 }: {
 	open: boolean;
 	onOpenChange: (open: boolean) => void;
+	onOpenChangeComplete: (open: boolean) => void;
 	handle?: string;
 }) {
 	const isMobile = useIsMobile();
@@ -43,7 +46,6 @@ export default function SettingDialog({
 	const [outgoingTab, setOutgoingTab] = useState<string | null>(null);
 	const [isTransitioning, setIsTransitioning] = useState(false);
 	const [activePage, setActivePage] = useState("1");
-	const [isCheckoutDialogOpen, setIsCheckoutDialogOpen] = useState(false);
 	const [isOpeningPortal, setIsOpeningPortal] = useState(false);
 	const reduceMotion = useReducedMotion() ?? false;
 	const pageSlideRef = useRef<HTMLDivElement>(null);
@@ -89,7 +91,7 @@ export default function SettingDialog({
 	const handlePlanAction = async () => {
 		if (!session) return;
 		if (session.plan.tier === "free") {
-			setIsCheckoutDialogOpen(true);
+			openPlanDialog();
 			return;
 		}
 
@@ -120,7 +122,7 @@ export default function SettingDialog({
 				<AccountTabContent
 					email={session?.user.email}
 					isPro={isPro}
-					onUpgrade={() => setIsCheckoutDialogOpen(true)}
+					onUpgrade={openPlanDialog}
 				/>
 			),
 		},
@@ -158,7 +160,7 @@ export default function SettingDialog({
 					active={open && activeTab === "custom-domain"}
 					handle={handle}
 					isPro={isPro}
-					onUpgrade={() => setIsCheckoutDialogOpen(true)}
+					onUpgrade={openPlanDialog}
 				/>
 			),
 		},
@@ -237,7 +239,12 @@ export default function SettingDialog({
 	return (
 		<>
 			{isMobile ? (
-				<Drawer open={open} onOpenChange={onOpenChange} showSwipeHandle>
+				<Drawer
+					open={open}
+					onOpenChange={onOpenChange}
+					onOpenChangeComplete={onOpenChangeComplete}
+					showSwipeHandle
+				>
 					<DrawerContent className="h-[min(44rem,calc(100dvh-2rem))] max-h-[calc(100dvh-2rem)]">
 						<div className="flex min-h-0 flex-1 flex-col gap-5 p-5">
 							<DrawerHeader className="sr-only">
@@ -251,7 +258,11 @@ export default function SettingDialog({
 					</DrawerContent>
 				</Drawer>
 			) : (
-				<Dialog open={open} onOpenChange={onOpenChange}>
+				<Dialog
+					open={open}
+					onOpenChange={onOpenChange}
+					onOpenChangeComplete={onOpenChangeComplete}
+				>
 					<DialogContent
 						showCloseButton={false}
 						className="smooth-shadow-md h-[min(44rem,calc(100dvh-2rem))] w-[min(40rem,calc(100vw-2rem))] max-w-md gap-0 p-5 ring-0 sm:max-w-md"
@@ -268,10 +279,17 @@ export default function SettingDialog({
 					</DialogContent>
 				</Dialog>
 			)}
-			<PlanDialog
-				open={isCheckoutDialogOpen}
-				onOpenChange={setIsCheckoutDialogOpen}
-			/>
 		</>
 	);
+}
+
+export function openSettingDialog(handle?: string) {
+	overlay.open(({ isOpen, close, unmount }) => (
+		<SettingDialog
+			handle={handle}
+			open={isOpen}
+			onOpenChange={(nextOpen) => !nextOpen && close()}
+			onOpenChangeComplete={(nextOpen) => !nextOpen && unmount()}
+		/>
+	));
 }

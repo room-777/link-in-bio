@@ -25,6 +25,7 @@ import { toast } from "@grabbin/ui/components/toast";
 import { useIsMobile } from "@grabbin/ui/components/use-mobile";
 import { cn } from "@grabbin/ui/lib/utils";
 import { useReducedMotion } from "motion/react";
+import { overlay } from "overlay-kit";
 import { Activity, useEffect, useRef, useState } from "react";
 import { CheckCircle } from "reicon-react/icons/CheckCircle";
 import { authClient, getAuthErrorMessage } from "@/lib/auth-client";
@@ -33,11 +34,13 @@ type DeleteActivity = "confirm" | "sent";
 
 type DeleteAccountDialogProps = {
 	onOpenChange: (open: boolean) => void;
+	onOpenChangeComplete: (open: boolean) => void;
 	open: boolean;
 };
 
 export default function DeleteAccountDialog({
 	onOpenChange,
+	onOpenChangeComplete,
 	open,
 }: DeleteAccountDialogProps) {
 	const reduceMotion = useReducedMotion();
@@ -118,7 +121,12 @@ export default function DeleteAccountDialog({
 	};
 
 	return isMobile ? (
-		<Drawer open={open} onOpenChange={handleOpenChange} showSwipeHandle>
+		<Drawer
+			open={open}
+			onOpenChange={handleOpenChange}
+			onOpenChangeComplete={onOpenChangeComplete}
+			showSwipeHandle
+		>
 			<DrawerContent className="h-fit! max-h-[calc(100dvh-2rem)]">
 				<Activity mode="visible">
 					<div
@@ -199,7 +207,11 @@ export default function DeleteAccountDialog({
 			</DrawerContent>
 		</Drawer>
 	) : (
-		<AlertDialog open={open} onOpenChange={handleOpenChange}>
+		<AlertDialog
+			open={open}
+			onOpenChange={handleOpenChange}
+			onOpenChangeComplete={onOpenChangeComplete}
+		>
 			<AlertDialogContent className="aspect-square gap-0 overflow-hidden p-5">
 				<Activity mode="visible">
 					<div
@@ -274,6 +286,16 @@ export default function DeleteAccountDialog({
 			</AlertDialogContent>
 		</AlertDialog>
 	);
+}
+
+export function openDeleteAccountDialog() {
+	overlay.open(({ isOpen, close, unmount }) => (
+		<DeleteAccountDialog
+			open={isOpen}
+			onOpenChange={(nextOpen) => !nextOpen && close()}
+			onOpenChangeComplete={(nextOpen) => !nextOpen && unmount()}
+		/>
+	));
 }
 
 function DeleteButtonContent({
