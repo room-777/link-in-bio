@@ -638,7 +638,7 @@ export const providerDefinitions = [
 		label: "RSS Feed",
 		faviconUrl: providerIconUrl("rss-feed"),
 		advancedWidget: {
-			badgeProviderIds: ["substack", "hashnode", "note", "ghost"],
+			badgeProviderIds: ["medium", "substack", "hashnode", "note", "ghost"],
 		},
 	},
 	{
