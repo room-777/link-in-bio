@@ -24,7 +24,7 @@ export default function TweetWidgetDetails({
 	return (
 		<div className="flex h-full min-h-0 flex-col gap-3">
 			<div className="flex flex-col gap-2">
-				<Label htmlFor="tweet-url">X post URL or ID</Label>
+				<Label htmlFor="tweet-url">Tweet ID or URL</Label>
 				<InputGroup className="h-12">
 					<InputGroupInput
 						id="tweet-url"
