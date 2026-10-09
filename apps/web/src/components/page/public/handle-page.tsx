@@ -4,11 +4,13 @@ import type { PageByHandleResponse } from "@grabbin/api";
 import {
 	type BentoBreakpoint,
 	bentoWideMediaQuery,
+	getBentoGridHeight,
 	getBentoWidth,
 } from "@grabbin/bento-layout";
 import { motion, useReducedMotion } from "motion/react";
 import dynamic from "next/dynamic";
 import Image from "next/image";
+import type { CSSProperties } from "react";
 import { useEffect, useState } from "react";
 import { toBentoItem } from "@/lib/bento/bento-batch";
 import { getMediaCropStyle } from "@/lib/bento/media-crop";
@@ -46,6 +48,10 @@ export default function HandlePage({
 	const [profileBreakpoint, setProfileBreakpoint] =
 		useState<BentoBreakpoint>("compact");
 	const compactProfileMaxWidth = `calc(${getBentoWidth("compact")}px + 3rem)`;
+	const bentoGridHeight = getBentoGridHeight(
+		pageResponse.items.map((item) => item.layouts[profileBreakpoint]),
+		profileBreakpoint,
+	);
 	const enterTransition = reduceMotion
 		? { duration: 0 }
 		: {
@@ -128,7 +134,12 @@ export default function HandlePage({
 						</div>
 					</article>
 				</div>
-				<section className="bento-content-scroll-shell no-scrollbar order-2 page-wide:order-none page-wide:h-full min-h-[calc(100dvh-3rem)] page-wide:min-h-[calc(100dvh-4rem)] page-wide:w-4xl w-full max-w-md page-wide:max-w-none page-wide:shrink-0 overflow-visible page-wide:px-0 px-6 page-wide:pt-16 pt-0 page-wide:pb-24">
+				<section
+					className="bento-content-scroll-shell no-scrollbar order-2 page-wide:order-none page-wide:h-full min-h-[max(calc(100dvh-3rem),calc(var(--bento-grid-height)+16rem))] page-wide:min-h-[calc(100dvh-4rem)] page-wide:w-4xl w-full max-w-md page-wide:max-w-none page-wide:shrink-0 overflow-visible page-wide:px-0 px-6 page-wide:pt-16 pt-0 page-wide:pb-24"
+					style={
+						{ "--bento-grid-height": `${bentoGridHeight}px` } as CSSProperties
+					}
+				>
 					<div className="flex flex-col gap-4">
 						<BentoSection
 							handle={pageResponse.page.handle}

@@ -58,6 +58,18 @@ export function getBentoWidth(breakpoint: BentoBreakpoint): number {
 	return squareBentoSize * cols + margin[0] * (cols - 1);
 }
 
+export function getBentoGridHeight(
+	layouts: readonly ItemLayout[],
+	breakpoint: BentoBreakpoint,
+): number {
+	const rows = layouts.reduce(
+		(bottom, layout) => Math.max(bottom, layout.y + layout.h),
+		0,
+	);
+	const { margin, rowHeight } = bentoGridMetrics[breakpoint];
+	return rows * rowHeight + Math.max(0, rows - 1) * margin[1];
+}
+
 const allowedPresets: Record<ItemType, readonly PresetName[]> = {
 	section: ["fullBanner"],
 	media: ["squareSmall", "landscape", "portrait", "squareLarge"],

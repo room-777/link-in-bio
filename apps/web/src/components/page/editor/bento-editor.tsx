@@ -1,10 +1,13 @@
 "use client";
 
 import type { ItemType, PageByHandleResponse } from "@grabbin/api";
-import type { BentoBreakpoint } from "@grabbin/bento-layout";
+import {
+	type BentoBreakpoint,
+	getBentoGridHeight,
+} from "@grabbin/bento-layout";
 import { toast } from "@grabbin/ui/components/toast";
 import dynamic from "next/dynamic";
-import { useCallback, useEffect } from "react";
+import { type CSSProperties, useCallback, useEffect } from "react";
 import { fetchBentoRss } from "@/lib/bento/bento-api";
 import { useBentoStore } from "@/lib/bento/bento-store";
 import type { AddWidgetButtonProps } from "./add-widget-button";
@@ -124,6 +127,16 @@ export default function BentoEditor({
 		breakpoint === "compact"
 			? "relative flex w-full max-w-lg shrink-0 flex-col overflow-visible bg-transparent px-6 pb-0 no-scrollbar"
 			: "relative flex min-w-0 flex-1 flex-col overflow-visible bg-background px-6 pt-12 pb-0 no-scrollbar page-wide:w-4xl page-wide:max-w-none page-wide:flex-none page-wide:pt-16";
+	const bentoGridHeight = Math.max(
+		getBentoGridHeight(
+			store.items.map((item) => item.layouts.compact),
+			"compact",
+		),
+		getBentoGridHeight(
+			store.items.map((item) => item.layouts.wide),
+			"wide",
+		),
+	);
 
 	const selectMedia = useCallback(
 		async (file: File) => {
@@ -173,7 +186,10 @@ export default function BentoEditor({
 		}
 	};
 	return (
-		<section className={`bento-editor ${editorClassName}`}>
+		<section
+			className={`bento-editor ${editorClassName} min-h-[calc(var(--bento-grid-height)+16rem)] page-wide:min-h-0`}
+			style={{ "--bento-grid-height": `${bentoGridHeight}px` } as CSSProperties}
+		>
 			<BentoSection
 				handle={handle}
 				items={store.items}
