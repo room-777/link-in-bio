@@ -127,7 +127,7 @@
 
 /* Drag feedback. RGL's parent keeps the item's grid position; this card appears lifted. */
 .bento-item-card {
-	--bento-item-border-color: rgba(0, 0, 0, 0.08);
+	--bento-item-border-color: var(--border);
 	border: 1px solid var(--bento-item-border-color);
 	box-shadow: rgba(0, 0, 0, 0.04) 0px 2px 4px;
 	transform: perspective(800px) translateY(0) scale(1)
@@ -158,7 +158,7 @@
 	.react-grid-item.react-draggable-dragging
 	[data-bento-item-type="section"]
 	.bento-item-card {
-	border-color: rgba(0, 0, 0, 0.08);
+	border-color: var(--bento-item-border-color);
 }
 
 .react-grid-item.react-draggable-dragging .bento-item-card {
