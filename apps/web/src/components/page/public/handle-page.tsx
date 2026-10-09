@@ -140,6 +140,7 @@ export default function HandlePage({
 			<PageFooter
 				handle={page.handle}
 				isOwner={page.isOwner}
+				profileImageUrl={imageUrl}
 				hasProAccess={page.hasProAccess}
 			/>
 		</main>

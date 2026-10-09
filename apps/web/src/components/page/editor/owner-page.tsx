@@ -103,6 +103,7 @@ export default function OwnerPage({
 		<PageFooter
 			handle={currentPage.handle}
 			isOwner
+			profileImageUrl={profileImageUrl}
 			demoMode={demoMode}
 			onHandleChange={handleChange}
 		/>

@@ -11,6 +11,19 @@ import {
 } from "@grabbin/ui/components/avatar";
 import { Button, buttonVariants } from "@grabbin/ui/components/button";
 import {
+	Dialog,
+	DialogContent,
+	DialogDescription,
+	DialogTitle,
+} from "@grabbin/ui/components/dialog";
+import {
+	Drawer,
+	DrawerContent,
+	DrawerDescription,
+	DrawerHeader,
+	DrawerTitle,
+} from "@grabbin/ui/components/drawer";
+import {
 	Popover,
 	PopoverContent,
 	PopoverTitle,
@@ -18,9 +31,10 @@ import {
 } from "@grabbin/ui/components/popover";
 import { Skeleton } from "@grabbin/ui/components/skeleton";
 import { toast } from "@grabbin/ui/components/toast";
+import { useIsMobile } from "@grabbin/ui/components/use-mobile";
 import { cn } from "@grabbin/ui/lib/utils";
 import { useQuery } from "@tanstack/react-query";
-import { SlidersHorizontal } from "lucide-react";
+import { ShareIcon, SlidersHorizontal } from "lucide-react";
 import { motion, useReducedMotion } from "motion/react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
@@ -33,6 +47,7 @@ import ChangeHandleDialog from "../management/change-handle-dialog";
 import DeleteAccountDialog from "../management/delete-account-dialog";
 import SettingDialog from "../management/setting-dialog";
 import SpinningCounter from "../management/spinning-counter";
+import ShareLinkContent from "../sharing/share-link-content";
 
 type DiscordLinkProps = ComponentPropsWithoutRef<"a">;
 
@@ -70,6 +85,68 @@ const DiscordLink = forwardRef<HTMLAnchorElement, DiscordLinkProps>(
 
 function getDiscordTooltipControl(): AnimatedTooltipControl {
 	return { id: "community", trigger: <DiscordLink />, content: "Community" };
+}
+
+function getShareTooltipControl(onClick: () => void): AnimatedTooltipControl {
+	return {
+		id: "share",
+		trigger: (
+			<Button
+				variant="ghost"
+				size="icon-lg"
+				className="text-muted-foreground/80"
+				aria-label="Share page"
+				onClick={onClick}
+			>
+				<ShareIcon className="stroke-[2.5]" />
+			</Button>
+		),
+		content: "Share",
+	};
+}
+
+function PageShareDialog({
+	open,
+	onOpenChange,
+	profileImageUrl,
+}: {
+	open: boolean;
+	onOpenChange: (open: boolean) => void;
+	profileImageUrl: string | null;
+}) {
+	const isMobile = useIsMobile();
+	if (isMobile) {
+		return (
+			<Drawer open={open} onOpenChange={onOpenChange} showSwipeHandle>
+				<DrawerContent className="max-h-[calc(100dvh-2rem)]">
+					<DrawerHeader className="sr-only">
+						<DrawerTitle>Share your page</DrawerTitle>
+						<DrawerDescription>
+							Scan this QR code to open your page.
+						</DrawerDescription>
+					</DrawerHeader>
+					<div className="flex flex-col gap-6 p-5">
+						<ShareLinkContent profileImageUrl={profileImageUrl} />
+					</div>
+				</DrawerContent>
+			</Drawer>
+		);
+	}
+
+	return (
+		<Dialog open={open} onOpenChange={onOpenChange}>
+			<DialogContent
+				className="aspect-square gap-5 p-5"
+				aria-describedby="share-qr-description"
+			>
+				<DialogTitle className="sr-only">Share your page</DialogTitle>
+				<DialogDescription id="share-qr-description" className="sr-only">
+					Scan this QR code to open your page.
+				</DialogDescription>
+				<ShareLinkContent profileImageUrl={profileImageUrl} />
+			</DialogContent>
+		</Dialog>
+	);
 }
 
 function usePublicViewsTooltip(handle?: string) {
@@ -127,9 +204,11 @@ function usePublicViewsTooltip(handle?: string) {
 function OwnerFooter({
 	handle,
 	onHandleChange,
+	profileImageUrl,
 }: {
 	handle?: string;
 	onHandleChange?: (handle: string) => void;
+	profileImageUrl: string | null;
 }) {
 	const router = useRouter();
 	const reduceMotion = useReducedMotion();
@@ -140,6 +219,7 @@ function OwnerFooter({
 	const [isOpen, setIsOpen] = useState(false);
 	const [isSigningOut, setIsSigningOut] = useState(false);
 	const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
+	const [isShareDialogOpen, setIsShareDialogOpen] = useState(false);
 	const viewsTooltip = usePublicViewsTooltip(handle);
 	const hoverTransition = reduceMotion
 		? { duration: 0 }
@@ -188,6 +268,7 @@ function OwnerFooter({
 							},
 							getDiscordTooltipControl(),
 							...(viewsTooltip.control ? [viewsTooltip.control] : []),
+							getShareTooltipControl(() => setIsShareDialogOpen(true)),
 						]}
 					/>
 					<PopoverContent
@@ -303,13 +384,25 @@ function OwnerFooter({
 				onOpenChange={setIsDeleteDialogOpen}
 				open={isDeleteDialogOpen}
 			/>
+			<PageShareDialog
+				open={isShareDialogOpen}
+				onOpenChange={setIsShareDialogOpen}
+				profileImageUrl={profileImageUrl}
+			/>
 		</>
 	);
 }
 
-function ViewerFooter({ handle }: { handle?: string }) {
+function ViewerFooter({
+	handle,
+	profileImageUrl,
+}: {
+	handle?: string;
+	profileImageUrl: string | null;
+}) {
 	const { data: session, isPending } = authClient.useSession();
 	const [isHydrated, setIsHydrated] = useState(false);
+	const [isShareDialogOpen, setIsShareDialogOpen] = useState(false);
 	const viewsTooltip = usePublicViewsTooltip(handle);
 
 	useEffect(() => setIsHydrated(true), []);
@@ -334,7 +427,13 @@ function ViewerFooter({ handle }: { handle?: string }) {
 					controls={[
 						getDiscordTooltipControl(),
 						...(viewsTooltip.control ? [viewsTooltip.control] : []),
+						getShareTooltipControl(() => setIsShareDialogOpen(true)),
 					]}
+				/>
+				<PageShareDialog
+					open={isShareDialogOpen}
+					onOpenChange={setIsShareDialogOpen}
+					profileImageUrl={profileImageUrl}
 				/>
 				{viewsTooltip.fallback}
 			</div>
@@ -375,7 +474,13 @@ function ViewerFooter({ handle }: { handle?: string }) {
 				controls={[
 					getDiscordTooltipControl(),
 					...(viewsTooltip.control ? [viewsTooltip.control] : []),
+					getShareTooltipControl(() => setIsShareDialogOpen(true)),
 				]}
+			/>
+			<PageShareDialog
+				open={isShareDialogOpen}
+				onOpenChange={setIsShareDialogOpen}
+				profileImageUrl={profileImageUrl}
 			/>
 			{viewsTooltip.fallback}
 		</div>
@@ -402,12 +507,14 @@ export function MadeWithGrabbinBadge({
 export default function PageFooter({
 	handle,
 	isOwner,
+	profileImageUrl,
 	demoMode = false,
 	onHandleChange,
 	hasProAccess,
 }: {
 	handle?: string;
 	isOwner: boolean;
+	profileImageUrl: string | null;
 	demoMode?: boolean;
 	onHandleChange?: (handle: string) => void;
 	hasProAccess?: boolean;
@@ -432,9 +539,13 @@ export default function PageFooter({
 						Create your page
 					</Link>
 				) : isOwner ? (
-					<OwnerFooter handle={handle} onHandleChange={onHandleChange} />
+					<OwnerFooter
+						handle={handle}
+						onHandleChange={onHandleChange}
+						profileImageUrl={profileImageUrl}
+					/>
 				) : (
-					<ViewerFooter handle={handle} />
+					<ViewerFooter handle={handle} profileImageUrl={profileImageUrl} />
 				)}
 			</div>
 		</footer>
