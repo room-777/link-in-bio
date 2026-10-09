@@ -24,6 +24,11 @@ const BentoSection = dynamic(() => import("../editor/bento/bento-section"), {
 });
 const MotionImage = motion.create(Image);
 const PROFILE_ENTER_DURATION_SECONDS = 0.85;
+const PROFILE_IMAGE_ENTER_TRANSITION = {
+	type: "spring" as const,
+	duration: 0.55,
+	bounce: 0.15,
+};
 const PROFILE_TITLE_ENTER_DELAY_SECONDS = 0.08;
 const PROFILE_BIO_ENTER_DELAY_SECONDS = 0.16;
 
@@ -81,7 +86,16 @@ export default function HandlePage({
 						}
 					>
 						<div className="flex w-full items-center page-wide:justify-start justify-between">
-							<div className="relative flex page-wide:size-46 size-28 items-center justify-center overflow-hidden rounded-full sm:size-32">
+							<motion.div
+								initial={reduceMotion ? false : { opacity: 0, y: 16 }}
+								animate={{ opacity: 1, y: 0 }}
+								transition={
+									reduceMotion
+										? { duration: 0 }
+										: PROFILE_IMAGE_ENTER_TRANSITION
+								}
+								className="relative flex page-wide:size-46 size-28 items-center justify-center overflow-hidden rounded-full sm:size-32"
+							>
 								{imageUrl && (
 									<MotionImage
 										fill
@@ -101,7 +115,7 @@ export default function HandlePage({
 										className="pointer-events-none absolute inset-0 z-10 rounded-full outline-depth"
 									/>
 								)}
-							</div>
+							</motion.div>
 							<div className="page-wide:hidden">
 								<MadeWithGrabbinBadge hasProAccess={page.hasProAccess} />
 							</div>
