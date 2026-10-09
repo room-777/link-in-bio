@@ -91,7 +91,8 @@ export default function OwnerPage({
 	const isViewportCompact = viewportBreakpoint === "compact";
 	const effectiveBreakpoint = isViewportCompact ? "compact" : layoutBreakpoint;
 	const isCompactContentLayout = effectiveBreakpoint === "compact";
-	const isCompactPageLayout = layoutBreakpoint === "compact";
+	const isCompactPageLayout =
+		layoutBreakpoint === "compact" && !isViewportCompact;
 	const compactBentoWidth = getBentoWidth("compact");
 	const compactMockupMaxWidth = `calc(${compactBentoWidth}px + 5rem)`;
 	const compactProfileMaxWidth = `calc(${compactBentoWidth}px + 3rem)`;
