@@ -29,13 +29,13 @@ import {
 	PopoverTitle,
 	PopoverTrigger,
 } from "@grabbin/ui/components/popover";
+import { Separator } from "@grabbin/ui/components/separator";
 import { Skeleton } from "@grabbin/ui/components/skeleton";
 import { toast } from "@grabbin/ui/components/toast";
 import { useIsMobile } from "@grabbin/ui/components/use-mobile";
 import { cn } from "@grabbin/ui/lib/utils";
 import { useQuery } from "@tanstack/react-query";
 import { ShareIcon, SlidersHorizontal } from "lucide-react";
-import { motion, useReducedMotion } from "motion/react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import type { ComponentPropsWithoutRef } from "react";
@@ -211,9 +211,6 @@ function OwnerFooter({
 	profileImageUrl: string | null;
 }) {
 	const router = useRouter();
-	const reduceMotion = useReducedMotion();
-	const [activeItem, setActiveItem] = useState<number | null>(null);
-	const [isItemActive, setIsItemActive] = useState(false);
 	const [isHandleDialogOpen, setIsHandleDialogOpen] = useState(false);
 	const [isSettingDialogOpen, setIsSettingDialogOpen] = useState(false);
 	const [isOpen, setIsOpen] = useState(false);
@@ -221,9 +218,6 @@ function OwnerFooter({
 	const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
 	const [isShareDialogOpen, setIsShareDialogOpen] = useState(false);
 	const viewsTooltip = usePublicViewsTooltip(handle);
-	const hoverTransition = reduceMotion
-		? { duration: 0 }
-		: { type: "spring" as const, stiffness: 560, damping: 32, mass: 0.8 };
 	async function handleSignOut() {
 		setIsSigningOut(true);
 		const { error } = await authClient.signOut();
@@ -276,34 +270,15 @@ function OwnerFooter({
 						side="top"
 						sideOffset={8}
 						initialFocus={false}
-						className="relative w-60 gap-1 rounded-2xl p-2"
-						onPointerLeave={() => setIsItemActive(false)}
+						className="smooth-shadow-ring-2xl w-60 items-center gap-1 rounded-2xl p-2"
 					>
 						<PopoverTitle className="sr-only">Page options</PopoverTitle>
-						{activeItem !== null && (
-							<motion.div
-								aria-hidden="true"
-								initial={false}
-								data-active={isItemActive || undefined}
-								className="pointer-events-none absolute top-2 right-2 left-2 z-0 h-16 rounded-lg bg-muted/80 opacity-0 transition-opacity duration-150 data-[active=true]:opacity-100 motion-reduce:transition-none"
-								animate={{ y: activeItem * 68 }}
-								transition={hoverTransition}
-							/>
-						)}
 						<Button
 							variant="ghost"
-							className="relative z-10 h-16 w-full justify-start px-5 hover:bg-transparent"
+							className="h-16 w-full justify-start px-3"
 							onClick={() => {
 								setIsOpen(false);
 								setIsHandleDialogOpen(true);
-							}}
-							onPointerEnter={() => {
-								setActiveItem(0);
-								setIsItemActive(true);
-							}}
-							onFocus={() => {
-								setActiveItem(0);
-								setIsItemActive(true);
 							}}
 						>
 							<span className="flex flex-col items-start gap-0.5 text-left">
@@ -313,54 +288,34 @@ function OwnerFooter({
 								</span>
 							</span>
 						</Button>
+						<Separator
+							orientation="horizontal"
+							className="rounded-full bg-secondary data-horizontal:mx-3 data-horizontal:h-[1.5px] data-horizontal:w-[calc(100%-1.5rem)]!"
+						/>
 						<Button
 							variant="ghost"
-							className="relative z-10 h-16 w-full justify-start px-5 hover:bg-transparent"
+							className="h-12 w-full justify-start px-3"
 							onClick={() => {
 								setIsOpen(false);
 								setIsSettingDialogOpen(true);
-							}}
-							onPointerEnter={() => {
-								setActiveItem(1);
-								setIsItemActive(true);
-							}}
-							onFocus={() => {
-								setActiveItem(1);
-								setIsItemActive(true);
 							}}
 						>
 							Setting
 						</Button>
 						<Button
 							variant="ghost"
-							className="relative z-10 h-16 w-full justify-start px-5 hover:bg-transparent"
+							className="h-12 w-full justify-start px-3"
 							disabled={isSigningOut}
 							onClick={handleSignOut}
-							onPointerEnter={() => {
-								setActiveItem(2);
-								setIsItemActive(true);
-							}}
-							onFocus={() => {
-								setActiveItem(2);
-								setIsItemActive(true);
-							}}
 						>
-							{isSigningOut ? "Logging out..." : "Log out"}
+							{isSigningOut ? "Logging out..." : "Log Out"}
 						</Button>
 						<Button
 							variant="ghost"
-							className="relative z-10 h-16 w-full justify-start px-5 text-primary hover:bg-transparent"
+							className="h-12 w-full justify-start px-3 text-primary"
 							onClick={() => {
 								setIsOpen(false);
 								setIsDeleteDialogOpen(true);
-							}}
-							onPointerEnter={() => {
-								setActiveItem(3);
-								setIsItemActive(true);
-							}}
-							onFocus={() => {
-								setActiveItem(3);
-								setIsItemActive(true);
 							}}
 						>
 							Delete account
