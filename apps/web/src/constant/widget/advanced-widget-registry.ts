@@ -5,11 +5,19 @@ import CalendlyWidgetDetails from "@/components/page/editor/advanced-widgets/cal
 import { CalendlyAdvancedWidgetPreview } from "@/components/page/editor/advanced-widgets/calendly/preview";
 import RssFeedWidgetDetails from "@/components/page/editor/advanced-widgets/rss-feed/details";
 import { RssAdvancedWidgetPreview } from "@/components/page/editor/advanced-widgets/rss-feed/preview";
+import TweetWidgetDetails from "@/components/page/editor/advanced-widgets/tweet/details";
+import { TweetAdvancedWidgetPreview } from "@/components/page/editor/advanced-widgets/tweet/preview";
 
 type AdvancedWidgetDetailsProps = {
 	onAdd: (event: CalendlyEventType) => Promise<void>;
 	onRssFeedAdd: (url: string) => Promise<boolean>;
+	onTweetAdd: (url: string) => Promise<boolean>;
+	onTweetInputChange?: (value: string) => void;
 	badges: AdvancedWidgetModule["badges"];
+};
+
+type AdvancedWidgetPreviewProps = {
+	tweetInput?: string;
 };
 
 export type AdvancedWidgetModule = {
@@ -17,9 +25,10 @@ export type AdvancedWidgetModule = {
 	label: string;
 	iconUrl: string;
 	iconFrame: boolean;
+	brandColor?: string;
 	badges: readonly { id: string; label: string; iconUrl: string }[];
 	details: ComponentType<AdvancedWidgetDetailsProps>;
-	preview: ComponentType;
+	preview: ComponentType<AdvancedWidgetPreviewProps>;
 };
 
 type ConfiguredProvider = (typeof providerDefinitions)[number];
@@ -41,17 +50,20 @@ const advancedWidgetDetails: Record<
 	soundcloud: EmptyActivity,
 	"apple-music": EmptyActivity,
 	signature: EmptyActivity,
-	x: EmptyActivity,
+	tweet: TweetWidgetDetails,
 };
 
-const advancedWidgetPreviews: Record<AdvancedWidgetId, ComponentType> = {
+const advancedWidgetPreviews: Record<
+	AdvancedWidgetId,
+	ComponentType<AdvancedWidgetPreviewProps>
+> = {
 	calendly: CalendlyAdvancedWidgetPreview,
 	"rss-feed": RssAdvancedWidgetPreview,
 	spotify: EmptyActivity,
 	soundcloud: EmptyActivity,
 	"apple-music": EmptyActivity,
 	signature: EmptyActivity,
-	x: EmptyActivity,
+	tweet: TweetAdvancedWidgetPreview,
 };
 
 const badgeProvider = (id: string) =>
@@ -69,12 +81,15 @@ export const advancedWidgetModules: readonly AdvancedWidgetModule[] =
 		)
 		.map((provider) => {
 			const { id } = provider;
-			const label = id === "x" ? "X post" : provider.label;
 			return {
 				id,
-				label,
+				label: provider.label,
 				iconUrl: provider.faviconUrl ?? `/api/provider-icons/${id}.svg`,
 				iconFrame: hasIconFrame(provider.advancedWidget),
+				brandColor:
+					"brandColor" in provider.advancedWidget
+						? provider.advancedWidget.brandColor
+						: undefined,
 				badges: provider.advancedWidget.badgeProviderIds.map((id) => {
 					const badge = badgeProvider(id);
 					return {

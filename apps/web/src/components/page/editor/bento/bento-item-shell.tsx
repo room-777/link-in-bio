@@ -136,11 +136,14 @@ export function BentoItemShell({
 		getBackgroundColor(item.style.backgroundColor) ?? linkTheme?.cardBackground;
 	const isRssFeedWidget =
 		item.type === "link" && item.data.metadata?.provider === "rss-feed";
+	const isTweetWidget =
+		item.type === "link" && item.data.metadata?.provider === "tweet";
 	const publicLink =
 		mode === "view" &&
 		!disableCardLink &&
 		item.type === "link" &&
-		!isRssFeedWidget
+		!isRssFeedWidget &&
+		!isTweetWidget
 			? {
 					href: item.data.url,
 					title: item.data.metadata?.title?.trim() || item.data.url,

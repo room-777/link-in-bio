@@ -11,6 +11,7 @@ import { type CSSProperties, useCallback, useEffect } from "react";
 import { fetchBentoRss } from "@/lib/bento/bento-api";
 import { useBentoStore } from "@/lib/bento/bento-store";
 import type { AddWidgetButtonProps } from "./add-widget-button";
+import { getTweetId } from "./advanced-widgets/tweet/tweet-url";
 import EditMobileShareLinkButton from "./edit-mobile-share-link-button";
 
 const BentoSection = dynamic(() => import("./bento/bento-section"), {
@@ -123,6 +124,47 @@ export default function BentoEditor({
 		},
 		[handle, store.dispatchCommand],
 	);
+	const addTweet = useCallback(
+		async (url: string) => {
+			const tweetId = getTweetId(url);
+			if (!tweetId) return false;
+			const normalizedUrl = `https://x.com/i/status/${tweetId}`;
+
+			const addedItem = store.dispatchCommand({
+				type: "add-item",
+				itemType: "link",
+				url: normalizedUrl,
+			});
+			if (addedItem?.type !== "link") return false;
+
+			store.dispatchCommand({
+				type: "update-data",
+				itemId: addedItem.id,
+				data: {
+					...addedItem.data,
+					metadata: {
+						title: "X post",
+						faviconUrl: "/twitter.svg",
+						provider: "tweet",
+					},
+				},
+			});
+			store.dispatchCommand({
+				type: "apply-preset",
+				itemId: addedItem.id,
+				breakpoint: "wide",
+				preset: "squareLarge",
+			});
+			store.dispatchCommand({
+				type: "apply-preset",
+				itemId: addedItem.id,
+				breakpoint: "compact",
+				preset: "squareLarge",
+			});
+			return true;
+		},
+		[store.dispatchCommand],
+	);
 	const editorClassName =
 		breakpoint === "compact"
 			? "relative flex w-full max-w-lg shrink-0 flex-col overflow-visible bg-transparent px-6 pb-0 no-scrollbar"
@@ -161,12 +203,14 @@ export default function BentoEditor({
 			onItemAdd: addItem,
 			onCalendlyAdd: addCalendlyItem,
 			onRssFeedAdd: addRssFeed,
+			onTweetAdd: addTweet,
 			onMediaSelect: selectMedia,
 		});
 	}, [
 		addCalendlyItem,
 		addItem,
 		addRssFeed,
+		addTweet,
 		onWidgetActionsChange,
 		selectMedia,
 	]);

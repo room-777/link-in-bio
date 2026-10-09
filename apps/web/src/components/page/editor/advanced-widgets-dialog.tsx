@@ -32,9 +32,11 @@ import { AdvancedWidgetIcon } from "./advanced-widget-visuals";
 export default function AdvancedWidgetsDialog({
 	onCalendlyAdd,
 	onRssFeedAdd,
+	onTweetAdd,
 }: {
 	onCalendlyAdd: (event: CalendlyEventType) => Promise<void>;
 	onRssFeedAdd: (url: string) => Promise<boolean>;
+	onTweetAdd: (url: string) => Promise<boolean>;
 }) {
 	const isMobile = useIsMobile();
 	return (
@@ -54,6 +56,7 @@ export default function AdvancedWidgetsDialog({
 						onExit={unmount}
 						onCalendlyAdd={onCalendlyAdd}
 						onRssFeedAdd={onRssFeedAdd}
+						onTweetAdd={onTweetAdd}
 					/>
 				))
 			}
@@ -70,6 +73,7 @@ function AdvancedWidgetsOverlay({
 	onExit,
 	onCalendlyAdd,
 	onRssFeedAdd,
+	onTweetAdd,
 }: {
 	isMobile: boolean;
 	open: boolean;
@@ -77,6 +81,7 @@ function AdvancedWidgetsOverlay({
 	onExit: () => void;
 	onCalendlyAdd: (event: CalendlyEventType) => Promise<void>;
 	onRssFeedAdd: (url: string) => Promise<boolean>;
+	onTweetAdd: (url: string) => Promise<boolean>;
 }) {
 	const reduceMotion = useReducedMotion() ?? false;
 	const [widgetId, setWidgetId] = useState<string | null>(null);
@@ -283,6 +288,11 @@ function AdvancedWidgetsOverlay({
 								}}
 								onRssFeedAdd={async (url) => {
 									const added = await onRssFeedAdd(url);
+									if (added) handleOpenChange(false);
+									return added;
+								}}
+								onTweetAdd={async (url) => {
+									const added = await onTweetAdd(url);
 									if (added) handleOpenChange(false);
 									return added;
 								}}

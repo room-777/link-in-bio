@@ -13,13 +13,22 @@ export function AdvancedWidgetIcon({
 			className={cn(
 				"inline-flex shrink-0",
 				widget.iconFrame && "overflow-hidden rounded-md outline-depth",
+				widget.brandColor && "rounded-md",
 			)}
+			style={
+				widget.brandColor ? { backgroundColor: widget.brandColor } : undefined
+			}
 			aria-hidden="true"
 		>
 			<img
 				src={widget.iconUrl}
 				alt=""
-				className={`object-contain ${className} ${widget.id === "rss-feed" ? "rotate-z-45" : ""}`}
+				className={cn(
+					"object-contain",
+					className,
+					widget.id === "rss-feed" && "rotate-z-45",
+					widget.brandColor && "brightness-0 invert",
+				)}
 			/>
 		</span>
 	);

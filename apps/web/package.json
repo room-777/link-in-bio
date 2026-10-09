@@ -43,6 +43,7 @@
 		"react-grid-layout": "^2.2.3",
 		"react-map-gl": "^8.1.2",
 		"react-server-dom-webpack": "^19.3.0",
+		"react-tweet": "^3.3.1",
 		"reicon-react": "catalog:ui",
 		"remark-frontmatter": "^5.0.0",
 		"remark-mdx-frontmatter": "^6.0.0",

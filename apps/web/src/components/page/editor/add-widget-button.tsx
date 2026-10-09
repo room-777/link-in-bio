@@ -21,6 +21,7 @@ export type AddWidgetButtonProps = {
 	onItemAdd: (itemType: Exclude<ItemType, "calendly">, url?: string) => void;
 	onCalendlyAdd: (event: CalendlyEventType) => Promise<void>;
 	onRssFeedAdd: (url: string) => Promise<boolean>;
+	onTweetAdd: (url: string) => Promise<boolean>;
 	onMediaSelect: (file: File) => void;
 };
 
@@ -28,6 +29,7 @@ export default function AddWidgetButton({
 	onItemAdd,
 	onCalendlyAdd,
 	onRssFeedAdd,
+	onTweetAdd,
 	onMediaSelect,
 }: AddWidgetButtonProps) {
 	const fileInputRef = useRef<HTMLInputElement>(null);
@@ -138,6 +140,7 @@ export default function AddWidgetButton({
 			<AdvancedWidgetsDialog
 				onCalendlyAdd={onCalendlyAdd}
 				onRssFeedAdd={onRssFeedAdd}
+				onTweetAdd={onTweetAdd}
 			/>
 		</div>
 	);

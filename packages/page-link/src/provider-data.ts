@@ -53,6 +53,7 @@ export type LinkProviderDefinition = {
 	faviconUrl?: string;
 	advancedWidget?: {
 		badgeProviderIds?: readonly string[];
+		brandColor?: string;
 		iconFrame?: boolean;
 	};
 	theme?: ProviderTheme;
@@ -229,7 +230,6 @@ export const providerDefinitions = [
 		hosts: ["twitter.com", "x.com"],
 		label: "X",
 		faviconUrl: providerIconUrl("x"),
-		advancedWidget: { badgeProviderIds: [] },
 		theme: {
 			faviconBackground: "#000000",
 			cardBackground: "#f7f7f7",
@@ -240,6 +240,13 @@ export const providerDefinitions = [
 		},
 		countKey: "followerCount",
 		resolveTarget: getXTarget,
+	},
+	{
+		id: "tweet",
+		hosts: [],
+		label: "Tweet",
+		faviconUrl: providerIconUrl("tweet"),
+		advancedWidget: { badgeProviderIds: [], brandColor: "#1DA1F2" },
 	},
 	{
 		id: "spotify",
