@@ -1,12 +1,15 @@
 import type { CalendlyEventType } from "@grabbin/api";
 import { providerDefinitions } from "@grabbin/page-link";
 import type { ComponentType } from "react";
-import CalendlyWidgetDetails from "@/components/page/editor/calendly-widget-details";
-import RssFeedWidgetDetails from "@/components/page/editor/rss-feed-widget-details";
+import CalendlyWidgetDetails from "@/components/page/editor/advanced-widgets/calendly/details";
+import { CalendlyAdvancedWidgetPreview } from "@/components/page/editor/advanced-widgets/calendly/preview";
+import RssFeedWidgetDetails from "@/components/page/editor/advanced-widgets/rss-feed/details";
+import { RssAdvancedWidgetPreview } from "@/components/page/editor/advanced-widgets/rss-feed/preview";
 
 type AdvancedWidgetDetailsProps = {
 	onAdd: (event: CalendlyEventType) => Promise<void>;
 	onRssFeedAdd: (url: string) => Promise<boolean>;
+	badges: AdvancedWidgetModule["badges"];
 };
 
 export type AdvancedWidgetModule = {
@@ -15,6 +18,7 @@ export type AdvancedWidgetModule = {
 	iconUrl: string;
 	badges: readonly { id: string; label: string; iconUrl: string }[];
 	details: ComponentType<AdvancedWidgetDetailsProps>;
+	preview: ComponentType;
 };
 
 type ConfiguredProvider = (typeof providerDefinitions)[number];
@@ -30,6 +34,11 @@ const advancedWidgetDetails: Record<
 > = {
 	calendly: CalendlyWidgetDetails,
 	"rss-feed": RssFeedWidgetDetails,
+};
+
+const advancedWidgetPreviews: Record<AdvancedWidgetId, ComponentType> = {
+	calendly: CalendlyAdvancedWidgetPreview,
+	"rss-feed": RssAdvancedWidgetPreview,
 };
 
 const badgeProvider = (id: string) =>
@@ -54,4 +63,5 @@ export const advancedWidgetModules: readonly AdvancedWidgetModule[] =
 				};
 			}),
 			details: advancedWidgetDetails[provider.id],
+			preview: advancedWidgetPreviews[provider.id],
 		}));

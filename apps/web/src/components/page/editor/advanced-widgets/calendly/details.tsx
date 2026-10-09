@@ -149,7 +149,7 @@ export default function CalendlyWidgetDetails({
 
 	return (
 		<div className="flex h-full min-h-0 flex-col gap-3">
-			<Label id="calendly-events-label">Calendly events</Label>
+			<Label id="calendly-events-label">Select your event</Label>
 			<div className="min-h-0 flex-1">
 				{eventsQuery.isPending ? (
 					<ScrollArea
@@ -181,7 +181,7 @@ export default function CalendlyWidgetDetails({
 					<ScrollArea className={calendlyEventsScrollAreaClassName}>
 						<ul
 							aria-labelledby="calendly-events-label"
-							className="flex list-none flex-col gap-2"
+							className="grid list-none grid-cols-1 gap-2 md:grid-cols-2"
 						>
 							{eventsQuery.data.map((event) => {
 								const isSelected = selectedEventUri === event.uri;

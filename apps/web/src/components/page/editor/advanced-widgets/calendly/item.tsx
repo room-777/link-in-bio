@@ -9,7 +9,7 @@ import { env } from "@grabbin/env/web";
 import { useQuery } from "@tanstack/react-query";
 import { useState } from "react";
 import * as v from "valibot";
-import { calendlyPresetComponents } from "./calendly-widget";
+import { calendlyPresetComponents } from "./widget";
 
 const apiUrl = env.NEXT_PUBLIC_SERVER_URL;
 

@@ -14,9 +14,18 @@ export default function AdvancedWidgetActivity({
 	if (!widget) return null;
 
 	const Details = widget.details;
+	const Preview = widget.preview;
+
 	return (
-		<div className="h-full min-h-0">
-			<Details onAdd={onCalendlyAdd} onRssFeedAdd={onRssFeedAdd} />
+		<div className="flex h-full min-h-0 flex-col gap-6">
+			<Preview />
+			<div className="min-h-0 flex-1">
+				<Details
+					onAdd={onCalendlyAdd}
+					onRssFeedAdd={onRssFeedAdd}
+					badges={widget.badges}
+				/>
+			</div>
 		</div>
 	);
 }

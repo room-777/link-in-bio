@@ -1,6 +1,6 @@
 "use client";
 
-import type { PageItemResponse, RssFeedResponse } from "@grabbin/api";
+import type { RssFeedResponse } from "@grabbin/api";
 import type { PresetName } from "@grabbin/bento-layout";
 import { Input } from "@grabbin/ui/components/input";
 import {
@@ -15,9 +15,6 @@ import { Separator } from "@grabbin/ui/components/separator";
 import { Textarea } from "@grabbin/ui/components/textarea";
 import { useEffect, useState } from "react";
 import { useBentoLineHeight } from "@/hooks/use-bento-line-height";
-import type { BentoCommand } from "@/lib/bento/bento-types";
-
-type LinkItem = Extract<PageItemResponse, { type: "link" }>;
 
 function RssArticle({
 	item,
@@ -57,18 +54,21 @@ function RssArticle({
 	);
 }
 
-export function RssFeedItem({
-	item,
+export function RssFeedWidget({
+	url,
+	feed,
+	title,
 	preset,
 	mode,
-	onCommand,
+	onTitleCommit,
 }: {
-	item: LinkItem;
+	url: string;
+	feed?: RssFeedResponse;
+	title: string;
 	preset: PresetName;
 	mode: "view" | "edit";
-	onCommand?: (command: BentoCommand) => void;
+	onTitleCommit?: (title: string) => void;
 }) {
-	const feed = item.data.metadata?.rss;
 	const isHalfBanner = preset === "halfBanner";
 	const isLandscape = preset === "landscape";
 	const isSquareSmall = preset === "squareSmall";
@@ -82,26 +82,12 @@ export function RssFeedItem({
 			? "min-h-0 flex-1"
 			: "h-10 flex-none";
 	const titleAlignmentClassName = isHalfBanner ? "" : "-mx-1";
-	const title =
-		(item.data.metadata?.title !== "RSS Feed" &&
-			item.data.metadata?.title?.trim()) ||
-		feed?.source.title ||
-		"RSS Feed";
 	const [value, setValue] = useState(title);
 	const { viewportRef, lineHeight } = useBentoLineHeight();
 	useEffect(() => setValue(title), [title]);
 	const commitTitle = (nextValue: string) => {
 		const nextTitle = nextValue.trim();
-		if (nextTitle && nextTitle !== item.data.metadata?.title) {
-			onCommand?.({
-				type: "update-data",
-				itemId: item.id,
-				data: {
-					...item.data,
-					metadata: { ...item.data.metadata, title: nextTitle },
-				},
-			});
-		}
+		if (nextTitle && nextTitle !== title) onTitleCommit?.(nextTitle);
 	};
 	const sourceTitle = title;
 	const articles =
@@ -148,7 +134,7 @@ export function RssFeedItem({
 	);
 	const sourceIcon = (
 		<a
-			href={feed?.source.pageUrl ?? item.data.url}
+			href={feed?.source.pageUrl ?? url}
 			target="_blank"
 			rel="noreferrer"
 			aria-label="Open RSS source"

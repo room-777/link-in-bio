@@ -3,34 +3,46 @@ import {
 	InputGroup,
 	InputGroupInput,
 } from "@grabbin/ui/components/input-group";
+import { Label } from "@grabbin/ui/components/label";
 import Loading from "@grabbin/ui/components/loading";
 import { useState } from "react";
+import type { AdvancedWidgetModule } from "@/constant/widget/advanced-widget-registry";
+import { AdvancedWidgetBadges } from "../../advanced-widget-visuals";
 
 export default function RssFeedWidgetDetails({
 	onRssFeedAdd,
+	badges,
 }: {
 	onRssFeedAdd: (url: string) => Promise<boolean>;
+	badges: AdvancedWidgetModule["badges"];
 }) {
 	const [url, setUrl] = useState("");
 	const [isAdding, setIsAdding] = useState(false);
 	const [error, setError] = useState<string>();
 	return (
 		<div className="flex h-full min-h-0 flex-col gap-3">
-			<InputGroup className="h-10">
-				<InputGroupInput
-					aria-label="RSS Feed URL"
-					aria-invalid={Boolean(error)}
-					autoComplete="url"
-					inputMode="url"
-					placeholder="Enter a supported URL"
-					type="url"
-					value={url}
-					onChange={(event) => {
-						setUrl(event.target.value);
-						setError(undefined);
-					}}
-				/>
-			</InputGroup>
+			<div className="flex flex-col gap-2">
+				<Label htmlFor="rss-feed-url">RSS feed URL</Label>
+				<InputGroup className="h-12">
+					<InputGroupInput
+						id="rss-feed-url"
+						aria-invalid={Boolean(error)}
+						autoComplete="url"
+						inputMode="url"
+						placeholder="Paste a supported URL"
+						type="url"
+						value={url}
+						onChange={(event) => {
+							setUrl(event.target.value);
+							setError(undefined);
+						}}
+					/>
+				</InputGroup>
+				<div className="flex items-center justify-end gap-2 text-muted-foreground text-xs">
+					<span>Supported platforms:</span>
+					<AdvancedWidgetBadges badges={badges} sizeClassName="size-5.5" />
+				</div>
+			</div>
 			{error ? (
 				<p role="alert" className="text-destructive text-sm">
 					{error}

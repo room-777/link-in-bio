@@ -45,6 +45,7 @@ export default function AdvancedWidgetsDialog({
 	const [isTransitioning, setIsTransitioning] = useState(false);
 	const [activePage, setActivePage] = useState("1");
 	const [searchQuery, setSearchQuery] = useState("");
+	const [drawerBottomOffset, setDrawerBottomOffset] = useState(0);
 	const pageSlideRef = useRef<HTMLDivElement>(null);
 	const selectedWidget = advancedWidgetModules.find(
 		({ id }) => id === widgetId,
@@ -55,6 +56,33 @@ export default function AdvancedWidgetsDialog({
 		void pageSlideRef.current.offsetHeight;
 		setActivePage(isDetailActivity ? "2" : "1");
 	}, [isDetailActivity, isTransitioning, reduceMotion]);
+
+	useLayoutEffect(() => {
+		if (!isMobile) {
+			setDrawerBottomOffset(0);
+			return;
+		}
+		const updateBottomOffset = () => {
+			const viewport = window.visualViewport;
+			setDrawerBottomOffset(
+				viewport
+					? Math.max(
+							0,
+							window.innerHeight - viewport.offsetTop - viewport.height,
+						)
+					: 0,
+			);
+		};
+		updateBottomOffset();
+		window.addEventListener("resize", updateBottomOffset);
+		window.visualViewport?.addEventListener("resize", updateBottomOffset);
+		window.visualViewport?.addEventListener("scroll", updateBottomOffset);
+		return () => {
+			window.removeEventListener("resize", updateBottomOffset);
+			window.visualViewport?.removeEventListener("resize", updateBottomOffset);
+			window.visualViewport?.removeEventListener("scroll", updateBottomOffset);
+		};
+	}, [isMobile]);
 
 	const showWidget = (widgetId: string) => {
 		setWidgetId(widgetId);
@@ -246,18 +274,19 @@ export default function AdvancedWidgetsDialog({
 		<Drawer open={open} onOpenChange={handleOpenChange} showSwipeHandle>
 			{trigger(DrawerTrigger)}
 			<DrawerContent
+				style={{ bottom: drawerBottomOffset }}
 				aria-labelledby={
 					isDetailActivity ? "advanced-widget-detail-title" : undefined
 				}
 				aria-label={!isDetailActivity ? "Advanced widgets" : undefined}
-				className="h-[min(calc(100vw-2rem),calc(100dvh-2rem))] max-h-[calc(100dvh-2rem)]"
+				className="h-[75dvh] max-h-[calc(100dvh-4rem)]"
 			>
 				<DrawerHeader className="sr-only">
 					<DrawerTitle>
 						{isDetailActivity ? selectedWidget?.label : "Advanced widgets"}
 					</DrawerTitle>
 				</DrawerHeader>
-				<div className="min-h-0 flex-1 p-5">{content}</div>
+				<div className="min-h-0 flex-1 overflow-y-auto p-5">{content}</div>
 			</DrawerContent>
 		</Drawer>
 	) : (
@@ -269,7 +298,7 @@ export default function AdvancedWidgetsDialog({
 					isDetailActivity ? "advanced-widget-detail-title" : undefined
 				}
 				aria-label={!isDetailActivity ? "Advanced widgets" : undefined}
-				className="aspect-square max-h-[calc(100dvh-2rem)] min-h-0 grid-rows-[minmax(0,1fr)] gap-4 p-5 pt-8 sm:max-w-lg"
+				className="h-[min(90dvh,52rem)] max-h-[calc(100dvh-2rem)] min-h-0 grid-rows-[minmax(0,1fr)] gap-4 p-5 pt-8 sm:max-w-xl"
 			>
 				{content}
 			</DialogContent>

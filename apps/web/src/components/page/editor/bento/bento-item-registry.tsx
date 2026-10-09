@@ -6,10 +6,10 @@ import dynamic from "next/dynamic";
 import type { ReactNode } from "react";
 
 import type { BentoCommand, BentoItem } from "@/lib/bento/bento-types";
+import { CalendlyItem } from "../advanced-widgets/calendly/item";
+import { RssFeedItem } from "../advanced-widgets/rss-feed/item";
 import { LinkItem } from "./bento-link";
-import { CalendlyItem } from "./items/calendly-item";
 import { MediaItem } from "./items/media-item";
-import { RssFeedItem } from "./items/rss-feed-item";
 import { SectionItem } from "./items/section-item";
 import { TextItem } from "./items/text-item";
 

@@ -10,7 +10,7 @@ import {
 	type CalendlyAvailability,
 	type CalendlyPreset,
 	calendlyPresetComponents,
-} from "@/components/page/editor/bento/items/calendly-widget";
+} from "@/components/page/editor/advanced-widgets/calendly/widget";
 import {
 	calendlyDemoAvailabilityTimes,
 	calendlyDemoDateRange,
