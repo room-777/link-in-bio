@@ -53,6 +53,7 @@ export type LinkProviderDefinition = {
 	faviconUrl?: string;
 	advancedWidget?: {
 		badgeProviderIds?: readonly string[];
+		iconFrame?: boolean;
 	};
 	theme?: ProviderTheme;
 	countKey?: string;
@@ -228,6 +229,7 @@ export const providerDefinitions = [
 		hosts: ["twitter.com", "x.com"],
 		label: "X",
 		faviconUrl: providerIconUrl("x"),
+		advancedWidget: { badgeProviderIds: [] },
 		theme: {
 			faviconBackground: "#000000",
 			cardBackground: "#f7f7f7",
@@ -244,6 +246,7 @@ export const providerDefinitions = [
 		hosts: ["spotify.com"],
 		label: "Spotify",
 		faviconUrl: providerIconUrl("spotify"),
+		advancedWidget: { badgeProviderIds: [] },
 		theme: {
 			faviconBackground: "#1ED760",
 			cardBackground: "#f0fbf4",
@@ -252,6 +255,27 @@ export const providerDefinitions = [
 			actionLabel: "Play",
 			actionVariant: "solid",
 		},
+	},
+	{
+		id: "soundcloud",
+		hosts: ["soundcloud.com"],
+		label: "SoundCloud",
+		faviconUrl: "/api/provider-icons/soundcloud.webp",
+		advancedWidget: { badgeProviderIds: [] },
+	},
+	{
+		id: "apple-music",
+		hosts: ["music.apple.com"],
+		label: "Apple Music",
+		faviconUrl: providerIconUrl("apple-music"),
+		advancedWidget: { badgeProviderIds: [] },
+	},
+	{
+		id: "signature",
+		hosts: [],
+		label: "Signature",
+		faviconUrl: providerIconUrl("signature"),
+		advancedWidget: { badgeProviderIds: [], iconFrame: false },
 	},
 	{
 		id: "app-store",
@@ -627,7 +651,7 @@ export const providerDefinitions = [
 		hosts: ["calendly.com"],
 		label: "Calendly",
 		faviconUrl: providerIconUrl("calendly"),
-		advancedWidget: { badgeProviderIds: [] },
+		advancedWidget: { badgeProviderIds: [], iconFrame: false },
 		theme: {
 			faviconBackground: "#006BFF",
 		},
@@ -639,6 +663,7 @@ export const providerDefinitions = [
 		faviconUrl: providerIconUrl("rss-feed"),
 		advancedWidget: {
 			badgeProviderIds: ["medium", "substack", "hashnode", "note", "ghost"],
+			iconFrame: false,
 		},
 	},
 	{
