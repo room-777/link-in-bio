@@ -2,13 +2,11 @@
 
 import { Tooltip } from "@base-ui/react/tooltip";
 import { cn } from "cn";
-import type { ReactElement, ReactNode } from "react";
+import { Fragment, type ReactElement, type ReactNode } from "react";
 
-export type AnimatedTooltipControl = {
-	id: string;
-	trigger: ReactElement;
-	content: ReactNode;
-};
+export type AnimatedTooltipControl =
+	| { id: string; trigger: ReactElement; content: ReactNode }
+	| { id: string; element: ReactElement };
 
 export function AnimatedTooltip({
 	controls,
@@ -21,14 +19,18 @@ export function AnimatedTooltip({
 
 	return (
 		<Tooltip.Provider delay={50} closeDelay={50} timeout={50}>
-			{controls.map((control) => (
-				<Tooltip.Trigger
-					key={control.id}
-					handle={handle}
-					payload={control.content}
-					render={control.trigger}
-				/>
-			))}
+			{controls.map((control) =>
+				"element" in control ? (
+					<Fragment key={control.id}>{control.element}</Fragment>
+				) : (
+					<Tooltip.Trigger
+						key={control.id}
+						handle={handle}
+						payload={control.content}
+						render={control.trigger}
+					/>
+				),
+			)}
 			<Tooltip.Root handle={handle}>
 				{({ payload }) => (
 					<Tooltip.Portal>

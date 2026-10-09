@@ -95,7 +95,7 @@ function getShareTooltipControl(onClick: () => void): AnimatedTooltipControl {
 			<Button
 				variant="ghost"
 				size="icon-lg"
-				className="text-muted-foreground/80"
+				className="page-wide:inline-flex hidden text-muted-foreground/80"
 				aria-label="Share page"
 				onClick={onClick}
 			>
@@ -159,14 +159,16 @@ function usePublicViewsTooltip(handle?: string) {
 		enabled: Boolean(handle && timezone),
 	});
 
-	if (!handle) return { control: null, fallback: null };
+	if (!handle) return { control: null };
 	if (timezone === null || isPending) {
 		return {
-			control: null,
-			fallback: <Skeleton aria-busy="true" className="h-8 w-28 rounded-md" />,
+			control: {
+				id: "views-loading",
+				element: <Skeleton aria-busy="true" className="h-8 w-28 rounded-md" />,
+			},
 		};
 	}
-	if (isError || !data) return { control: null, fallback: null };
+	if (isError || !data) return { control: null };
 
 	const todayViews = data.todayViews ?? 0;
 	const yesterdayViews = data.yesterdayViews ?? 0;
@@ -180,14 +182,13 @@ function usePublicViewsTooltip(handle?: string) {
 	const yesterday = formatViews(yesterdayViews);
 
 	return {
-		fallback: null,
 		control: {
 			id: "views",
 			trigger: (
 				<Button
 					variant="ghost"
 					size="lg"
-					className="px-2 text-muted-foreground/80"
+					className="w-28 px-2 text-muted-foreground/80"
 					aria-label={`${todayViews} views today`}
 				>
 					<SpinningCounter value={today.value} />
@@ -320,7 +321,6 @@ function OwnerFooter({
 						</Button>
 					</PopoverContent>
 				</Popover>
-				{viewsTooltip.fallback}
 			</div>
 		</>
 	);
@@ -365,7 +365,6 @@ function ViewerFooter({
 						),
 					]}
 				/>
-				{viewsTooltip.fallback}
 			</div>
 		);
 	}
@@ -409,7 +408,6 @@ function ViewerFooter({
 					),
 				]}
 			/>
-			{viewsTooltip.fallback}
 		</div>
 	);
 }
