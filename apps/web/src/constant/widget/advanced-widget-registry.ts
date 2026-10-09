@@ -11,7 +11,6 @@ type AdvancedWidgetDetailsProps = {
 
 export type AdvancedWidgetModule = {
 	id: string;
-	category: string;
 	label: string;
 	iconUrl: string;
 	badges: readonly { id: string; label: string; iconUrl: string }[];
@@ -21,7 +20,7 @@ export type AdvancedWidgetModule = {
 type ConfiguredProvider = (typeof providerDefinitions)[number];
 type AdvancedWidgetProvider = Extract<
 	ConfiguredProvider,
-	{ advancedWidget: { category: string } }
+	{ advancedWidget: object }
 >;
 type AdvancedWidgetId = AdvancedWidgetProvider["id"];
 
@@ -44,7 +43,6 @@ export const advancedWidgetModules: readonly AdvancedWidgetModule[] =
 		)
 		.map((provider) => ({
 			id: provider.id,
-			category: provider.advancedWidget.category,
 			label: provider.label,
 			iconUrl: provider.faviconUrl ?? `/api/provider-icons/${provider.id}.svg`,
 			badges: provider.advancedWidget.badgeProviderIds.map((id) => {
@@ -57,10 +55,3 @@ export const advancedWidgetModules: readonly AdvancedWidgetModule[] =
 			}),
 			details: advancedWidgetDetails[provider.id],
 		}));
-
-export const advancedWidgetCategories = [
-	...new Set(advancedWidgetModules.map(({ category }) => category)),
-].map((name) => ({
-	name,
-	items: advancedWidgetModules.filter((item) => item.category === name),
-}));
