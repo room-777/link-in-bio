@@ -29,11 +29,11 @@ export default function PublicShareLinkButton({
 				type="button"
 				variant="default"
 				size="icon-lg"
-				className="fixed right-6 bottom-10 z-50 size-13 rounded-full"
+				className="fixed right-6 bottom-6 z-50 size-15 rounded-full"
 				aria-label="Share link"
 				onClick={() => setOpen(true)}
 			>
-				<QrCode className="size-5" aria-hidden="true" />
+				<QrCode className="size-6" aria-hidden="true" />
 			</Button>
 			<Drawer open={open} onOpenChange={setOpen} showSwipeHandle>
 				<DrawerContent className="max-h-[calc(100dvh-2rem)]">
