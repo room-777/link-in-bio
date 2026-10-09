@@ -1,10 +1,10 @@
 "use client";
 
-import { Button } from "@grabbin/ui/components/button";
+import { ConfettiButton } from "@grabbin/ui/components/confetti";
 import { DialogFooter } from "@grabbin/ui/components/dialog";
 // ponytail: Keep qr at 0.5.5 until Cuer stops passing border=0 to newer encoders.
 import { Cuer } from "cuer";
-import { useEffect, useRef, useState } from "react";
+import { type MouseEvent, useEffect, useRef, useState } from "react";
 
 export default function ShareLinkContent({
 	profileImageUrl,
@@ -52,7 +52,7 @@ export default function ShareLinkContent({
 		}, duration);
 	};
 
-	const handleCopyLink = async () => {
+	const handleCopyLink = async (event: MouseEvent<HTMLButtonElement>) => {
 		try {
 			await navigator.clipboard.writeText(window.location.href);
 			if (resetTimerRef.current !== null)
@@ -63,6 +63,7 @@ export default function ShareLinkContent({
 				resetTimerRef.current = null;
 			}, 1800);
 		} catch {
+			event.preventDefault();
 			swapCopyState("error");
 		}
 	};
@@ -79,11 +80,12 @@ export default function ShareLinkContent({
 				/>
 			</div>
 			<DialogFooter className="flex-row justify-center border-t-0 bg-background sm:justify-center">
-				<Button
+				<ConfettiButton
 					type="button"
 					variant="outline"
 					className="w-28"
-					onClick={() => void handleCopyLink()}
+					options={{ particleCount: 150, scalar: 1.5, spread: 100 }}
+					onClick={handleCopyLink}
 				>
 					<span
 						ref={labelRef}
@@ -102,7 +104,7 @@ export default function ShareLinkContent({
 								? "Copy Failed"
 								: "Copy Link"}
 					</span>
-				</Button>
+				</ConfettiButton>
 			</DialogFooter>
 		</>
 	);
