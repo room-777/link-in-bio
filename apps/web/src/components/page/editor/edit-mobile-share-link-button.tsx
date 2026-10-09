@@ -12,7 +12,7 @@ import Loading from "@grabbin/ui/components/loading";
 import { useIsMobile } from "@grabbin/ui/components/use-mobile";
 import { QrCode } from "lucide-react";
 import { AnimatePresence, motion, useReducedMotion } from "motion/react";
-import { useState } from "react";
+import { overlay } from "overlay-kit";
 import ShareLinkContent from "../sharing/share-link-content";
 
 export default function MobileShareLinkButton({
@@ -24,7 +24,6 @@ export default function MobileShareLinkButton({
 }) {
 	const isMobile = useIsMobile();
 	const reduceMotion = useReducedMotion();
-	const [open, setOpen] = useState(false);
 
 	if (!isMobile) return null;
 
@@ -37,7 +36,28 @@ export default function MobileShareLinkButton({
 				className="fixed right-6 bottom-[6.5rem] z-50 size-13 rounded-full"
 				aria-label={isAutoSaving ? "Saving..." : "Share link"}
 				disabled={isAutoSaving}
-				onClick={() => setOpen(true)}
+				onClick={() =>
+					overlay.open(({ isOpen, close, unmount }) => (
+						<Drawer
+							open={isOpen}
+							showSwipeHandle
+							onOpenChange={(nextOpen) => !nextOpen && close()}
+							onOpenChangeComplete={(nextOpen) => !nextOpen && unmount()}
+						>
+							<DrawerContent className="max-h-[calc(100dvh-2rem)]">
+								<DrawerHeader className="sr-only">
+									<DrawerTitle>Share your page</DrawerTitle>
+									<DrawerDescription>
+										Scan this QR code to open your page.
+									</DrawerDescription>
+								</DrawerHeader>
+								<div className="flex flex-col gap-6 p-5">
+									<ShareLinkContent profileImageUrl={profileImageUrl} />
+								</div>
+							</DrawerContent>
+						</Drawer>
+					))
+				}
 			>
 				<span className="relative inline-grid size-5 place-items-center">
 					<AnimatePresence initial={false} mode="popLayout">
@@ -63,19 +83,6 @@ export default function MobileShareLinkButton({
 					</AnimatePresence>
 				</span>
 			</Button>
-			<Drawer open={open} onOpenChange={setOpen} showSwipeHandle>
-				<DrawerContent className="max-h-[calc(100dvh-2rem)]">
-					<DrawerHeader className="sr-only">
-						<DrawerTitle>Share your page</DrawerTitle>
-						<DrawerDescription>
-							Scan this QR code to open your page.
-						</DrawerDescription>
-					</DrawerHeader>
-					<div className="flex flex-col gap-6 p-5">
-						<ShareLinkContent profileImageUrl={profileImageUrl} />
-					</div>
-				</DrawerContent>
-			</Drawer>
 		</>
 	);
 }

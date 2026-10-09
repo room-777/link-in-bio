@@ -10,7 +10,7 @@ import {
 } from "@grabbin/ui/components/drawer";
 import { useIsMobile } from "@grabbin/ui/components/use-mobile";
 import { QrCode } from "lucide-react";
-import { useState } from "react";
+import { overlay } from "overlay-kit";
 import ShareLinkContent from "../sharing/share-link-content";
 
 export default function PublicShareLinkButton({
@@ -19,7 +19,6 @@ export default function PublicShareLinkButton({
 	profileImageUrl: string | null;
 }) {
 	const isMobile = useIsMobile();
-	const [open, setOpen] = useState(false);
 
 	if (!isMobile) return null;
 
@@ -31,23 +30,31 @@ export default function PublicShareLinkButton({
 				size="icon-lg"
 				className="fixed right-6 bottom-6 z-50 size-15 rounded-full"
 				aria-label="Share link"
-				onClick={() => setOpen(true)}
+				onClick={() =>
+					overlay.open(({ isOpen, close, unmount }) => (
+						<Drawer
+							open={isOpen}
+							showSwipeHandle
+							onOpenChange={(nextOpen) => !nextOpen && close()}
+							onOpenChangeComplete={(nextOpen) => !nextOpen && unmount()}
+						>
+							<DrawerContent className="max-h-[calc(100dvh-2rem)]">
+								<DrawerHeader className="sr-only">
+									<DrawerTitle>Share your page</DrawerTitle>
+									<DrawerDescription>
+										Scan this QR code to open your page.
+									</DrawerDescription>
+								</DrawerHeader>
+								<div className="flex flex-col gap-6 p-5">
+									<ShareLinkContent profileImageUrl={profileImageUrl} />
+								</div>
+							</DrawerContent>
+						</Drawer>
+					))
+				}
 			>
 				<QrCode className="size-6" aria-hidden="true" />
 			</Button>
-			<Drawer open={open} onOpenChange={setOpen} showSwipeHandle>
-				<DrawerContent className="max-h-[calc(100dvh-2rem)]">
-					<DrawerHeader className="sr-only">
-						<DrawerTitle>Share your page</DrawerTitle>
-						<DrawerDescription>
-							Scan this QR code to open your page.
-						</DrawerDescription>
-					</DrawerHeader>
-					<div className="flex flex-col gap-6 p-5">
-						<ShareLinkContent profileImageUrl={profileImageUrl} />
-					</div>
-				</DrawerContent>
-			</Drawer>
 		</>
 	);
 }

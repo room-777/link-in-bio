@@ -6,14 +6,12 @@ import {
 	Dialog,
 	DialogClose,
 	DialogContent,
-	DialogTrigger,
 } from "@grabbin/ui/components/dialog";
 import {
 	Drawer,
 	DrawerContent,
 	DrawerHeader,
 	DrawerTitle,
-	DrawerTrigger,
 } from "@grabbin/ui/components/drawer";
 import {
 	InputGroup,
@@ -24,6 +22,7 @@ import { useIsMobile } from "@grabbin/ui/components/use-mobile";
 import { cn } from "@grabbin/ui/lib/utils";
 import { ChevronLeft, Search, SlidersHorizontal, XIcon } from "lucide-react";
 import { useReducedMotion } from "motion/react";
+import { overlay } from "overlay-kit";
 import { Activity, useLayoutEffect, useRef, useState } from "react";
 import { advancedWidgetModules } from "@/constant/widget/advanced-widget-registry";
 import AdvancedWidgetActivity from "./advanced-widget-activity";
@@ -38,8 +37,48 @@ export default function AdvancedWidgetsDialog({
 	onRssFeedAdd: (url: string) => Promise<boolean>;
 }) {
 	const isMobile = useIsMobile();
+	return (
+		<Button
+			type="button"
+			variant="ghost"
+			size="icon"
+			className="size-9"
+			aria-label="Advanced"
+			title="Advanced"
+			onClick={() =>
+				overlay.open(({ isOpen, close, unmount }) => (
+					<AdvancedWidgetsOverlay
+						isMobile={isMobile}
+						open={isOpen}
+						onClose={close}
+						onExit={unmount}
+						onCalendlyAdd={onCalendlyAdd}
+						onRssFeedAdd={onRssFeedAdd}
+					/>
+				))
+			}
+		>
+			<SlidersHorizontal className="size-4" aria-hidden="true" />
+		</Button>
+	);
+}
+
+function AdvancedWidgetsOverlay({
+	isMobile,
+	open,
+	onClose,
+	onExit,
+	onCalendlyAdd,
+	onRssFeedAdd,
+}: {
+	isMobile: boolean;
+	open: boolean;
+	onClose: () => void;
+	onExit: () => void;
+	onCalendlyAdd: (event: CalendlyEventType) => Promise<void>;
+	onRssFeedAdd: (url: string) => Promise<boolean>;
+}) {
 	const reduceMotion = useReducedMotion() ?? false;
-	const [open, setOpen] = useState(false);
 	const [widgetId, setWidgetId] = useState<string | null>(null);
 	const [isDetailActivity, setIsDetailActivity] = useState(false);
 	const [isTransitioning, setIsTransitioning] = useState(false);
@@ -119,26 +158,11 @@ export default function AdvancedWidgetsDialog({
 		setSearchQuery("");
 	};
 	const handleOpenChange = (nextOpen: boolean) => {
-		setOpen(nextOpen);
-		if (!nextOpen) reset();
+		if (!nextOpen) {
+			reset();
+			onClose();
+		}
 	};
-
-	const trigger = (Trigger: typeof DialogTrigger | typeof DrawerTrigger) => (
-		<Trigger
-			render={
-				<Button
-					type="button"
-					variant="ghost"
-					size="icon"
-					className="size-9"
-					aria-label="Advanced"
-					title="Advanced"
-				/>
-			}
-		>
-			<SlidersHorizontal className="size-4" aria-hidden="true" />
-		</Trigger>
-	);
 	const dialogCloseButton = () =>
 		!isMobile ? (
 			<DialogClose
@@ -271,8 +295,12 @@ export default function AdvancedWidgetsDialog({
 	);
 
 	return isMobile ? (
-		<Drawer open={open} onOpenChange={handleOpenChange} showSwipeHandle>
-			{trigger(DrawerTrigger)}
+		<Drawer
+			open={open}
+			onOpenChange={handleOpenChange}
+			onOpenChangeComplete={(nextOpen) => !nextOpen && onExit()}
+			showSwipeHandle
+		>
 			<DrawerContent
 				style={{ bottom: drawerBottomOffset }}
 				aria-labelledby={
@@ -290,8 +318,11 @@ export default function AdvancedWidgetsDialog({
 			</DrawerContent>
 		</Drawer>
 	) : (
-		<Dialog open={open} onOpenChange={handleOpenChange}>
-			{trigger(DialogTrigger)}
+		<Dialog
+			open={open}
+			onOpenChange={handleOpenChange}
+			onOpenChangeComplete={(nextOpen) => !nextOpen && onExit()}
+		>
 			<DialogContent
 				showCloseButton={false}
 				aria-labelledby={
