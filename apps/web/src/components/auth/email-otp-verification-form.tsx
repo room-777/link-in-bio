@@ -84,7 +84,7 @@ export default function EmailOtpVerificationForm({
 				<h1 className="t-stagger-line t-stagger-line--1 font-medium text-xl">
 					Check your inbox
 				</h1>
-				<p className="t-stagger-line t-stagger-line--2 text-wrap text-muted-foreground text-sm">
+				<p className="t-stagger-line t-stagger-line--2 text-balance text-muted-foreground text-sm">
 					We sent a verification code to{" "}
 					<strong className="font-medium text-primary">{email}</strong>.
 				</p>
@@ -121,7 +121,7 @@ export default function EmailOtpVerificationForm({
 					variant="default"
 					disabled={isSigningIn || otp.length !== 6}
 					onClick={verifyCode}
-					className={"h-11"}
+					className="h-12"
 				>
 					{isSigningIn ? <Loading /> : "Verify code"}
 				</Button>
@@ -130,7 +130,7 @@ export default function EmailOtpVerificationForm({
 						variant="outline"
 						disabled={isSending}
 						onClick={sendCode}
-						className="h-11 w-full"
+						className="h-12 w-full"
 					>
 						{isSending ? <Loading /> : "Resend code"}
 					</Button>

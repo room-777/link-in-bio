@@ -1,11 +1,7 @@
 "use client";
 
 import { Button } from "@grabbin/ui/components/button";
-import {
-	Field,
-	FieldError,
-	FieldGroup,
-} from "@grabbin/ui/components/field";
+import { Field, FieldError, FieldGroup } from "@grabbin/ui/components/field";
 import {
 	InputGroup,
 	InputGroupAddon,
@@ -66,7 +62,7 @@ export default function EmailOtpForm({ onOtpSent }: EmailOtpFormProps) {
 				>
 					<InputGroup
 						ref={emailInputRef}
-						className={emailError ? "is-error t-input h-11" : "t-input h-11"}
+						className={emailError ? "is-error t-input h-12" : "t-input h-12"}
 					>
 						<InputGroupInput
 							id="email"
@@ -80,17 +76,23 @@ export default function EmailOtpForm({ onOtpSent }: EmailOtpFormProps) {
 								setEmailError("");
 							}}
 							aria-invalid={!!emailError}
-							className="h-11"
+							className="h-12"
 						/>
 						<InputGroupAddon align="inline-end">
 							<Button
 								type="submit"
 								variant="outline"
-								size={isSending ? "icon" : "default"}
-								className="rounded-md text-primary hover:bg-background"
+								className="relative h-10 rounded-md text-primary hover:bg-background"
 								disabled={isSending}
 							>
-								{isSending ? <Loading /> : "Send OTP"}
+								{isSending && (
+									<span className="absolute inset-0 grid place-items-center">
+										<Loading />
+									</span>
+								)}
+								<span className={isSending ? "opacity-0" : undefined}>
+									Send OTP
+								</span>
 							</Button>
 						</InputGroupAddon>
 					</InputGroup>

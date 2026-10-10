@@ -61,7 +61,7 @@ export default function LoginForm({ returnTo }: { returnTo?: string | null }) {
 						type="button"
 						size={"xl"}
 						variant="outline"
-						className="h-11 w-full"
+						className="h-12 w-full"
 						disabled={socialLoginProvider !== null}
 						onClick={() => handleSocialSignIn("google")}
 					>
@@ -83,7 +83,7 @@ export default function LoginForm({ returnTo }: { returnTo?: string | null }) {
 						type="button"
 						size={"xl"}
 						variant="default"
-						className="h-11 w-full"
+						className="h-12 w-full"
 						disabled={socialLoginProvider !== null}
 						onClick={() => handleSocialSignIn("twitter")}
 					>
