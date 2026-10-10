@@ -64,7 +64,7 @@ function HeroDummyCard({
 	return (
 		<div className={`absolute origin-top-left ${card.className}`}>
 			<motion.div
-				className={`w-[178px] drop-shadow-[0_10px_16px_rgba(15,15,40,0.14)] ${card.preset === "portrait" ? "h-[396px]" : "h-[178px]"}`}
+				className={`w-[178px] drop-shadow-[0_24px_60px_rgba(15,15,1,0.1)] ${card.preset === "portrait" ? "h-[396px]" : "h-[178px]"}`}
 				initial={reduceMotion ? false : { opacity: 0, scale: 0.65, rotate: 0 }}
 				animate={{
 					opacity: 1,
