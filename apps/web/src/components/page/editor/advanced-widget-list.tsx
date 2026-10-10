@@ -37,7 +37,7 @@ export default function AdvancedWidgetList({
 								</span>
 								<AdvancedWidgetBadges
 									badges={item.badges}
-									sizeClassName="size-7"
+									sizeClassName={item.id === "rss-feed" ? "size-5.5" : "size-7"}
 								/>
 							</Button>
 						))}
