@@ -7,9 +7,9 @@ export default function LandingHeader() {
 		<LandingHeaderBackground>
 			<Logo className="relative z-10 size-8 shrink-0" />
 			<JoinForFreeButton
-				variant="brand"
+				variant="brandBlack"
 				size="lg"
-				className="relative z-10 h-9 w-auto shrink-0 rounded-2xl px-3 text-sm"
+				className="relative z-10 h-11 w-auto shrink-0 rounded-lg px-5 text-base"
 			/>
 		</LandingHeaderBackground>
 	);
