@@ -23,6 +23,7 @@ import {
 	DrawerHeader,
 	DrawerTitle,
 } from "@grabbin/ui/components/drawer";
+import Loading from "@grabbin/ui/components/loading";
 import {
 	Popover,
 	PopoverContent,
@@ -88,21 +89,32 @@ function getDiscordTooltipControl(): AnimatedTooltipControl {
 	return { id: "community", trigger: <DiscordLink />, content: "Community" };
 }
 
-function getShareTooltipControl(onClick: () => void): AnimatedTooltipControl {
+function getShareTooltipControl(
+	onClick: () => void,
+	isAutoSaving = false,
+): AnimatedTooltipControl {
 	return {
 		id: "share",
 		trigger: (
 			<Button
 				variant="ghost"
-				size="icon-lg"
+				size={isAutoSaving ? "lg" : "icon-lg"}
 				className="page-wide:inline-flex hidden text-muted-foreground/80"
-				aria-label="Share page"
+				aria-label={isAutoSaving ? "Saving..." : "Share page"}
+				disabled={isAutoSaving}
 				onClick={onClick}
 			>
-				<ShareIcon className="stroke-[2.5]" />
+				{isAutoSaving ? (
+					<>
+						<Loading aria-hidden="true" className="size-4" />
+						Saving...
+					</>
+				) : (
+					<ShareIcon className="stroke-[2.5]" />
+				)}
 			</Button>
 		),
-		content: "Share",
+		content: isAutoSaving ? "Saving..." : "Share",
 	};
 }
 
@@ -205,10 +217,12 @@ function OwnerFooter({
 	handle,
 	onHandleChange,
 	profileImageUrl,
+	isAutoSaving,
 }: {
 	handle?: string;
 	onHandleChange?: (handle: string) => void;
 	profileImageUrl: string | null;
+	isAutoSaving: boolean;
 }) {
 	const router = useRouter();
 	const isMobile = useIsMobile();
@@ -259,8 +273,9 @@ function OwnerFooter({
 							},
 							getDiscordTooltipControl(),
 							...(viewsTooltip.control ? [viewsTooltip.control] : []),
-							getShareTooltipControl(() =>
-								openPageShareDialog(profileImageUrl, isMobile),
+							getShareTooltipControl(
+								() => openPageShareDialog(profileImageUrl, isMobile),
+								isAutoSaving,
 							),
 						]}
 					/>
@@ -436,6 +451,7 @@ export default function PageFooter({
 	demoMode = false,
 	onHandleChange,
 	hasProAccess,
+	isAutoSaving = false,
 }: {
 	handle?: string;
 	isOwner: boolean;
@@ -443,6 +459,7 @@ export default function PageFooter({
 	demoMode?: boolean;
 	onHandleChange?: (handle: string) => void;
 	hasProAccess?: boolean;
+	isAutoSaving?: boolean;
 }) {
 	return (
 		<footer className="page-wide:fixed page-wide:bottom-6 page-wide:left-16 page-wide:z-30 -mx-4 page-wide:-mx-2 mb-20 page-wide:mb-4 flex min-h-10 page-wide:w-auto w-full flex-col page-wide:items-start items-center justify-start gap-2 page-wide:py-0 py-12">
@@ -468,6 +485,7 @@ export default function PageFooter({
 						handle={handle}
 						onHandleChange={onHandleChange}
 						profileImageUrl={profileImageUrl}
+						isAutoSaving={isAutoSaving}
 					/>
 				) : (
 					<ViewerFooter handle={handle} profileImageUrl={profileImageUrl} />

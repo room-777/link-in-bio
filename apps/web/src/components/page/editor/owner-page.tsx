@@ -107,6 +107,7 @@ export default function OwnerPage({
 			handle={currentPage.handle}
 			isOwner
 			profileImageUrl={profileImageUrl}
+			isAutoSaving={isAutoSaving}
 			demoMode={demoMode}
 			onHandleChange={handleChange}
 		/>
