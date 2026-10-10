@@ -1,6 +1,7 @@
 "use client";
 
 import { env } from "@grabbin/env/web";
+import { providerIconUrl } from "@grabbin/page-link";
 import { Button } from "@grabbin/ui/components/button";
 
 const apiUrl = env.NEXT_PUBLIC_SERVER_URL;
@@ -29,7 +30,7 @@ export default function CalendlyConnectButton({ isPro }: { isPro: boolean }) {
 			disabled={!isPro}
 		>
 			<img
-				src="/api/provider-icons/calendly.svg?v=3"
+				src={providerIconUrl("calendly")}
 				alt=""
 				aria-hidden="true"
 				className="size-4 object-contain"

@@ -2,6 +2,7 @@
 
 import type { RssFeedResponse } from "@grabbin/api";
 import type { PresetName } from "@grabbin/bento-layout";
+import { providerIconUrl, resolveProviderIconUrl } from "@grabbin/page-link";
 import { Input } from "@grabbin/ui/components/input";
 import {
 	Item,
@@ -141,7 +142,7 @@ export function RssFeedWidget({
 			className="group smooth-shadow-xs inline-flex size-9 shrink-0 cursor-pointer! items-center justify-center rounded-md border border-border bg-background transition-transform hover:scale-105"
 		>
 			<img
-				src="/api/provider-icons/rss-feed.svg"
+				src={providerIconUrl("rss-feed")}
 				alt=""
 				className="size-6 rotate-z-30 object-contain transition-transform group-hover:rotate-z-0"
 			/>
@@ -159,7 +160,7 @@ export function RssFeedWidget({
 		<span className="inline-flex shrink-0 flex-row items-center gap-1 font-medium text-muted-foreground text-xs">
 			<span>rss on</span>
 			<img
-				src={feed.source.iconUrl}
+				src={resolveProviderIconUrl(feed.source.iconUrl)}
 				alt=""
 				aria-hidden="true"
 				className="size-4 rounded-xs object-contain"

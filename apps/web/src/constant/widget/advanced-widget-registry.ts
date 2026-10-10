@@ -1,5 +1,5 @@
 import type { CalendlyEventType } from "@grabbin/api";
-import { providerDefinitions } from "@grabbin/page-link";
+import { providerDefinitions, providerIconUrl } from "@grabbin/page-link";
 import type { ComponentType } from "react";
 import CalendlyWidgetDetails from "@/components/page/editor/advanced-widgets/calendly/details";
 import { CalendlyAdvancedWidgetPreview } from "@/components/page/editor/advanced-widgets/calendly/preview";
@@ -84,7 +84,7 @@ export const advancedWidgetModules: readonly AdvancedWidgetModule[] =
 			return {
 				id,
 				label: provider.label,
-				iconUrl: provider.faviconUrl ?? `/api/provider-icons/${id}.svg`,
+				iconUrl: provider.faviconUrl ?? providerIconUrl(id),
 				iconFrame: hasIconFrame(provider.advancedWidget),
 				brandColor:
 					"brandColor" in provider.advancedWidget
@@ -95,7 +95,7 @@ export const advancedWidgetModules: readonly AdvancedWidgetModule[] =
 					return {
 						id,
 						label: badge?.label ?? id,
-						iconUrl: badge?.faviconUrl ?? `/api/provider-icons/${id}.svg`,
+						iconUrl: badge?.faviconUrl ?? providerIconUrl(id),
 					};
 				}),
 				details: advancedWidgetDetails[id],

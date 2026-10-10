@@ -7,6 +7,7 @@ import {
 	getPresetGeometry,
 	type PresetName,
 } from "@grabbin/bento-layout";
+import { providerIconUrl } from "@grabbin/page-link";
 import { motion, useReducedMotion } from "motion/react";
 import type { BentoItem } from "@/lib/bento/bento-types";
 import { BentoItemShell } from "./bento-item-shell";
@@ -84,7 +85,7 @@ const previewItems: ReadonlyArray<{
 				url: "https://www.instagram.com/example",
 				metadata: {
 					title: "@framebyjune",
-					faviconUrl: "/api/provider-icons/instagram.svg",
+					faviconUrl: providerIconUrl("instagram"),
 					provider: "instagram",
 					providerData: normalizeProviderData({
 						followerCount: 687000000,
@@ -121,7 +122,7 @@ const previewItems: ReadonlyArray<{
 				url: "https://github.com/example",
 				metadata: {
 					title: "northstar-labs",
-					faviconUrl: "/api/provider-icons/github.svg",
+					faviconUrl: providerIconUrl("github"),
 					provider: "github",
 					providerData: normalizeProviderData({
 						followers: 34,
@@ -188,7 +189,7 @@ const previewItems: ReadonlyArray<{
 				url: "https://x.com/cityframes",
 				metadata: {
 					title: "@cityframes",
-					faviconUrl: "/api/provider-icons/x.svg",
+					faviconUrl: providerIconUrl("x"),
 					provider: "x",
 					providerData: normalizeProviderData({
 						followerCount: 12800,

@@ -2,6 +2,7 @@
 
 import type { CalendlyAvailabilityTime, CalendlyEventType } from "@grabbin/api";
 import { getBentoItemRadius, type PresetName } from "@grabbin/bento-layout";
+import { providerIconUrl } from "@grabbin/page-link";
 import { Button } from "@grabbin/ui/components/button";
 import { ScrollArea } from "@grabbin/ui/components/scroll-area";
 import { Skeleton } from "@grabbin/ui/components/skeleton";
@@ -382,7 +383,7 @@ function CalendlyPresetPreview({
 				>
 					<div className="smooth-shadow-xs flex size-9.5 shrink-0 items-center justify-center rounded-lg border border-border bg-white">
 						<img
-							src="/api/provider-icons/calendly.svg?v=3"
+							src={providerIconUrl("calendly")}
 							alt=""
 							aria-hidden="true"
 							className="size-6 object-contain"

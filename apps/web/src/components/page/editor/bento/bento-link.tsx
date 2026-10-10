@@ -1,5 +1,6 @@
 import type { PageItemLinkPresentation, PageItemResponse } from "@grabbin/api";
 import type { PresetName } from "@grabbin/bento-layout";
+import { resolveProviderIconUrl } from "@grabbin/page-link";
 import { Button, buttonVariants } from "@grabbin/ui/components/button";
 import { Textarea } from "@grabbin/ui/components/textarea";
 import { cn } from "@grabbin/ui/lib/utils";
@@ -475,9 +476,7 @@ function LinkBadge({
 	const providerLabel = presentation?.providerLabel ?? "Link";
 	const [failedFaviconUrl, setFailedFaviconUrl] = useState<string>();
 	const faviconFailed = failedFaviconUrl === faviconUrl;
-	const faviconSrc = faviconUrl?.startsWith("/api/provider-icons/")
-		? `${faviconUrl}?v=3`
-		: faviconUrl;
+	const faviconSrc = resolveProviderIconUrl(faviconUrl);
 	const iconSizeClassName =
 		preset === "squareSmall" || preset === "halfBanner" ? "size-4" : "size-6";
 	return (

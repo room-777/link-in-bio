@@ -5,6 +5,7 @@ import {
 	type BentoBreakpoint,
 	getBentoGridHeight,
 } from "@grabbin/bento-layout";
+import { providerIconUrl } from "@grabbin/page-link";
 import { toast } from "@grabbin/ui/components/toast";
 import dynamic from "next/dynamic";
 import { type CSSProperties, useCallback, useEffect } from "react";
@@ -104,7 +105,7 @@ export default function BentoEditor({
 						...addedItem.data,
 						metadata: {
 							title: "RSS Feed",
-							faviconUrl: "/api/provider-icons/rss-feed.svg",
+							faviconUrl: providerIconUrl("rss-feed"),
 							provider: "rss-feed",
 							rss,
 						},
@@ -144,7 +145,7 @@ export default function BentoEditor({
 					...addedItem.data,
 					metadata: {
 						title: "X post",
-						faviconUrl: "/api/provider-icons/tweet.svg",
+						faviconUrl: providerIconUrl("tweet"),
 						provider: "tweet",
 					},
 				},

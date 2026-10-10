@@ -1,5 +1,6 @@
 import type { RssFeedResponse } from "@grabbin/api";
 import { getPresetGeometry } from "@grabbin/bento-layout";
+import { providerIconUrl } from "@grabbin/page-link";
 import type { BentoItem } from "@/lib/bento/bento-types";
 import { AdvancedWidgetPreviewFrame } from "../preview-frame";
 import { RssFeedWidget } from "./widget";
@@ -11,7 +12,7 @@ const previewFeed: RssFeedResponse = {
 		feedUrl: "https://example.com/notes/feed",
 		platform: "substack",
 		type: "blog",
-		iconUrl: "/api/provider-icons/substack.svg",
+		iconUrl: providerIconUrl("substack"),
 		title: "Billy's Substack",
 	},
 	items: [

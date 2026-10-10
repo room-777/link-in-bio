@@ -2,6 +2,7 @@
 
 import { calendlyConnectionStatusSchema } from "@grabbin/api";
 import { env } from "@grabbin/env/web";
+import { providerIconUrl } from "@grabbin/page-link";
 import { Button, buttonVariants } from "@grabbin/ui/components/button";
 import Loading from "@grabbin/ui/components/loading";
 import { Skeleton } from "@grabbin/ui/components/skeleton";
@@ -153,7 +154,7 @@ export function CalendlyAccountTabContent({ isPro }: { isPro: boolean }) {
 						})}
 					>
 						<img
-							src="/api/provider-icons/calendly.svg?v=3"
+							src={providerIconUrl("calendly")}
 							alt=""
 							aria-hidden="true"
 							className="size-4 object-contain"
