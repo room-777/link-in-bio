@@ -42,9 +42,14 @@ export async function GET(
 		});
 	}
 
+	const responseHeaders = new Headers(response.headers);
+	if (response.ok || response.status === 304) {
+		responseHeaders.set("Cache-Control", "public, max-age=31556952, immutable");
+	}
+
 	return new Response(response.body, {
 		status: response.status,
 		statusText: response.statusText,
-		headers: response.headers,
+		headers: responseHeaders,
 	});
 }

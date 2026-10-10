@@ -7,6 +7,15 @@
 /images/landing/hero-*.webp
 	Cache-Control: public, max-age=31556952, immutable
 
+/images/landing/*-sticker.svg
+	Cache-Control: public, max-age=31556952, immutable
+
+/images/landing/welcome-bento-collage.png
+	Cache-Control: public, max-age=31556952, immutable
+
+/images/test2/*
+	Cache-Control: public, max-age=31556952, immutable
+
 /images/kofi-support-*.webp
 	Cache-Control: public, max-age=31556952, immutable
 
