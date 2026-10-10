@@ -30,6 +30,53 @@ type LinkMetadataFetch = (
 	init?: RequestInit,
 ) => Promise<Response>;
 
+function readRetryAfter(response: Response) {
+	const value = response.headers.get("retry-after")?.trim();
+	if (!value || value.length > 128) return undefined;
+	return /^\d+$/.test(value) || !Number.isNaN(Date.parse(value))
+		? value
+		: undefined;
+}
+
+function createMetadataFetch(fetchFn: LinkMetadataFetch) {
+	const inFlight = new Map<string, Promise<Response>>();
+	let upstreamRateLimited = false;
+	let retryAfter: string | undefined;
+	const fetch: LinkMetadataFetch = async (input, init) => {
+		const method = (
+			init?.method ?? (input instanceof Request ? input.method : "GET")
+		).toUpperCase();
+		let key: string | undefined;
+		if (method === "GET") {
+			const url = new URL(
+				input instanceof Request ? input.url : input.toString(),
+			);
+			url.hash = "";
+			key = url.href;
+		}
+		const existing = key ? inFlight.get(key) : undefined;
+		if (existing) return (await existing).clone();
+
+		const pending = fetchFn(input, init).then((response) => {
+			if (response.status === 429) {
+				upstreamRateLimited = true;
+				retryAfter ??= readRetryAfter(response);
+			}
+			return response;
+		});
+		if (key) inFlight.set(key, pending);
+		try {
+			return await pending;
+		} finally {
+			if (key && inFlight.get(key) === pending) inFlight.delete(key);
+		}
+	};
+	return {
+		fetch,
+		getRateLimit: () => ({ upstreamRateLimited, retryAfter }),
+	};
+}
+
 async function fetchLinkMetadata(
 	url: string,
 	fetchFn: LinkMetadataFetch,
@@ -105,10 +152,21 @@ export async function enrichPageItemMetadata({
 		throw new PageItemServiceError("STALE_LINK_METADATA");
 	}
 
+	const metadataFetch = createMetadataFetch(fetchFn);
 	const [fetchedMetadata, providerMetadata] = await Promise.all([
-		fetchLinkMetadata(parsedUrl.output, fetchFn),
-		enrichLinkProvider(new URL(parsedUrl.output), { fetch: fetchFn, env }),
+		fetchLinkMetadata(parsedUrl.output, metadataFetch.fetch),
+		enrichLinkProvider(new URL(parsedUrl.output), {
+			fetch: metadataFetch.fetch,
+			env,
+		}),
 	]);
+	const rateLimit = metadataFetch.getRateLimit();
+	if (rateLimit.upstreamRateLimited) {
+		throw new PageItemServiceError(
+			"UPSTREAM_RATE_LIMITED",
+			rateLimit.retryAfter,
+		);
+	}
 	const mergedMetadata = mergeMetadata(currentData.metadata, {
 		...fetchedMetadata,
 		...providerMetadata,

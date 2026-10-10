@@ -12,11 +12,15 @@ export type PageItemServiceErrorCode =
 	| "ITEM_MEDIA_NOT_FOUND"
 	| "CONCURRENT_ITEM_UPDATE"
 	| "INVALID_LINK_METADATA"
+	| "UPSTREAM_RATE_LIMITED"
 	| "ITEM_NOT_LINK"
 	| "STALE_LINK_METADATA";
 
 export class PageItemServiceError extends Error {
-	constructor(public readonly code: PageItemServiceErrorCode) {
+	constructor(
+		public readonly code: PageItemServiceErrorCode,
+		public readonly retryAfter?: string,
+	) {
 		super(code);
 	}
 }

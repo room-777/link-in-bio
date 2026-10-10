@@ -113,14 +113,15 @@ describe("link metadata service", () => {
 	 * Case ID: LINK-METADATA-SERVICE-003
 	 * Given: an X profile link whose HTML contains its follower count.
 	 * When: the metadata refresh endpoint enriches the saved item.
-	 * Then: it stores the X provider data used by the public presentation.
-	 * Evidence: followerCount=101909 and actionDetail=101.9K.
+	 * Then: it stores X provider data after fetching the page only once.
+	 * Evidence: followerCount=101909, actionDetail=101.9K, and one fetch call.
 	 * Result: Pass | Fail | Blocked | Not Run
 	 */
 	it("LINK-METADATA-SERVICE-003 stores X profile follower metadata", async () => {
 		const { db, current } = createDatabase("https://twitter.com/kinwooky");
 		const html =
 			'<html><head><meta property="og:title" content="Kin Wooky"><meta property="og:description" content="Kin Wooky profile"><script>followers:101909,following:168</script></head></html>';
+		let fetchCalls = 0;
 
 		const result = await enrichPageItemMetadata({
 			db,
@@ -128,10 +129,15 @@ describe("link metadata service", () => {
 			userId: "user-1",
 			itemId: "item-1",
 			url: "https://twitter.com/kinwooky",
-			fetch: async () =>
-				new Response(html, { headers: { "content-type": "text/html" } }),
+			fetch: async () => {
+				fetchCalls += 1;
+				return new Response(html, {
+					headers: { "content-type": "text/html" },
+				});
+			},
 		});
 
+		assert.equal(fetchCalls, 1);
 		assert.equal(result.type, "link");
 		if (result.type !== "link") return;
 		assert.equal(result.data.metadata?.provider, "x");
@@ -150,6 +156,39 @@ describe("link metadata service", () => {
 				},
 			},
 		});
+	});
+
+	/**
+	 * Case ID: LINK-METADATA-SERVICE-007
+	 * Given: a TikTok or Threads profile link.
+	 * When: generic and provider metadata are extracted together.
+	 * Then: each profile page is fetched once.
+	 * Evidence: fetch call count is one for both providers.
+	 * Result: Pass | Fail | Blocked | Not Run
+	 */
+	it("LINK-METADATA-SERVICE-007 fetches each social profile page once", async () => {
+		for (const url of [
+			"https://www.tiktok.com/@kinwooky",
+			"https://www.threads.com/@kinwooky",
+		]) {
+			const { db } = createDatabase(url);
+			let fetchCalls = 0;
+			await enrichPageItemMetadata({
+				db,
+				handle: "jane",
+				userId: "user-1",
+				itemId: "item-1",
+				url,
+				fetch: async () => {
+					fetchCalls += 1;
+					return new Response(
+						'<html><head><meta property="og:title" content="Profile"></head></html>',
+						{ headers: { "content-type": "text/html" } },
+					);
+				},
+			});
+			assert.equal(fetchCalls, 1, url);
+		}
 	});
 
 	it("LINK-METADATA-SERVICE-004 falls back to regular HTML metadata when SOOP API fails", async () => {
@@ -188,5 +227,77 @@ describe("link metadata service", () => {
 				provider: "soop",
 			},
 		});
+	});
+
+	/**
+	 * Case ID: LINK-METADATA-SERVICE-005
+	 * Given: generic and Instagram metadata both need the profile HTML.
+	 * When: the metadata refresh runs both enrichers.
+	 * Then: it fetches the profile once and stores both metadata results.
+	 * Evidence: fetch call count and stored provider metadata.
+	 * Result: Pass | Fail | Blocked | Not Run
+	 */
+	it("LINK-METADATA-SERVICE-005 shares concurrent requests for the same page", async () => {
+		const url = "https://www.instagram.com/officialstellive/";
+		const { db } = createDatabase(url);
+		let fetchCalls = 0;
+
+		const result = await enrichPageItemMetadata({
+			db,
+			handle: "jane",
+			userId: "user-1",
+			itemId: "item-1",
+			url,
+			fetch: async (_input) => {
+				fetchCalls += 1;
+				return new Response(
+					'<html><head><meta property="og:title" content="Stellive"></head><body><a href="/officialstellive/p/post-1/"><img src="https://cdn.example.com/post.png"></a></body></html>',
+					{ headers: { "content-type": "text/html" } },
+				);
+			},
+		});
+
+		assert.equal(fetchCalls, 1);
+		assert.equal(result.type, "link");
+		if (result.type === "link") {
+			assert.equal(result.data.metadata?.provider, "instagram");
+			assert.equal(result.data.metadata?.title, "Stellive");
+		}
+	});
+
+	/**
+	 * Case ID: LINK-METADATA-SERVICE-006
+	 * Given: the target site responds with HTTP 429 and Retry-After.
+	 * When: the metadata refresh runs.
+	 * Then: it raises a rate-limit error with the upstream retry delay.
+	 * Evidence: error code, Retry-After value, and one fetch call.
+	 * Result: Pass | Fail | Blocked | Not Run
+	 */
+	it("LINK-METADATA-SERVICE-006 reports upstream rate limits and Retry-After", async () => {
+		const url = "https://www.instagram.com/officialstellive/";
+		const { db } = createDatabase(url);
+		let fetchCalls = 0;
+
+		await assert.rejects(
+			enrichPageItemMetadata({
+				db,
+				handle: "jane",
+				userId: "user-1",
+				itemId: "item-1",
+				url,
+				fetch: async () => {
+					fetchCalls += 1;
+					return new Response("Rate limited", {
+						status: 429,
+						headers: { "Retry-After": "120" },
+					});
+				},
+			}),
+			(error: unknown) =>
+				error instanceof PageItemServiceError &&
+				error.code === "UPSTREAM_RATE_LIMITED" &&
+				error.retryAfter === "120",
+		);
+		assert.equal(fetchCalls, 1);
 	});
 });

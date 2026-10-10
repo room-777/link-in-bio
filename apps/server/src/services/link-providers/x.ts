@@ -3,13 +3,13 @@ import { fetchHtml, parseCountLabel, parseHtmlMetadata } from "./runtime";
 import type { LinkProviderContext, LinkProviderTarget } from "./types";
 
 export async function enrichX(
-	_url: URL,
+	url: URL,
 	target: LinkProviderTarget,
 	context: LinkProviderContext,
 ): Promise<Partial<PageItemLinkMetadata>> {
 	const handle = target.kind === "profile" ? target.params.handle : undefined;
 	if (!handle) return {};
-	const document = await fetchHtml(new URL(`https://x.com/${handle}`), context);
+	const document = await fetchHtml(url, context);
 	if (!document) return {};
 	const metadata = parseHtmlMetadata(document.html, new URL(document.url));
 	const descriptionFollowerLabel = metadata.description?.match(

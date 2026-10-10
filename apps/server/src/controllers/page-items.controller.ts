@@ -50,6 +50,8 @@ const pageItemErrorDetails = {
 	ITEM_MEDIA_NOT_FOUND: "Uploaded item media was not found.",
 	CONCURRENT_ITEM_UPDATE: "The item changed before this update was saved.",
 	INVALID_LINK_METADATA: "Invalid link metadata request.",
+	UPSTREAM_RATE_LIMITED:
+		"The linked site is temporarily rate limiting requests.",
 	UNSUPPORTED_RSS_URL: "This address is not a supported RSS source.",
 	RSS_FEED_UNAVAILABLE: "The RSS feed could not be loaded.",
 	INVALID_RSS_FEED: "The RSS feed returned invalid data.",
@@ -61,14 +63,17 @@ function pageItemErrorResponse(
 	c: Parameters<typeof jsonApiError>[0],
 	error: PageItemServiceError,
 ) {
+	if (error.retryAfter) c.header("Retry-After", error.retryAfter);
 	const status =
 		error.code === "PAGE_NOT_FOUND" || error.code === "ITEM_NOT_FOUND"
 			? 404
-			: error.code === "CONCURRENT_ITEM_UPDATE"
-				? 409
-				: error.code === "STALE_LINK_METADATA"
+			: error.code === "UPSTREAM_RATE_LIMITED"
+				? 429
+				: error.code === "CONCURRENT_ITEM_UPDATE"
 					? 409
-					: 422;
+					: error.code === "STALE_LINK_METADATA"
+						? 409
+						: 422;
 	return jsonApiError(c, {
 		status,
 		code: error.code,

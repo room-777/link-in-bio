@@ -11,16 +11,13 @@ import {
 import type { LinkProviderContext, LinkProviderTarget } from "./types";
 
 export async function enrichTikTok(
-	_url: URL,
+	url: URL,
 	target: LinkProviderTarget,
 	context: LinkProviderContext,
 ): Promise<Partial<PageItemLinkMetadata>> {
 	const handle = target.kind === "profile" ? target.params.handle : undefined;
 	if (!handle) return {};
-	const document = await fetchHtml(
-		new URL(`https://www.tiktok.com/@${handle}`),
-		context,
-	);
+	const document = await fetchHtml(url, context);
 	if (!document) return {};
 	const metadata = parseHtmlMetadata(document.html, new URL(document.url));
 	const hydration = getScriptJson(

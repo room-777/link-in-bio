@@ -4,9 +4,22 @@ import type { DatabaseClient } from "@grabbin/db";
 import type { MiddlewareHandler } from "hono";
 import { Hono } from "hono";
 
-import { createPageItemsController } from "../../src/controllers/page-items.controller";
 import { PageItemServiceError } from "../../src/exceptions/page-item.exception";
 import type { AppEnv } from "../../src/types";
+
+const { mock } = require("bun:test") as {
+	mock: { module: (specifier: string, factory: () => unknown) => void };
+};
+
+mock.module("cloudflare:workers", () => ({ env: {} }));
+mock.module("../../src/middlewares/session.middleware", () => ({
+	optionalSession: async (_context: unknown, next: () => Promise<void>) =>
+		next(),
+}));
+
+const { createPageItemsController } = await import(
+	"../../src/controllers/page-items.controller"
+);
 
 const sessionMiddleware: MiddlewareHandler<AppEnv> = async (c, next) => {
 	c.set("db", {
@@ -237,5 +250,37 @@ describe("page items controller", () => {
 
 		assert.equal(response.status, 422);
 		assert.equal(enrichCalls, 0);
+	});
+
+	/**
+	 * Case ID: PAGE-ITEM-API-008
+	 * Given: the metadata service reports an upstream rate limit.
+	 * When: the metadata refresh endpoint is called.
+	 * Then: it returns 429 and forwards Retry-After.
+	 * Evidence: response status, header, and problem JSON.
+	 * Result: Pass | Fail | Blocked | Not Run
+	 */
+	it("PAGE-ITEM-API-008 forwards upstream rate limits and Retry-After", async () => {
+		const app = createTestApp(
+			async () => ({ items: [] }),
+			async () => {
+				throw new PageItemServiceError("UPSTREAM_RATE_LIMITED", "120");
+			},
+		);
+
+		const response = await app.request("/pages/jane/metadata", {
+			method: "POST",
+			headers: { "Content-Type": "application/json" },
+			body: JSON.stringify({ itemId: "item-1", url: "https://example.com" }),
+		});
+
+		assert.equal(response.status, 429);
+		assert.equal(response.headers.get("Retry-After"), "120");
+		assert.deepEqual(await response.json(), {
+			status: 429,
+			code: "UPSTREAM_RATE_LIMITED",
+			title: "Too Many Requests",
+			detail: "The linked site is temporarily rate limiting requests.",
+		});
 	});
 });

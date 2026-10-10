@@ -101,17 +101,29 @@ function createFetch() {
 				);
 			}
 		}
-		if (requestUrl.hostname === "x.com") {
+		if (
+			requestUrl.hostname === "x.com" ||
+			requestUrl.hostname === "twitter.com"
+		) {
 			return new Response(
 				'<html><head><meta property="og:title" content="Profile"></head><script>followers:101909,following:168</script></html>',
 				{ headers: { "content-type": "text/html" } },
 			);
 		}
-		if (requestUrl.hostname === "www.instagram.com")
+		if (
+			requestUrl.hostname === "www.instagram.com" ||
+			requestUrl.hostname === "instagram.com"
+		)
 			return html("2M Followers");
-		if (requestUrl.hostname === "www.threads.com")
+		if (
+			requestUrl.hostname === "www.threads.com" ||
+			requestUrl.hostname === "threads.net"
+		)
 			return html("3.4K Followers");
-		if (requestUrl.hostname === "www.tiktok.com") {
+		if (
+			requestUrl.hostname === "www.tiktok.com" ||
+			requestUrl.hostname === "tiktok.com"
+		) {
 			return new Response(
 				`<script id="__UNIVERSAL_DATA_FOR_REHYDRATION__">${JSON.stringify({
 					__DEFAULT_SCOPE__: {
