@@ -156,7 +156,11 @@ export function BentoItemShell({
 	const cardBorderColor =
 		item.type === "map" || item.type === "media" || item.type === "section"
 			? undefined
-			: "var(--bento-item-border-color)";
+			: isRssFeedWidget || isTweetWidget || item.type === "calendly"
+				? "oklch(from white calc(l - 0.06) c h)"
+				: item.type === "link"
+					? "oklch(from var(--link-card-background) calc(l - 0.06) c h)"
+					: "var(--bento-item-border-color)";
 	const cardStyle: CSSProperties = {
 		borderRadius: cardRadius,
 		...(cardBorderColor ? { borderColor: cardBorderColor } : {}),
