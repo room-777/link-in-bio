@@ -11,11 +11,13 @@ import {
 	type CalendlyPreset,
 	calendlyPresetComponents,
 } from "@/components/page/editor/advanced-widgets/calendly/widget";
+import { BentoItemShell } from "@/components/page/editor/bento/bento-item-shell";
 import {
 	calendlyDemoAvailabilityTimes,
 	calendlyDemoDateRange,
 	calendlyDemoEvent,
 } from "@/constant/widget/calendly";
+import type { BentoItem } from "@/lib/bento/bento-types";
 
 const calendlyPresets: CalendlyPreset[] = [
 	"squareSmall",
@@ -70,6 +72,22 @@ export function CalendlyPresetGallery() {
 				const PresetWidget = calendlyPresetComponents[preset];
 				const { w, h } = getPresetGeometry(preset, "compact");
 				const [x, y] = gridPositions[preset];
+				const item: BentoItem = {
+					id: `calendly-gallery-${preset}`,
+					type: "calendly",
+					data: {
+						eventTypeUri: calendlyDemoEvent.uri,
+						schedulingUrl: calendlyDemoEvent.schedulingUrl,
+					},
+					style: {},
+					layouts: {
+						wide: getPresetGeometry(preset, "wide"),
+						compact: getPresetGeometry(preset, "compact"),
+					},
+					createdAt: calendlyDemoDateRange.today,
+					updatedAt: calendlyDemoDateRange.today,
+					preset,
+				};
 				return (
 					<div
 						key={preset}
@@ -78,12 +96,22 @@ export function CalendlyPresetGallery() {
 							gridRow: `${y + 1} / span ${h}`,
 						}}
 					>
-						<PresetWidget
-							event={calendlyDemoEvent}
-							timeZone={{ name: "Asia/Seoul", label: "GMT+9" }}
-							availability={availability}
-							availabilityView={preset === "squareLarge" ? "calendar" : "slots"}
-						/>
+						<BentoItemShell
+							item={item}
+							breakpoint="compact"
+							mode="view"
+							autoFocus={false}
+							disableCardLink
+						>
+							<PresetWidget
+								event={calendlyDemoEvent}
+								timeZone={{ name: "Asia/Seoul", label: "GMT+9" }}
+								availability={availability}
+								availabilityView={
+									preset === "squareLarge" ? "calendar" : "slots"
+								}
+							/>
+						</BentoItemShell>
 					</div>
 				);
 			})}
