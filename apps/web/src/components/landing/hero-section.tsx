@@ -2,7 +2,6 @@
 
 import { getPresetGeometry } from "@grabbin/bento-layout";
 import { motion, useReducedMotion } from "motion/react";
-import Image from "next/image";
 import JoinForFreeButton from "@/components/landing/join-for-free-button";
 import { BentoItemShell } from "@/components/page/editor/bento/bento-item-shell";
 import { MapViewportGate } from "@/components/page/editor/bento/items/shared";
@@ -65,7 +64,7 @@ function HeroDummyCard({
 	return (
 		<div className={`absolute origin-top-left ${card.className}`}>
 			<motion.div
-				className={`w-[178px] ${card.preset === "portrait" ? "h-[396px]" : "h-[178px]"}`}
+				className={`w-[178px] drop-shadow-[0_10px_16px_rgba(15,15,40,0.14)] ${card.preset === "portrait" ? "h-[396px]" : "h-[178px]"}`}
 				initial={reduceMotion ? false : { opacity: 0, scale: 0.65, rotate: 0 }}
 				animate={{
 					opacity: 1,
@@ -106,8 +105,8 @@ export default function HeroSection() {
 
 	return (
 		<section id="hero" className="relative w-full overflow-x-clip">
-			<div className="mx-auto flex w-full max-w-7xl flex-col items-center px-6 pt-36 text-center sm:px-10 sm:pt-40">
-				<h1 className="max-w-3xl text-balance font-semibold text-5xl leading-[0.98] tracking-[-0.065em] sm:text-7xl xl:text-[5rem]">
+			<div className="mx-auto flex w-full max-w-7xl flex-col items-center px-6 pt-44 text-center sm:px-10 sm:pt-48">
+				<h1 className="max-w-3xl text-balance font-semibold text-4xl leading-[0.98] tracking-[-0.065em] sm:text-7xl xl:text-[5rem]">
 					<motion.span
 						className="block"
 						initial={reduceMotion ? false : { opacity: 0, y: -16 }}
@@ -179,8 +178,7 @@ export default function HeroSection() {
 				</div>
 
 				<motion.div
-					className="relative z-10 max-w-full self-start"
-					style={{ width: "min(78vw, 430px)" }}
+					className="relative z-10 w-[clamp(300px,27vw,390px)] max-w-full self-start max-[700px]:w-[min(86vw,390px)]"
 					initial={reduceMotion ? false : { opacity: 0, y: 24 }}
 					animate={{ opacity: 1, y: 0 }}
 					transition={{
@@ -189,25 +187,32 @@ export default function HeroSection() {
 						ease: [0.22, 1, 0.36, 1],
 					}}
 				>
+					<div
+						aria-hidden="true"
+						className="pointer-events-none absolute inset-x-[2%] inset-y-[0.94%] z-0 rounded-[19.3%/9.2%] shadow-[0_18px_40px_rgba(15,15,40,0.16),0_50px_100px_rgba(15,15,40,0.14)]"
+					/>
 					<div className="absolute inset-y-0 right-[2.8%] left-[2.8%] h-full overflow-hidden rounded-[10%]">
-						<Image
-							src="/images/test2/profile-preview.png"
+						<img
+							src="/images/test2/profile-preview.webp"
 							alt="Example Grabbin profile page"
 							className="h-full w-full object-contain object-center"
-							fill
-							priority
-							sizes="(min-width: 768px) 430px, 78vw"
+							width={800}
+							height={600}
+							loading="eager"
+							fetchPriority="high"
+							decoding="async"
 						/>
 					</div>
-					<Image
+					<img
 						src="/images/test2/phone-frame.webp"
 						alt=""
 						aria-hidden="true"
-						className="relative block h-auto w-full"
-						width={560}
-						height={1120}
-						priority
-						sizes="(min-width: 768px) 430px, 78vw"
+						className="relative z-20 block h-auto w-full"
+						width={1170}
+						height={2392}
+						loading="eager"
+						fetchPriority="high"
+						decoding="async"
 					/>
 				</motion.div>
 			</div>
