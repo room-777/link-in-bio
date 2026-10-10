@@ -519,7 +519,8 @@ describe("page item service", () => {
 								url: "https://x.com/i/status/123",
 								metadata: {
 									title: "X post",
-									faviconUrl: "/api/provider-icons/tweet.svg",
+									faviconUrl:
+										"https://cdn.grabbin.me/provider-icons/v1/tweet.svg?v=3",
 									provider: "tweet",
 								},
 							},

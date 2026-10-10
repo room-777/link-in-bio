@@ -1,5 +1,5 @@
 import type { RssFeedResponse } from "@grabbin/api";
-import { resolveLinkProvider } from "@grabbin/page-link";
+import { providerIconUrl, resolveLinkProvider } from "@grabbin/page-link";
 
 type RssPlatform = RssFeedResponse["source"]["platform"];
 type RssSourceType = RssFeedResponse["source"]["type"];
@@ -31,7 +31,7 @@ function buildSource(
 		type,
 		iconUrl:
 			resolveLinkProvider(pageUrl).definition?.faviconUrl ??
-			`/api/provider-icons/${platform}.svg`,
+			providerIconUrl(platform),
 	};
 }
 

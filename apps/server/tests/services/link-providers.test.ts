@@ -5,12 +5,13 @@ import {
 	providerDefinitionList,
 	resolveLinkMetadata,
 	resolveLinkProvider,
+	resolveProviderIconUrl,
 } from "@grabbin/page-link";
 
 import type { LinkProviderEnvironment } from "../../src/services/link-providers";
 import { enrichLinkProvider } from "../../src/services/link-providers";
 
-const providerIconBaseUrl = "/api/provider-icons";
+const providerIconBaseUrl = "https://cdn.grabbin.me/provider-icons/v1";
 
 function html(description: string) {
 	return new Response(
@@ -289,6 +290,25 @@ function createFetch() {
 }
 
 describe("link provider metadata", () => {
+	/**
+	 * Case ID: LINK-PROVIDERS-ICON-001
+	 * Given: a saved provider icon URL from before the R2 asset switch.
+	 * When: the page-link URL resolver receives it.
+	 * Then: it points to the versioned R2 asset and leaves third-party icons intact.
+	 * Evidence: resolved legacy and external icon URLs.
+	 * Result: Pass | Fail | Blocked | Not Run
+	 */
+	it("uses the R2 asset URL for provider icons and older saved paths", () => {
+		assert.equal(
+			resolveProviderIconUrl("/api/provider-icons/tweet.svg?v=2"),
+			"https://cdn.grabbin.me/provider-icons/v1/tweet.svg?v=3",
+		);
+		assert.equal(
+			resolveProviderIconUrl("https://example.com/favicon.ico"),
+			"https://example.com/favicon.ico",
+		);
+	});
+
 	it("does not create DuckDuckGo favicon URLs for generic links", () => {
 		assert.deepEqual(createInitialLinkMetadata("https://example.com"), {
 			title: "example.com",
@@ -1017,7 +1037,7 @@ describe("link provider metadata", () => {
 			assert.equal(
 				metadata.faviconUrl,
 				definition?.faviconUrl ??
-					`${providerIconBaseUrl}/${expectedProvider}.svg`,
+					`${providerIconBaseUrl}/${expectedProvider}.svg?v=3`,
 				url,
 			);
 			const enriched = await enrichLinkProvider(new URL(url), {

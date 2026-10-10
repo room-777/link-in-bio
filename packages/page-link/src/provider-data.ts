@@ -43,8 +43,19 @@ export type LinkProviderPresentationContext = {
 	target?: LinkProviderTarget;
 };
 
-const providerIconUrl = (providerId: string) =>
-	`/api/provider-icons/${providerId}.svg`;
+const providerIconBaseUrl = "https://cdn.grabbin.me/provider-icons/v1";
+
+export const providerIconUrl = (
+	providerId: string,
+	extension: "svg" | "webp" = "svg",
+) => `${providerIconBaseUrl}/${providerId}.${extension}?v=3`;
+
+export const resolveProviderIconUrl = (url: string | undefined) => {
+	const legacyIcon = url?.match(
+		/^\/api\/provider-icons\/([a-z0-9-]+\.(?:svg|webp))(?:\?v=\d+)?$/,
+	)?.[1];
+	return legacyIcon ? `${providerIconBaseUrl}/${legacyIcon}?v=3` : url;
+};
 
 export type LinkProviderDefinition = {
 	id: string;
@@ -246,7 +257,7 @@ export const providerDefinitions = [
 		id: "tweet",
 		hosts: [],
 		label: "Tweet",
-		faviconUrl: `${providerIconUrl("tweet")}?v=2`,
+		faviconUrl: providerIconUrl("tweet"),
 		advancedWidget: { badgeProviderIds: [], brandColor: "#1DA1F2" },
 	},
 	{
@@ -268,7 +279,7 @@ export const providerDefinitions = [
 		id: "soundcloud",
 		hosts: ["soundcloud.com"],
 		label: "SoundCloud",
-		faviconUrl: "/api/provider-icons/soundcloud.webp",
+		faviconUrl: providerIconUrl("soundcloud", "webp"),
 		advancedWidget: { badgeProviderIds: [] },
 	},
 	{
@@ -484,7 +495,7 @@ export const providerDefinitions = [
 		id: "ghost",
 		hosts: ["ghost.io"],
 		label: "Ghost",
-		faviconUrl: "/api/provider-icons/ghost.webp",
+		faviconUrl: providerIconUrl("ghost", "webp"),
 	},
 	{
 		id: "hashnode",
@@ -601,7 +612,7 @@ export const providerDefinitions = [
 		id: "pinterest",
 		hosts: ["pinterest.com", "pin.it"],
 		label: "Pinterest",
-		faviconUrl: "/api/provider-icons/pinterest.svg",
+		faviconUrl: providerIconUrl("pinterest"),
 		countKey: "followerCount",
 		resolveTarget: getPinterestTarget,
 		present: ({ target }) =>

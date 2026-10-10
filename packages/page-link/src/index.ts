@@ -13,5 +13,7 @@ export {
 	providerByHostname,
 	providerDefinitionList,
 	providerDefinitions,
+	providerIconUrl,
 	resolveLinkProvider,
+	resolveProviderIconUrl,
 } from "./provider-data";

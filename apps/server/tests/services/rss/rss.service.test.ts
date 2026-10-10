@@ -28,6 +28,10 @@ describe("RSS service", () => {
 
 		assert.equal(result.source.inputUrl, inputUrl);
 		assert.equal(result.source.pageUrl, "https://medium.com/@author");
+		assert.equal(
+			result.source.iconUrl,
+			"https://cdn.grabbin.me/provider-icons/v1/medium.svg?v=3",
+		);
 		assert.equal(requestedUrl, "https://medium.com/feed/@author");
 	});
 
