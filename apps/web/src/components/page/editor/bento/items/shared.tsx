@@ -26,7 +26,7 @@ export const textSizeClassByPreset: Record<PresetName, string> = {
 };
 
 const mediaCaptionClassName =
-	"field-sizing-content h-8 w-fit min-w-24 max-w-full rounded-xl bg-background px-2 py-0 font-medium text-foreground text-sm outline-solid! outline-1! outline-black/10!";
+	"field-sizing-content h-8 w-fit min-w-24 max-w-full rounded-md bg-background px-2 py-0 font-medium text-foreground text-sm outline-solid! outline-1! outline-black/10!";
 
 export function ExternalAction({
 	href,

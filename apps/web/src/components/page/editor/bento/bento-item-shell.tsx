@@ -173,6 +173,7 @@ export function BentoItemShell({
 		...(item.type === "link"
 			? ({
 					"--link-card-background": cardBackground ?? "var(--background)",
+					"--bento-item-radius": `${cardRadius}px`,
 				} as CSSProperties)
 			: {}),
 		color:
@@ -184,8 +185,9 @@ export function BentoItemShell({
 	const isWhiteBackground =
 		backgroundColor === "bg-white" ||
 		/^#(?:f{3}|f{4}|f{6}|f{8})$/.test(backgroundColor ?? "");
-	const hasTextSurface =
-		item.type === "text" && Boolean(backgroundColor) && !isWhiteBackground;
+	const hasSurfaceLine =
+		(item.type === "text" && Boolean(backgroundColor) && !isWhiteBackground) ||
+		usesCardLink;
 	const showControls =
 		mode === "edit" && onCommand && item.type !== "section" && !isExiting;
 	const shellRef = useRef<HTMLDivElement>(null);
@@ -235,6 +237,10 @@ export function BentoItemShell({
 				rel={usesCardLink ? "noreferrer" : undefined}
 				aria-label={publicLink ? `Open ${publicLink.title}` : undefined}
 				role={publicLink && usesNestedLinks ? "link" : undefined}
+				draggable={item.type === "link" ? false : undefined}
+				onDragStart={
+					item.type === "link" ? (event) => event.preventDefault() : undefined
+				}
 				tabIndex={publicLink && usesNestedLinks ? 0 : undefined}
 				onClick={
 					publicLink && usesNestedLinks
@@ -263,7 +269,7 @@ export function BentoItemShell({
 							}
 						: undefined
 				}
-				className={`bento-item-card relative size-full overflow-hidden bg-background ${publicLink ? "bento-link-card block cursor-pointer! touch-manipulation outline-none focus-visible:outline-2 focus-visible:outline-ring focus-visible:outline-offset-2" : ""} ${hasTextSurface ? "surface-line" : ""} ${linkTheme ? "link-card-themed" : ""} ${cardClassName ?? ""}`}
+				className={`bento-item-card relative size-full overflow-hidden bg-background ${publicLink ? "bento-link-card block cursor-pointer! touch-manipulation outline-none focus-visible:outline-2 focus-visible:outline-ring focus-visible:outline-offset-2" : ""} ${hasSurfaceLine ? "surface-line" : ""} ${linkTheme ? "link-card-themed" : ""} ${cardClassName ?? ""}`}
 				style={cardStyle}
 			>
 				<div className="relative z-10 size-full min-h-0 rounded-[inherit]">

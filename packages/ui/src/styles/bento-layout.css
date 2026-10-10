@@ -125,16 +125,37 @@ html:has(.landing-page) body {
 		scale 200ms ease-out;
 }
 
+.bento-item-card.bento-link-card.surface-line::after {
+	inset: 0;
+	border-radius: calc(var(--bento-item-radius) - 1px);
+	opacity: 0;
+	transition: opacity 150ms ease-out;
+}
+
 @media (hover: hover) and (pointer: fine) {
 	.bento-item-card.bento-link-card:hover {
 		background-color: oklch(
-			from var(--link-card-background) calc(l - 0.04) c h
+			from var(--link-card-background) calc(l - 0.02) c h
 		);
+	}
+
+	.bento-item-card.bento-link-card.surface-line:hover::after {
+		opacity: 1;
 	}
 }
 
 .bento-item-card.bento-link-card:active {
-	background-color: oklch(from var(--link-card-background) calc(l - 0.08) c h);
+	background-color: oklch(from var(--link-card-background) calc(l - 0.04) c h);
+	border-color: oklch(
+		from var(--link-card-background) calc(l - 0.1) c h
+	) !important;
+}
+
+.bento-item-card.bento-link-card.surface-line:is(
+	:active,
+	:focus-visible
+)::after {
+	opacity: 1;
 }
 
 @media (prefers-reduced-motion: no-preference) {
