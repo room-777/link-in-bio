@@ -322,7 +322,6 @@ export function createInitialLinkMetadata(value: string) {
 	const path = parsed.pathname.replace(/^\//, "").replace(/\/$/, "");
 	return {
 		title: path ? `${hostname}/${path}` : hostname,
-		faviconUrl: `https://icons.duckduckgo.com/ip3/${hostname}.ico`,
 	} satisfies v.InferOutput<typeof pageItemLinkMetadataSchema>;
 }
 

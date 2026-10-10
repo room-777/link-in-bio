@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import { describe, it } from "node:test";
-import { normalizeProviderData } from "@grabbin/api";
+import { createInitialLinkMetadata, normalizeProviderData } from "@grabbin/api";
 import {
 	providerDefinitionList,
 	resolveLinkMetadata,
@@ -289,6 +289,19 @@ function createFetch() {
 }
 
 describe("link provider metadata", () => {
+	it("does not create DuckDuckGo favicon URLs for generic links", () => {
+		assert.deepEqual(createInitialLinkMetadata("https://example.com"), {
+			title: "example.com",
+		});
+		assert.equal(
+			"faviconUrl" in
+				resolveLinkMetadata("https://example.com", {
+					faviconUrl: "https://icons.duckduckgo.com/ip3/example.com.ico",
+				}),
+			false,
+		);
+	});
+
 	/**
 	 * Case ID: LINK-PROVIDERS-001
 	 * Given: representative profile, channel, invite, and product URLs.

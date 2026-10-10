@@ -253,15 +253,33 @@ export function parseHtmlMetadata(html: string, baseUrl: URL) {
 }
 
 export function getFaviconUrl(html: string, baseUrl: URL) {
+	const favicons: { url: string; size: number }[] = [];
 	for (const match of html.matchAll(/<link\b([^>]+)>/gi)) {
 		const attributes = match[1] ?? "";
 		const rel = getAttributeValue(attributes, "rel")?.toLowerCase() ?? "";
-		if (!rel.split(/\s+/).some((value) => value === "icon")) continue;
+		if (
+			!rel
+				.split(/\s+/)
+				.some((value) => value === "icon" || value.includes("apple"))
+		)
+			continue;
 		const href = getAttributeValue(attributes, "href");
 		const resolved = getHttpsUrl(href, baseUrl);
-		if (resolved) return resolved;
+		if (!resolved) continue;
+		const sizes = getAttributeValue(attributes, "sizes") ?? "";
+		const size = Math.max(
+			0,
+			...Array.from(
+				sizes.matchAll(/(?:^|\s)(\d+)x(\d+)(?=\s|$)/gi),
+				([, width, height]) => Number(width) * Number(height),
+			),
+		);
+		favicons.push({ url: resolved, size });
 	}
-	return undefined;
+	return (
+		favicons.sort((a, b) => b.size - a.size)[0]?.url ??
+		new URL("/favicon.ico", baseUrl).toString()
+	);
 }
 
 export function parseCountLabel(label: string) {

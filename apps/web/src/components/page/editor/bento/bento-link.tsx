@@ -462,10 +462,12 @@ function LinkImageArea({
 function LinkBadge({
 	item,
 	presentation,
+	preset,
 	mode,
 }: {
 	item: Extract<PageItemResponse, { type: "link" }>;
 	presentation?: PageItemLinkPresentation;
+	preset: PresetName;
 	mode: "view" | "edit";
 }) {
 	const Badge = mode === "view" ? "span" : "a";
@@ -476,33 +478,42 @@ function LinkBadge({
 	const faviconSrc = faviconUrl?.startsWith("/api/provider-icons/")
 		? `${faviconUrl}?v=3`
 		: faviconUrl;
-	return faviconUrl && !faviconFailed ? (
+	const iconSizeClassName =
+		preset === "squareSmall" || preset === "halfBanner" ? "size-4" : "size-6";
+	return (
 		<Badge
 			href={mode === "edit" ? item.data.url : undefined}
 			target={mode === "edit" ? "_blank" : undefined}
 			rel={mode === "edit" ? "noreferrer" : undefined}
 			aria-label={mode === "edit" ? `Open ${providerLabel}` : undefined}
-			className="relative inline-flex size-8 shrink-0 cursor-pointer! items-center justify-center overflow-hidden rounded-md bg-transparent transition-transform hover:scale-105 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/60"
+			className="smooth-shadow-xs relative inline-flex size-8 shrink-0 cursor-pointer! items-center justify-center overflow-hidden rounded-lg bg-background outline-depth transition-transform hover:scale-105 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/60"
 		>
-			<img
-				src={faviconSrc}
-				alt=""
-				className="size-full rounded-[inherit] bg-transparent object-contain"
-				onError={() => setFailedFaviconUrl(faviconUrl)}
-			/>
-		</Badge>
-	) : (
-		<Badge
-			href={mode === "edit" ? item.data.url : undefined}
-			target={mode === "edit" ? "_blank" : undefined}
-			rel={mode === "edit" ? "noreferrer" : undefined}
-			aria-label={mode === "edit" ? `Open ${providerLabel}` : undefined}
-			className="relative inline-flex size-11 shrink-0 cursor-pointer! items-center justify-center overflow-hidden rounded-2xl bg-transparent px-2 text-center font-semibold text-xs outline-depth transition-transform hover:scale-105 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/60"
-		>
-			<span aria-hidden="true">{providerLabel.slice(0, 1).toUpperCase()}</span>
-			{mode === "edit" ? (
-				<span className="sr-only">Open {providerLabel}</span>
-			) : null}
+			{faviconUrl && !faviconFailed ? (
+				<img
+					src={faviconSrc}
+					alt=""
+					className="size-full rounded-[inherit] bg-transparent object-contain"
+					onError={() => setFailedFaviconUrl(faviconUrl)}
+				/>
+			) : (
+				<svg
+					xmlns="http://www.w3.org/2000/svg"
+					width="24"
+					height="24"
+					viewBox="0 0 24 24"
+					fill="none"
+					stroke="currentColor"
+					strokeWidth="2"
+					strokeLinecap="round"
+					strokeLinejoin="round"
+					className={`lucide lucide-link-2 preview-icon -rotate-z-45 ${iconSizeClassName}`}
+					aria-hidden="true"
+				>
+					<path d="M9 17H7A5 5 0 0 1 7 7h2" />
+					<path d="M15 7h2a5 5 0 1 1 0 10h-2" />
+					<line x1="8" x2="16" y1="12" y2="12" />
+				</svg>
+			)}
 		</Badge>
 	);
 }
@@ -711,7 +722,12 @@ export function LinkItem({
 					isLandscape ? "w-full flex-1" : isTall ? "flex-1 items-stretch" : ""
 				}`}
 			>
-				<LinkBadge item={item} presentation={presentation} mode={mode} />
+				<LinkBadge
+					item={item}
+					presentation={presentation}
+					preset={preset}
+					mode={mode}
+				/>
 				<LinkTitle
 					title={title}
 					preset={preset}
@@ -744,7 +760,12 @@ export function LinkItem({
 					style={linkCardStyle}
 				>
 					<div className="flex min-h-0 w-full flex-1 flex-col gap-2">
-						<LinkBadge item={item} presentation={presentation} mode={mode} />
+						<LinkBadge
+							item={item}
+							presentation={presentation}
+							preset={preset}
+							mode={mode}
+						/>
 						<div className="flex min-h-0 min-w-0 flex-1 flex-col">
 							<LinkTitle
 								title={title}
@@ -779,7 +800,12 @@ export function LinkItem({
 					style={linkCardStyle}
 				>
 					<div className="flex min-w-0 flex-1 items-center gap-2">
-						<LinkBadge item={item} presentation={presentation} mode={mode} />
+						<LinkBadge
+							item={item}
+							presentation={presentation}
+							preset={preset}
+							mode={mode}
+						/>
 						<div className="min-h-0 min-w-0 flex-1">
 							<LinkTitle
 								title={title}

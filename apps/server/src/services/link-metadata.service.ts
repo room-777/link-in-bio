@@ -100,7 +100,7 @@ async function fetchLinkMetadata(
 	const faviconUrl = getFaviconUrl(document.html, baseUrl);
 	return {
 		...metadata,
-		...(faviconUrl ? { faviconUrl } : {}),
+		faviconUrl,
 	};
 }
 

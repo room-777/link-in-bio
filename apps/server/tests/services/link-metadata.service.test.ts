@@ -89,6 +89,51 @@ describe("link metadata service", () => {
 		});
 	});
 
+	it("LINK-METADATA-SERVICE-011 stores the largest declared site icon", async () => {
+		const { db } = createDatabase();
+		const result = await enrichPageItemMetadata({
+			db,
+			handle: "jane",
+			userId: "user-1",
+			itemId: "item-1",
+			url: "https://example.com",
+			fetch: async () =>
+				new Response(
+					'<html><head><link rel="icon" sizes="32x32" href="/small.png"><link rel="apple-touch-icon" sizes="180x180" href="/touch.png"><link rel="icon" sizes="192x192" href="/large.png"></head></html>',
+					{ headers: { "content-type": "text/html" } },
+				),
+		});
+
+		assert.equal(result.type, "link");
+		if (result.type === "link")
+			assert.equal(
+				result.data.metadata?.faviconUrl,
+				"https://example.com/large.png",
+			);
+	});
+
+	it("LINK-METADATA-SERVICE-012 uses the site favicon path when markup has no icon", async () => {
+		const { db } = createDatabase();
+		const result = await enrichPageItemMetadata({
+			db,
+			handle: "jane",
+			userId: "user-1",
+			itemId: "item-1",
+			url: "https://example.com",
+			fetch: async () =>
+				new Response("<html><head><title>Example</title></head></html>", {
+					headers: { "content-type": "text/html" },
+				}),
+		});
+
+		assert.equal(result.type, "link");
+		if (result.type === "link")
+			assert.equal(
+				result.data.metadata?.faviconUrl,
+				"https://example.com/favicon.ico",
+			);
+	});
+
 	it("LINK-METADATA-SERVICE-002 ignores stale URL refreshes", async () => {
 		const { db } = createDatabase();
 		let fetchCalls = 0;
@@ -151,6 +196,7 @@ describe("link metadata service", () => {
 			metadata: {
 				title: "Kin Wooky",
 				description: "Kin Wooky profile",
+				faviconUrl: "https://twitter.com/favicon.ico",
 				provider: "x",
 				providerData: normalizeProviderData({
 					followerCount: 101909,
@@ -352,6 +398,7 @@ describe("link metadata service", () => {
 			metadata: {
 				title: "SOOP station",
 				imageUrl: "https://cdn.example.com/soop.png",
+				faviconUrl: "https://www.sooplive.com/favicon.ico",
 				provider: "soop",
 				providerData: normalizeProviderData({}),
 			},

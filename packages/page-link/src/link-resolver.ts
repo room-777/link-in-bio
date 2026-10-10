@@ -104,15 +104,18 @@ export function resolveLinkMetadata(
 	const hostname = getHostname(url);
 	const providerFaviconUrl = resolveLinkProvider(new URL(url)).definition
 		?.faviconUrl;
+	const { faviconUrl: storedFaviconUrl, ...rest } = metadata ?? {};
+	const faviconUrl =
+		providerFaviconUrl ??
+		(storedFaviconUrl?.startsWith("https://icons.duckduckgo.com/")
+			? undefined
+			: storedFaviconUrl);
 	return {
-		...(metadata ?? {}),
+		...rest,
 		...(metadata && Object.hasOwn(metadata, "title")
 			? {}
 			: { title: hostname }),
-		faviconUrl:
-			providerFaviconUrl ??
-			metadata?.faviconUrl ??
-			`https://icons.duckduckgo.com/ip3/${hostname}.ico`,
+		...(faviconUrl ? { faviconUrl } : {}),
 		provider:
 			metadata?.provider === "rss-feed" || metadata?.provider === "tweet"
 				? metadata.provider
