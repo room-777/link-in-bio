@@ -20,10 +20,6 @@ export async function enrichTikTok(
 	const document = await fetchHtml(
 		new URL(`https://www.tiktok.com/@${handle}`),
 		context,
-		{
-			userAgent:
-				"Mozilla/5.0 (iPhone; CPU iPhone OS 17_0 like Mac OS X) AppleWebKit/605.1.15 Mobile/15E148",
-		},
 	);
 	if (!document) return {};
 	const metadata = parseHtmlMetadata(document.html, new URL(document.url));

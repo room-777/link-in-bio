@@ -4,6 +4,7 @@ import type { DatabaseClient } from "@grabbin/db";
 
 import { PageItemServiceError } from "../../src/exceptions/page-item.exception";
 import { enrichPageItemMetadata } from "../../src/services/link-metadata.service";
+import { LINK_METADATA_USER_AGENTS } from "../../src/services/link-providers/runtime";
 
 const layout = { x: 0, y: 0, w: 1, h: 2 };
 
@@ -41,19 +42,26 @@ function createDatabase(url = "https://example.com") {
 describe("link metadata service", () => {
 	it("LINK-METADATA-SERVICE-001 stores safe Open Graph metadata", async () => {
 		const { db, current } = createDatabase();
+		let userAgent: string | null = null;
 		const result = await enrichPageItemMetadata({
 			db,
 			handle: "jane",
 			userId: "user-1",
 			itemId: "item-1",
 			url: "https://example.com",
-			fetch: async () =>
-				new Response(
+			fetch: async (_input, init) => {
+				userAgent = new Headers(init?.headers).get("User-Agent");
+				return new Response(
 					'<html><head><link rel="icon" href="/favicon.svg"><title> Example </title><meta name="description" content="A page"><meta property="og:image" content="https://cdn.example.com/card.png"></head></html>',
 					{ headers: { "content-type": "text/html" } },
-				),
+				);
+			},
 		});
 
+		assert.ok(
+			userAgent &&
+				(LINK_METADATA_USER_AGENTS as readonly string[]).includes(userAgent),
+		);
 		assert.equal(result.type, "link");
 		if (result.type !== "link") return;
 		assert.equal(result.data.metadata?.title, "Example");
