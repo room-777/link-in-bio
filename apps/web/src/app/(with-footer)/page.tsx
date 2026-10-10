@@ -7,7 +7,7 @@ import FeatureSection from "@/components/landing/feature-section";
 import HeroSection from "@/components/landing/hero-section";
 import JoinForFreeButton from "@/components/landing/join-for-free-button";
 import PlanSection from "@/components/landing/plan-section";
-import WidgetTypesSection from "@/components/landing/widget-types-section";
+import WelcomeSection from "@/components/landing/welcome-section";
 import HandlePage from "@/components/page/public/handle-page";
 import { apiClient, getApiErrorMessage } from "@/lib/api-client";
 import { getCustomDomainHostname } from "@/lib/custom-domain-host";
@@ -133,7 +133,7 @@ export default async function Home() {
 	return (
 		<main className="landing-page flex flex-col items-center justify-center font-sans">
 			<HeroSection />
-			<WidgetTypesSection />
+			<WelcomeSection />
 			<FeatureSection
 				joinButton={
 					<JoinForFreeButton

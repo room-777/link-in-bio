@@ -74,14 +74,14 @@ function HeroDummyCard({
 					y: reduceMotion ? 0 : [0, -5, 0, 5, 0],
 				}}
 				transition={{
-					duration: reduceMotion ? 0 : 0.55,
-					delay: reduceMotion ? 0 : 1.25,
+					duration: reduceMotion ? 0 : 0.85,
+					delay: reduceMotion ? 0 : 3.35,
 					type: "spring",
-					stiffness: 240,
-					damping: 14,
+					stiffness: 160,
+					damping: 20,
 					y: {
 						duration: reduceMotion ? 0 : 5,
-						delay: reduceMotion ? 0 : 1.25,
+						delay: reduceMotion ? 0 : 3.35,
 						repeat: reduceMotion ? 0 : Number.POSITIVE_INFINITY,
 						ease: "easeInOut",
 					},
@@ -108,16 +108,48 @@ export default function HeroSection() {
 		<section id="hero" className="relative w-full overflow-x-clip">
 			<div className="mx-auto flex w-full max-w-7xl flex-col items-center px-6 pt-36 text-center sm:px-10 sm:pt-40">
 				<h1 className="max-w-3xl text-balance font-semibold text-5xl leading-[0.98] tracking-[-0.065em] sm:text-7xl xl:text-[5rem]">
-					Your link in bio
-					<br />
-					Made to feel like you.
+					<motion.span
+						className="block"
+						initial={reduceMotion ? false : { opacity: 0, y: -16 }}
+						animate={{ opacity: 1, y: 0 }}
+						transition={{
+							duration: reduceMotion ? 0 : 0.8,
+							delay: reduceMotion ? 0 : 0,
+							ease: [0.22, 1, 0.36, 1],
+						}}
+					>
+						Your link in bio
+					</motion.span>
+					<motion.span
+						className="block"
+						initial={reduceMotion ? false : { opacity: 0, y: -16 }}
+						animate={{ opacity: 1, y: 0 }}
+						transition={{
+							duration: reduceMotion ? 0 : 0.8,
+							delay: reduceMotion ? 0 : 0.55,
+							ease: [0.22, 1, 0.36, 1],
+						}}
+					>
+						Made to feel like you.
+					</motion.span>
 				</h1>
-				<JoinForFreeButton
-					className="mt-8 h-[72px] w-auto min-w-[260px] rounded-full px-10 text-xl"
-					variant="brandBlack"
+				<motion.div
+					className="mt-8"
+					initial={reduceMotion ? false : { opacity: 0, y: -16 }}
+					animate={{ opacity: 1, y: 0 }}
+					transition={{
+						duration: reduceMotion ? 0 : 0.8,
+						delay: reduceMotion ? 0 : 1.4,
+						ease: [0.22, 1, 0.36, 1],
+					}}
 				>
-					Create yours
-				</JoinForFreeButton>
+					<JoinForFreeButton
+						className="h-[72px] w-auto min-w-[260px] rounded-full px-10 text-xl"
+						variant="brandBlack"
+					>
+						Create yours
+					</JoinForFreeButton>
+				</motion.div>
 			</div>
 
 			<div className="relative mx-auto mt-14 flex min-h-[620px] w-full max-w-[1100px] justify-center px-4 sm:mt-20 sm:min-h-[720px]">
@@ -152,8 +184,8 @@ export default function HeroSection() {
 					initial={reduceMotion ? false : { opacity: 0, y: 24 }}
 					animate={{ opacity: 1, y: 0 }}
 					transition={{
-						duration: reduceMotion ? 0 : 0.8,
-						delay: reduceMotion ? 0 : 0.2,
+						duration: reduceMotion ? 0 : 1,
+						delay: reduceMotion ? 0 : 2.3,
 						ease: [0.22, 1, 0.36, 1],
 					}}
 				>
