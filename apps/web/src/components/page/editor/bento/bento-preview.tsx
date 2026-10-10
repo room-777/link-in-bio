@@ -1,5 +1,6 @@
 "use client";
 
+import { normalizeProviderData } from "@grabbin/api";
 import {
 	bentoGridMetrics,
 	getBentoWidth,
@@ -85,11 +86,11 @@ const previewItems: ReadonlyArray<{
 					title: "@framebyjune",
 					faviconUrl: "/api/provider-icons/instagram.svg",
 					provider: "instagram",
-					providerData: {
+					providerData: normalizeProviderData({
 						followerCount: 687000000,
 						followerCountLabel: "687M",
 						followerCountApproximate: true,
-					},
+					}),
 					presentation: {
 						provider: "instagram",
 						providerLabel: "Instagram",
@@ -122,9 +123,9 @@ const previewItems: ReadonlyArray<{
 					title: "northstar-labs",
 					faviconUrl: "/api/provider-icons/github.svg",
 					provider: "github",
-					providerData: {
+					providerData: normalizeProviderData({
 						followers: 34,
-					},
+					}),
 					presentation: {
 						provider: "github",
 						providerLabel: "GitHub",
@@ -189,11 +190,11 @@ const previewItems: ReadonlyArray<{
 					title: "@cityframes",
 					faviconUrl: "/api/provider-icons/x.svg",
 					provider: "x",
-					providerData: {
+					providerData: normalizeProviderData({
 						followerCount: 12800,
 						followerCountLabel: "12.8K",
 						followerCountApproximate: true,
-					},
+					}),
 					presentation: {
 						provider: "x",
 						providerLabel: "X",

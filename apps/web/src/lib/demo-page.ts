@@ -1,4 +1,8 @@
-import type { PageByHandleResponse, PageItemResponse } from "@grabbin/api";
+import {
+	normalizeProviderData,
+	type PageByHandleResponse,
+	type PageItemResponse,
+} from "@grabbin/api";
 import {
 	type BentoBreakpoint,
 	getColumns,
@@ -43,7 +47,7 @@ const itemSpecs = [
 			url: "https://instagram.com/averyreed",
 			title: "Daily moments",
 			description: "Photos, places, and little things.",
-			providerData: { followerCount: 12800 },
+			providerData: normalizeProviderData({ followerCount: 12800 }),
 			imageUrl:
 				"https://images.unsplash.com/photo-1490750967868-88aa4486c946?auto=format&fit=crop&w=900&q=80",
 		},
@@ -56,12 +60,12 @@ const itemSpecs = [
 			url: "https://youtube.com/@averyreed",
 			title: "Avery on YouTube",
 			description: "Travel films and photo diaries.",
-			providerData: {
+			providerData: normalizeProviderData({
 				subscriberCount: 24800,
 				recentVideoThumbnailUrls: [
 					"https://images.unsplash.com/photo-1500530855697-b586d89ba3ee?auto=format&fit=crop&w=900&q=80",
 				] as string[],
-			},
+			}),
 		},
 	},
 	{
@@ -92,10 +96,10 @@ const itemSpecs = [
 			url: "https://github.com/averyreed",
 			title: "Open source",
 			description: "Small tools I make along the way.",
-			providerData: {
+			providerData: normalizeProviderData({
 				followers: 1840,
 				githubContributionGraph,
-			},
+			}),
 		},
 	},
 	{
@@ -167,7 +171,7 @@ const itemSpecs = [
 			url: "https://x.com/averyreed",
 			title: "Say hello",
 			description: "I’m always happy to meet fellow makers.",
-			providerData: { followerCount: 6320 },
+			providerData: normalizeProviderData({ followerCount: 6320 }),
 			imageUrl:
 				"https://images.unsplash.com/photo-1524504388940-b1c1722653e1?auto=format&fit=crop&w=900&q=80",
 		},

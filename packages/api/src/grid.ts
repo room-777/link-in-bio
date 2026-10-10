@@ -193,6 +193,69 @@ export const pageItemCalendlyDataSchema = v.object({
 	),
 });
 
+export const providerDataSchema = v.object({
+	followerCount: v.optional(v.nullable(v.number()), null),
+	followerCountLabel: v.optional(v.nullable(v.string()), null),
+	followerCountApproximate: v.optional(v.nullable(v.boolean()), null),
+	followingCount: v.optional(v.nullable(v.number()), null),
+	followingCountLabel: v.optional(v.nullable(v.string()), null),
+	followingCountApproximate: v.optional(v.nullable(v.boolean()), null),
+	mediaCount: v.optional(v.nullable(v.number()), null),
+	subscriberCount: v.optional(v.nullable(v.number()), null),
+	viewCount: v.optional(v.nullable(v.number()), null),
+	likeCount: v.optional(v.nullable(v.number()), null),
+	likeCountLabel: v.optional(v.nullable(v.string()), null),
+	likeCountApproximate: v.optional(v.nullable(v.boolean()), null),
+	commentCount: v.optional(v.nullable(v.number()), null),
+	talkingAboutCount: v.optional(v.nullable(v.number()), null),
+	favoriteCount: v.optional(v.nullable(v.number()), null),
+	upvoteCount: v.optional(v.nullable(v.number()), null),
+	followers: v.optional(v.nullable(v.number()), null),
+	memberCount: v.optional(v.nullable(v.number()), null),
+	onlineMemberCount: v.optional(v.nullable(v.number()), null),
+	liveViewerCount: v.optional(v.nullable(v.number()), null),
+	verifiedMark: v.optional(v.nullable(v.boolean()), null),
+	isLive: v.optional(v.nullable(v.boolean()), null),
+	channelId: v.optional(v.nullable(v.string()), null),
+	guildId: v.optional(v.nullable(v.string()), null),
+	inviteCode: v.optional(v.nullable(v.string()), null),
+	liveId: v.optional(v.nullable(v.string()), null),
+	githubUsername: v.optional(v.nullable(v.string()), null),
+	authorName: v.optional(v.nullable(v.string()), null),
+	authorProfileUrl: v.optional(v.nullable(v.string()), null),
+	authorProfileImageUrl: v.optional(v.nullable(httpsUrlSchema), null),
+	ownerName: v.optional(v.nullable(v.string()), null),
+	ownerProfileImageUrl: v.optional(v.nullable(httpsUrlSchema), null),
+	profileImageUrl: v.optional(v.nullable(httpsUrlSchema), null),
+	channelImageUrl: v.optional(v.nullable(httpsUrlSchema), null),
+	liveThumbnailUrl: v.optional(v.nullable(httpsUrlSchema), null),
+	recentPostThumbnailUrls: v.optional(
+		v.nullable(v.array(httpsUrlSchema)),
+		null,
+	),
+	recentVideoThumbnailUrls: v.optional(
+		v.nullable(v.array(httpsUrlSchema)),
+		null,
+	),
+	recentProjectThumbnailUrls: v.optional(
+		v.nullable(v.array(httpsUrlSchema)),
+		null,
+	),
+	recentShotThumbnailUrls: v.optional(
+		v.nullable(v.array(httpsUrlSchema)),
+		null,
+	),
+	recentBoardThumbnailUrls: v.optional(
+		v.nullable(v.array(httpsUrlSchema)),
+		null,
+	),
+	githubContributionGraph: v.optional(v.nullable(v.string()), null),
+});
+
+export function normalizeProviderData(value: unknown) {
+	return v.parse(providerDataSchema, value ?? {});
+}
+
 export const pageItemLinkMetadataSchema = v.object({
 	title: v.optional(v.string()),
 	description: v.optional(v.string()),
@@ -200,18 +263,7 @@ export const pageItemLinkMetadataSchema = v.object({
 	imageUrl: v.optional(httpsUrlSchema),
 	provider: v.optional(v.string()),
 	rss: v.optional(rssFeedResponseSchema),
-	providerData: v.optional(
-		v.record(
-			v.string(),
-			v.union([
-				v.string(),
-				v.number(),
-				v.boolean(),
-				v.null(),
-				v.array(httpsUrlSchema),
-			]),
-		),
-	),
+	providerData: v.optional(providerDataSchema),
 });
 
 export type PageItemLinkMetadata = v.InferOutput<

@@ -224,6 +224,7 @@ export const providerDefinitions = [
 		label: "Facebook",
 		faviconUrl: providerIconUrl("facebook"),
 		theme: { faviconBackground: "#1877F2" },
+		countKey: "followerCount",
 	},
 	{
 		id: "x",
@@ -377,6 +378,7 @@ export const providerDefinitions = [
 			actionLabel: "Connect",
 			actionVariant: "solid",
 		},
+		countKey: "followerCount",
 	},
 	{
 		id: "chzzk",
