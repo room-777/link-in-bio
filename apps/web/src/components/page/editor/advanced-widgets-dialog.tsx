@@ -24,7 +24,9 @@ import { ChevronLeft, Search, SlidersHorizontal, XIcon } from "lucide-react";
 import { useReducedMotion } from "motion/react";
 import { overlay } from "overlay-kit";
 import { Activity, useLayoutEffect, useRef, useState } from "react";
+import { openPlanDialog } from "@/components/billing/plan-dialog";
 import { advancedWidgetModules } from "@/constant/widget/advanced-widget-registry";
+import { authClient } from "@/lib/auth-client";
 import AdvancedWidgetActivity from "./advanced-widget-activity";
 import AdvancedWidgetList from "./advanced-widget-list";
 import { AdvancedWidgetIcon } from "./advanced-widget-visuals";
@@ -39,6 +41,8 @@ export default function AdvancedWidgetsDialog({
 	onTweetAdd: (url: string) => Promise<boolean>;
 }) {
 	const isMobile = useIsMobile();
+	const { data: session } = authClient.useSession();
+	const isPro = session?.plan.tier === "pro";
 	return (
 		<Button
 			type="button"
@@ -51,6 +55,7 @@ export default function AdvancedWidgetsDialog({
 				overlay.open(({ isOpen, close, unmount }) => (
 					<AdvancedWidgetsOverlay
 						isMobile={isMobile}
+						isPro={isPro}
 						open={isOpen}
 						onClose={close}
 						onExit={unmount}
@@ -68,6 +73,7 @@ export default function AdvancedWidgetsDialog({
 
 function AdvancedWidgetsOverlay({
 	isMobile,
+	isPro,
 	open,
 	onClose,
 	onExit,
@@ -76,6 +82,7 @@ function AdvancedWidgetsOverlay({
 	onTweetAdd,
 }: {
 	isMobile: boolean;
+	isPro: boolean;
 	open: boolean;
 	onClose: () => void;
 	onExit: () => void;
@@ -225,7 +232,13 @@ function AdvancedWidgetsOverlay({
 					</header>
 					<div className="min-h-0 flex-1">
 						<AdvancedWidgetList
-							onSelect={showWidget}
+							onSelect={(id) => {
+								if (!isPro) {
+									openPlanDialog();
+									return;
+								}
+								showWidget(id);
+							}}
 							searchQuery={searchQuery}
 						/>
 					</div>
