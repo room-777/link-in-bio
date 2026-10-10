@@ -5,13 +5,68 @@ export const PROVIDER_FETCH_TIMEOUT_MS = 2500;
 export const MAX_PROVIDER_HTML_BYTES = 2 * 1024 * 1024;
 export const MAX_PROVIDER_JSON_BYTES = 512 * 1024;
 export const MAX_LINK_METADATA_HTML_BYTES = 1024 * 1024;
+export const INSTAGRAM_PUBLIC_HEADERS = {
+	Accept: "*/*",
+	"Accept-Language": "en-US,en;q=0.9",
+	Referer: "https://www.instagram.com/",
+	"User-Agent":
+		"Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.6261.112 Safari/537.36",
+	"X-Asbd-Id": "129477",
+	"X-Ig-App-Id": "936619743392459",
+	"X-Requested-With": "XMLHttpRequest",
+} as const;
+
+export function getInstagramHeaders(sessionId?: string) {
+	const safeSessionId = sessionId?.trim();
+	return {
+		...INSTAGRAM_PUBLIC_HEADERS,
+		...(safeSessionId && /^[A-Za-z0-9%._~:-]+$/.test(safeSessionId)
+			? { Cookie: `sessionid=${safeSessionId}` }
+			: {}),
+	};
+}
+
+export function getInstagramPrivateHeaders(sessionId?: string) {
+	const encodedSessionId = sessionId?.trim();
+	if (!encodedSessionId || encodedSessionId.length < 30) return undefined;
+	let session: string;
+	try {
+		session = decodeURIComponent(encodedSessionId);
+	} catch {
+		return undefined;
+	}
+	const userId = session.match(/^(\d+):/)?.[1];
+	if (!userId || !/^[\w:.-]+$/.test(session)) return undefined;
+	const authorizationData = {
+		ds_user_id: userId,
+		sessionid: session,
+		should_use_header_over_cookies: true,
+	};
+	return {
+		Accept: "*/*",
+		"Accept-Language": "en-US,en;q=0.9",
+		Authorization: `Bearer IGT:2:${btoa(JSON.stringify(authorizationData))}`,
+		Cookie: `sessionid=${session}; ds_user_id=${userId}`,
+		"X-FB-HTTP-Engine": "Tigon/MNS/TCP",
+		"X-IG-App-ID": "567067343352427",
+		"X-IG-App-Locale": "en_US",
+		"X-IG-Device-ID": "8aa373c6-f316-44d7-b49e-d74563f4a8f3",
+		"X-IG-Family-Device-ID": "57d64c41-a916-3fa5-bd7a-3796c1dab122",
+		"X-IG-Android-ID": "android-e021b636049dc0e9",
+		"X-IG-Connection-Type": "WIFI",
+		"User-Agent":
+			"Instagram 449.0.0.52.84 Android (34/14; 480dpi; 1344x2992; Google/google; Pixel 8 Pro; husky; husky; en_US; 1079242191)",
+	};
+}
+const TIKTOK_USER_AGENT =
+	"Mozilla/5.0 (Macintosh; Intel Mac OS X 14_2_1) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36";
 export const LINK_METADATA_USER_AGENTS = [
 	"Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
 	"Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/121.0.0.0 Safari/537.36",
 	"Mozilla/5.0 (Windows NT 11.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
 	"Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
 	"Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/121.0.0.0 Safari/537.36",
-	"Mozilla/5.0 (Macintosh; Intel Mac OS X 14_2_1) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
+	TIKTOK_USER_AGENT,
 	"Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
 	"Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/121.0.0.0 Safari/537.36",
 	"Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:121.0) Gecko/20100101 Firefox/121.0",
@@ -36,6 +91,33 @@ function getRandomUserAgent() {
 			Math.floor(Math.random() * LINK_METADATA_USER_AGENTS.length)
 		] ?? LINK_METADATA_USER_AGENTS[0]
 	);
+}
+
+// shortcut: relies on social preview HTML, revisit if providers stop exposing profile metadata.
+const SOCIAL_PREVIEW_HOSTS = [
+	"facebook.com",
+	"instagram.com",
+	"linkedin.com",
+	"reddit.com",
+	"redd.it",
+	"threads.com",
+	"threads.net",
+	"twitter.com",
+	"x.com",
+] as const;
+
+function getDefaultUserAgent(url: URL) {
+	const hostname = url.hostname.replace(/^www\./, "");
+	if (hostname === "instagram.com")
+		return INSTAGRAM_PUBLIC_HEADERS["User-Agent"];
+	if (hostname === "tiktok.com" || hostname.endsWith(".tiktok.com")) {
+		return TIKTOK_USER_AGENT;
+	}
+	return SOCIAL_PREVIEW_HOSTS.some(
+		(domain) => hostname === domain || hostname.endsWith(`.${domain}`),
+	)
+		? "facebookexternalhit/1.1"
+		: getRandomUserAgent();
 }
 
 const COUNT_MULTIPLIERS: Record<string, number> = {
@@ -241,21 +323,25 @@ export async function fetchHtml(
 		accept?: string;
 		maxBytes?: number;
 		stopAtHead?: boolean;
+		timeoutMs?: number;
 		userAgent?: string;
 	},
 ) {
 	const controller = new AbortController();
 	const timeout = setTimeout(
 		() => controller.abort(),
-		PROVIDER_FETCH_TIMEOUT_MS,
+		options?.timeoutMs ?? PROVIDER_FETCH_TIMEOUT_MS,
 	);
 	try {
 		const response = await context.fetch(url, {
 			redirect: "follow",
 			signal: controller.signal,
 			headers: {
+				...(url.hostname.replace(/^www\./, "") === "instagram.com"
+					? getInstagramHeaders(context.env?.INSTAGRAM_SESSION_ID)
+					: {}),
 				Accept: options?.accept ?? "text/html,application/xhtml+xml;q=0.9",
-				"User-Agent": options?.userAgent ?? getRandomUserAgent(),
+				"User-Agent": options?.userAgent ?? getDefaultUserAgent(url),
 			},
 		});
 		if (!response.ok) return undefined;

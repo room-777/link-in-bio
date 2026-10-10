@@ -1,6 +1,8 @@
 import assert from "node:assert/strict";
 import { describe, it } from "node:test";
+import { normalizeProviderData } from "@grabbin/api";
 import type { DatabaseClient } from "@grabbin/db";
+import { resolveLinkMetadata } from "@grabbin/page-link";
 
 import { PageItemServiceError } from "../../src/exceptions/page-item.exception";
 import { enrichPageItemMetadata } from "../../src/services/link-metadata.service";
@@ -82,6 +84,7 @@ describe("link metadata service", () => {
 				imageUrl: "https://cdn.example.com/card.png",
 				faviconUrl: "https://example.com/favicon.svg",
 				provider: "generic-web",
+				providerData: normalizeProviderData({}),
 			},
 		});
 	});
@@ -149,46 +152,171 @@ describe("link metadata service", () => {
 				title: "Kin Wooky",
 				description: "Kin Wooky profile",
 				provider: "x",
-				providerData: {
+				providerData: normalizeProviderData({
 					followerCount: 101909,
 					followerCountLabel: "101909",
 					followerCountApproximate: false,
-				},
+				}),
 			},
 		});
 	});
 
 	/**
 	 * Case ID: LINK-METADATA-SERVICE-007
-	 * Given: a TikTok or Threads profile link.
+	 * Given: supported social profile links.
 	 * When: generic and provider metadata are extracted together.
-	 * Then: each profile page is fetched once.
-	 * Evidence: fetch call count is one for both providers.
+	 * Then: Instagram uses only its private API, while other previews use HTML.
+	 * Evidence: request count and User-Agent for each social host.
 	 * Result: Pass | Fail | Blocked | Not Run
 	 */
-	it("LINK-METADATA-SERVICE-007 fetches each social profile page once", async () => {
+	it("LINK-METADATA-SERVICE-007 fetches social profiles with preview metadata", async () => {
 		for (const url of [
+			"https://www.instagram.com/kinwooky",
 			"https://www.tiktok.com/@kinwooky",
 			"https://www.threads.com/@kinwooky",
+			"https://www.facebook.com/kinwooky",
+			"https://www.linkedin.com/company/kinwooky",
+			"https://x.com/kinwooky",
 		]) {
 			const { db } = createDatabase(url);
-			let fetchCalls = 0;
-			await enrichPageItemMetadata({
+			const requested: Array<{
+				url: URL;
+				userAgent: string | null;
+			}> = [];
+			const result = await enrichPageItemMetadata({
 				db,
 				handle: "jane",
 				userId: "user-1",
 				itemId: "item-1",
 				url,
-				fetch: async () => {
-					fetchCalls += 1;
+				fetch: async (_input, init) => {
+					const requestUrl = new URL(_input.toString());
+					requested.push({
+						url: requestUrl,
+						userAgent: new Headers(init?.headers).get("User-Agent"),
+					});
+					if (requestUrl.pathname.includes("web_profile_info")) {
+						return new Response("Rate limited", { status: 429 });
+					}
 					return new Response(
 						'<html><head><meta property="og:title" content="Profile"></head></html>',
 						{ headers: { "content-type": "text/html" } },
 					);
 				},
 			});
-			assert.equal(fetchCalls, 1, url);
+			assert.equal(result.type, "link", url);
+			const isInstagram = new URL(url).hostname.endsWith("instagram.com");
+			assert.equal(requested.length, isInstagram ? 0 : 1, url);
+			const profileRequest = requested.find(
+				({ url: requestUrl }) =>
+					!requestUrl.pathname.includes("web_profile_info"),
+			);
+			if (isInstagram) {
+				assert.equal(profileRequest, undefined, url);
+			} else if (new URL(url).hostname.endsWith("tiktok.com")) {
+				assert.match(
+					profileRequest?.userAgent ?? "",
+					/Chrome\/120\.0\.0\.0/,
+					url,
+				);
+			} else {
+				assert.equal(profileRequest?.userAgent, "facebookexternalhit/1.1", url);
+			}
 		}
+	});
+
+	it("stores Facebook and LinkedIn follower counts as provider data", async () => {
+		for (const [
+			url,
+			description,
+			expected,
+			actionDetail,
+			talkingAboutCount,
+		] of [
+			[
+				"https://www.facebook.com/grabbin",
+				"Grabbin. 68,226,899 followers · 434,467 talking about this.",
+				68_226_899,
+				"68.2M",
+				434_467,
+			],
+			[
+				"https://www.linkedin.com/company/grabbin",
+				"11,903,900 followers on LinkedIn.",
+				11_903_900,
+				"11.9M",
+				null,
+			],
+		] as const) {
+			const { db } = createDatabase(url);
+			const result = await enrichPageItemMetadata({
+				db,
+				handle: "jane",
+				userId: "user-1",
+				itemId: "item-1",
+				url,
+				fetch: async () =>
+					new Response(
+						`<html><head><meta property="og:description" content="${description}"></head></html>`,
+						{ headers: { "content-type": "text/html" } },
+					),
+			});
+			assert.equal(result.type, "link", url);
+			if (result.type === "link")
+				assert.equal(
+					result.data.metadata?.providerData?.followerCount,
+					expected,
+				);
+			if (result.type === "link")
+				assert.equal(
+					resolveLinkMetadata(url, result.data.metadata).presentation
+						.actionDetail,
+					actionDetail,
+				);
+			if (result.type === "link")
+				assert.equal(
+					result.data.metadata?.providerData?.talkingAboutCount,
+					talkingAboutCount,
+				);
+		}
+	});
+
+	it("uses only Discord's official invite endpoint and stores its counts", async () => {
+		const url = "https://discord.gg/grabbin";
+		const { db } = createDatabase(url);
+		const requested: Array<{ url: URL; headers: Headers }> = [];
+		const result = await enrichPageItemMetadata({
+			db,
+			handle: "jane",
+			userId: "user-1",
+			itemId: "item-1",
+			url,
+			fetch: async (input, init) => {
+				const requestUrl = new URL(input.toString());
+				requested.push({
+					url: requestUrl,
+					headers: new Headers(init?.headers),
+				});
+				return new Response(
+					JSON.stringify({
+						guild: { id: "guild-1", name: "Grabbin" },
+						approximate_member_count: 55,
+						approximate_presence_count: 12,
+					}),
+					{ headers: { "content-type": "application/json" } },
+				);
+			},
+		});
+		assert.equal(result.type, "link");
+		assert.equal(requested.length, 1);
+		assert.equal(requested[0]?.url.hostname, "discord.com");
+		assert.equal(requested[0]?.url.pathname, "/api/v10/invites/grabbin");
+		assert.equal(
+			requested[0]?.headers.get("User-Agent"),
+			"Grabbin (https://grabbin.me, 1.0)",
+		);
+		if (result.type === "link")
+			assert.equal(result.data.metadata?.providerData?.memberCount, 55);
 	});
 
 	it("LINK-METADATA-SERVICE-004 falls back to regular HTML metadata when SOOP API fails", async () => {
@@ -225,22 +353,23 @@ describe("link metadata service", () => {
 				title: "SOOP station",
 				imageUrl: "https://cdn.example.com/soop.png",
 				provider: "soop",
+				providerData: normalizeProviderData({}),
 			},
 		});
 	});
 
 	/**
 	 * Case ID: LINK-METADATA-SERVICE-005
-	 * Given: generic and Instagram metadata both need the profile HTML.
-	 * When: the metadata refresh runs both enrichers.
-	 * Then: it fetches the profile once and stores both metadata results.
-	 * Evidence: fetch call count and stored provider metadata.
+	 * Given: an authenticated Instagram profile URL.
+	 * When: the metadata refresh runs the provider enricher.
+	 * Then: it fetches only the authenticated private profile endpoint.
+	 * Evidence: one private endpoint request and stored provider metadata.
 	 * Result: Pass | Fail | Blocked | Not Run
 	 */
 	it("LINK-METADATA-SERVICE-005 shares concurrent requests for the same page", async () => {
 		const url = "https://www.instagram.com/officialstellive/";
 		const { db } = createDatabase(url);
-		let fetchCalls = 0;
+		const requestedUrls: URL[] = [];
 
 		const result = await enrichPageItemMetadata({
 			db,
@@ -248,17 +377,29 @@ describe("link metadata service", () => {
 			userId: "user-1",
 			itemId: "item-1",
 			url,
-			fetch: async (_input) => {
-				fetchCalls += 1;
+			fetch: async (input) => {
+				requestedUrls.push(new URL(input.toString()));
 				return new Response(
-					'<html><head><meta property="og:title" content="Stellive"></head><body><a href="/officialstellive/p/post-1/"><img src="https://cdn.example.com/post.png"></a></body></html>',
-					{ headers: { "content-type": "text/html" } },
+					JSON.stringify({
+						data: {
+							user: {
+								username: "officialstellive",
+								full_name: "Stellive",
+								follower_count: 1234,
+							},
+						},
+					}),
+					{ headers: { "content-type": "application/json" } },
 				);
 			},
+			env: { INSTAGRAM_SESSION_ID: `123%3A${"a".repeat(64)}` },
 		});
 
-		assert.equal(fetchCalls, 1);
+		assert.equal(requestedUrls.length, 1);
+		assert.equal(requestedUrls[0]?.hostname, "i.instagram.com");
 		assert.equal(result.type, "link");
+		if (result.type === "link")
+			assert.equal(result.data.metadata?.providerData?.followerCount, 1234);
 		if (result.type === "link") {
 			assert.equal(result.data.metadata?.provider, "instagram");
 			assert.equal(result.data.metadata?.title, "Stellive");
@@ -274,7 +415,7 @@ describe("link metadata service", () => {
 	 * Result: Pass | Fail | Blocked | Not Run
 	 */
 	it("LINK-METADATA-SERVICE-006 reports upstream rate limits and Retry-After", async () => {
-		const url = "https://www.instagram.com/officialstellive/";
+		const url = "https://example.com/officialstellive/";
 		const { db } = createDatabase(url);
 		let fetchCalls = 0;
 

@@ -11,18 +11,23 @@ import {
 import type { LinkProviderContext, LinkProviderTarget } from "./types";
 
 function getRecentProjectThumbnailUrls(html: string) {
-	return [...html.matchAll(/<article\b[^>]*>([\s\S]*?)<\/article>/gi)]
-		.map((match) => {
-			const article = match[1] ?? "";
-			if (!/href=["']\/gallery\/\d+(?:\/|["'])/i.test(article))
-				return undefined;
-			const srcset = article.match(
-				/<source\b[^>]*\bsrcset=["']([^"']+)["']/i,
-			)?.[1];
-			return getHttpsUrl(srcset?.match(/https:\/\/[^\s,]+/)?.[0]);
-		})
-		.filter((url): url is string => Boolean(url))
-		.slice(0, 4);
+	const urls: string[] = [];
+	for (const match of html.matchAll(/href=["'](\/gallery\/\d+[^"']*)["']/gi)) {
+		const index = match.index ?? 0;
+		const start = Math.max(0, index - 2500);
+		const card = html.slice(start, index + 2500);
+		const image = [
+			...card.matchAll(/https:\/\/mir-s3-cdn-cf\.behance\.net\/[^\s"']+/gi),
+		].sort(
+			(a, b) =>
+				Math.abs((a.index ?? 0) - (index - start)) -
+				Math.abs((b.index ?? 0) - (index - start)),
+		)[0]?.[0];
+		const url = getHttpsUrl(image);
+		if (url && !urls.includes(url)) urls.push(url);
+		if (urls.length === 4) break;
+	}
+	return urls;
 }
 
 function getProjectCoverUrl(html: string) {
@@ -44,13 +49,16 @@ function getProjectAuthorData(html: string) {
 		.map((match) => match[0])
 		.find((tag) =>
 			decodeHtmlEntities(getAttributeValue(tag, "alt") ?? "").match(
-				/'s profile$/i,
+				/(?:'s profile|designer's profile)$/i,
 			),
 		);
 	if (!profileImage) return undefined;
 
 	const alt = decodeHtmlEntities(getAttributeValue(profileImage, "alt") ?? "");
-	const authorName = alt.replace(/'s profile$/i, "").trim();
+	const authorName = alt
+		.replace(/\s*\|.*$/, "")
+		.replace(/(?:'s profile|designer's profile)$/i, "")
+		.trim();
 	const authorProfileImageUrl = getHttpsUrl(
 		getAttributeValue(profileImage, "srcset")?.match(
 			/https:\/\/[^\s,]+/,
@@ -68,6 +76,16 @@ export async function enrichBehance(
 	context: LinkProviderContext,
 ): Promise<Partial<PageItemLinkMetadata>> {
 	if (target.kind !== "profile" && target.kind !== "project") return {};
+	const encodedSlug = url.pathname.split("/").filter(Boolean).at(-1) ?? "";
+	let slugTitle = encodedSlug;
+	try {
+		slugTitle = decodeURIComponent(encodedSlug);
+	} catch {
+		// Keep the URL's readable text if its percent escapes are invalid.
+	}
+	slugTitle = slugTitle.replace(/[-_]+/g, " ").trim();
+	const fallbackTitle =
+		target.kind === "profile" ? target.params.username : slugTitle;
 	const pageUrl =
 		target.kind === "project"
 			? new URL(
@@ -75,14 +93,15 @@ export async function enrichBehance(
 					"https://www.behance.net",
 				)
 			: url;
-	const document = await fetchHtml(pageUrl, context);
-	if (!document) return {};
+	const document = await fetchHtml(pageUrl, context, { timeoutMs: 8_000 });
+	if (!document) return fallbackTitle ? { title: fallbackTitle } : {};
 	const metadata = parseHtmlMetadata(document.html, new URL(document.url));
 	if (target.kind === "project") {
 		const authorData = getProjectAuthorData(document.html);
+		const title = metadata.title?.replace(/\s+:: Behance$/i, "");
 		return {
 			...metadata,
-			title: metadata.title?.replace(/\s+:: Behance$/i, ""),
+			title: title === "behance.net" ? fallbackTitle : title,
 			description: metadata.description?.startsWith(
 				"Behance is the world's largest creative network",
 			)
@@ -98,7 +117,10 @@ export async function enrichBehance(
 			.replace(/<(script|style)\b[^>]*>[\s\S]*?<\/\1>/gi, " ")
 			.replace(/<[^>]+>/g, " "),
 	);
-	const followerLabel = text.match(/([\d.,]+\s*[KMB]?)\s+followers\b/i)?.[1];
+	const followerLabel =
+		document.html.match(
+			/aria-label=["']Followers\s*-\s*([\d,]+)\s+users/i,
+		)?.[1] ?? text.match(/([\d.,]+\s*[KMB]?)\s+followers\b/i)?.[1];
 	const followerData = followerLabel
 		? parseCountLabel(followerLabel)
 		: undefined;
@@ -107,6 +129,7 @@ export async function enrichBehance(
 	);
 	return {
 		...metadata,
+		title: metadata.title === "behance.net" ? fallbackTitle : metadata.title,
 		providerData: getProviderData({
 			...followerData,
 			recentProjectThumbnailUrls:

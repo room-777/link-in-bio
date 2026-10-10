@@ -1,4 +1,5 @@
 import {
+	normalizeProviderData,
 	type PageItemResponse,
 	pageItemLinkDataSchema,
 	pageItemLinkUrlSchema,
@@ -6,6 +7,7 @@ import {
 import type { DatabaseClient } from "@grabbin/db";
 import { and, eq } from "@grabbin/db/drizzle";
 import { pageItems } from "@grabbin/db/schema/index";
+import { resolveLinkProvider } from "@grabbin/page-link";
 import * as v from "valibot";
 
 import { PageItemServiceError } from "../exceptions/page-item.exception";
@@ -16,7 +18,9 @@ import {
 import {
 	fetchHtml,
 	getFaviconUrl,
+	getProviderData,
 	MAX_LINK_METADATA_HTML_BYTES,
+	parseCountLabel,
 	parseHtmlMetadata,
 } from "./link-providers/runtime";
 import { getOwnedPage } from "./page.service";
@@ -107,12 +111,16 @@ function mergeMetadata(current: LinkMetadata | undefined, next: LinkMetadata) {
 					Object.entries(current).filter(([key]) => key !== "providerData"),
 				)
 			: current;
-	return Object.fromEntries(
+	const merged = Object.fromEntries(
 		Object.entries({
 			...(previous ?? {}),
 			...next,
 		}).filter(([, value]) => value !== undefined),
 	) as LinkMetadata;
+	if (merged.providerData) {
+		merged.providerData = normalizeProviderData(merged.providerData);
+	}
+	return merged;
 }
 
 export async function enrichPageItemMetadata({
@@ -153,15 +161,60 @@ export async function enrichPageItemMetadata({
 	}
 
 	const metadataFetch = createMetadataFetch(fetchFn);
+	const providerId = resolveLinkProvider(new URL(parsedUrl.output)).id;
+	const fetchedMetadataPromise: Promise<LinkMetadata> =
+		providerId === "instagram" || providerId === "discord"
+			? Promise.resolve({})
+			: fetchLinkMetadata(parsedUrl.output, metadataFetch.fetch);
 	const [fetchedMetadata, providerMetadata] = await Promise.all([
-		fetchLinkMetadata(parsedUrl.output, metadataFetch.fetch),
+		fetchedMetadataPromise,
 		enrichLinkProvider(new URL(parsedUrl.output), {
 			fetch: metadataFetch.fetch,
+			fetchOptional: fetchFn,
 			env,
 		}),
 	]);
+	if (providerId === "facebook" || providerId === "linkedin") {
+		const followerLabel = fetchedMetadata.description?.match(
+			/([\d,.]+\s*[KMB]?)\s+followers?\b/i,
+		)?.[1];
+		const followerData = followerLabel
+			? parseCountLabel(followerLabel)
+			: undefined;
+		if (followerData) {
+			const talkingAboutLabel =
+				providerId === "facebook"
+					? fetchedMetadata.description?.match(
+							/([\d,.]+\s*[KMB]?)\s+talking about this\b/i,
+						)?.[1]
+					: undefined;
+			const talkingAboutCount = talkingAboutLabel
+				? parseCountLabel(talkingAboutLabel)?.followerCount
+				: undefined;
+			fetchedMetadata.providerData = getProviderData({
+				...followerData,
+				talkingAboutCount,
+			});
+		}
+	}
+	fetchedMetadata.providerData = normalizeProviderData({
+		...(fetchedMetadata.providerData ?? {}),
+		...Object.fromEntries(
+			Object.entries(providerMetadata.providerData ?? {}).filter(
+				([, value]) => value !== null,
+			),
+		),
+	});
 	const rateLimit = metadataFetch.getRateLimit();
-	if (rateLimit.upstreamRateLimited) {
+	if (
+		rateLimit.upstreamRateLimited &&
+		!Object.keys(providerMetadata).some(
+			(key) => key !== "provider" && key !== "providerData",
+		) &&
+		!Object.values(providerMetadata.providerData ?? {}).some(
+			(value) => value !== null,
+		)
+	) {
 		throw new PageItemServiceError(
 			"UPSTREAM_RATE_LIMITED",
 			rateLimit.retryAfter,
@@ -170,6 +223,7 @@ export async function enrichPageItemMetadata({
 	const mergedMetadata = mergeMetadata(currentData.metadata, {
 		...fetchedMetadata,
 		...providerMetadata,
+		providerData: fetchedMetadata.providerData,
 	});
 	const nextData = {
 		...currentData,

@@ -1,5 +1,6 @@
 import assert from "node:assert/strict";
 import { describe, it } from "node:test";
+import { normalizeProviderData } from "@grabbin/api";
 import type { DatabaseClient } from "@grabbin/db";
 
 import { PageItemServiceError } from "../../src/exceptions/page-item.exception";
@@ -228,7 +229,7 @@ describe("page item service", () => {
 							imagePlaceholderDataUrl: "data:image/jpeg;base64,AA==",
 							metadata: {
 								title: "Grabbin",
-								providerData: {
+								providerData: normalizeProviderData({
 									subscriberCount: 1200,
 									recentVideoThumbnailUrls: [
 										"https://cdn.example.com/video-1.png",
@@ -236,7 +237,7 @@ describe("page item service", () => {
 										"https://cdn.example.com/video-3.png",
 										"https://cdn.example.com/video-4.png",
 									],
-								},
+								}),
 							},
 						},
 						style: {},
@@ -255,6 +256,11 @@ describe("page item service", () => {
 			"data:image/jpeg;base64,AA==",
 		);
 		assert.equal(link.data.metadata?.provider, "youtube");
+		assert.equal(link.data.metadata?.providerData?.followerCount, null);
+		assert.deepEqual(
+			Object.keys(link.data.metadata?.providerData ?? {}).sort(),
+			Object.keys(normalizeProviderData({})).sort(),
+		);
 		assert.deepEqual(link.data.metadata?.presentation, {
 			provider: "youtube",
 			providerLabel: "YouTube",

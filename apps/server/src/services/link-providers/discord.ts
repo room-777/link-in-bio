@@ -21,6 +21,12 @@ export async function enrichDiscord(
 				encodeURIComponent(code) +
 				"?with_counts=true",
 			context,
+			{
+				headers: {
+					Accept: "application/json",
+					"User-Agent": "Grabbin (https://grabbin.me, 1.0)",
+				},
+			},
 		),
 	);
 	const guild = asRecord(payload?.guild);

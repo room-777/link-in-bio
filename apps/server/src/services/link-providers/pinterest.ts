@@ -1,11 +1,15 @@
 import type { PageItemLinkMetadata } from "@grabbin/api";
 import { resolveLinkProvider } from "@grabbin/page-link";
 import {
+	asNumber,
+	asRecord,
+	asString,
 	decodeHtmlEntities,
 	fetchHtml,
 	getAttributeValue,
 	getHttpsUrl,
 	getProviderData,
+	getScriptJson,
 	parseHtmlMetadata,
 } from "./runtime";
 import type { LinkProviderContext, LinkProviderTarget } from "./types";
@@ -85,6 +89,27 @@ function getProfileImage(
 }
 
 function getAuthor(html: string, baseUrl: URL) {
+	for (const match of html.matchAll(
+		/<script\b[^>]*type=["']application\/ld\+json["'][^>]*>([\s\S]*?)<\/script>/gi,
+	)) {
+		try {
+			const data = JSON.parse(match[1] ?? "") as Record<string, unknown>;
+			const author = asRecord(data.author);
+			const name = asString(author?.name);
+			const profileUrl = asString(author?.url);
+			if (!name || !profileUrl) continue;
+			const resolved = new URL(profileUrl, baseUrl);
+			if (
+				resolved.hostname === "pinterest.com" ||
+				resolved.hostname.endsWith(".pinterest.com")
+			)
+				return {
+					name,
+					profileUrl: `${resolved.origin}${resolved.pathname.replace(/\/?$/, "/")}`,
+					imageUrl: getHttpsUrl(author?.image, baseUrl),
+				};
+		} catch {}
+	}
 	const reservedHandles = new Set([
 		"about",
 		"business",
@@ -157,7 +182,25 @@ async function getAuthorWithImage(
 	};
 }
 
-function getFollowerCount(html: string) {
+function getFollowerCount(html: string, username: string | undefined) {
+	const initialProps = asRecord(getScriptJson(html, "__PWS_INITIAL_PROPS__"));
+	const initialState = asRecord(initialProps?.initialReduxState);
+	const users = asRecord(initialState?.users);
+	const profile = Object.values(users ?? {})
+		.map(asRecord)
+		.find(
+			(user) =>
+				username &&
+				asString(user?.username)?.toLowerCase() === username.toLowerCase(),
+		);
+	const exactCount = asNumber(profile?.follower_count);
+	if (exactCount !== undefined) {
+		return {
+			followerCount: exactCount,
+			followerCountApproximate: false,
+		};
+	}
+
 	const text = getText(html);
 	const english = text.match(/([\d,.]+)\s*([KMB])?\s+followers?\b/i);
 	const korean = text.match(/팔로워\s*([\d,.]+)\s*(천|만|억)?/i);
@@ -200,7 +243,7 @@ async function enrichPage(
 			...(title ? { title } : {}),
 			...(profileImageUrl ? { imageUrl: profileImageUrl } : {}),
 			providerData: getProviderData({
-				...getFollowerCount(html),
+				...getFollowerCount(html, target.params.username),
 				profileImageUrl,
 			}),
 		};
@@ -255,7 +298,11 @@ export async function enrichPinterest(
 	target: LinkProviderTarget,
 	context: LinkProviderContext,
 ): Promise<Partial<PageItemLinkMetadata>> {
-	const document = await fetchHtml(url, context);
+	const pageUrl =
+		target.kind === "profile"
+			? new URL(`/${target.params.username}/`, url)
+			: url;
+	const document = await fetchHtml(pageUrl, context, { timeoutMs: 8_000 });
 	if (!document) return {};
 	if (target.kind !== "short-link")
 		return enrichPage(new URL(document.url), target, document.html, context);

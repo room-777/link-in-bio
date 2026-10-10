@@ -74,7 +74,28 @@ export async function enrichChzzk(
 	const live = getChzzkItems(
 		await fetchChzzk("lives", context, { size: "20" }),
 	).find((item) => asString(item.channelId) === channelId);
-	if (!live) return {};
+	if (!live) {
+		const channel = getChzzkItems(
+			await fetchChzzk("channels", context, { channelIds: channelId }),
+		)[0];
+		if (!channel) return {};
+		const channelImageUrl = getHttpsUrl(channel.channelImageUrl, url);
+		return {
+			title: asString(channel.channelName),
+			description: asString(channel.channelDescription),
+			imageUrl: channelImageUrl,
+			providerData: getProviderData({
+				channelId: asString(channel.channelId) ?? channelId,
+				followerCount: asNumber(channel.followerCount),
+				verifiedMark:
+					typeof channel.verifiedMark === "boolean"
+						? channel.verifiedMark
+						: undefined,
+				isLive: false,
+				channelImageUrl,
+			}),
+		};
+	}
 	const liveThumbnailUrl = getHttpsUrl(live.liveThumbnailImageUrl, url);
 	return {
 		title: asString(live.liveTitle) ?? asString(live.channelName),

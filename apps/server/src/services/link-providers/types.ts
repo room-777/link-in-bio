@@ -15,11 +15,16 @@ export type LinkProviderEnvironment = Partial<
 		| "TWITCH_USER_ACCESS_TOKEN"
 		| "GITHUB_TOKEN"
 		| "PRODUCT_HUNT_TOKEN"
+		| "INSTAGRAM_SESSION_ID"
 	>
 >;
 
 export type LinkProviderContext = {
 	fetch: (input: RequestInfo | URL, init?: RequestInit) => Promise<Response>;
+	fetchOptional?: (
+		input: RequestInfo | URL,
+		init?: RequestInit,
+	) => Promise<Response>;
 	env?: LinkProviderEnvironment;
 };
 

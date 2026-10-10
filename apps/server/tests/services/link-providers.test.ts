@@ -1,5 +1,6 @@
 import assert from "node:assert/strict";
 import { describe, it } from "node:test";
+import { normalizeProviderData } from "@grabbin/api";
 import {
 	providerDefinitionList,
 	resolveLinkMetadata,
@@ -70,9 +71,15 @@ function createFetch() {
 			);
 		}
 		if (requestUrl.hostname.endsWith("pinterest.com")) {
+			if (requestUrl.pathname === "/bennyhii/") {
+				return new Response(
+					'<html><head><meta property="og:title" content="Benny Hii"><meta property="og:image" content="https://i.pinimg.com/benny-profile.jpg"></head><script id="__PWS_INITIAL_PROPS__" type="application/json">{"initialReduxState":{"users":{"1":{"username":"bennyhii","follower_count":5}}}}</script><body><h1>Benny Hii</h1><img alt="Benny Hii" src="https://i.pinimg.com/benny-profile.jpg"></body></html>',
+					{ headers: { "content-type": "text/html" } },
+				);
+			}
 			if (requestUrl.pathname === "/pinterest/") {
 				return new Response(
-					'<html><head><meta property="og:title" content="Pinterest"><meta property="og:image" content="https://i.pinimg.com/profile.jpg"></head><body><h1>Pinterest</h1><img alt="Pinterest profile" src="https://i.pinimg.com/profile.jpg"><span>팔로워 626.7만명</span></body></html>',
+					'<html><head><meta property="og:title" content="Pinterest"><meta property="og:image" content="https://i.pinimg.com/profile.jpg"></head><script id="__PWS_INITIAL_PROPS__" type="application/json">{"initialReduxState":{"users":{"424605208526455283":{"username":"pinterest","follower_count":6266647}}}}</script><body><h1>Pinterest</h1><img alt="Pinterest profile" src="https://i.pinimg.com/profile.jpg"><span>팔로워 626.7만명</span></body></html>',
 					{ headers: { "content-type": "text/html" } },
 				);
 			}
@@ -96,7 +103,7 @@ function createFetch() {
 			}
 			if (requestUrl.pathname.startsWith("/pin/")) {
 				return new Response(
-					'<html><head><meta property="og:title" content="The Outsiders"><meta property="og:image" content="https://i.pinimg.com/the-outsiders.jpg"></head><body><h1>The Outsiders</h1><a href="/explore/">Explore</a><a href="/dlvveee/">dlvveee</a></body></html>',
+					'<html><head><meta property="og:title" content="The Outsiders"><meta property="og:image" content="https://i.pinimg.com/the-outsiders.jpg"><script type="application/ld+json">{"@type":"SocialMediaPosting","author":{"@type":"Person","name":"qlaucusx","alternateName":"dlvveee","url":"https://www.pinterest.com/dlvveee"}}</script></head><body><h1>The Outsiders</h1><a href="/explore/">Explore</a></body></html>',
 					{ headers: { "content-type": "text/html" } },
 				);
 			}
@@ -110,11 +117,15 @@ function createFetch() {
 				{ headers: { "content-type": "text/html" } },
 			);
 		}
-		if (
-			requestUrl.hostname === "www.instagram.com" ||
-			requestUrl.hostname === "instagram.com"
-		)
-			return html("2M Followers");
+		if (requestUrl.hostname === "i.instagram.com")
+			return json({
+				data: {
+					user: {
+						username: "kinwooky",
+						follower_count: 2_000_000,
+					},
+				},
+			});
 		if (
 			requestUrl.hostname === "www.threads.com" ||
 			requestUrl.hostname === "threads.net"
@@ -219,6 +230,7 @@ function createFetch() {
 					{
 						channelId: "a6c4ddb09cdb160478996007bff35296",
 						channelName: "Grabbin Live",
+						channelDescription: "Live channel description",
 						followerCount: 77,
 						channelImageUrl: "https://chzzk.example.com/channel.png",
 					},
@@ -313,6 +325,7 @@ describe("link provider metadata", () => {
 				provider: "instagram",
 				key: "followerCount",
 				expected: 2_000_000,
+				env: { INSTAGRAM_SESSION_ID: `123%3A${"a".repeat(64)}` },
 			},
 			{
 				name: "Threads",
@@ -402,6 +415,7 @@ describe("link provider metadata", () => {
 				env: { PRODUCT_HUNT_TOKEN: "test-token" },
 			},
 		];
+		const providerDataKeys = Object.keys(normalizeProviderData({})).sort();
 
 		for (const testCase of cases) {
 			const metadata = await enrichLinkProvider(new URL(testCase.url), {
@@ -409,6 +423,12 @@ describe("link provider metadata", () => {
 				env: testCase.env,
 			});
 			assert.equal(metadata.provider, testCase.provider, testCase.name);
+			assert.deepEqual(
+				Object.keys(metadata.providerData ?? {}).sort(),
+				providerDataKeys,
+				testCase.name,
+			);
+			assert.equal(metadata.providerData?.recentPostThumbnailUrls, null);
 			if (testCase.expectedTitle)
 				assert.equal(metadata.title, testCase.expectedTitle, testCase.name);
 			if (testCase.expectedActionLabel)
@@ -450,11 +470,32 @@ describe("link provider metadata", () => {
 				);
 			}
 			assert.equal(
-				metadata.providerData?.[testCase.key],
+				(metadata.providerData as Record<string, unknown> | undefined)?.[
+					testCase.key
+				],
 				testCase.expected,
 				testCase.name,
 			);
 		}
+	});
+
+	it("uses the CHZZK channel snapshot when its live URL is offline", async () => {
+		const metadata = await enrichLinkProvider(
+			new URL("https://chzzk.naver.com/live/a6c4ddb09cdb160478996007bff35296"),
+			{
+				fetch: createFetch(),
+				env: {
+					CHZZK_CLIENT_ID: "test-id",
+					CHZZK_CLIENT_SECRET: "test-secret",
+				},
+			},
+		);
+
+		assert.equal(metadata.title, "Grabbin Live");
+		assert.equal(metadata.description, "Live channel description");
+		assert.equal(metadata.imageUrl, "https://chzzk.example.com/channel.png");
+		assert.equal(metadata.providerData?.followerCount, 77);
+		assert.equal(metadata.providerData?.isLive, false);
 	});
 
 	/**
@@ -521,6 +562,33 @@ describe("link provider metadata", () => {
 		assert.equal(behanceTheme?.faviconBackground, undefined);
 		assert.equal(behanceTheme?.cardBackground, undefined);
 		assert.equal(behanceTheme?.actionBackground, "#1769ff");
+	});
+
+	it("keeps a useful Behance project title when Behance blocks the page fetch", async () => {
+		const metadata = await enrichLinkProvider(
+			new URL("https://www.behance.net/gallery/123456789/portfolio-project"),
+			{ fetch: async () => new Response(null, { status: 403 }) },
+		);
+
+		assert.equal(metadata.title, "portfolio project");
+	});
+
+	it("does not request a user contribution graph for GitHub organizations", async () => {
+		const requested: string[] = [];
+		const metadata = await enrichLinkProvider(
+			new URL("https://github.com/vercel"),
+			{
+				fetch: async (input) => {
+					requested.push(new URL(input.toString()).pathname);
+					return json({ type: "Organization", followers: 42 });
+				},
+				env: { GITHUB_TOKEN: "test-token" },
+			},
+		);
+
+		assert.deepEqual(requested, ["/users/vercel"]);
+		assert.equal(metadata.providerData?.followers, 42);
+		assert.equal(metadata.providerData?.githubContributionGraph, null);
 	});
 
 	/**
@@ -623,26 +691,36 @@ describe("link provider metadata", () => {
 
 	/**
 	 * Case ID: LINK-PROVIDERS-006
-	 * Given: an Instagram profile page with more than four post cards.
-	 * When: provider enrichment reads the page.
+	 * Given: an authenticated Instagram profile with more than four post cards.
+	 * When: provider enrichment reads the private profile endpoint.
 	 * Then: it returns the four newest HTTPS post thumbnails for presentation.
 	 * Evidence: providerData URLs, imageUrl, and resolved presentation imageUrls.
 	 * Result: Pass | Fail | Blocked | Not Run
 	 */
 	it("LINK-PROVIDERS-006 loads four recent Instagram post thumbnails", async () => {
-		const postCards = Array.from(
-			{ length: 5 },
-			(_, index) =>
-				`<a href="/kinwooky/p/post-${index}/"><img src="https://cdn.instagram.com/post-${index}.jpg"></a>`,
-		).join("");
+		const requestedUrls: URL[] = [];
 		const metadata = await enrichLinkProvider(
 			new URL("https://instagram.com/kinwooky"),
 			{
-				fetch: async () =>
-					new Response(
-						`<html><head><meta property="og:title" content="Profile"><meta property="og:description" content="2M Followers"></head><body>${postCards}</body></html>`,
-						{ headers: { "content-type": "text/html" } },
-					),
+				fetch: async (input) => {
+					const requestUrl = new URL(input.toString());
+					requestedUrls.push(requestUrl);
+					return json({
+						data: {
+							user: {
+								username: "kinwooky",
+								edge_owner_to_timeline_media: {
+									edges: Array.from({ length: 5 }, (_, index) => ({
+										node: {
+											display_url: `https://cdn.instagram.com/post-${index}.jpg`,
+										},
+									})),
+								},
+							},
+						},
+					});
+				},
+				env: { INSTAGRAM_SESSION_ID: `123%3A${"a".repeat(64)}` },
 			},
 		);
 
@@ -660,6 +738,199 @@ describe("link provider metadata", () => {
 				.presentation.imageUrls,
 			expectedUrls,
 		);
+		assert.equal(requestedUrls.length, 1);
+		assert.equal(requestedUrls[0]?.hostname, "i.instagram.com");
+	});
+
+	/**
+	 * Case ID: LINK-PROVIDERS-008
+	 * Given: Instagram's private mobile profile endpoint returns a user record.
+	 * When: provider enrichment reads the profile.
+	 * Then: exact counts are used for the existing Follow detail and profile metadata.
+	 * Evidence: endpoint path and headers, provider counts, resolved action detail.
+	 * Result: Pass | Fail | Blocked | Not Run
+	 */
+	it("LINK-PROVIDERS-008 reads exact counts from Instagram private profile data", async () => {
+		const requested: Array<{ url: URL; headers: Headers }> = [];
+		const metadata = await enrichLinkProvider(
+			new URL("https://www.instagram.com/officialstellive/"),
+			{
+				fetch: async (input, init) => {
+					const requestUrl = new URL(input.toString());
+					requested.push({
+						url: requestUrl,
+						headers: new Headers(init?.headers),
+					});
+					if (requestUrl.pathname.includes("/api/v1/users/web_profile_info/")) {
+						return json({
+							data: {
+								user: {
+									username: "officialstellive",
+									id: "123",
+									full_name: "STELLIVE",
+									biography: "Official profile",
+									profile_pic_url_hd: "https://cdn.instagram.com/profile.jpg",
+									edge_followed_by: { count: 35_421 },
+									edge_follow: { count: 3 },
+									edge_owner_to_timeline_media: {
+										count: 118,
+										edges: [
+											{
+												node: {
+													thumbnail_resources: [
+														{
+															config_width: 150,
+															src: "https://cdn.instagram.com/small.jpg",
+														},
+														{
+															config_width: 640,
+															src: "https://cdn.instagram.com/large.jpg",
+														},
+													],
+												},
+											},
+										],
+									},
+								},
+							},
+						});
+					}
+					return new Response(null, { status: 404 });
+				},
+				env: { INSTAGRAM_SESSION_ID: `123%3A${"a".repeat(64)}` },
+			},
+		);
+
+		const profileRequest = requested.find(({ url }) =>
+			url.pathname.includes("/api/v1/users/web_profile_info/"),
+		);
+		assert.equal(
+			profileRequest?.url.searchParams.get("username"),
+			"officialstellive",
+		);
+		assert.equal(profileRequest?.url.hostname, "i.instagram.com");
+		assert.equal(profileRequest?.headers.get("X-Ig-App-Id"), "567067343352427");
+		assert.match(
+			profileRequest?.headers.get("Authorization") ?? "",
+			/^Bearer IGT:2:/,
+		);
+		assert.match(
+			profileRequest?.headers.get("Cookie") ?? "",
+			/^sessionid=123:/,
+		);
+		assert.equal(metadata.providerData?.followerCount, 35_421);
+		assert.equal(metadata.providerData?.followerCountApproximate, false);
+		assert.equal(metadata.providerData?.followingCount, 3);
+		assert.equal(metadata.providerData?.mediaCount, 118);
+		assert.deepEqual(metadata.providerData?.recentPostThumbnailUrls, [
+			"https://cdn.instagram.com/large.jpg",
+		]);
+		assert.equal(
+			resolveLinkMetadata(
+				"https://www.instagram.com/officialstellive/",
+				metadata,
+			).presentation.actionDetail,
+			"35.4K",
+		);
+	});
+
+	it("loads Instagram post thumbnails from the authenticated private feed", async () => {
+		const requestedUrls: URL[] = [];
+		const metadata = await enrichLinkProvider(
+			new URL("https://www.instagram.com/officialstellive/"),
+			{
+				fetch: async (input) => {
+					const requestUrl = new URL(input.toString());
+					requestedUrls.push(requestUrl);
+					if (requestUrl.pathname.includes("/api/v1/users/web_profile_info/")) {
+						return json({
+							data: {
+								user: {
+									username: "officialstellive",
+									id: "123",
+									full_name: "STELLIVE",
+									biography: "Official profile",
+									profile_pic_url_hd: "https://cdn.instagram.com/profile.jpg",
+									edge_followed_by: { count: 35_421 },
+									edge_follow: { count: 3 },
+									edge_owner_to_timeline_media: {
+										count: 118,
+									},
+								},
+							},
+						});
+					}
+					return json({
+						items: Array.from({ length: 5 }, (_, index) => ({
+							image_versions2: {
+								candidates: [
+									{
+										width: 320,
+										url: `https://cdn.instagram.com/post-${index}-small.jpg`,
+									},
+									{
+										width: 1080,
+										url: `https://cdn.instagram.com/post-${index}.jpg`,
+									},
+								],
+							},
+						})),
+					});
+				},
+				env: { INSTAGRAM_SESSION_ID: `123%3A${"a".repeat(64)}` },
+			},
+		);
+
+		assert.equal(metadata.title, "STELLIVE");
+		assert.equal(metadata.description, "Official profile");
+		assert.equal(metadata.providerData?.followerCount, 35_421);
+		assert.deepEqual(metadata.providerData?.recentPostThumbnailUrls, [
+			"https://cdn.instagram.com/post-0.jpg",
+			"https://cdn.instagram.com/post-1.jpg",
+			"https://cdn.instagram.com/post-2.jpg",
+			"https://cdn.instagram.com/post-3.jpg",
+		]);
+		assert.equal(requestedUrls.length, 2);
+		assert.equal(requestedUrls[1]?.hostname, "i.instagram.com");
+		assert.match(requestedUrls[1]?.pathname ?? "", /feed\/user\/123/);
+	});
+
+	/**
+	 * Case ID: LINK-PROVIDERS-007
+	 * Given: TikTok exposes profile metadata without its hydration script.
+	 * When: provider enrichment reads the preview HTML.
+	 * Then: profile title, image, and approximate follower count are retained.
+	 * Evidence: metadata and follower fields from the Open Graph description.
+	 * Result: Pass | Fail | Blocked | Not Run
+	 */
+	it("LINK-PROVIDERS-007 reads TikTok profile metadata from preview HTML", async () => {
+		let requestUserAgent: string | null = null;
+		const metadata = await enrichLinkProvider(
+			new URL("https://www.tiktok.com/@tiktok"),
+			{
+				fetch: async (_input, init) => {
+					requestUserAgent = new Headers(init?.headers).get("User-Agent");
+					return new Response(
+						'<html><head><meta property="og:title" content="TikTok on TikTok"><meta property="og:description" content="@tiktok 96.2m Followers, 1 Following, 465.4m Likes"><meta property="og:image" content="https://cdn.tiktok.com/profile.jpg"></head></html>',
+						{ headers: { "content-type": "text/html" } },
+					);
+				},
+			},
+		);
+
+		assert.equal(
+			requestUserAgent,
+			"Mozilla/5.0 (Macintosh; Intel Mac OS X 14_2_1) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
+		);
+		assert.equal(metadata.title, "TikTok on TikTok");
+		assert.equal(metadata.imageUrl, "https://cdn.tiktok.com/profile.jpg");
+		assert.equal(metadata.providerData?.followerCount, 96_200_000);
+		assert.equal(metadata.providerData?.followerCountApproximate, true);
+		assert.equal(
+			resolveLinkMetadata("https://www.tiktok.com/@tiktok", metadata)
+				.presentation.actionDetail,
+			"96.2M",
+		);
 	});
 
 	/**
@@ -676,6 +947,8 @@ describe("link provider metadata", () => {
 			["youtube-music", "https://music.youtube.com/watch?v=dQw4w9WgXcQ"],
 			["discord", "https://discord.gg/grabbin"],
 			["github", "https://github.com/kinwooky"],
+			["soundcloud", "https://soundcloud.com/kinwooky"],
+			["apple-music", "https://music.apple.com/us/artist/artist/1"],
 			["facebook", "https://www.facebook.com/grabbin"],
 			["x", "https://x.com/kinwooky"],
 			["spotify", "https://open.spotify.com/artist/0"],
@@ -809,11 +1082,25 @@ describe("link provider metadata", () => {
 				.presentation.actionLabel,
 			"Follow",
 		);
-		assert.equal(profile.providerData?.followerCount, 6_267_000);
+		assert.equal(profile.providerData?.followerCount, 6_266_647);
+		assert.equal(profile.providerData?.followerCountApproximate, false);
+		assert.equal(
+			resolveLinkMetadata("https://kr.pinterest.com/pinterest/", profile)
+				.presentation.actionDetail,
+			"6.3M",
+		);
 		assert.equal(
 			profile.providerData?.profileImageUrl,
 			"https://i.pinimg.com/profile.jpg",
 		);
+		for (const path of ["_created", "_saved", "pins"]) {
+			const alias = await enrichLinkProvider(
+				new URL(`https://www.pinterest.com/bennyhii/${path}/`),
+				context,
+			);
+			assert.equal(alias.title, "Benny Hii");
+			assert.equal(alias.providerData?.followerCount, 5);
+		}
 
 		const boardUrl = "https://www.pinterest.com/pinterest/girls-night-in/";
 		const board = await enrichLinkProvider(new URL(boardUrl), context);
@@ -889,5 +1176,20 @@ describe("link provider metadata", () => {
 			shortPin.providerData?.authorProfileImageUrl,
 			"https://i.pinimg.com/author-profile.jpg",
 		);
+	});
+
+	it("uses browser HTML for Pinterest short links so creator data is present", async () => {
+		let userAgent: string | null = null;
+		await enrichLinkProvider(new URL("https://pin.it/example"), {
+			fetch: async (_input, init) => {
+				userAgent = new Headers(init?.headers).get("User-Agent");
+				return new Response(
+					'<html><head><meta property="og:title" content="Pin"><meta property="og:image" content="https://i.pinimg.com/pin.jpg"><script type="application/ld+json">{"author":{"name":"Creator","url":"https://www.pinterest.com/creator"}}</script></head></html>',
+					{ headers: { "content-type": "text/html" } },
+				);
+			},
+		});
+
+		assert.match(userAgent ?? "", /^Mozilla\//);
 	});
 });

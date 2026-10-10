@@ -1,4 +1,4 @@
-import type { PageItemLinkMetadata } from "@grabbin/api";
+import { normalizeProviderData, type PageItemLinkMetadata } from "@grabbin/api";
 import { resolveLinkProvider } from "@grabbin/page-link";
 import { getProviderEnricher } from "./registry";
 import type { LinkProviderContext } from "./types";
@@ -11,11 +11,17 @@ export async function enrichLinkProvider(
 	const enricher = resolved.target
 		? getProviderEnricher(resolved.id)
 		: undefined;
-	if (!resolved.target || !enricher) return { provider: resolved.id };
+	if (!resolved.target || !enricher) {
+		return { provider: resolved.id, providerData: normalizeProviderData({}) };
+	}
 	try {
 		const metadata = await enricher(url, resolved.target, context);
-		return { ...metadata, provider: resolved.id };
+		return {
+			...metadata,
+			providerData: normalizeProviderData(metadata.providerData),
+			provider: resolved.id,
+		};
 	} catch {
-		return { provider: resolved.id };
+		return { provider: resolved.id, providerData: normalizeProviderData({}) };
 	}
 }

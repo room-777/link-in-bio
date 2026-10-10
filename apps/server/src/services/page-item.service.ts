@@ -1,5 +1,6 @@
 import {
 	hasPageItemContent,
+	normalizeProviderData,
 	type PageItemBatchRequest,
 	type PageItemResponse,
 	pageItemBatchRequestSchema,
@@ -56,6 +57,9 @@ export function mapPageItemResponse(
 		const linkMetadata = resolveLinkMetadata(
 			data.url,
 			isRecord(data.metadata) ? data.metadata : undefined,
+		);
+		linkMetadata.providerData = normalizeProviderData(
+			linkMetadata.providerData,
 		);
 		const imageKey = data.imageKey;
 		const imageUrl =

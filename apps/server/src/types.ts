@@ -30,6 +30,7 @@ export type AppEnv = EvlogVariables & {
 		CALENDLY_CLIENT_SECRET: string;
 		GITHUB_TOKEN: string;
 		PRODUCT_HUNT_TOKEN: string;
+		INSTAGRAM_SESSION_ID?: string;
 		PAGE_DOMAIN: string;
 		CLOUDFLARE_SAAS_ZONE_ID?: string;
 		CLOUDFLARE_SAAS_API_TOKEN?: string;

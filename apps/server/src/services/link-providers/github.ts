@@ -108,10 +108,10 @@ export async function enrichGithub(
 		providerData: getProviderData({
 			githubUsername: username,
 			followers: asNumber(user.followers),
-			githubContributionGraph: await getGithubContributionGraph(
-				username,
-				context,
-			),
+			githubContributionGraph:
+				asString(user.type) === "User"
+					? await getGithubContributionGraph(username, context)
+					: undefined,
 		}),
 	};
 }

@@ -5,7 +5,9 @@ import {
 	asString,
 	fetchHtml,
 	getHttpsUrl,
+	getProviderData,
 	getScriptJson,
+	parseCountLabel,
 	parseHtmlMetadata,
 } from "./runtime";
 import type { LinkProviderContext, LinkProviderTarget } from "./types";
@@ -33,19 +35,28 @@ export async function enrichTikTok(
 	const followerCount =
 		asNumber(stats?.followerCount) ??
 		asNumber(document.html.match(/"followerCount"\s*:\s*(\d+)/i)?.[1]);
-	if (followerCount === undefined) return metadata;
-	const title = metadata.title ?? asString(user?.nickname);
-	const description = metadata.description ?? asString(user?.signature);
+	const followerLabel = metadata.description?.match(
+		/([\d.,]+\s*[KMB]?)\s+followers\b/i,
+	)?.[1];
+	const followerData =
+		followerCount !== undefined
+			? {
+					followerCount,
+					followerCountLabel: String(followerCount),
+					followerCountApproximate: false,
+				}
+			: followerLabel
+				? parseCountLabel(followerLabel)
+				: undefined;
+	if (!followerData) return metadata;
+	const title = asString(user?.nickname) ?? metadata.title;
+	const description = asString(user?.signature) ?? metadata.description;
 	const imageUrl =
-		metadata.imageUrl ?? getHttpsUrl(user?.avatarLarger, new URL(document.url));
+		getHttpsUrl(user?.avatarLarger, new URL(document.url)) ?? metadata.imageUrl;
 	return {
 		...(title ? { title } : {}),
 		...(description ? { description } : {}),
 		...(imageUrl ? { imageUrl } : {}),
-		providerData: {
-			followerCount,
-			followerCountLabel: String(followerCount),
-			followerCountApproximate: false,
-		},
+		providerData: followerData ? getProviderData(followerData) : undefined,
 	};
 }

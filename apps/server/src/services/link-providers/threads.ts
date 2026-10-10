@@ -1,5 +1,10 @@
 import type { PageItemLinkMetadata } from "@grabbin/api";
-import { fetchHtml, parseCountLabel, parseHtmlMetadata } from "./runtime";
+import {
+	fetchHtml,
+	getProviderData,
+	parseCountLabel,
+	parseHtmlMetadata,
+} from "./runtime";
 import type { LinkProviderContext, LinkProviderTarget } from "./types";
 
 export async function enrichThreads(
@@ -20,6 +25,6 @@ export async function enrichThreads(
 		: undefined;
 	return {
 		...metadata,
-		...(followerData ? { providerData: followerData } : {}),
+		...(followerData ? { providerData: getProviderData(followerData) } : {}),
 	};
 }
