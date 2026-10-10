@@ -406,7 +406,7 @@ function RotatingWord({ words }: { words: string[] }) {
 										animate={{ opacity: 1, scale: 1 }}
 										exit={{ opacity: 0, scale: 0.8 }}
 										transition={wordTransition}
-										src="/images/landing/feed-sticker.svg"
+										src="/images/landing/feed-sticker.svg?v=2"
 									/>
 								) : null}
 							</AnimatePresence>
