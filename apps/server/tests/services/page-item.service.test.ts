@@ -59,6 +59,60 @@ describe("page item service", () => {
 	});
 
 	/**
+	 * Case ID: PAGE-ITEM-SERVICE-013
+	 * Given: a free account adds a Spotify advanced widget.
+	 * When: persistPageItemBatch checks the new item before saving.
+	 * Then: it returns PRO_REQUIRED without writing the item.
+	 * Evidence: PageItemServiceError.code=PRO_REQUIRED and no item insert.
+	 * Result: Pass | Fail | Blocked | Not Run
+	 */
+	it("PAGE-ITEM-SERVICE-013 rejects advanced widget additions for free accounts", async () => {
+		let insertCount = 0;
+		const tx = {
+			query: {
+				pages: { findFirst: async () => ({ id: "page-1" }) },
+				pageItems: { findMany: async () => [] },
+				creemSubscription: { findMany: async () => [] },
+			},
+			insert: () => {
+				insertCount += 1;
+				throw new Error("insert should not run");
+			},
+		};
+		const db = {
+			transaction: async (callback: (value: typeof tx) => unknown) =>
+				callback(tx),
+		} as unknown as DatabaseClient;
+
+		await assert.rejects(
+			persistPageItemBatch({
+				db,
+				handle: "jane",
+				userId: "user-1",
+				proProductIds: ["pro-monthly"],
+				batch: {
+					upserts: [
+						{
+							id: "spotify-1",
+							type: "link",
+							data: {
+								url: "https://open.spotify.com/track/123",
+								metadata: { provider: "spotify" },
+							},
+							style: {},
+							layouts: { wide: layout, compact: layout },
+						},
+					],
+					deletes: [],
+				},
+			}),
+			(error: unknown) =>
+				error instanceof PageItemServiceError && error.code === "PRO_REQUIRED",
+		);
+		assert.equal(insertCount, 0);
+	});
+
+	/**
 	 * Case ID: PAGE-ITEM-SERVICE-002
 	 * Given: an owner submits valid text and media items plus an empty text item.
 	 * When: persistPageItemBatch saves the batch.
@@ -500,6 +554,17 @@ describe("page item service", () => {
 			query: {
 				pages: { findFirst: async () => ({ id: "page-1" }) },
 				pageItems: { findMany: async () => [] },
+				creemSubscription: {
+					findMany: async () => [
+						{
+							creemSubscriptionId: "sub-1",
+							productId: "pro-monthly",
+							status: "active",
+							periodEnd: new Date("2099-01-01T00:00:00.000Z"),
+							cancelAtPeriodEnd: false,
+						},
+					],
+				},
 			},
 		};
 		const db = {
@@ -512,6 +577,7 @@ describe("page item service", () => {
 				db,
 				handle: "jane",
 				userId: "user-1",
+				proProductIds: ["pro-monthly"],
 				batch: {
 					upserts: [
 						{

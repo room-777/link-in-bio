@@ -7,6 +7,7 @@ import {
 	pageItemLinkDataSchema,
 	pageItemResponseSchema,
 } from "@grabbin/api";
+import { getAccountPlan } from "@grabbin/application/billing";
 import {
 	attachPageMedia,
 	queuePageMediaDeletion,
@@ -20,7 +21,7 @@ import {
 import type { DatabaseClient } from "@grabbin/db";
 import { and, eq, inArray, sql } from "@grabbin/db/drizzle";
 import { pageItems } from "@grabbin/db/schema/index";
-import { resolveLinkMetadata } from "@grabbin/page-link";
+import { providerDefinitions, resolveLinkMetadata } from "@grabbin/page-link";
 import * as v from "valibot";
 import { PageItemServiceError } from "../exceptions/page-item.exception";
 import {
@@ -31,6 +32,20 @@ import {
 import { getOwnedPage, getPage } from "./page.service";
 
 type PageItemLayouts = PageItemBatchRequest["upserts"][number]["layouts"];
+
+const advancedWidgetProviderIds = new Set<string>(
+	providerDefinitions
+		.filter((provider) => "advancedWidget" in provider)
+		.map((provider) => provider.id),
+);
+
+function isAdvancedWidget(item: PageItemBatchRequest["upserts"][number]) {
+	return (
+		item.type === "calendly" ||
+		(item.type === "link" &&
+			advancedWidgetProviderIds.has(item.data.metadata?.provider ?? ""))
+	);
+}
 
 function isRecord(value: unknown): value is Record<string, unknown> {
 	return typeof value === "object" && value !== null && !Array.isArray(value);
@@ -213,12 +228,14 @@ export async function persistPageItemBatch({
 	handle,
 	userId,
 	batch,
+	proProductIds = [],
 	publicBaseUrl,
 }: {
 	db: DatabaseClient;
 	handle: string;
 	userId: string;
 	batch: PageItemBatchRequest;
+	proProductIds?: readonly string[];
 	publicBaseUrl?: string;
 }) {
 	const parsedBatch = v.safeParse(pageItemBatchRequestSchema, batch);
@@ -264,6 +281,20 @@ export async function persistPageItemBatch({
 		}
 
 		const existingById = new Map(existing.map((item) => [item.id, item]));
+		if (
+			upserts.some(
+				(item) => !existingById.has(item.id) && isAdvancedWidget(item),
+			) &&
+			!(
+				await getAccountPlan({
+					db: tx as unknown as DatabaseClient,
+					userId,
+					proProductIds,
+				})
+			).hasAccess
+		) {
+			throw new PageItemServiceError("PRO_REQUIRED");
+		}
 		for (const id of persistableBatch.deletes) {
 			if (!existingById.has(id)) {
 				throw new PageItemServiceError("ITEM_NOT_FOUND");

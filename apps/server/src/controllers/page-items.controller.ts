@@ -37,6 +37,7 @@ import type { AppEnv } from "../types";
 
 const pageItemErrorDetails = {
 	PAGE_NOT_FOUND: "Page not found.",
+	PRO_REQUIRED: "A Pro plan is required to add advanced widgets.",
 	INVALID_ITEM_BATCH: "Invalid item batch.",
 	DUPLICATE_ITEM_ID: "Item IDs must be unique.",
 	CONFLICTING_ITEM_OPERATION:
@@ -65,15 +66,17 @@ function pageItemErrorResponse(
 ) {
 	if (error.retryAfter) c.header("Retry-After", error.retryAfter);
 	const status =
-		error.code === "PAGE_NOT_FOUND" || error.code === "ITEM_NOT_FOUND"
-			? 404
-			: error.code === "UPSTREAM_RATE_LIMITED"
-				? 429
-				: error.code === "CONCURRENT_ITEM_UPDATE"
-					? 409
-					: error.code === "STALE_LINK_METADATA"
+		error.code === "PRO_REQUIRED"
+			? 403
+			: error.code === "PAGE_NOT_FOUND" || error.code === "ITEM_NOT_FOUND"
+				? 404
+				: error.code === "UPSTREAM_RATE_LIMITED"
+					? 429
+					: error.code === "CONCURRENT_ITEM_UPDATE"
 						? 409
-						: 422;
+						: error.code === "STALE_LINK_METADATA"
+							? 409
+							: 422;
 	return jsonApiError(c, {
 		status,
 		code: error.code,
@@ -86,6 +89,7 @@ type PersistPageItemBatch = (input: {
 	handle: string;
 	userId: string;
 	batch: PageItemBatchRequest;
+	proProductIds?: readonly string[];
 	publicBaseUrl?: string;
 }) => Promise<PageItemBatchResponse>;
 
@@ -428,6 +432,10 @@ export function createPageItemsController({
 						handle: c.req.param("handle"),
 						userId: session.user.id,
 						batch: parsed.output,
+						proProductIds: [
+							c.env.CREEM_PRO_MONTHLY_PRODUCT_ID,
+							c.env.CREEM_PRO_YEARLY_PRODUCT_ID,
+						].filter(Boolean),
 						publicBaseUrl: c.env?.R2_PUBLIC_URL,
 					}),
 				);

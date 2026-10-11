@@ -1,5 +1,6 @@
 export type PageItemServiceErrorCode =
 	| "PAGE_NOT_FOUND"
+	| "PRO_REQUIRED"
 	| "INVALID_ITEM_BATCH"
 	| "DUPLICATE_ITEM_ID"
 	| "CONFLICTING_ITEM_OPERATION"

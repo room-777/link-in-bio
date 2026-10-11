@@ -186,6 +186,51 @@ describe("page items controller", () => {
 		});
 	});
 
+	/**
+	 * Case ID: PAGE-ITEM-API-009
+	 * Given: the item service rejects an advanced widget for a free account.
+	 * When: PATCH /pages/:handle/batch handles the add request.
+	 * Then: it returns 403 with the Pro requirement.
+	 * Evidence: HTTP status=403 and code=PRO_REQUIRED.
+	 * Result: Pass | Fail | Blocked | Not Run
+	 */
+	it("PAGE-ITEM-API-009 returns a Pro error for a free advanced widget add", async () => {
+		const app = createTestApp(async () => {
+			throw new PageItemServiceError("PRO_REQUIRED");
+		});
+
+		const response = await app.request("/pages/jane/batch", {
+			method: "PATCH",
+			headers: { "Content-Type": "application/json" },
+			body: JSON.stringify({
+				upserts: [
+					{
+						id: "spotify-1",
+						type: "link",
+						data: {
+							url: "https://open.spotify.com/track/123",
+							metadata: { provider: "spotify" },
+						},
+						style: {},
+						layouts: {
+							wide: { x: 0, y: 0, w: 1, h: 2 },
+							compact: { x: 0, y: 0, w: 1, h: 2 },
+						},
+					},
+				],
+				deletes: [],
+			}),
+		});
+
+		assert.equal(response.status, 403);
+		assert.deepEqual(await response.json(), {
+			status: 403,
+			code: "PRO_REQUIRED",
+			title: "Forbidden",
+			detail: "A Pro plan is required to add advanced widgets.",
+		});
+	});
+
 	it("PAGE-ITEM-API-006 forwards an authenticated metadata refresh", async () => {
 		let captured:
 			| { handle: string; userId: string; itemId: string; url: string }
