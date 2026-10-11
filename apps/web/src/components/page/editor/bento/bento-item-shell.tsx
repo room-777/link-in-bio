@@ -7,7 +7,7 @@ import {
 	inferPresetFromLayout,
 } from "@grabbin/bento-layout";
 import { Button } from "@grabbin/ui/components/button";
-import { motion } from "motion/react";
+import { animate, motion } from "motion/react";
 import {
 	type CSSProperties,
 	type ReactNode,
@@ -98,6 +98,7 @@ export function BentoItemShell({
 	entryDelay = 0,
 	reduceMotion = false,
 	onEntryComplete,
+	onPopInComplete,
 }: {
 	item: BentoItem;
 	children?: ReactNode;
@@ -121,6 +122,7 @@ export function BentoItemShell({
 	entryDelay?: number;
 	reduceMotion?: boolean;
 	onEntryComplete?: () => void;
+	onPopInComplete?: (itemId: string) => void;
 }) {
 	const preset = inferPresetFromLayout(
 		item.type,
@@ -210,6 +212,33 @@ export function BentoItemShell({
 		}
 		setControlsOpen(false);
 	}, [isAnyItemDragging, isExiting, showControls]);
+	useEffect(() => {
+		const shell = shellRef.current;
+		if (!isEntering || isExiting || reduceMotion || !shell) return;
+
+		const animation = animate(
+			shell,
+			{
+				opacity: [0, 1],
+				filter: ["blur(2px)", "blur(0px)"],
+				y: [8, 0],
+				scale: [0.8, 1.08, 1],
+			},
+			{
+				opacity: { type: "tween", duration: 0.1, ease: "linear" },
+				filter: { type: "tween", duration: 0.1, ease: "linear" },
+				y: { type: "spring", duration: 0.4, bounce: 0.08 },
+				scale: {
+					type: "tween",
+					duration: 0.4,
+					times: [0, 0.38, 1],
+					ease: ["easeOut", "easeInOut"],
+				},
+			},
+		);
+		animation.then(() => onPopInComplete?.(item.id));
+		return () => animation.stop();
+	}, [isEntering, isExiting, item.id, onPopInComplete, reduceMotion]);
 
 	const openControls = () => {
 		if (!showControls || isAnyItemDragging || isExiting) return;
@@ -353,7 +382,9 @@ export function BentoItemShell({
 				delay: isExiting || reduceMotion ? 0 : entryDelay,
 				ease: [0.2, 1, 0.3, 1],
 			}}
-			onAnimationComplete={onEntryComplete}
+			onAnimationComplete={() => {
+				if (!isExiting) onEntryComplete?.();
+			}}
 		>
 			{item.type === "map" ? (
 				<MapItemInteractionProvider

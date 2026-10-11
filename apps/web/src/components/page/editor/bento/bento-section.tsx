@@ -41,6 +41,7 @@ import { BentoItemShell } from "./bento-item-shell";
 type BentoSectionProps = {
 	handle?: string;
 	items: readonly BentoItemData[];
+	initialItemIds?: ReadonlySet<string>;
 	entryAnimationRevision?: number;
 	entryReady?: boolean;
 	onReady?: () => void;
@@ -59,6 +60,7 @@ const BENTO_ITEM_EXIT_DURATION = 180;
 export default function BentoSection({
 	handle,
 	items,
+	initialItemIds: initialItemIdsProp,
 	entryAnimationRevision = 0,
 	entryReady = true,
 	onReady,
@@ -70,6 +72,8 @@ export default function BentoSection({
 	onRefreshLinkMetadata,
 	onLinkImageSelect,
 }: BentoSectionProps) {
+	const initialItemIds =
+		initialItemIdsProp ?? new Set(items.map((item) => item.id));
 	const {
 		width: containerWidth,
 		containerRef,
@@ -97,8 +101,7 @@ export default function BentoSection({
 	const dragStartLayoutRef = useRef<ReturnType<typeof toBentoLayoutMap> | null>(
 		null,
 	);
-	const knownItemIdsRef = useRef(new Set<string>());
-	const hasInitializedItemsRef = useRef(false);
+	const knownItemIdsRef = useRef(new Set(initialItemIds));
 	const enteringItemFramesRef = useRef(new Map<string, number>());
 	const newItemScrollFramesRef = useRef(new Map<string, number>());
 	const exitingItemTimersRef = useRef(new Map<string, number>());
@@ -109,7 +112,7 @@ export default function BentoSection({
 		new Set(),
 	);
 	const [initialEntryItemIds, setInitialEntryItemIds] = useState(
-		() => new Set(items.map((item) => item.id)),
+		() => new Set(initialItemIds),
 	);
 	const [exitingItems, setExitingItems] = useState<
 		ReadonlyMap<string, BentoItemData>
@@ -124,8 +127,14 @@ export default function BentoSection({
 			return;
 		}
 		previousEntryAnimationRevisionRef.current = entryAnimationRevision;
-		setInitialEntryItemIds(new Set(items.map((item) => item.id)));
-	}, [entryAnimationRevision, items]);
+		setInitialEntryItemIds(
+			new Set(
+				items
+					.filter((item) => !enteringItemIds.has(item.id))
+					.map((item) => item.id),
+			),
+		);
+	}, [entryAnimationRevision, enteringItemIds, items]);
 	useEffect(() => {
 		if (reduceMotion && entryReady && initialEntryItemIds.size > 0) {
 			setInitialEntryItemIds(new Set());
@@ -156,25 +165,24 @@ export default function BentoSection({
 		);
 	}, []);
 	useEffect(() => {
-		if (mode !== "edit") return;
-		const newItemIds = hasInitializedItemsRef.current
-			? items
-					.filter((item) => !knownItemIdsRef.current.has(item.id))
-					.map((item) => item.id)
-			: [];
+		if (mode !== "edit" || !mounted) return;
+		const newItemIds = items
+			.filter((item) => !knownItemIdsRef.current.has(item.id))
+			.map((item) => item.id);
 		knownItemIdsRef.current = new Set(items.map((item) => item.id));
-		hasInitializedItemsRef.current = true;
 		if (newItemIds.length === 0) return;
 
-		setEnteringItemIds((current) => new Set([...current, ...newItemIds]));
+		setInitialEntryItemIds((current) => {
+			const next = new Set(current);
+			for (const itemId of newItemIds) next.delete(itemId);
+			return next;
+		});
+		if (!reduceMotion) {
+			setEnteringItemIds((current) => new Set([...current, ...newItemIds]));
+		}
 		for (const itemId of newItemIds) {
 			const firstFrame = window.requestAnimationFrame(() => {
 				const secondFrame = window.requestAnimationFrame(() => {
-					setEnteringItemIds((current) => {
-						const next = new Set(current);
-						next.delete(itemId);
-						return next;
-					});
 					enteringItemFramesRef.current.delete(itemId);
 					const itemShell = document.querySelector<HTMLElement>(
 						`[data-bento-item-id="${CSS.escape(itemId)}"]`,
@@ -194,7 +202,7 @@ export default function BentoSection({
 			});
 			enteringItemFramesRef.current.set(itemId, firstFrame);
 		}
-	}, [items, mode]);
+	}, [items, mode, mounted, reduceMotion]);
 	useEffect(() => {
 		const currentItemsById = new Map(items.map((item) => [item.id, item]));
 		for (const [itemId, previousItem] of previousItemsByIdRef.current) {
@@ -227,6 +235,14 @@ export default function BentoSection({
 		},
 		[],
 	);
+	const handlePopInComplete = useCallback((itemId: string) => {
+		setEnteringItemIds((current) => {
+			if (!current.has(itemId)) return current;
+			const next = new Set(current);
+			next.delete(itemId);
+			return next;
+		});
+	}, []);
 	const handleBentoCommand = useCallback(
 		(command: BentoCommand) => {
 			if (command.type === "delete-item") {
@@ -394,6 +410,7 @@ export default function BentoSection({
 											}
 										: undefined
 								}
+								onPopInComplete={handlePopInComplete}
 								onRefreshLinkMetadata={onRefreshLinkMetadata}
 								onLinkImageSelect={onLinkImageSelect}
 							/>

@@ -8,7 +8,7 @@ import {
 import { providerIconUrl } from "@grabbin/page-link";
 import { toast } from "@grabbin/ui/components/toast";
 import dynamic from "next/dynamic";
-import { type CSSProperties, useCallback, useEffect } from "react";
+import { type CSSProperties, useCallback, useEffect, useRef } from "react";
 import { fetchBentoRss } from "@/lib/bento/bento-api";
 import { useBentoStore } from "@/lib/bento/bento-store";
 import type { AddWidgetButtonProps } from "./add-widget-button";
@@ -44,6 +44,16 @@ export default function BentoEditor({
 	onGridSavingChange?: (isSaving: boolean) => void;
 	onWidgetActionsChange?: (actions: AddWidgetButtonProps) => void;
 }) {
+	const initialItemIdsRef = useRef({
+		handle,
+		ids: new Set(items.map((item) => item.id)),
+	});
+	if (initialItemIdsRef.current.handle !== handle) {
+		initialItemIdsRef.current = {
+			handle,
+			ids: new Set(items.map((item) => item.id)),
+		};
+	}
 	const store = useBentoStore({
 		initialItems: items,
 		handle,
@@ -238,6 +248,7 @@ export default function BentoEditor({
 			<BentoSection
 				handle={handle}
 				items={store.items}
+				initialItemIds={initialItemIdsRef.current.ids}
 				mode="edit"
 				breakpoint={breakpoint}
 				entryAnimationRevision={entryAnimationRevision}

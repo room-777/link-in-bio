@@ -3,10 +3,8 @@
 .bento-layout {
 	--bento-placeholder-radius: 24px;
 	--bento-spring-ease: cubic-bezier(0.34, 1.25, 0.64, 1);
-	--bento-item-pop-duration: 440ms;
-	--bento-item-pop-ease: cubic-bezier(0.34, 1.75, 0.64, 1);
 	--bento-item-pop-distance: 8px;
-	--bento-item-pop-scale: 0.88;
+	--bento-item-pop-scale: 0.8;
 	--bento-item-pop-blur: 2px;
 	--bento-item-exit-duration: 180ms;
 	--bento-item-exit-ease: cubic-bezier(0.23, 1, 0.32, 1);
@@ -99,18 +97,14 @@
 	filter: blur(0);
 	opacity: 1;
 	transform: translateY(0) scale(1);
-	transition:
-		opacity var(--bento-item-pop-duration) var(--bento-item-pop-ease),
-		transform var(--bento-item-pop-duration) var(--bento-item-pop-ease),
-		filter var(--bento-item-pop-duration) var(--bento-item-pop-ease);
 }
 
 .bento-item-initial-entering {
 	transition: none;
 }
 
-.bento-item-pop-in.is-entering,
-.bento-item-pop-in.is-exiting {
+.bento-item-pop-in.is-entering {
+	transition: none;
 	filter: blur(var(--bento-item-pop-blur));
 	opacity: 0;
 	transform: translateY(var(--bento-item-pop-distance))
@@ -118,6 +112,10 @@
 }
 
 .bento-item-pop-in.is-exiting {
+	filter: blur(var(--bento-item-pop-blur));
+	opacity: 0;
+	transform: translateY(var(--bento-item-pop-distance))
+		scale(var(--bento-item-pop-scale));
 	transition:
 		opacity var(--bento-item-exit-duration) var(--bento-item-exit-ease),
 		transform var(--bento-item-exit-duration) var(--bento-item-exit-ease),
