@@ -467,6 +467,7 @@ const TweetContent = ({
 interface TweetProps {
 	id: string;
 	className?: string;
+	author?: { name?: string; handle?: string; imageUrl?: string };
 	isPortrait?: boolean;
 	showDate?: boolean;
 	showLikeButton?: boolean;
@@ -476,6 +477,7 @@ interface TweetProps {
 export function Tweet({
 	id,
 	className,
+	author,
 	isPortrait = false,
 	showDate = true,
 	showLikeButton = true,
@@ -514,10 +516,20 @@ export function Tweet({
 	} catch {
 		return <TweetNotFound className={className} />;
 	}
+	const displayTweet = {
+		...enrichedTweet,
+		user: {
+			...enrichedTweet.user,
+			name: author?.name?.trim() || enrichedTweet.user.name,
+			screen_name: author?.handle?.trim() || enrichedTweet.user.screen_name,
+			profile_image_url_https:
+				author?.imageUrl?.trim() || enrichedTweet.user.profile_image_url_https,
+		},
+	};
 
 	return (
 		<TweetContent
-			tweet={enrichedTweet}
+			tweet={displayTweet}
 			className={className}
 			isPortrait={isPortrait}
 			showDate={showDate}

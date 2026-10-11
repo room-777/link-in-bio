@@ -9,10 +9,12 @@ export function TweetWidget({
 	url,
 	className,
 	preset,
+	author,
 }: {
 	url: string;
 	className?: string;
 	preset?: PresetName;
+	author?: { name?: string; handle?: string; imageUrl?: string };
 }) {
 	const id = getTweetId(url);
 	if (!id) {
@@ -29,6 +31,7 @@ export function TweetWidget({
 			className={className}
 			isPortrait={preset === "portrait"}
 			showCopyLink={false}
+			author={author}
 		/>
 	);
 }
@@ -42,6 +45,14 @@ export function TweetItem({
 	mode: "view" | "edit";
 	preset: PresetName;
 }) {
+	const authorData =
+		item.data.metadata?.provider === "tweet"
+			? item.data.metadata.providerData
+			: undefined;
+	const authorHandle = authorData?.authorProfileUrl?.match(
+		/(?:x|twitter)\.com\/([^/?#]+)/i,
+	)?.[1];
+
 	return (
 		<div
 			className={
@@ -51,6 +62,11 @@ export function TweetItem({
 			<TweetWidget
 				url={item.data.url}
 				preset={preset}
+				author={{
+					name: authorData?.authorName ?? undefined,
+					handle: authorHandle,
+					imageUrl: authorData?.authorProfileImageUrl ?? undefined,
+				}}
 				className="size-full min-h-0 max-w-none"
 			/>
 		</div>
