@@ -45,17 +45,25 @@ export default function AdvancedWidgetsDialog({
 	onTweetAdd: (url: string) => Promise<boolean>;
 }) {
 	const isMobile = useIsMobile();
-	const { data: session } = authClient.useSession();
+	const {
+		data: session,
+		error,
+		isPending,
+		isRefetching,
+	} = authClient.useSession();
 	const isPro = session?.plan.tier === "pro";
+	const isSessionUnavailable = isPending || isRefetching || Boolean(error);
 	return (
 		<Button
 			type="button"
 			variant="ghost"
 			size="icon"
 			className="size-9"
+			disabled={isSessionUnavailable}
 			aria-label="Advanced"
 			title="Advanced"
-			onClick={() =>
+			onClick={() => {
+				if (isSessionUnavailable) return;
 				overlay.open(({ isOpen, close, unmount }) => (
 					<AdvancedWidgetsOverlay
 						isMobile={isMobile}
@@ -69,8 +77,8 @@ export default function AdvancedWidgetsDialog({
 						onSpotifyAdd={onSpotifyAdd}
 						onTweetAdd={onTweetAdd}
 					/>
-				))
-			}
+				));
+			}}
 		>
 			<SlidersHorizontal className="size-4" aria-hidden="true" />
 		</Button>
