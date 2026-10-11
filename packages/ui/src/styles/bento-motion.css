@@ -10,8 +10,8 @@
 	--bento-item-pop-blur: 2px;
 	--bento-item-exit-duration: 180ms;
 	--bento-item-exit-ease: cubic-bezier(0.23, 1, 0.32, 1);
-	--bento-position-duration: 520ms;
-	--bento-position-ease: var(--bento-spring-ease);
+	--bento-position-duration: 700ms;
+	--bento-position-ease: cubic-bezier(0.34, 1.5, 0.4, 1);
 	--bento-drag-follow-duration: 100ms;
 	--bento-drag-follow-ease: cubic-bezier(0.22, 1, 0.36, 1);
 	--bento-resize-duration: 320ms;
@@ -21,7 +21,7 @@
 	--bento-drag-rotate-x: 0deg;
 	--bento-drag-rotate-z: 0deg;
 	--bento-placeholder-shadow-blur: 12px;
-	--bento-placeholder-fill-strength: 1%;
+	--bento-placeholder-fill-strength: 3%;
 	--bento-placeholder-shadow-strength: 1.5%;
 	--bento-placeholder-depth-strength: 0.5%;
 }
