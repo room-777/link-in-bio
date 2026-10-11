@@ -1,9 +1,8 @@
 "use client";
 
 import type { PresetName } from "@grabbin/bento-layout";
-import { useEffect, useRef } from "react";
+import { useEffect, useLayoutEffect, useRef } from "react";
 
-import { useBentoLineHeight } from "@/hooks/use-bento-line-height";
 import type { BentoCommand, BentoItem } from "@/lib/bento/bento-types";
 import { ExternalAction, textSizeClassByPreset } from "./shared";
 
@@ -23,8 +22,39 @@ export function TextItem({
 	onCommand?: (command: BentoCommand) => void;
 }) {
 	const textAreaRef = useRef<HTMLTextAreaElement>(null);
-	const { viewportRef, lineHeight } = useBentoLineHeight(8);
+	const viewportRef = useRef<HTMLDivElement>(null);
 	const autoFocusHandledRef = useRef(false);
+	const verticalAlign = item.style.verticalAlign ?? "top";
+	useLayoutEffect(() => {
+		const textarea = textAreaRef.current;
+		const viewport = viewportRef.current;
+		if (!textarea || !viewport || textarea.value !== item.data.text) return;
+
+		const alignText = () => {
+			textarea.style.paddingTop = "0px";
+			const previousHeight = textarea.style.height;
+			const previousMaxHeight = textarea.style.maxHeight;
+			textarea.style.height = "auto";
+			textarea.style.maxHeight = "none";
+			const contentHeight = textarea.scrollHeight;
+			textarea.style.height = previousHeight;
+			textarea.style.maxHeight = previousMaxHeight;
+
+			const freeSpace = Math.max(0, textarea.clientHeight - contentHeight);
+			const offset =
+				verticalAlign === "bottom"
+					? freeSpace
+					: verticalAlign === "center"
+						? freeSpace / 2
+						: 0;
+			textarea.style.paddingTop = `${offset}px`;
+		};
+
+		alignText();
+		const observer = new ResizeObserver(alignText);
+		observer.observe(viewport);
+		return () => observer.disconnect();
+	}, [item.data.text, verticalAlign]);
 	useEffect(() => {
 		if (!autoFocus) {
 			autoFocusHandledRef.current = false;
@@ -40,11 +70,6 @@ export function TextItem({
 		}
 		onAutoFocus?.();
 	}, [autoFocus, onAutoFocus]);
-	const verticalAlignClass = {
-		bottom: "justify-end",
-		center: "justify-center",
-		top: "justify-start",
-	}[item.style.verticalAlign ?? "top"];
 	return (
 		<div
 			className={`grid-action relative flex size-full min-h-0 flex-col gap-3 overflow-hidden rounded-lg p-3 ${mode === "edit" ? "cursor-grab" : ""}`}
@@ -52,16 +77,17 @@ export function TextItem({
 			<div className="relative z-10 flex min-h-0 flex-1 items-stretch justify-between gap-3">
 				<div
 					ref={viewportRef}
-					className={`flex min-h-0 min-w-0 flex-1 flex-col ${verticalAlignClass} ${textSizeClassByPreset[preset]}`}
+					className={`flex min-h-0 min-w-0 flex-1 flex-col ${textSizeClassByPreset[preset]}`}
 				>
 					<textarea
 						ref={textAreaRef}
+						rows={1}
 						value={item.data.text}
 						placeholder={mode === "edit" ? "Add note..." : undefined}
 						aria-label="Text content"
 						readOnly={mode === "view"}
-						className={`bento-text-input grid-action field-sizing-content max-h-full min-h-0 w-full cursor-text! resize-none overflow-y-auto overscroll-contain whitespace-pre-wrap break-all rounded-lg border-0 bg-transparent p-1 px-2 text-current outline-none placeholder:text-current/45 focus-visible:ring-0 ${textSizeClassByPreset[preset]}`}
-						style={{ textAlign: item.style.textAlign ?? "left", lineHeight }}
+						className={`bento-text-input grid-action h-full max-h-full min-h-0 w-full cursor-text! resize-none overflow-y-auto overscroll-contain whitespace-pre-wrap break-all rounded-lg border-0 bg-transparent px-2 py-0 text-current outline-none placeholder:text-current/45 focus-visible:ring-0 ${textSizeClassByPreset[preset]}`}
+						style={{ textAlign: item.style.textAlign ?? "left" }}
 						onChange={(event) =>
 							onCommand?.({
 								type: "update-data",
