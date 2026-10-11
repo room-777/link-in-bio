@@ -45,7 +45,7 @@ export async function enrichDiscord(
 		title: asString(guild.name),
 		description: asString(guild.description),
 		...(imageUrl ? { imageUrl } : {}),
-		providerData: getProviderData({
+		providerData: getProviderData("discord", {
 			guildId,
 			inviteCode: code,
 			memberCount: asNumber(payload?.approximate_member_count),

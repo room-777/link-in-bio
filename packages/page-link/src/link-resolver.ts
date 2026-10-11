@@ -2,6 +2,7 @@ import type {
 	PageItemLinkMetadata,
 	PageItemLinkPresentation,
 } from "@grabbin/api";
+import { normalizeProviderData } from "@grabbin/api";
 import { providerLabels, resolveLinkProvider } from "./provider-data";
 
 const compactNumberFormatter = new Intl.NumberFormat("en-US", {
@@ -64,8 +65,15 @@ export function resolveLinkPresentation(
 	const parsedUrl = new URL(url);
 	const resolved = resolveLinkProvider(parsedUrl);
 	const definition = resolved.definition;
-	const providerData = isRecord(metadata?.providerData)
-		? metadata.providerData
+	const normalizedProviderData = normalizeProviderData(
+		metadata?.providerData,
+		metadata?.provider ?? resolved.id,
+	);
+	const providerDataRecord = normalizedProviderData as
+		| Record<string, unknown>
+		| undefined;
+	const providerData = isRecord(providerDataRecord?.[resolved.id])
+		? (providerDataRecord[resolved.id] as Record<string, unknown>)
 		: undefined;
 	const actionDetail =
 		definition?.getActionDetail?.(providerData) ??
@@ -102,16 +110,25 @@ export function resolveLinkMetadata(
 ) {
 	const presentation = resolveLinkPresentation(url, metadata);
 	const hostname = getHostname(url);
-	const providerFaviconUrl = resolveLinkProvider(new URL(url)).definition
-		?.faviconUrl;
-	const { faviconUrl: storedFaviconUrl, ...rest } = metadata ?? {};
+	const resolved = resolveLinkProvider(new URL(url));
+	const providerFaviconUrl = resolved.definition?.faviconUrl;
+	const {
+		faviconUrl: storedFaviconUrl,
+		providerData: _providerData,
+		...rest
+	} = metadata ?? {};
 	const faviconUrl =
 		providerFaviconUrl ??
 		(storedFaviconUrl?.startsWith("https://icons.duckduckgo.com/")
 			? undefined
 			: storedFaviconUrl);
+	const providerData = normalizeProviderData(
+		metadata?.providerData,
+		metadata?.provider ?? resolved.id,
+	);
 	return {
 		...rest,
+		...(providerData ? { providerData } : {}),
 		...(metadata && Object.hasOwn(metadata, "title")
 			? {}
 			: { title: hostname }),

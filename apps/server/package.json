@@ -32,6 +32,7 @@
 		"evlog": "catalog:runtime",
 		"hono": "catalog:runtime",
 		"rss-parser": "^3.13.0",
+		"spotify-url-info": "^3.3.3",
 		"top-user-agents": "^2.1.139",
 		"unique-random-array": "^4.0.0",
 		"valibot": "catalog:runtime"

@@ -28,7 +28,7 @@ export async function enrichSoop(
 	return {
 		title: asString(station?.userNick) ?? asString(station?.stationName),
 		imageUrl: getHttpsUrl(station?.profileImage, _url),
-		providerData: getProviderData({
+		providerData: getProviderData("soop", {
 			favoriteCount: asNumber(asRecord(payload?.upd)?.fanCnt),
 		}),
 	};

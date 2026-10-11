@@ -105,7 +105,7 @@ export async function enrichGithub(
 		title: asString(user.name) ?? username,
 		description: asString(user.bio),
 		imageUrl: getHttpsUrl(user.avatar_url),
-		providerData: getProviderData({
+		providerData: getProviderData("github", {
 			githubUsername: username,
 			followers: asNumber(user.followers),
 			githubContributionGraph:

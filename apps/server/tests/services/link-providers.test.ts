@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import { describe, it } from "node:test";
-import { createInitialLinkMetadata, normalizeProviderData } from "@grabbin/api";
+import { createInitialLinkMetadata } from "@grabbin/api";
 import {
 	providerDefinitionList,
 	resolveLinkMetadata,
@@ -448,7 +448,6 @@ describe("link provider metadata", () => {
 				env: { PRODUCT_HUNT_TOKEN: "test-token" },
 			},
 		];
-		const providerDataKeys = Object.keys(normalizeProviderData({})).sort();
 
 		for (const testCase of cases) {
 			const metadata = await enrichLinkProvider(new URL(testCase.url), {
@@ -457,11 +456,10 @@ describe("link provider metadata", () => {
 			});
 			assert.equal(metadata.provider, testCase.provider, testCase.name);
 			assert.deepEqual(
-				Object.keys(metadata.providerData ?? {}).sort(),
-				providerDataKeys,
+				Object.keys(metadata.providerData ?? {}),
+				[testCase.provider],
 				testCase.name,
 			);
-			assert.equal(metadata.providerData?.recentPostThumbnailUrls, null);
 			if (testCase.expectedTitle)
 				assert.equal(metadata.title, testCase.expectedTitle, testCase.name);
 			if (testCase.expectedActionLabel)
@@ -503,9 +501,11 @@ describe("link provider metadata", () => {
 				);
 			}
 			assert.equal(
-				(metadata.providerData as Record<string, unknown> | undefined)?.[
-					testCase.key
-				],
+				(
+					metadata.providerData as
+						| Record<string, Record<string, unknown>>
+						| undefined
+				)?.[testCase.provider]?.[testCase.key],
 				testCase.expected,
 				testCase.name,
 			);
@@ -527,8 +527,8 @@ describe("link provider metadata", () => {
 		assert.equal(metadata.title, "Grabbin Live");
 		assert.equal(metadata.description, "Live channel description");
 		assert.equal(metadata.imageUrl, "https://chzzk.example.com/channel.png");
-		assert.equal(metadata.providerData?.followerCount, 77);
-		assert.equal(metadata.providerData?.isLive, false);
+		assert.equal(metadata.providerData?.chzzk?.followerCount, 77);
+		assert.equal(metadata.providerData?.chzzk?.isLive, false);
 	});
 
 	/**
@@ -551,28 +551,31 @@ describe("link provider metadata", () => {
 		assert.equal(resolveLinkProvider(profileUrl).target?.kind, "profile");
 		assert.equal(resolveLinkProvider(projectUrl).target?.kind, "project");
 		assert.equal(profile.title, "Artist Profile");
-		assert.equal(profile.providerData?.followerCount, 2_400_000);
+		assert.equal(profile.providerData?.behance?.followerCount, 2_400_000);
 		assert.equal(
 			resolveLinkMetadata(profileUrl.toString(), profile).presentation
 				.actionDetail,
 			"2.4M",
 		);
-		assert.deepEqual(profile.providerData?.recentProjectThumbnailUrls, [
-			"https://mir-s3-cdn-cf.behance.net/projects/thumb-1.webp",
-			"https://mir-s3-cdn-cf.behance.net/projects/thumb-2.webp",
-			"https://mir-s3-cdn-cf.behance.net/projects/thumb-3.webp",
-			"https://mir-s3-cdn-cf.behance.net/projects/thumb-4.webp",
-		]);
+		assert.deepEqual(
+			profile.providerData?.behance?.recentProjectThumbnailUrls,
+			[
+				"https://mir-s3-cdn-cf.behance.net/projects/thumb-1.webp",
+				"https://mir-s3-cdn-cf.behance.net/projects/thumb-2.webp",
+				"https://mir-s3-cdn-cf.behance.net/projects/thumb-3.webp",
+				"https://mir-s3-cdn-cf.behance.net/projects/thumb-4.webp",
+			],
+		);
 		assert.deepEqual(
 			resolveLinkMetadata(profileUrl.toString(), profile).presentation
 				.imageUrls,
-			profile.providerData?.recentProjectThumbnailUrls,
+			profile.providerData?.behance?.recentProjectThumbnailUrls,
 		);
 		assert.equal(project.title, "Portfolio Project");
 		assert.equal(project.description, undefined);
-		assert.equal(project.providerData?.authorName, "Anna Krupkin");
+		assert.equal(project.providerData?.behance?.authorName, "Anna Krupkin");
 		assert.equal(
-			project.providerData?.authorProfileImageUrl,
+			project.providerData?.behance?.authorProfileImageUrl,
 			"https://pps.services.adobe.com/anna.jpg",
 		);
 		assert.equal(
@@ -620,8 +623,11 @@ describe("link provider metadata", () => {
 		);
 
 		assert.deepEqual(requested, ["/users/vercel"]);
-		assert.equal(metadata.providerData?.followers, 42);
-		assert.equal(metadata.providerData?.githubContributionGraph, null);
+		assert.equal(metadata.providerData?.github?.followers, 42);
+		assert.equal(
+			metadata.providerData?.github?.githubContributionGraph,
+			undefined,
+		);
 	});
 
 	/**
@@ -650,9 +656,9 @@ describe("link provider metadata", () => {
 
 		assert.equal(resolveLinkProvider(profileUrl).target?.kind, "profile");
 		assert.equal(resolveLinkProvider(shotUrl).target?.kind, "shot");
-		assert.equal(profile.providerData?.followerCount, 254);
-		assert.equal(profile.providerData?.followingCount, 337);
-		assert.equal(profile.providerData?.likeCount, 1750);
+		assert.equal(profile.providerData?.dribbble?.followerCount, 254);
+		assert.equal(profile.providerData?.dribbble?.followingCount, 337);
+		assert.equal(profile.providerData?.dribbble?.likeCount, 1750);
 		assert.equal(
 			resolveLinkMetadata(profileUrl.toString(), profile).presentation
 				.actionIcon,
@@ -664,10 +670,10 @@ describe("link provider metadata", () => {
 			"1,750 Likes",
 		);
 		assert.equal(
-			profile.providerData?.profileImageUrl,
+			profile.providerData?.dribbble?.profileImageUrl,
 			"https://cdn.dribbble.com/team.png",
 		);
-		assert.deepEqual(profile.providerData?.recentShotThumbnailUrls, [
+		assert.deepEqual(profile.providerData?.dribbble?.recentShotThumbnailUrls, [
 			"https://cdn.dribbble.com/shot-0.png",
 			"https://cdn.dribbble.com/shot-1.png",
 			"https://cdn.dribbble.com/shot-2.png",
@@ -676,17 +682,17 @@ describe("link provider metadata", () => {
 		assert.deepEqual(
 			resolveLinkMetadata(profileUrl.toString(), profile).presentation
 				.imageUrls,
-			profile.providerData?.recentShotThumbnailUrls,
+			profile.providerData?.dribbble?.recentShotThumbnailUrls,
 		);
 		assert.equal(shot.title, "AI Mental Health Platform");
 		assert.equal(shot.imageUrl, "https://cdn.dribbble.com/shot.png");
-		assert.equal(shot.providerData?.authorName, "NexUX Product");
+		assert.equal(shot.providerData?.dribbble?.authorName, "NexUX Product");
 		assert.equal(
-			shot.providerData?.authorProfileUrl,
+			shot.providerData?.dribbble?.authorProfileUrl,
 			"https://dribbble.com/nexuxproduct",
 		);
 		assert.equal(
-			shot.providerData?.authorProfileImageUrl,
+			shot.providerData?.dribbble?.authorProfileImageUrl,
 			"https://cdn.dribbble.com/creator.png",
 		);
 		assert.equal(
@@ -714,7 +720,7 @@ describe("link provider metadata", () => {
 			{ fetch: createFetch(), env: { YOUTUBE_API_KEY: "test-key" } },
 		);
 
-		assert.deepEqual(metadata.providerData?.recentVideoThumbnailUrls, [
+		assert.deepEqual(metadata.providerData?.youtube?.recentVideoThumbnailUrls, [
 			"https://img.youtube.com/video-1.jpg",
 			"https://img.youtube.com/video-2.jpg",
 			"https://img.youtube.com/video-3.jpg",
@@ -762,7 +768,7 @@ describe("link provider metadata", () => {
 			(_, index) => `https://cdn.instagram.com/post-${index}.jpg`,
 		);
 		assert.deepEqual(
-			metadata.providerData?.recentPostThumbnailUrls,
+			metadata.providerData?.instagram?.recentPostThumbnailUrls,
 			expectedUrls,
 		);
 		assert.equal(metadata.imageUrl, expectedUrls[0]);
@@ -851,13 +857,17 @@ describe("link provider metadata", () => {
 			profileRequest?.headers.get("Cookie") ?? "",
 			/^sessionid=123:/,
 		);
-		assert.equal(metadata.providerData?.followerCount, 35_421);
-		assert.equal(metadata.providerData?.followerCountApproximate, false);
-		assert.equal(metadata.providerData?.followingCount, 3);
-		assert.equal(metadata.providerData?.mediaCount, 118);
-		assert.deepEqual(metadata.providerData?.recentPostThumbnailUrls, [
-			"https://cdn.instagram.com/large.jpg",
-		]);
+		assert.equal(metadata.providerData?.instagram?.followerCount, 35_421);
+		assert.equal(
+			metadata.providerData?.instagram?.followerCountApproximate,
+			false,
+		);
+		assert.equal(metadata.providerData?.instagram?.followingCount, 3);
+		assert.equal(metadata.providerData?.instagram?.mediaCount, 118);
+		assert.deepEqual(
+			metadata.providerData?.instagram?.recentPostThumbnailUrls,
+			["https://cdn.instagram.com/large.jpg"],
+		);
 		assert.equal(
 			resolveLinkMetadata(
 				"https://www.instagram.com/officialstellive/",
@@ -916,13 +926,16 @@ describe("link provider metadata", () => {
 
 		assert.equal(metadata.title, "STELLIVE");
 		assert.equal(metadata.description, "Official profile");
-		assert.equal(metadata.providerData?.followerCount, 35_421);
-		assert.deepEqual(metadata.providerData?.recentPostThumbnailUrls, [
-			"https://cdn.instagram.com/post-0.jpg",
-			"https://cdn.instagram.com/post-1.jpg",
-			"https://cdn.instagram.com/post-2.jpg",
-			"https://cdn.instagram.com/post-3.jpg",
-		]);
+		assert.equal(metadata.providerData?.instagram?.followerCount, 35_421);
+		assert.deepEqual(
+			metadata.providerData?.instagram?.recentPostThumbnailUrls,
+			[
+				"https://cdn.instagram.com/post-0.jpg",
+				"https://cdn.instagram.com/post-1.jpg",
+				"https://cdn.instagram.com/post-2.jpg",
+				"https://cdn.instagram.com/post-3.jpg",
+			],
+		);
 		assert.equal(requestedUrls.length, 2);
 		assert.equal(requestedUrls[1]?.hostname, "i.instagram.com");
 		assert.match(requestedUrls[1]?.pathname ?? "", /feed\/user\/123/);
@@ -957,8 +970,8 @@ describe("link provider metadata", () => {
 		);
 		assert.equal(metadata.title, "TikTok on TikTok");
 		assert.equal(metadata.imageUrl, "https://cdn.tiktok.com/profile.jpg");
-		assert.equal(metadata.providerData?.followerCount, 96_200_000);
-		assert.equal(metadata.providerData?.followerCountApproximate, true);
+		assert.equal(metadata.providerData?.tiktok?.followerCount, 96_200_000);
+		assert.equal(metadata.providerData?.tiktok?.followerCountApproximate, true);
 		assert.equal(
 			resolveLinkMetadata("https://www.tiktok.com/@tiktok", metadata)
 				.presentation.actionDetail,
@@ -1115,15 +1128,18 @@ describe("link provider metadata", () => {
 				.presentation.actionLabel,
 			"Follow",
 		);
-		assert.equal(profile.providerData?.followerCount, 6_266_647);
-		assert.equal(profile.providerData?.followerCountApproximate, false);
+		assert.equal(profile.providerData?.pinterest?.followerCount, 6_266_647);
+		assert.equal(
+			profile.providerData?.pinterest?.followerCountApproximate,
+			false,
+		);
 		assert.equal(
 			resolveLinkMetadata("https://kr.pinterest.com/pinterest/", profile)
 				.presentation.actionDetail,
 			"6.3M",
 		);
 		assert.equal(
-			profile.providerData?.profileImageUrl,
+			profile.providerData?.pinterest?.profileImageUrl,
 			"https://i.pinimg.com/profile.jpg",
 		);
 		for (const path of ["_created", "_saved", "pins"]) {
@@ -1132,7 +1148,7 @@ describe("link provider metadata", () => {
 				context,
 			);
 			assert.equal(alias.title, "Benny Hii");
-			assert.equal(alias.providerData?.followerCount, 5);
+			assert.equal(alias.providerData?.pinterest?.followerCount, 5);
 		}
 
 		const boardUrl = "https://www.pinterest.com/pinterest/girls-night-in/";
@@ -1145,18 +1161,18 @@ describe("link provider metadata", () => {
 			resolveLinkMetadata(boardUrl, board).presentation.actionLabel,
 			"View",
 		);
-		assert.equal(board.providerData?.authorName, "Pinterest");
+		assert.equal(board.providerData?.pinterest?.authorName, "Pinterest");
 		assert.equal(
-			board.providerData?.authorProfileImageUrl,
+			board.providerData?.pinterest?.authorProfileImageUrl,
 			"https://i.pinimg.com/profile.jpg",
 		);
-		assert.equal(board.providerData?.ownerName, "Pinterest");
+		assert.equal(board.providerData?.pinterest?.ownerName, "Pinterest");
 		assert.equal(
-			board.providerData?.ownerProfileImageUrl,
+			board.providerData?.pinterest?.ownerProfileImageUrl,
 			"https://i.pinimg.com/profile.jpg",
 		);
 		assert.deepEqual(
-			board.providerData?.recentBoardThumbnailUrls,
+			board.providerData?.pinterest?.recentBoardThumbnailUrls,
 			boardThumbnails,
 		);
 		assert.deepEqual(
@@ -1177,9 +1193,9 @@ describe("link provider metadata", () => {
 			"View",
 		);
 		assert.equal(pin.imageUrl, "https://i.pinimg.com/the-outsiders.jpg");
-		assert.equal(pin.providerData?.authorName, "qlaucusx");
+		assert.equal(pin.providerData?.pinterest?.authorName, "qlaucusx");
 		assert.equal(
-			pin.providerData?.authorProfileImageUrl,
+			pin.providerData?.pinterest?.authorProfileImageUrl,
 			"https://i.pinimg.com/author-profile.jpg",
 		);
 		const shortPin = await enrichLinkProvider(
@@ -1204,9 +1220,9 @@ describe("link provider metadata", () => {
 			},
 		);
 		assert.equal(shortPin.title, "The Outsiders");
-		assert.equal(shortPin.providerData?.authorName, "qlaucusx");
+		assert.equal(shortPin.providerData?.pinterest?.authorName, "qlaucusx");
 		assert.equal(
-			shortPin.providerData?.authorProfileImageUrl,
+			shortPin.providerData?.pinterest?.authorProfileImageUrl,
 			"https://i.pinimg.com/author-profile.jpg",
 		);
 	});

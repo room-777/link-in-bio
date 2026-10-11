@@ -87,11 +87,14 @@ const previewItems: ReadonlyArray<{
 					title: "@framebyjune",
 					faviconUrl: providerIconUrl("instagram"),
 					provider: "instagram",
-					providerData: normalizeProviderData({
-						followerCount: 687000000,
-						followerCountLabel: "687M",
-						followerCountApproximate: true,
-					}),
+					providerData: normalizeProviderData(
+						{
+							followerCount: 687000000,
+							followerCountLabel: "687M",
+							followerCountApproximate: true,
+						},
+						"instagram",
+					),
 					presentation: {
 						provider: "instagram",
 						providerLabel: "Instagram",
@@ -124,9 +127,12 @@ const previewItems: ReadonlyArray<{
 					title: "northstar-labs",
 					faviconUrl: providerIconUrl("github"),
 					provider: "github",
-					providerData: normalizeProviderData({
-						followers: 34,
-					}),
+					providerData: normalizeProviderData(
+						{
+							followers: 34,
+						},
+						"github",
+					),
 					presentation: {
 						provider: "github",
 						providerLabel: "GitHub",
@@ -191,11 +197,14 @@ const previewItems: ReadonlyArray<{
 					title: "@cityframes",
 					faviconUrl: providerIconUrl("x"),
 					provider: "x",
-					providerData: normalizeProviderData({
-						followerCount: 12800,
-						followerCountLabel: "12.8K",
-						followerCountApproximate: true,
-					}),
+					providerData: normalizeProviderData(
+						{
+							followerCount: 12800,
+							followerCountLabel: "12.8K",
+							followerCountApproximate: true,
+						},
+						"x",
+					),
 					presentation: {
 						provider: "x",
 						providerLabel: "X",

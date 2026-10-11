@@ -77,16 +77,19 @@ export async function enrichYoutube(
 		title: asString(snippet?.title),
 		description: asString(snippet?.description),
 		imageUrl: recentVideoThumbnailUrls?.[0] ?? thumbnail,
-		providerData: getProviderData({
-			subscriberCount:
-				target.kind === "channel"
-					? asNumber(statistics?.subscriberCount)
-					: undefined,
-			viewCount: asNumber(statistics?.viewCount),
-			likeCount: asNumber(statistics?.likeCount),
-			commentCount: asNumber(statistics?.commentCount),
-			channelImageUrl: target.kind === "channel" ? thumbnail : undefined,
-			recentVideoThumbnailUrls,
-		}),
+		providerData: getProviderData(
+			target.provider === "youtube-music" ? "youtube-music" : "youtube",
+			{
+				subscriberCount:
+					target.kind === "channel"
+						? asNumber(statistics?.subscriberCount)
+						: undefined,
+				viewCount: asNumber(statistics?.viewCount),
+				likeCount: asNumber(statistics?.likeCount),
+				commentCount: asNumber(statistics?.commentCount),
+				channelImageUrl: target.kind === "channel" ? thumbnail : undefined,
+				recentVideoThumbnailUrls,
+			},
+		),
 	};
 }

@@ -166,7 +166,7 @@ export async function enrichInstagram(
 	return {
 		...metadata,
 		imageUrl: recentPostThumbnailUrls[0] ?? metadata.imageUrl,
-		providerData: getProviderData({
+		providerData: getProviderData("instagram", {
 			...followerData,
 			...getInstagramCounts(
 				asRecord(asRecord(profileResponse)?.data)?.user,

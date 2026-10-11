@@ -242,7 +242,7 @@ async function enrichPage(
 		return {
 			...(title ? { title } : {}),
 			...(profileImageUrl ? { imageUrl: profileImageUrl } : {}),
-			providerData: getProviderData({
+			providerData: getProviderData("pinterest", {
 				...getFollowerCount(html, target.params.username),
 				profileImageUrl,
 			}),
@@ -267,7 +267,7 @@ async function enrichPage(
 		return {
 			...(title ? { title } : {}),
 			imageUrl: metadata.imageUrl ?? recentBoardThumbnailUrls[0],
-			providerData: getProviderData({
+			providerData: getProviderData("pinterest", {
 				authorName: owner?.name,
 				authorProfileImageUrl: owner?.imageUrl,
 				ownerName: owner?.name,
@@ -284,7 +284,7 @@ async function enrichPage(
 		return {
 			...(title ? { title } : {}),
 			...(metadata.imageUrl ? { imageUrl: metadata.imageUrl } : {}),
-			providerData: getProviderData({
+			providerData: getProviderData("pinterest", {
 				authorName: author?.name,
 				authorProfileImageUrl: author?.imageUrl,
 			}),

@@ -57,6 +57,8 @@ export async function enrichTikTok(
 		...(title ? { title } : {}),
 		...(description ? { description } : {}),
 		...(imageUrl ? { imageUrl } : {}),
-		providerData: followerData ? getProviderData(followerData) : undefined,
+		providerData: followerData
+			? getProviderData("tiktok", followerData)
+			: undefined,
 	};
 }

@@ -11,17 +11,19 @@ export async function enrichLinkProvider(
 	const enricher = resolved.target
 		? getProviderEnricher(resolved.id)
 		: undefined;
-	if (!resolved.target || !enricher) {
-		return { provider: resolved.id, providerData: normalizeProviderData({}) };
-	}
+	if (!resolved.target || !enricher) return { provider: resolved.id };
 	try {
 		const metadata = await enricher(url, resolved.target, context);
+		const providerData = normalizeProviderData(
+			metadata.providerData,
+			resolved.id,
+		);
 		return {
 			...metadata,
-			providerData: normalizeProviderData(metadata.providerData),
+			...(providerData ? { providerData } : {}),
 			provider: resolved.id,
 		};
 	} catch {
-		return { provider: resolved.id, providerData: normalizeProviderData({}) };
+		return { provider: resolved.id };
 	}
 }

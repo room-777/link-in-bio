@@ -42,6 +42,99 @@ function createDatabase(url = "https://example.com") {
 }
 
 describe("link metadata service", () => {
+	it("uses spotify-url-info metadata before generic HTML metadata", async () => {
+		const { db } = createDatabase(
+			"https://open.spotify.com/track/4uLU6hMCjMI75M1A2tKUQC",
+		);
+		const requestedUrls: string[] = [];
+		const entity = {
+			uri: "spotify:track:4uLU6hMCjMI75M1A2tKUQC",
+			name: "Never Gonna Give You Up",
+			title: "Never Gonna Give You Up",
+			type: "track",
+			artists: [{ name: "Rick Astley" }],
+			coverArt: {
+				sources: [
+					{
+						url: "https://i.scdn.co/image/cover.png",
+						width: 640,
+						height: 640,
+					},
+				],
+			},
+		};
+		const html = `<html><body><script type="resource">${btoa(JSON.stringify(entity))}</script></body></html>`;
+		const result = await enrichPageItemMetadata({
+			db,
+			handle: "jane",
+			userId: "user-1",
+			itemId: "item-1",
+			url: "https://open.spotify.com/track/4uLU6hMCjMI75M1A2tKUQC",
+			fetch: async (input) => {
+				requestedUrls.push(input.toString());
+				return new Response(html, {
+					headers: { "content-type": "text/html" },
+				});
+			},
+		});
+
+		assert.equal(result.type, "link");
+		if (result.type !== "link") return;
+		assert.equal(result.data.metadata?.title, "Never Gonna Give You Up");
+		assert.equal(result.data.metadata?.description, "Rick Astley");
+		assert.equal(
+			result.data.metadata?.imageUrl,
+			"https://i.scdn.co/image/cover.png",
+		);
+		assert.equal(result.data.metadata?.provider, "spotify");
+		assert.equal(result.data.metadata?.providerData?.spotify?.type, "track");
+		assert.equal(
+			result.data.metadata?.providerData?.spotify?.track,
+			"Never Gonna Give You Up",
+		);
+		assert.deepEqual(result.data.metadata?.providerData?.spotify?.tracks, [
+			{
+				artist: "Rick Astley",
+				duration: undefined,
+				name: "Never Gonna Give You Up",
+				previewUrl: undefined,
+				uri: "spotify:track:4uLU6hMCjMI75M1A2tKUQC",
+			},
+		]);
+		assert.equal(requestedUrls.length, 1);
+		assert.equal(new URL(requestedUrls[0] ?? "").hostname, "embed.spotify.com");
+	});
+
+	it("falls back to Spotify HTML when spotify-url-info cannot parse a link", async () => {
+		const url = "https://open.spotify.com/show/4rOoJ6Egrf8K2IrywzwOMk";
+		const { db } = createDatabase(url);
+		const requestedUrls: string[] = [];
+		const result = await enrichPageItemMetadata({
+			db,
+			handle: "jane",
+			userId: "user-1",
+			itemId: "item-1",
+			url,
+			fetch: async (input) => {
+				requestedUrls.push(input.toString());
+				return new Response(
+					"<html><head><title>Spotify Show</title></head></html>",
+					{
+						headers: { "content-type": "text/html" },
+					},
+				);
+			},
+		});
+
+		assert.equal(result.type, "link");
+		if (result.type !== "link") return;
+		assert.equal(result.data.metadata?.title, "Spotify Show");
+		assert.equal(result.data.metadata?.provider, "spotify");
+		assert.equal(requestedUrls.length, 2);
+		assert.equal(new URL(requestedUrls[0] ?? "").hostname, "embed.spotify.com");
+		assert.equal(new URL(requestedUrls[1] ?? "").hostname, "open.spotify.com");
+	});
+
 	it("LINK-METADATA-SERVICE-001 stores safe Open Graph metadata", async () => {
 		const { db, current } = createDatabase();
 		let userAgent: string | null = null;
@@ -84,7 +177,6 @@ describe("link metadata service", () => {
 				imageUrl: "https://cdn.example.com/card.png",
 				faviconUrl: "https://example.com/favicon.svg",
 				provider: "generic-web",
-				providerData: normalizeProviderData({}),
 			},
 		});
 	});
@@ -167,6 +259,12 @@ describe("link metadata service", () => {
 	 */
 	it("LINK-METADATA-SERVICE-003 stores X profile follower metadata", async () => {
 		const { db, current } = createDatabase("https://twitter.com/kinwooky");
+		Object.assign(current.data, {
+			metadata: {
+				provider: "x",
+				providerData: { followerCount: 99, followingCount: null },
+			},
+		});
 		const html =
 			'<html><head><meta property="og:title" content="Kin Wooky"><meta property="og:description" content="Kin Wooky profile"><script>followers:101909,following:168</script></head></html>';
 		let fetchCalls = 0;
@@ -189,7 +287,7 @@ describe("link metadata service", () => {
 		assert.equal(result.type, "link");
 		if (result.type !== "link") return;
 		assert.equal(result.data.metadata?.provider, "x");
-		assert.equal(result.data.metadata?.providerData?.followerCount, 101909);
+		assert.equal(result.data.metadata?.providerData?.x?.followerCount, 101909);
 		assert.equal(result.data.metadata?.presentation?.actionDetail, "101.9K");
 		assert.deepEqual(current.data, {
 			url: "https://twitter.com/kinwooky",
@@ -198,11 +296,14 @@ describe("link metadata service", () => {
 				description: "Kin Wooky profile",
 				faviconUrl: "https://twitter.com/favicon.ico",
 				provider: "x",
-				providerData: normalizeProviderData({
-					followerCount: 101909,
-					followerCountLabel: "101909",
-					followerCountApproximate: false,
-				}),
+				providerData: normalizeProviderData(
+					{
+						followerCount: 101909,
+						followerCountLabel: "101909",
+						followerCountApproximate: false,
+					},
+					"x",
+				),
 			},
 		});
 	});
@@ -307,10 +408,13 @@ describe("link metadata service", () => {
 						{ headers: { "content-type": "text/html" } },
 					),
 			});
+			const provider = new URL(url).hostname.includes("facebook")
+				? "facebook"
+				: "linkedin";
 			assert.equal(result.type, "link", url);
 			if (result.type === "link")
 				assert.equal(
-					result.data.metadata?.providerData?.followerCount,
+					result.data.metadata?.providerData?.[provider]?.followerCount,
 					expected,
 				);
 			if (result.type === "link")
@@ -321,8 +425,8 @@ describe("link metadata service", () => {
 				);
 			if (result.type === "link")
 				assert.equal(
-					result.data.metadata?.providerData?.talkingAboutCount,
-					talkingAboutCount,
+					result.data.metadata?.providerData?.facebook?.talkingAboutCount,
+					talkingAboutCount ?? undefined,
 				);
 		}
 	});
@@ -362,7 +466,10 @@ describe("link metadata service", () => {
 			"Grabbin (https://grabbin.me, 1.0)",
 		);
 		if (result.type === "link")
-			assert.equal(result.data.metadata?.providerData?.memberCount, 55);
+			assert.equal(
+				result.data.metadata?.providerData?.discord?.memberCount,
+				55,
+			);
 	});
 
 	it("LINK-METADATA-SERVICE-004 falls back to regular HTML metadata when SOOP API fails", async () => {
@@ -400,7 +507,6 @@ describe("link metadata service", () => {
 				imageUrl: "https://cdn.example.com/soop.png",
 				faviconUrl: "https://www.sooplive.com/favicon.ico",
 				provider: "soop",
-				providerData: normalizeProviderData({}),
 			},
 		});
 	});
@@ -446,7 +552,10 @@ describe("link metadata service", () => {
 		assert.equal(requestedUrls[0]?.hostname, "i.instagram.com");
 		assert.equal(result.type, "link");
 		if (result.type === "link")
-			assert.equal(result.data.metadata?.providerData?.followerCount, 1234);
+			assert.equal(
+				result.data.metadata?.providerData?.instagram?.followerCount,
+				1234,
+			);
 		if (result.type === "link") {
 			assert.equal(result.data.metadata?.provider, "instagram");
 			assert.equal(result.data.metadata?.title, "Stellive");

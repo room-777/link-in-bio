@@ -47,7 +47,10 @@ const itemSpecs = [
 			url: "https://instagram.com/averyreed",
 			title: "Daily moments",
 			description: "Photos, places, and little things.",
-			providerData: normalizeProviderData({ followerCount: 12800 }),
+			providerData: normalizeProviderData(
+				{ followerCount: 12800 },
+				"instagram",
+			),
 			imageUrl:
 				"https://images.unsplash.com/photo-1490750967868-88aa4486c946?auto=format&fit=crop&w=900&q=80",
 		},
@@ -60,12 +63,15 @@ const itemSpecs = [
 			url: "https://youtube.com/@averyreed",
 			title: "Avery on YouTube",
 			description: "Travel films and photo diaries.",
-			providerData: normalizeProviderData({
-				subscriberCount: 24800,
-				recentVideoThumbnailUrls: [
-					"https://images.unsplash.com/photo-1500530855697-b586d89ba3ee?auto=format&fit=crop&w=900&q=80",
-				] as string[],
-			}),
+			providerData: normalizeProviderData(
+				{
+					subscriberCount: 24800,
+					recentVideoThumbnailUrls: [
+						"https://images.unsplash.com/photo-1500530855697-b586d89ba3ee?auto=format&fit=crop&w=900&q=80",
+					] as string[],
+				},
+				"youtube",
+			),
 		},
 	},
 	{
@@ -96,10 +102,13 @@ const itemSpecs = [
 			url: "https://github.com/averyreed",
 			title: "Open source",
 			description: "Small tools I make along the way.",
-			providerData: normalizeProviderData({
-				followers: 1840,
-				githubContributionGraph,
-			}),
+			providerData: normalizeProviderData(
+				{
+					followers: 1840,
+					githubContributionGraph,
+				},
+				"github",
+			),
 		},
 	},
 	{
@@ -171,7 +180,7 @@ const itemSpecs = [
 			url: "https://x.com/averyreed",
 			title: "Say hello",
 			description: "I’m always happy to meet fellow makers.",
-			providerData: normalizeProviderData({ followerCount: 6320 }),
+			providerData: normalizeProviderData({ followerCount: 6320 }, "x"),
 			imageUrl:
 				"https://images.unsplash.com/photo-1524504388940-b1c1722653e1?auto=format&fit=crop&w=900&q=80",
 		},

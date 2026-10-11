@@ -118,7 +118,10 @@ function mergeMetadata(current: LinkMetadata | undefined, next: LinkMetadata) {
 		}).filter(([, value]) => value !== undefined),
 	) as LinkMetadata;
 	if (merged.providerData) {
-		merged.providerData = normalizeProviderData(merged.providerData);
+		merged.providerData = normalizeProviderData(
+			merged.providerData,
+			merged.provider,
+		);
 	}
 	return merged;
 }
@@ -163,7 +166,9 @@ export async function enrichPageItemMetadata({
 	const metadataFetch = createMetadataFetch(fetchFn);
 	const providerId = resolveLinkProvider(new URL(parsedUrl.output)).id;
 	const fetchedMetadataPromise: Promise<LinkMetadata> =
-		providerId === "instagram" || providerId === "discord"
+		providerId === "instagram" ||
+		providerId === "discord" ||
+		providerId === "spotify"
 			? Promise.resolve({})
 			: fetchLinkMetadata(parsedUrl.output, metadataFetch.fetch);
 	const [fetchedMetadata, providerMetadata] = await Promise.all([
@@ -174,6 +179,19 @@ export async function enrichPageItemMetadata({
 			env,
 		}),
 	]);
+	if (
+		providerId === "spotify" &&
+		![
+			providerMetadata.title,
+			providerMetadata.description,
+			providerMetadata.imageUrl,
+		].some((value) => Boolean(value))
+	) {
+		Object.assign(
+			fetchedMetadata,
+			await fetchLinkMetadata(parsedUrl.output, metadataFetch.fetch),
+		);
+	}
 	if (providerId === "facebook" || providerId === "linkedin") {
 		const followerLabel = fetchedMetadata.description?.match(
 			/([\d,.]+\s*[KMB]?)\s+followers?\b/i,
@@ -191,20 +209,19 @@ export async function enrichPageItemMetadata({
 			const talkingAboutCount = talkingAboutLabel
 				? parseCountLabel(talkingAboutLabel)?.followerCount
 				: undefined;
-			fetchedMetadata.providerData = getProviderData({
+			fetchedMetadata.providerData = getProviderData(providerId, {
 				...followerData,
 				talkingAboutCount,
 			});
 		}
 	}
-	fetchedMetadata.providerData = normalizeProviderData({
-		...(fetchedMetadata.providerData ?? {}),
-		...Object.fromEntries(
-			Object.entries(providerMetadata.providerData ?? {}).filter(
-				([, value]) => value !== null,
-			),
-		),
-	});
+	fetchedMetadata.providerData = normalizeProviderData(
+		{
+			...(fetchedMetadata.providerData ?? {}),
+			...(providerMetadata.providerData ?? {}),
+		},
+		providerId,
+	);
 	const rateLimit = metadataFetch.getRateLimit();
 	if (
 		rateLimit.upstreamRateLimited &&
@@ -212,7 +229,10 @@ export async function enrichPageItemMetadata({
 			(key) => key !== "provider" && key !== "providerData",
 		) &&
 		!Object.values(providerMetadata.providerData ?? {}).some(
-			(value) => value !== null,
+			(value) =>
+				typeof value === "object" &&
+				value !== null &&
+				Object.keys(value).length > 0,
 		)
 	) {
 		throw new PageItemServiceError(

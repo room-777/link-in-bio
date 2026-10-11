@@ -30,7 +30,7 @@ export type ProviderTheme = Pick<
 	| "actionVariant"
 >;
 
-type ProviderData = NonNullable<PageItemLinkMetadata["providerData"]>;
+type ProviderData = Record<string, unknown>;
 
 export type LinkProviderTarget = LinkTargetMatch & {
 	provider: LinkProviderId;

@@ -25,6 +25,8 @@ export async function enrichThreads(
 		: undefined;
 	return {
 		...metadata,
-		...(followerData ? { providerData: getProviderData(followerData) } : {}),
+		...(followerData
+			? { providerData: getProviderData("threads", followerData) }
+			: {}),
 	};
 }

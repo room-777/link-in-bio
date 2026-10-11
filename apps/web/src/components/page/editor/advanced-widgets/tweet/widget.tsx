@@ -47,7 +47,7 @@ export function TweetItem({
 }) {
 	const authorData =
 		item.data.metadata?.provider === "tweet"
-			? item.data.metadata.providerData
+			? item.data.metadata.providerData?.tweet
 			: undefined;
 	const authorHandle = authorData?.authorProfileUrl?.match(
 		/(?:x|twitter)\.com\/([^/?#]+)/i,

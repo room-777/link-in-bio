@@ -64,7 +64,7 @@ function getProjectAuthorData(html: string) {
 			/https:\/\/[^\s,]+/,
 		)?.[0] ?? getAttributeValue(profileImage, "src"),
 	);
-	return getProviderData({
+	return getProviderData("behance", {
 		authorName: authorName || undefined,
 		authorProfileImageUrl,
 	});
@@ -130,7 +130,7 @@ export async function enrichBehance(
 	return {
 		...metadata,
 		title: metadata.title === "behance.net" ? fallbackTitle : metadata.title,
-		providerData: getProviderData({
+		providerData: getProviderData("behance", {
 			...followerData,
 			recentProjectThumbnailUrls:
 				recentProjectThumbnailUrls.length > 0

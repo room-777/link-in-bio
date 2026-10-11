@@ -59,7 +59,7 @@ export async function enrichChzzk(
 		return {
 			title: asString(channel.channelName),
 			imageUrl: channelImageUrl,
-			providerData: getProviderData({
+			providerData: getProviderData("chzzk", {
 				channelId: asString(channel.channelId) ?? channelId,
 				followerCount: asNumber(channel.followerCount),
 				verifiedMark:
@@ -84,7 +84,7 @@ export async function enrichChzzk(
 			title: asString(channel.channelName),
 			description: asString(channel.channelDescription),
 			imageUrl: channelImageUrl,
-			providerData: getProviderData({
+			providerData: getProviderData("chzzk", {
 				channelId: asString(channel.channelId) ?? channelId,
 				followerCount: asNumber(channel.followerCount),
 				verifiedMark:
@@ -101,7 +101,7 @@ export async function enrichChzzk(
 		title: asString(live.liveTitle) ?? asString(live.channelName),
 		description: asString(live.liveCategoryValue),
 		imageUrl: liveThumbnailUrl,
-		providerData: getProviderData({
+		providerData: getProviderData("chzzk", {
 			channelId,
 			followerCount: asNumber(live.followerCount),
 			isLive: true,

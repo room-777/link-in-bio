@@ -8,6 +8,7 @@ import { enrichInstagram } from "./instagram";
 import { enrichPinterest } from "./pinterest";
 import { enrichProductHunt } from "./product-hunt";
 import { enrichSoop } from "./soop";
+import { enrichSpotify } from "./spotify";
 import { enrichThreads } from "./threads";
 import { enrichTikTok } from "./tiktok";
 import { enrichTwitch } from "./twitch";
@@ -27,6 +28,7 @@ const providerEnrichers: Partial<Record<LinkProviderId, LinkProviderEnricher>> =
 		discord: enrichDiscord,
 		chzzk: enrichChzzk,
 		soop: enrichSoop,
+		spotify: enrichSpotify,
 		twitch: enrichTwitch,
 		"product-hunt": enrichProductHunt,
 		pinterest: enrichPinterest,

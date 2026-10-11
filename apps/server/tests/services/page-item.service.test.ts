@@ -229,15 +229,18 @@ describe("page item service", () => {
 							imagePlaceholderDataUrl: "data:image/jpeg;base64,AA==",
 							metadata: {
 								title: "Grabbin",
-								providerData: normalizeProviderData({
-									subscriberCount: 1200,
-									recentVideoThumbnailUrls: [
-										"https://cdn.example.com/video-1.png",
-										"https://cdn.example.com/video-2.png",
-										"https://cdn.example.com/video-3.png",
-										"https://cdn.example.com/video-4.png",
-									],
-								}),
+								providerData: normalizeProviderData(
+									{
+										subscriberCount: 1200,
+										recentVideoThumbnailUrls: [
+											"https://cdn.example.com/video-1.png",
+											"https://cdn.example.com/video-2.png",
+											"https://cdn.example.com/video-3.png",
+											"https://cdn.example.com/video-4.png",
+										],
+									},
+									"youtube",
+								),
 							},
 						},
 						style: {},
@@ -256,10 +259,9 @@ describe("page item service", () => {
 			"data:image/jpeg;base64,AA==",
 		);
 		assert.equal(link.data.metadata?.provider, "youtube");
-		assert.equal(link.data.metadata?.providerData?.followerCount, null);
-		assert.deepEqual(
-			Object.keys(link.data.metadata?.providerData ?? {}).sort(),
-			Object.keys(normalizeProviderData({})).sort(),
+		assert.equal(
+			link.data.metadata?.providerData?.youtube?.subscriberCount,
+			1200,
 		);
 		assert.deepEqual(link.data.metadata?.presentation, {
 			provider: "youtube",

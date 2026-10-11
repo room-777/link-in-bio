@@ -1,4 +1,8 @@
-import type { PageItemLinkMetadata } from "@grabbin/api";
+import {
+	normalizeProviderData,
+	type PageItemLinkMetadata,
+	type ProviderDataProvider,
+} from "@grabbin/api";
 import topUserAgents from "top-user-agents";
 import uniqueRandomArray from "unique-random-array";
 import type { LinkProviderContext } from "./types";
@@ -120,12 +124,18 @@ export function asNumber(value: unknown) {
 	return Number.isFinite(number) ? number : undefined;
 }
 
-export function getProviderData(values: Record<string, unknown>) {
+export function getProviderData(
+	provider: ProviderDataProvider,
+	values: Record<string, unknown>,
+) {
 	const defined = Object.entries(values).filter(
-		([, value]) => value !== undefined,
+		([, value]) => value !== undefined && value !== null,
 	);
 	return defined.length
-		? (Object.fromEntries(defined) as PageItemLinkMetadata["providerData"])
+		? normalizeProviderData(
+				{ [provider]: Object.fromEntries(defined) },
+				provider,
+			)
 		: undefined;
 }
 

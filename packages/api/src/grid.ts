@@ -193,78 +193,283 @@ export const pageItemCalendlyDataSchema = v.object({
 	),
 });
 
-export const providerDataSchema = v.object({
-	followerCount: v.optional(v.nullable(v.number()), null),
-	followerCountLabel: v.optional(v.nullable(v.string()), null),
-	followerCountApproximate: v.optional(v.nullable(v.boolean()), null),
-	followingCount: v.optional(v.nullable(v.number()), null),
-	followingCountLabel: v.optional(v.nullable(v.string()), null),
-	followingCountApproximate: v.optional(v.nullable(v.boolean()), null),
-	mediaCount: v.optional(v.nullable(v.number()), null),
-	subscriberCount: v.optional(v.nullable(v.number()), null),
-	viewCount: v.optional(v.nullable(v.number()), null),
-	likeCount: v.optional(v.nullable(v.number()), null),
-	likeCountLabel: v.optional(v.nullable(v.string()), null),
-	likeCountApproximate: v.optional(v.nullable(v.boolean()), null),
-	commentCount: v.optional(v.nullable(v.number()), null),
-	talkingAboutCount: v.optional(v.nullable(v.number()), null),
-	favoriteCount: v.optional(v.nullable(v.number()), null),
-	upvoteCount: v.optional(v.nullable(v.number()), null),
-	followers: v.optional(v.nullable(v.number()), null),
-	memberCount: v.optional(v.nullable(v.number()), null),
-	onlineMemberCount: v.optional(v.nullable(v.number()), null),
-	liveViewerCount: v.optional(v.nullable(v.number()), null),
-	verifiedMark: v.optional(v.nullable(v.boolean()), null),
-	isLive: v.optional(v.nullable(v.boolean()), null),
-	channelId: v.optional(v.nullable(v.string()), null),
-	guildId: v.optional(v.nullable(v.string()), null),
-	inviteCode: v.optional(v.nullable(v.string()), null),
-	liveId: v.optional(v.nullable(v.string()), null),
-	githubUsername: v.optional(v.nullable(v.string()), null),
-	authorName: v.optional(v.nullable(v.string()), null),
-	authorProfileUrl: v.optional(v.nullable(v.string()), null),
-	authorProfileImageUrl: v.optional(v.nullable(httpsUrlSchema), null),
-	ownerName: v.optional(v.nullable(v.string()), null),
-	ownerProfileImageUrl: v.optional(v.nullable(httpsUrlSchema), null),
-	profileImageUrl: v.optional(v.nullable(httpsUrlSchema), null),
-	channelImageUrl: v.optional(v.nullable(httpsUrlSchema), null),
-	liveThumbnailUrl: v.optional(v.nullable(httpsUrlSchema), null),
-	recentPostThumbnailUrls: v.optional(
-		v.nullable(v.array(httpsUrlSchema)),
-		null,
-	),
-	recentVideoThumbnailUrls: v.optional(
-		v.nullable(v.array(httpsUrlSchema)),
-		null,
-	),
-	recentProjectThumbnailUrls: v.optional(
-		v.nullable(v.array(httpsUrlSchema)),
-		null,
-	),
-	recentShotThumbnailUrls: v.optional(
-		v.nullable(v.array(httpsUrlSchema)),
-		null,
-	),
-	recentBoardThumbnailUrls: v.optional(
-		v.nullable(v.array(httpsUrlSchema)),
-		null,
-	),
-	githubContributionGraph: v.optional(v.nullable(v.string()), null),
+const followerFields = {
+	followerCount: v.optional(v.number()),
+	followerCountLabel: v.optional(v.string()),
+	followerCountApproximate: v.optional(v.boolean()),
+};
+const followingFields = {
+	followingCount: v.optional(v.number()),
+	followingCountLabel: v.optional(v.string()),
+	followingCountApproximate: v.optional(v.boolean()),
+};
+const creatorFields = {
+	authorName: v.optional(v.string()),
+	authorProfileUrl: v.optional(v.string()),
+	authorProfileImageUrl: v.optional(httpsUrlSchema),
+};
+const tweetAuthorImageUrlSchema = v.union([
+	httpsUrlSchema,
+	v.pipe(v.string(), v.regex(/^\/images\/[a-z0-9/_-]+\.(?:png|jpe?g|webp)$/i)),
+]);
+
+const spotifyTrackDataSchema = v.object({
+	artist: v.string(),
+	duration: v.optional(v.number()),
+	name: v.string(),
+	previewUrl: v.optional(httpsUrlSchema),
+	uri: v.string(),
 });
 
-export function normalizeProviderData(value: unknown) {
-	return v.parse(providerDataSchema, value ?? {});
+const spotifyProviderDataSchema = v.object({
+	type: v.optional(
+		v.picklist(["album", "artist", "episode", "playlist", "track"]),
+	),
+	date: v.optional(v.string()),
+	track: v.optional(v.string()),
+	artist: v.optional(v.string()),
+	audio: v.optional(httpsUrlSchema),
+	link: v.optional(httpsUrlSchema),
+	embed: v.optional(httpsUrlSchema),
+	tracks: v.optional(v.pipe(v.array(spotifyTrackDataSchema), v.maxLength(100))),
+});
+
+export const providerDataSchema = v.object({
+	x: v.optional(
+		v.object({
+			...followerFields,
+			...followingFields,
+			mediaCount: v.optional(v.number()),
+			verifiedMark: v.optional(v.boolean()),
+		}),
+	),
+	instagram: v.optional(
+		v.object({
+			...followerFields,
+			...followingFields,
+			mediaCount: v.optional(v.number()),
+			profileImageUrl: v.optional(httpsUrlSchema),
+			recentPostThumbnailUrls: v.optional(v.array(httpsUrlSchema)),
+		}),
+	),
+	threads: v.optional(v.object({ ...followerFields })),
+	tiktok: v.optional(
+		v.object({
+			...followerFields,
+			...followingFields,
+			likeCount: v.optional(v.number()),
+			profileImageUrl: v.optional(httpsUrlSchema),
+		}),
+	),
+	facebook: v.optional(
+		v.object({ ...followerFields, talkingAboutCount: v.optional(v.number()) }),
+	),
+	linkedin: v.optional(v.object({ ...followerFields })),
+	"rss-feed": v.optional(v.object({ ...followerFields })),
+	tweet: v.optional(
+		v.object({
+			...creatorFields,
+			authorProfileImageUrl: v.optional(tweetAuthorImageUrlSchema),
+		}),
+	),
+	github: v.optional(
+		v.object({
+			followers: v.optional(v.number()),
+			githubUsername: v.optional(v.string()),
+			githubContributionGraph: v.optional(v.string()),
+		}),
+	),
+	youtube: v.optional(
+		v.object({
+			subscriberCount: v.optional(v.number()),
+			viewCount: v.optional(v.number()),
+			likeCount: v.optional(v.number()),
+			commentCount: v.optional(v.number()),
+			channelImageUrl: v.optional(httpsUrlSchema),
+			recentVideoThumbnailUrls: v.optional(v.array(httpsUrlSchema)),
+		}),
+	),
+	"youtube-music": v.optional(
+		v.object({
+			subscriberCount: v.optional(v.number()),
+			viewCount: v.optional(v.number()),
+			likeCount: v.optional(v.number()),
+			commentCount: v.optional(v.number()),
+			channelImageUrl: v.optional(httpsUrlSchema),
+			recentVideoThumbnailUrls: v.optional(v.array(httpsUrlSchema)),
+		}),
+	),
+	discord: v.optional(
+		v.object({
+			guildId: v.optional(v.string()),
+			inviteCode: v.optional(v.string()),
+			memberCount: v.optional(v.number()),
+			onlineMemberCount: v.optional(v.number()),
+		}),
+	),
+	chzzk: v.optional(
+		v.object({
+			...followerFields,
+			channelId: v.optional(v.string()),
+			isLive: v.optional(v.boolean()),
+			liveId: v.optional(v.string()),
+			liveViewerCount: v.optional(v.number()),
+			liveThumbnailUrl: v.optional(httpsUrlSchema),
+			channelImageUrl: v.optional(httpsUrlSchema),
+			verifiedMark: v.optional(v.boolean()),
+		}),
+	),
+	soop: v.optional(v.object({ favoriteCount: v.optional(v.number()) })),
+	twitch: v.optional(
+		v.object({
+			...followerFields,
+			channelId: v.optional(v.string()),
+			isLive: v.optional(v.boolean()),
+			liveViewerCount: v.optional(v.number()),
+			liveThumbnailUrl: v.optional(httpsUrlSchema),
+			profileImageUrl: v.optional(httpsUrlSchema),
+		}),
+	),
+	"product-hunt": v.optional(v.object({ upvoteCount: v.optional(v.number()) })),
+	pinterest: v.optional(
+		v.object({
+			...followerFields,
+			...creatorFields,
+			ownerName: v.optional(v.string()),
+			ownerProfileImageUrl: v.optional(httpsUrlSchema),
+			profileImageUrl: v.optional(httpsUrlSchema),
+			likeCount: v.optional(v.number()),
+			likeCountLabel: v.optional(v.string()),
+			likeCountApproximate: v.optional(v.boolean()),
+			favoriteCount: v.optional(v.number()),
+			recentBoardThumbnailUrls: v.optional(v.array(httpsUrlSchema)),
+		}),
+	),
+	behance: v.optional(
+		v.object({
+			...followerFields,
+			...creatorFields,
+			recentProjectThumbnailUrls: v.optional(v.array(httpsUrlSchema)),
+		}),
+	),
+	dribbble: v.optional(
+		v.object({
+			...followerFields,
+			...followingFields,
+			...creatorFields,
+			likeCount: v.optional(v.number()),
+			profileImageUrl: v.optional(httpsUrlSchema),
+			recentShotThumbnailUrls: v.optional(v.array(httpsUrlSchema)),
+		}),
+	),
+	spotify: v.optional(spotifyProviderDataSchema),
+});
+
+export type ProviderData = v.InferOutput<typeof providerDataSchema>;
+export type ProviderDataProvider = keyof ProviderData;
+
+const legacyProviderDataSchema = v.object({
+	followerCount: v.optional(v.nullable(v.number())),
+	followerCountLabel: v.optional(v.nullable(v.string())),
+	followerCountApproximate: v.optional(v.nullable(v.boolean())),
+	followingCount: v.optional(v.nullable(v.number())),
+	followingCountLabel: v.optional(v.nullable(v.string())),
+	followingCountApproximate: v.optional(v.nullable(v.boolean())),
+	mediaCount: v.optional(v.nullable(v.number())),
+	subscriberCount: v.optional(v.nullable(v.number())),
+	viewCount: v.optional(v.nullable(v.number())),
+	likeCount: v.optional(v.nullable(v.number())),
+	likeCountLabel: v.optional(v.nullable(v.string())),
+	likeCountApproximate: v.optional(v.nullable(v.boolean())),
+	commentCount: v.optional(v.nullable(v.number())),
+	talkingAboutCount: v.optional(v.nullable(v.number())),
+	favoriteCount: v.optional(v.nullable(v.number())),
+	upvoteCount: v.optional(v.nullable(v.number())),
+	followers: v.optional(v.nullable(v.number())),
+	memberCount: v.optional(v.nullable(v.number())),
+	onlineMemberCount: v.optional(v.nullable(v.number())),
+	liveViewerCount: v.optional(v.nullable(v.number())),
+	verifiedMark: v.optional(v.nullable(v.boolean())),
+	isLive: v.optional(v.nullable(v.boolean())),
+	channelId: v.optional(v.nullable(v.string())),
+	guildId: v.optional(v.nullable(v.string())),
+	inviteCode: v.optional(v.nullable(v.string())),
+	liveId: v.optional(v.nullable(v.string())),
+	githubUsername: v.optional(v.nullable(v.string())),
+	authorName: v.optional(v.nullable(v.string())),
+	authorProfileUrl: v.optional(v.nullable(v.string())),
+	authorProfileImageUrl: v.optional(v.nullable(httpsUrlSchema)),
+	ownerName: v.optional(v.nullable(v.string())),
+	ownerProfileImageUrl: v.optional(v.nullable(httpsUrlSchema)),
+	profileImageUrl: v.optional(v.nullable(httpsUrlSchema)),
+	channelImageUrl: v.optional(v.nullable(httpsUrlSchema)),
+	liveThumbnailUrl: v.optional(v.nullable(httpsUrlSchema)),
+	recentPostThumbnailUrls: v.optional(v.nullable(v.array(httpsUrlSchema))),
+	recentVideoThumbnailUrls: v.optional(v.nullable(v.array(httpsUrlSchema))),
+	recentProjectThumbnailUrls: v.optional(v.nullable(v.array(httpsUrlSchema))),
+	recentShotThumbnailUrls: v.optional(v.nullable(v.array(httpsUrlSchema))),
+	recentBoardThumbnailUrls: v.optional(v.nullable(v.array(httpsUrlSchema))),
+	githubContributionGraph: v.optional(v.nullable(v.string())),
+});
+
+export function normalizeProviderData(
+	value: unknown,
+	provider?: string,
+): ProviderData | undefined {
+	if (typeof value !== "object" || value === null || Array.isArray(value))
+		return undefined;
+	const record = value as Record<string, unknown>;
+	if (Object.keys(providerDataSchema.entries).some((key) => key in record)) {
+		const normalized = v.parse(providerDataSchema, record);
+		return Object.values(normalized).some(
+			(data) => data !== undefined && Object.keys(data).length > 0,
+		)
+			? normalized
+			: undefined;
+	}
+	const legacy = v.parse(legacyProviderDataSchema, record);
+	const data = Object.fromEntries(
+		Object.entries(legacy).filter(
+			([, item]) => item !== null && item !== undefined,
+		),
+	);
+	if (
+		!provider ||
+		!Object.hasOwn(providerDataSchema.entries, provider) ||
+		!Object.keys(data).length
+	)
+		return undefined;
+	return v.parse(providerDataSchema, { [provider]: data });
 }
 
-export const pageItemLinkMetadataSchema = v.object({
+const pageItemLinkMetadataEntries = {
 	title: v.optional(v.string()),
 	description: v.optional(v.string()),
 	faviconUrl: v.optional(faviconUrlSchema),
 	imageUrl: v.optional(httpsUrlSchema),
 	provider: v.optional(v.string()),
 	rss: v.optional(rssFeedResponseSchema),
-	providerData: v.optional(providerDataSchema),
-});
+	providerData: v.optional(v.unknown()),
+};
+
+function normalizeLinkMetadata<
+	T extends { provider?: string; providerData?: unknown },
+>(metadata: T): Omit<T, "providerData"> & { providerData?: ProviderData } {
+	const { providerData: rawProviderData, ...rest } = metadata;
+	const providerData = normalizeProviderData(
+		rawProviderData,
+		metadata.provider,
+	);
+	return {
+		...rest,
+		...(providerData ? { providerData } : {}),
+	};
+}
+
+export const pageItemLinkMetadataSchema = v.pipe(
+	v.object(pageItemLinkMetadataEntries),
+	v.transform(normalizeLinkMetadata),
+);
 
 export type PageItemLinkMetadata = v.InferOutput<
 	typeof pageItemLinkMetadataSchema
@@ -297,10 +502,13 @@ export type PageItemLinkPresentation = v.InferOutput<
 	typeof pageItemLinkPresentationSchema
 >;
 
-export const pageItemLinkResponseMetadataSchema = v.object({
-	...pageItemLinkMetadataSchema.entries,
-	presentation: v.optional(pageItemLinkPresentationSchema),
-});
+export const pageItemLinkResponseMetadataSchema = v.pipe(
+	v.object({
+		...pageItemLinkMetadataEntries,
+		presentation: v.optional(pageItemLinkPresentationSchema),
+	}),
+	v.transform(normalizeLinkMetadata),
+);
 
 export const pageItemLinkResponseDataSchema = v.object({
 	url: pageItemLinkUrlSchema,

@@ -38,6 +38,8 @@ export async function enrichProductHunt(
 		title: asString(post.name),
 		description: asString(post.tagline),
 		imageUrl: getHttpsUrl(asRecord(post.thumbnail)?.url, url),
-		providerData: getProviderData({ upvoteCount: asNumber(post.votesCount) }),
+		providerData: getProviderData("product-hunt", {
+			upvoteCount: asNumber(post.votesCount),
+		}),
 	};
 }

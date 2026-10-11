@@ -151,7 +151,7 @@ export async function enrichDribbble(
 		const recentShotThumbnailUrls = getRecentShots(document.html);
 		return {
 			...metadata,
-			providerData: getProviderData({
+			providerData: getProviderData("dribbble", {
 				...getCountData(text, "followers", "followerCount"),
 				...getCountData(text, "following", "followingCount"),
 				...getCountData(text, "likes", "likeCount"),
@@ -176,7 +176,7 @@ export async function enrichDribbble(
 	return {
 		...metadata,
 		...(title ? { title } : {}),
-		providerData: getProviderData({
+		providerData: getProviderData("dribbble", {
 			authorName: creator?.name,
 			authorProfileUrl: creator?.profileUrl,
 			authorProfileImageUrl: creatorDocument

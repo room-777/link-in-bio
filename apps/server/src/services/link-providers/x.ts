@@ -30,6 +30,8 @@ export async function enrichX(
 			: undefined;
 	return {
 		...metadata,
-		...(followerData ? { providerData: getProviderData(followerData) } : {}),
+		...(followerData
+			? { providerData: getProviderData("x", followerData) }
+			: {}),
 	};
 }

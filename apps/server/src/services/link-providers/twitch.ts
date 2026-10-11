@@ -65,7 +65,7 @@ export async function enrichTwitch(
 		title: asString(user.display_name) ?? login,
 		description: asString(user.description),
 		imageUrl: profileImageUrl,
-		providerData: getProviderData({
+		providerData: getProviderData("twitch", {
 			channelId: userId,
 			profileImageUrl,
 			followerCount: asNumber(followersPayload?.total),
