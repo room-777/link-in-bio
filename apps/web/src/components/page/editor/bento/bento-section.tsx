@@ -284,12 +284,14 @@ export default function BentoSection({
 					className={[
 						"bento-layout max-w-full overflow-visible",
 						mode === "edit" ? "is-edit-mode" : null,
+						draggingItem?.type === "section" ? "is-dragging-section" : null,
 					]
 						.filter(Boolean)
 						.join(" ")}
 					style={
 						{
 							width: bentoWidth,
+							"--bento-section-offset": `${bentoGridMetrics[breakpoint].margin[1] / 2}px`,
 							"--bento-placeholder-radius": placeholderRadius
 								? `${placeholderRadius}px`
 								: undefined,
