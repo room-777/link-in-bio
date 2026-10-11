@@ -5,6 +5,7 @@ export const reservedPageHandles = [
 	"api",
 	"auth",
 	"billing",
+	"changelog",
 	"check",
 	"create",
 	"demo",

@@ -164,6 +164,35 @@ describe("page service", () => {
 	});
 
 	/**
+	 * Case ID: PAGE-SERVICE-015
+	 * Given: a reserved handle is submitted.
+	 * When: createPage checks availability.
+	 * Then: it rejects before querying the database.
+	 * Evidence: PageServiceError.code=HANDLE_RESERVED and the query throws if called.
+	 * Result: Pass | Fail | Blocked | Not Run
+	 */
+	it("PAGE-SERVICE-015 rejects reserved handles before the database query", async () => {
+		const db = {
+			query: {
+				pages: {
+					findFirst: async () => {
+						throw new Error("database query should not run");
+					},
+				},
+			},
+		} as unknown as DatabaseClient;
+
+		await assert.rejects(
+			createPage({ db, userId: "user-1", rawHandle: "changelog" }),
+			(error: unknown) =>
+				typeof error === "object" &&
+				error !== null &&
+				"code" in error &&
+				error.code === "HANDLE_RESERVED",
+		);
+	});
+
+	/**
 	 * Case ID: PAGE-SERVICE-002
 	 * Given: a valid handle already belongs to a page.
 	 * When: createPage checks availability.
