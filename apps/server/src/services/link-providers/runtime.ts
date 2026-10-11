@@ -82,7 +82,7 @@ const SOCIAL_PREVIEW_HOSTS = [
 	"x.com",
 ] as const;
 
-function getDefaultUserAgent(url: URL) {
+export function getDefaultUserAgent(url: URL) {
 	const hostname = url.hostname.replace(/^www\./, "");
 	if (hostname === "instagram.com")
 		return INSTAGRAM_PUBLIC_HEADERS["User-Agent"];

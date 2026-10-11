@@ -221,6 +221,13 @@ const spotifyTrackDataSchema = v.object({
 	uri: v.string(),
 });
 
+const spotifyColorSchema = v.object({
+	alpha: v.pipe(v.number(), v.integer(), v.minValue(0), v.maxValue(255)),
+	red: v.pipe(v.number(), v.integer(), v.minValue(0), v.maxValue(255)),
+	green: v.pipe(v.number(), v.integer(), v.minValue(0), v.maxValue(255)),
+	blue: v.pipe(v.number(), v.integer(), v.minValue(0), v.maxValue(255)),
+});
+
 const spotifyProviderDataSchema = v.object({
 	type: v.optional(
 		v.picklist(["album", "artist", "episode", "playlist", "track"]),
@@ -232,6 +239,16 @@ const spotifyProviderDataSchema = v.object({
 	link: v.optional(httpsUrlSchema),
 	embed: v.optional(httpsUrlSchema),
 	tracks: v.optional(v.pipe(v.array(spotifyTrackDataSchema), v.maxLength(100))),
+	primaryColor: v.optional(v.pipe(v.string(), v.regex(/^#[\da-f]{6}$/i))),
+	visualIdentity: v.optional(
+		v.object({
+			backgroundBase: v.optional(spotifyColorSchema),
+			backgroundTintedBase: v.optional(spotifyColorSchema),
+			textBase: v.optional(spotifyColorSchema),
+			textBrightAccent: v.optional(spotifyColorSchema),
+			textSubdued: v.optional(spotifyColorSchema),
+		}),
+	),
 });
 
 export const providerDataSchema = v.object({

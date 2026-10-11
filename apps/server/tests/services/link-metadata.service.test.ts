@@ -42,11 +42,20 @@ function createDatabase(url = "https://example.com") {
 }
 
 describe("link metadata service", () => {
+	/**
+	 * Case ID: LINK-METADATA-SPOTIFY-001
+	 * Given: Spotify embed metadata is available.
+	 * When: link metadata is enriched.
+	 * Then: spotify-url-info receives a User-Agent from top-user-agents.
+	 * Evidence: captured fetch headers and returned Spotify provider data.
+	 * Result: Pass | Fail | Blocked | Not Run
+	 */
 	it("uses spotify-url-info metadata before generic HTML metadata", async () => {
 		const { db } = createDatabase(
 			"https://open.spotify.com/track/4uLU6hMCjMI75M1A2tKUQC",
 		);
 		const requestedUrls: string[] = [];
+		const userAgents: string[] = [];
 		const entity = {
 			uri: "spotify:track:4uLU6hMCjMI75M1A2tKUQC",
 			name: "Never Gonna Give You Up",
@@ -62,6 +71,11 @@ describe("link metadata service", () => {
 					},
 				],
 			},
+			visualIdentity: {
+				backgroundBase: { alpha: 255, red: 144, green: 0, blue: 129 },
+				backgroundTintedBase: { alpha: 255, red: 88, green: 0, blue: 79 },
+			},
+			attributes: [{ key: "primary_color", value: "#FFFFFF" }],
 		};
 		const html = `<html><body><script type="resource">${btoa(JSON.stringify(entity))}</script></body></html>`;
 		const result = await enrichPageItemMetadata({
@@ -70,8 +84,10 @@ describe("link metadata service", () => {
 			userId: "user-1",
 			itemId: "item-1",
 			url: "https://open.spotify.com/track/4uLU6hMCjMI75M1A2tKUQC",
-			fetch: async (input) => {
+			fetch: async (input, init) => {
 				requestedUrls.push(input.toString());
+				const userAgent = new Headers(init?.headers).get("User-Agent");
+				if (userAgent) userAgents.push(userAgent);
 				return new Response(html, {
 					headers: { "content-type": "text/html" },
 				});
@@ -92,6 +108,17 @@ describe("link metadata service", () => {
 			result.data.metadata?.providerData?.spotify?.track,
 			"Never Gonna Give You Up",
 		);
+		assert.equal(
+			result.data.metadata?.providerData?.spotify?.primaryColor,
+			"#FFFFFF",
+		);
+		assert.deepEqual(
+			result.data.metadata?.providerData?.spotify?.visualIdentity,
+			{
+				backgroundBase: { alpha: 255, red: 144, green: 0, blue: 129 },
+				backgroundTintedBase: { alpha: 255, red: 88, green: 0, blue: 79 },
+			},
+		);
 		assert.deepEqual(result.data.metadata?.providerData?.spotify?.tracks, [
 			{
 				artist: "Rick Astley",
@@ -102,7 +129,18 @@ describe("link metadata service", () => {
 			},
 		]);
 		assert.equal(requestedUrls.length, 1);
-		assert.equal(new URL(requestedUrls[0] ?? "").hostname, "embed.spotify.com");
+		assert.ok(
+			requestedUrls.every(
+				(requestedUrl) =>
+					new URL(requestedUrl).hostname === "embed.spotify.com",
+			),
+		);
+		assert.ok(
+			userAgents.length > 0 &&
+				userAgents.every((userAgent) =>
+					(LINK_METADATA_USER_AGENTS as readonly string[]).includes(userAgent),
+				),
+		);
 	});
 
 	it("falls back to Spotify HTML when spotify-url-info cannot parse a link", async () => {
