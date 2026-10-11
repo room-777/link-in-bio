@@ -22,7 +22,10 @@ export function createApiCors({
 				c.req.method === "OPTIONS"
 					? c.req.header("Access-Control-Request-Method")
 					: c.req.method;
-			const match = /^\/pages\/([^/]+)\/views\/?$/.exec(c.req.path);
+			const match =
+				/^\/pages\/([^/]+)\/(?:views|items\/[^/]+\/calendly)\/?$/.exec(
+					c.req.path,
+				);
 			if (method !== "GET" || !match?.[1]) return null;
 
 			let url: URL;

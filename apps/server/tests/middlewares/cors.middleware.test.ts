@@ -50,7 +50,15 @@ describe("custom domain API CORS", () => {
 			todayViews: 8,
 			yesterdayViews: 21,
 		});
-		assert.deepEqual(lookups, ["test2.bybu.cc"]);
+		const calendly = await app.request(
+			"/pages/test/items/event-item/calendly?start_time=now&end_time=later",
+			{ headers: { Origin: "https://test2.bybu.cc" } },
+		);
+		assert.equal(
+			calendly.headers.get("Access-Control-Allow-Origin"),
+			"https://test2.bybu.cc",
+		);
+		assert.deepEqual(lookups, ["test2.bybu.cc", "test2.bybu.cc"]);
 	});
 	/** Case ID: DOMAIN-CORS-002
 	 * Given: an active page domain. When: a GET preflight requests tracing headers.
@@ -90,6 +98,7 @@ describe("custom domain API CORS", () => {
 		for (const [path, origin] of [
 			["/pages/test/views", "https://unknown.bybu.cc"],
 			["/pages/other/views", "https://test2.bybu.cc"],
+			["/pages/other/items/event-item/calendly", "https://test2.bybu.cc"],
 			["/pages/test/views", "http://test2.bybu.cc"],
 			["/pages/test/views", "https://test2.bybu.cc:8443"],
 			["/pages/test/views", "https://test2.bybu.cc.evil.example"],
@@ -123,6 +132,7 @@ describe("custom domain API CORS", () => {
 			["/pages/test/views", "POST"],
 			["/pages/test/views", "PATCH"],
 			["/pages/test/views", "OPTIONS"],
+			["/pages/test/items/event-item/calendly", "POST"],
 		] as const) {
 			const response = await app.request(path, {
 				method,
