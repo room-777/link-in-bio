@@ -85,6 +85,13 @@ export default function AdvancedWidgetsDialog({
 	);
 }
 
+function getDrawerBottomOffset() {
+	const viewport = window.visualViewport;
+	return viewport
+		? Math.max(0, window.innerHeight - viewport.offsetTop - viewport.height)
+		: 0;
+}
+
 function AdvancedWidgetsOverlay({
 	isMobile,
 	isPro,
@@ -114,7 +121,10 @@ function AdvancedWidgetsOverlay({
 	const [isTransitioning, setIsTransitioning] = useState(false);
 	const [activePage, setActivePage] = useState("1");
 	const [searchQuery, setSearchQuery] = useState("");
-	const [drawerBottomOffset, setDrawerBottomOffset] = useState(0);
+	const [drawerBottomOffset, setDrawerBottomOffset] = useState(() => {
+		if (!isMobile || typeof window === "undefined") return 0;
+		return getDrawerBottomOffset();
+	});
 	const pageSlideRef = useRef<HTMLDivElement>(null);
 	const selectedWidget = advancedWidgetModules.find(
 		({ id }) => id === widgetId,
@@ -132,15 +142,7 @@ function AdvancedWidgetsOverlay({
 			return;
 		}
 		const updateBottomOffset = () => {
-			const viewport = window.visualViewport;
-			setDrawerBottomOffset(
-				viewport
-					? Math.max(
-							0,
-							window.innerHeight - viewport.offsetTop - viewport.height,
-						)
-					: 0,
-			);
+			setDrawerBottomOffset(getDrawerBottomOffset());
 		};
 		updateBottomOffset();
 		window.addEventListener("resize", updateBottomOffset);
@@ -180,18 +182,8 @@ function AdvancedWidgetsOverlay({
 		}
 	};
 
-	const reset = () => {
-		setWidgetId(null);
-		setIsDetailActivity(false);
-		setIsTransitioning(false);
-		setActivePage("1");
-		setSearchQuery("");
-	};
 	const handleOpenChange = (nextOpen: boolean) => {
-		if (!nextOpen) {
-			reset();
-			onClose();
-		}
+		if (!nextOpen) onClose();
 	};
 	const dialogCloseButton = () =>
 		!isMobile ? (
