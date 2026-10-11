@@ -1,9 +1,12 @@
 "use client";
 
 import { cn } from "@grabbin/ui/lib/utils";
+import { useQuery } from "@tanstack/react-query";
 import { Check, Link2 } from "lucide-react";
 import { useLayoutEffect, useRef, useState } from "react";
-import { type EnrichedTweet, enrichTweet, useTweet } from "react-tweet";
+import { type EnrichedTweet, enrichTweet } from "react-tweet";
+import type { Tweet as TweetResponse } from "react-tweet/api";
+import { tweetQueryOptions } from "@/lib/tweet-query";
 
 const VerifiedBadge = ({ className }: { className?: string }) => (
 	<svg
@@ -472,6 +475,8 @@ interface TweetProps {
 	showDate?: boolean;
 	showLikeButton?: boolean;
 	showCopyLink?: boolean;
+	storedTweet?: TweetResponse;
+	fetchOnMissing?: boolean;
 }
 
 export function Tweet({
@@ -482,8 +487,16 @@ export function Tweet({
 	showDate = true,
 	showLikeButton = true,
 	showCopyLink = true,
+	storedTweet,
+	fetchOnMissing = true,
 }: TweetProps) {
-	const { data: tweet, isLoading, error } = useTweet(id);
+	const shouldFetch = fetchOnMissing && !storedTweet;
+	const {
+		data: fetchedTweet,
+		isLoading,
+		error,
+	} = useQuery({ ...tweetQueryOptions(id), enabled: shouldFetch });
+	const tweet = storedTweet ?? fetchedTweet;
 
 	if (isLoading) {
 		return <TweetSkeleton className={className} isPortrait={isPortrait} />;

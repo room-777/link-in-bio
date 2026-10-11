@@ -2,6 +2,7 @@
 
 import type { PageItemResponse } from "@grabbin/api";
 import type { PresetName } from "@grabbin/bento-layout";
+import type { Tweet as TweetResponse } from "react-tweet/api";
 import { Tweet } from "./card";
 import { getTweetId } from "./tweet-url";
 
@@ -10,11 +11,15 @@ export function TweetWidget({
 	className,
 	preset,
 	author,
+	storedTweet,
+	fetchOnMissing,
 }: {
 	url: string;
 	className?: string;
 	preset?: PresetName;
 	author?: { name?: string; handle?: string; imageUrl?: string };
+	storedTweet?: TweetResponse;
+	fetchOnMissing?: boolean;
 }) {
 	const id = getTweetId(url);
 	if (!id) {
@@ -32,6 +37,8 @@ export function TweetWidget({
 			isPortrait={preset === "portrait"}
 			showCopyLink={false}
 			author={author}
+			storedTweet={storedTweet}
+			fetchOnMissing={fetchOnMissing}
 		/>
 	);
 }
@@ -48,6 +55,14 @@ export function TweetItem({
 	const authorData =
 		item.data.metadata?.provider === "tweet"
 			? item.data.metadata.providerData?.tweet
+			: undefined;
+	const response = authorData?.response;
+	const storedTweet =
+		typeof response === "object" &&
+		response !== null &&
+		"id_str" in response &&
+		response.id_str === getTweetId(item.data.url)
+			? (response as TweetResponse)
 			: undefined;
 	const authorHandle = authorData?.authorProfileUrl?.match(
 		/(?:x|twitter)\.com\/([^/?#]+)/i,
@@ -67,6 +82,8 @@ export function TweetItem({
 					handle: authorHandle,
 					imageUrl: authorData?.authorProfileImageUrl ?? undefined,
 				}}
+				storedTweet={storedTweet}
+				fetchOnMissing={false}
 				className="size-full min-h-0 max-w-none"
 			/>
 		</div>
