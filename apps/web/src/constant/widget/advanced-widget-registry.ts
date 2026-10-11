@@ -5,12 +5,15 @@ import CalendlyWidgetDetails from "@/components/page/editor/advanced-widgets/cal
 import { CalendlyAdvancedWidgetPreview } from "@/components/page/editor/advanced-widgets/calendly/preview";
 import RssFeedWidgetDetails from "@/components/page/editor/advanced-widgets/rss-feed/details";
 import { RssAdvancedWidgetPreview } from "@/components/page/editor/advanced-widgets/rss-feed/preview";
+import SpotifyWidgetDetails from "@/components/page/editor/advanced-widgets/spotify/details";
+import { SpotifyAdvancedWidgetPreview } from "@/components/page/editor/advanced-widgets/spotify/preview";
 import TweetWidgetDetails from "@/components/page/editor/advanced-widgets/tweet/details";
 import { TweetAdvancedWidgetPreview } from "@/components/page/editor/advanced-widgets/tweet/preview";
 
 type AdvancedWidgetDetailsProps = {
 	onAdd: (event: CalendlyEventType) => Promise<void>;
 	onRssFeedAdd: (url: string) => Promise<boolean>;
+	onSpotifyAdd: (url: string) => Promise<boolean>;
 	onTweetAdd: (url: string) => Promise<boolean>;
 	onTweetInputChange?: (value: string) => void;
 	badges: AdvancedWidgetModule["badges"];
@@ -46,7 +49,7 @@ const advancedWidgetDetails: Record<
 > = {
 	calendly: CalendlyWidgetDetails,
 	"rss-feed": RssFeedWidgetDetails,
-	spotify: EmptyActivity,
+	spotify: SpotifyWidgetDetails,
 	soundcloud: EmptyActivity,
 	"apple-music": EmptyActivity,
 	signature: EmptyActivity,
@@ -59,7 +62,7 @@ const advancedWidgetPreviews: Record<
 > = {
 	calendly: CalendlyAdvancedWidgetPreview,
 	"rss-feed": RssAdvancedWidgetPreview,
-	spotify: EmptyActivity,
+	spotify: SpotifyAdvancedWidgetPreview,
 	soundcloud: EmptyActivity,
 	"apple-music": EmptyActivity,
 	signature: EmptyActivity,

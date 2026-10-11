@@ -8,6 +8,7 @@ import type { ReactNode } from "react";
 import type { BentoCommand, BentoItem } from "@/lib/bento/bento-types";
 import { CalendlyItem } from "../advanced-widgets/calendly/item";
 import { RssFeedItem } from "../advanced-widgets/rss-feed/item";
+import { SpotifyItem } from "../advanced-widgets/spotify/item";
 import { TweetItem } from "../advanced-widgets/tweet/widget";
 import { LinkItem } from "./bento-link";
 import { MediaItem } from "./items/media-item";
@@ -83,6 +84,9 @@ function renderLink({ item, preset, options }: Parameters<ItemRenderer>[0]) {
 	}
 	if (item.data.metadata?.provider === "tweet") {
 		return <TweetItem item={item} mode={options.mode} preset={preset} />;
+	}
+	if (item.data.metadata?.provider === "spotify") {
+		return <SpotifyItem item={item} />;
 	}
 	return (
 		<LinkItem

@@ -34,10 +34,12 @@ import { AdvancedWidgetIcon } from "./advanced-widget-visuals";
 export default function AdvancedWidgetsDialog({
 	onCalendlyAdd,
 	onRssFeedAdd,
+	onSpotifyAdd,
 	onTweetAdd,
 }: {
 	onCalendlyAdd: (event: CalendlyEventType) => Promise<void>;
 	onRssFeedAdd: (url: string) => Promise<boolean>;
+	onSpotifyAdd: (url: string) => Promise<boolean>;
 	onTweetAdd: (url: string) => Promise<boolean>;
 }) {
 	const isMobile = useIsMobile();
@@ -61,6 +63,7 @@ export default function AdvancedWidgetsDialog({
 						onExit={unmount}
 						onCalendlyAdd={onCalendlyAdd}
 						onRssFeedAdd={onRssFeedAdd}
+						onSpotifyAdd={onSpotifyAdd}
 						onTweetAdd={onTweetAdd}
 					/>
 				))
@@ -79,6 +82,7 @@ function AdvancedWidgetsOverlay({
 	onExit,
 	onCalendlyAdd,
 	onRssFeedAdd,
+	onSpotifyAdd,
 	onTweetAdd,
 }: {
 	isMobile: boolean;
@@ -88,6 +92,7 @@ function AdvancedWidgetsOverlay({
 	onExit: () => void;
 	onCalendlyAdd: (event: CalendlyEventType) => Promise<void>;
 	onRssFeedAdd: (url: string) => Promise<boolean>;
+	onSpotifyAdd: (url: string) => Promise<boolean>;
 	onTweetAdd: (url: string) => Promise<boolean>;
 }) {
 	const reduceMotion = useReducedMotion() ?? false;
@@ -301,6 +306,11 @@ function AdvancedWidgetsOverlay({
 								}}
 								onRssFeedAdd={async (url) => {
 									const added = await onRssFeedAdd(url);
+									if (added) handleOpenChange(false);
+									return added;
+								}}
+								onSpotifyAdd={async (url) => {
+									const added = await onSpotifyAdd(url);
 									if (added) handleOpenChange(false);
 									return added;
 								}}

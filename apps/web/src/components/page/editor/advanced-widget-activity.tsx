@@ -6,11 +6,13 @@ export default function AdvancedWidgetActivity({
 	widgetId,
 	onCalendlyAdd,
 	onRssFeedAdd,
+	onSpotifyAdd,
 	onTweetAdd,
 }: {
 	widgetId: string;
 	onCalendlyAdd: (event: CalendlyEventType) => Promise<void>;
 	onRssFeedAdd: (url: string) => Promise<boolean>;
+	onSpotifyAdd: (url: string) => Promise<boolean>;
 	onTweetAdd: (url: string) => Promise<boolean>;
 }) {
 	const [tweetInput, setTweetInput] = useState("");
@@ -27,6 +29,7 @@ export default function AdvancedWidgetActivity({
 				<Details
 					onAdd={onCalendlyAdd}
 					onRssFeedAdd={onRssFeedAdd}
+					onSpotifyAdd={onSpotifyAdd}
 					onTweetAdd={onTweetAdd}
 					onTweetInputChange={widgetId === "tweet" ? setTweetInput : undefined}
 					badges={widget.badges}

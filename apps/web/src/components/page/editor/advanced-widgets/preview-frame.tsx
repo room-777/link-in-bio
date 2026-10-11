@@ -5,6 +5,7 @@ import {
 	bentoGridMetrics,
 	getBentoWidth,
 } from "@grabbin/bento-layout";
+import { motion, useReducedMotion } from "motion/react";
 import type { ReactNode } from "react";
 import { useEffect, useRef, useState } from "react";
 import type { BentoItem } from "@/lib/bento/bento-types";
@@ -26,11 +27,18 @@ function getLayoutSize(item: BentoItem) {
 export function AdvancedWidgetPreviewFrame({
 	item,
 	children,
+	controls,
+	transitionPhase,
+	onTransitionComplete,
 }: {
 	item: BentoItem;
 	children: ReactNode;
+	controls?: ReactNode;
+	transitionPhase?: "exit" | "enter";
+	onTransitionComplete?: (phase: "exit" | "enter") => void;
 }) {
 	const previewAreaRef = useRef<HTMLDivElement>(null);
+	const reduceMotion = useReducedMotion() ?? false;
 	const layoutSize = getLayoutSize(item);
 	const [previewSize, setPreviewSize] = useState(layoutSize);
 
@@ -52,11 +60,22 @@ export function AdvancedWidgetPreviewFrame({
 		resizeObserver.observe(previewArea);
 		return () => resizeObserver.disconnect();
 	}, [layoutSize.height, layoutSize.width]);
+	const previewCard = (
+		<BentoItemShell
+			item={item}
+			breakpoint="wide"
+			mode="view"
+			autoFocus={false}
+			disableCardLink
+		>
+			{children}
+		</BentoItemShell>
+	);
 
 	return (
 		<div
 			ref={previewAreaRef}
-			className="flex h-[55%] min-h-0 shrink-0 justify-center rounded-2xl bg-secondary/60 py-6 outline-depth"
+			className="relative flex h-[55%] min-h-0 shrink-0 justify-center rounded-2xl bg-secondary/60 py-6 outline-depth"
 		>
 			<div
 				aria-hidden="true"
@@ -64,16 +83,23 @@ export function AdvancedWidgetPreviewFrame({
 				className="self-center"
 				style={{ width: previewSize.width, height: previewSize.height }}
 			>
-				<BentoItemShell
-					item={item}
-					breakpoint="wide"
-					mode="view"
-					autoFocus={false}
-					disableCardLink
-				>
-					{children}
-				</BentoItemShell>
+				{transitionPhase ? (
+					<motion.div
+						initial={{ opacity: 1 }}
+						animate={{ opacity: transitionPhase === "exit" ? 0 : 1 }}
+						transition={{ duration: reduceMotion ? 0 : 0.18 }}
+						onAnimationComplete={() => onTransitionComplete?.(transitionPhase)}
+						className="size-full"
+					>
+						{previewCard}
+					</motion.div>
+				) : (
+					previewCard
+				)}
 			</div>
+			{controls ? (
+				<div className="absolute right-3 bottom-3 z-10">{controls}</div>
+			) : null}
 		</div>
 	);
 }

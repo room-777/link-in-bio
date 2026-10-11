@@ -140,6 +140,10 @@ export default function AddWidgetButton({
 			<AdvancedWidgetsDialog
 				onCalendlyAdd={onCalendlyAdd}
 				onRssFeedAdd={onRssFeedAdd}
+				onSpotifyAdd={async (url) => {
+					onItemAdd("link", url);
+					return true;
+				}}
 				onTweetAdd={onTweetAdd}
 			/>
 		</div>
