@@ -1,4 +1,4 @@
-import type { CalendlyEventType } from "@grabbin/api";
+import type { CalendlyEventType, RssFeedResponse } from "@grabbin/api";
 import { providerDefinitions, providerIconUrl } from "@grabbin/page-link";
 import { type ComponentType, createElement } from "react";
 import CalendlyWidgetDetails from "@/components/page/editor/advanced-widgets/calendly/details";
@@ -15,12 +15,13 @@ type AdvancedWidgetDetailsProps = {
 	onRssFeedAdd: (url: string) => Promise<boolean>;
 	onSpotifyAdd: (url: string) => Promise<boolean>;
 	onTweetAdd: (url: string) => Promise<boolean>;
-	onTweetInputChange?: (value: string) => void;
+	onInputChange?: (value: string) => void;
 	badges: AdvancedWidgetModule["badges"];
 };
 
 type AdvancedWidgetPreviewProps = {
-	tweetInput?: string;
+	inputValue?: string;
+	rssFeed?: RssFeedResponse;
 };
 
 export type AdvancedWidgetModule = {

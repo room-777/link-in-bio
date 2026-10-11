@@ -1,6 +1,6 @@
 "use client";
 
-import type { CalendlyEventType } from "@grabbin/api";
+import type { CalendlyEventType, RssFeedResponse } from "@grabbin/api";
 import { Button } from "@grabbin/ui/components/button";
 import {
 	Dialog,
@@ -34,11 +34,13 @@ import { AdvancedWidgetIcon } from "./advanced-widget-visuals";
 export default function AdvancedWidgetsDialog({
 	onCalendlyAdd,
 	onRssFeedAdd,
+	onRssFeedPreview,
 	onSpotifyAdd,
 	onTweetAdd,
 }: {
 	onCalendlyAdd: (event: CalendlyEventType) => Promise<void>;
 	onRssFeedAdd: (url: string) => Promise<boolean>;
+	onRssFeedPreview: (url: string) => Promise<RssFeedResponse>;
 	onSpotifyAdd: (url: string) => Promise<boolean>;
 	onTweetAdd: (url: string) => Promise<boolean>;
 }) {
@@ -63,6 +65,7 @@ export default function AdvancedWidgetsDialog({
 						onExit={unmount}
 						onCalendlyAdd={onCalendlyAdd}
 						onRssFeedAdd={onRssFeedAdd}
+						onRssFeedPreview={onRssFeedPreview}
 						onSpotifyAdd={onSpotifyAdd}
 						onTweetAdd={onTweetAdd}
 					/>
@@ -82,6 +85,7 @@ function AdvancedWidgetsOverlay({
 	onExit,
 	onCalendlyAdd,
 	onRssFeedAdd,
+	onRssFeedPreview,
 	onSpotifyAdd,
 	onTweetAdd,
 }: {
@@ -92,6 +96,7 @@ function AdvancedWidgetsOverlay({
 	onExit: () => void;
 	onCalendlyAdd: (event: CalendlyEventType) => Promise<void>;
 	onRssFeedAdd: (url: string) => Promise<boolean>;
+	onRssFeedPreview: (url: string) => Promise<RssFeedResponse>;
 	onSpotifyAdd: (url: string) => Promise<boolean>;
 	onTweetAdd: (url: string) => Promise<boolean>;
 }) {
@@ -309,6 +314,7 @@ function AdvancedWidgetsOverlay({
 									if (added) handleOpenChange(false);
 									return added;
 								}}
+								onRssFeedPreview={onRssFeedPreview}
 								onSpotifyAdd={async (url) => {
 									const added = await onSpotifyAdd(url);
 									if (added) handleOpenChange(false);

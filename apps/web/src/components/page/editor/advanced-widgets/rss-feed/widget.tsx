@@ -2,7 +2,7 @@
 
 import type { RssFeedResponse } from "@grabbin/api";
 import type { PresetName } from "@grabbin/bento-layout";
-import { providerIconUrl, resolveProviderIconUrl } from "@grabbin/page-link";
+import { providerIconUrl } from "@grabbin/page-link";
 import { Input } from "@grabbin/ui/components/input";
 import {
 	Item,
@@ -13,6 +13,7 @@ import {
 } from "@grabbin/ui/components/item";
 import { ScrollArea } from "@grabbin/ui/components/scroll-area";
 import { Separator } from "@grabbin/ui/components/separator";
+import { Skeleton } from "@grabbin/ui/components/skeleton";
 import { Textarea } from "@grabbin/ui/components/textarea";
 import { useEffect, useState } from "react";
 import { useBentoLineHeight } from "@/hooks/use-bento-line-height";
@@ -20,23 +21,47 @@ import { useBentoLineHeight } from "@/hooks/use-bento-line-height";
 function RssArticle({
 	item,
 	isLast,
+	isLoading = false,
 }: {
-	item: RssFeedResponse["items"][number];
+	item?: RssFeedResponse["items"][number];
 	isLast: boolean;
+	isLoading?: boolean;
 }) {
 	return (
 		<li>
 			<Item
 				variant="default"
 				size="sm"
-				render={<a href={item.url} target="_blank" rel="noreferrer" />}
+				render={
+					item
+						? (props) => (
+								<a
+									{...props}
+									href={item.url}
+									target="_blank"
+									rel="noreferrer"
+									aria-label={item.title}
+								/>
+							)
+						: undefined
+				}
 				className="min-w-0 cursor-pointer! flex-nowrap justify-start whitespace-normal px-2 py-2 text-left"
 			>
 				<ItemContent className="min-w-0 gap-1">
-					<ItemTitle className="line-clamp-2 max-w-full whitespace-normal font-normal">
-						{item.title}
+					<ItemTitle
+						className={`line-clamp-2 max-w-full whitespace-normal font-normal ${isLoading ? "w-full" : ""}`}
+					>
+						{isLoading ? (
+							<Skeleton aria-hidden="true" className="h-5 w-3/4 rounded-sm" />
+						) : (
+							item?.title
+						)}
 					</ItemTitle>
-					{item.publishedAt ? (
+					{isLoading ? (
+						<ItemDescription className="text-xs">
+							<Skeleton aria-hidden="true" className="h-4 w-1/3 rounded-sm" />
+						</ItemDescription>
+					) : item?.publishedAt ? (
 						<ItemDescription className="text-xs">
 							<time dateTime={item.publishedAt}>
 								{new Intl.DateTimeFormat("en-US", {
@@ -62,6 +87,7 @@ export function RssFeedWidget({
 	preset,
 	mode,
 	onTitleCommit,
+	isLoading = false,
 }: {
 	url: string;
 	feed?: RssFeedResponse;
@@ -69,6 +95,7 @@ export function RssFeedWidget({
 	preset: PresetName;
 	mode: "view" | "edit";
 	onTitleCommit?: (title: string) => void;
+	isLoading?: boolean;
 }) {
 	const isHalfBanner = preset === "halfBanner";
 	const isLandscape = preset === "landscape";
@@ -128,12 +155,42 @@ export function RssFeedWidget({
 					style={{ lineHeight }}
 					className={`wrap-break-word ${titleAlignmentClassName} px-1 ${singleLineTitle ? "truncate leading-8" : "no-scrollbar h-full overflow-y-auto overscroll-y-contain whitespace-pre-line"}`}
 				>
-					{sourceTitle}
+					{isLoading ? (
+						singleLineTitle ? (
+							<span
+								className="inline-flex h-8 w-3/4 items-center align-middle"
+								aria-hidden="true"
+							>
+								<Skeleton className="h-4 w-full rounded-sm" />
+							</span>
+						) : (
+							<div className="flex flex-col gap-1" aria-hidden="true">
+								<Skeleton className="h-4 w-3/4 rounded-sm" />
+								<Skeleton className="h-4 w-1/2 rounded-sm" />
+							</div>
+						)
+					) : (
+						sourceTitle
+					)}
 				</div>
 			)}
 		</div>
 	);
-	const sourceIcon = (
+	const sourceIconImage = (
+		<img
+			src={providerIconUrl("rss-feed")}
+			alt=""
+			className="size-6 rotate-z-30 object-contain transition-transform group-hover:rotate-z-0"
+		/>
+	);
+	const sourceIcon = isLoading ? (
+		<div
+			aria-hidden="true"
+			className="smooth-shadow-xs inline-flex size-9 shrink-0 items-center justify-center rounded-md border border-border bg-background"
+		>
+			{sourceIconImage}
+		</div>
+	) : (
 		<a
 			href={feed?.source.pageUrl ?? url}
 			target="_blank"
@@ -141,11 +198,7 @@ export function RssFeedWidget({
 			aria-label="Open RSS source"
 			className="group smooth-shadow-xs inline-flex size-9 shrink-0 cursor-pointer! items-center justify-center rounded-md border border-border bg-background transition-transform hover:scale-105"
 		>
-			<img
-				src={providerIconUrl("rss-feed")}
-				alt=""
-				className="size-6 rotate-z-30 object-contain transition-transform group-hover:rotate-z-0"
-			/>
+			{sourceIconImage}
 		</a>
 	);
 	const source = (
@@ -156,30 +209,50 @@ export function RssFeedWidget({
 			{titleArea}
 		</div>
 	);
-	const attribution = feed ? (
+	const attribution = isLoading ? (
+		<span className="inline-flex shrink-0 flex-row items-center gap-1 font-medium text-muted-foreground text-xs">
+			<span>rss on</span>
+			<Skeleton aria-hidden="true" className="size-4 rounded-xs" />
+		</span>
+	) : feed ? (
 		<span className="inline-flex shrink-0 flex-row items-center gap-1 font-medium text-muted-foreground text-xs">
 			<span>rss on</span>
 			<img
-				src={resolveProviderIconUrl(feed.source.iconUrl)}
+				src={providerIconUrl(
+					feed.source.platform,
+					feed.source.platform === "ghost" ? "webp" : "svg",
+				)}
 				alt=""
 				aria-hidden="true"
 				className="size-4 rounded-xs object-contain"
 			/>
 		</span>
 	) : null;
-	const articleList = articles.length ? (
-		<ScrollArea className="[&_[data-slot=scroll-area-viewport]]:scroll-fade-y [&_[data-slot=scroll-area-viewport]]:scrollbar-none -mx-1 min-h-0 flex-1 [&_[data-slot=scroll-area-scrollbar]]:hidden">
-			<ul className="flex min-h-0 flex-col">
-				{articles.map((article, index) => (
-					<RssArticle
-						key={article.id}
-						item={article}
-						isLast={index === articles.length - 1}
-					/>
-				))}
-			</ul>
-		</ScrollArea>
-	) : null;
+	const articleList =
+		isLoading && preset !== "halfBanner" && !isSquareSmall ? (
+			<ScrollArea
+				aria-hidden="true"
+				className="[&_[data-slot=scroll-area-viewport]]:scroll-fade-y [&_[data-slot=scroll-area-viewport]]:scrollbar-none -mx-1 min-h-0 w-full flex-1 [&_[data-slot=scroll-area-scrollbar]]:hidden"
+			>
+				<ul className="flex min-h-0 flex-col">
+					{Array.from({ length: 5 }, (_, index) => (
+						<RssArticle key={index} isLast={index === 4} isLoading />
+					))}
+				</ul>
+			</ScrollArea>
+		) : articles.length ? (
+			<ScrollArea className="[&_[data-slot=scroll-area-viewport]]:scroll-fade-y [&_[data-slot=scroll-area-viewport]]:scrollbar-none -mx-1 min-h-0 w-full flex-1 [&_[data-slot=scroll-area-scrollbar]]:hidden">
+				<ul className="flex min-h-0 flex-col">
+					{articles.map((article, index) => (
+						<RssArticle
+							key={article.id}
+							item={article}
+							isLast={index === articles.length - 1}
+						/>
+					))}
+				</ul>
+			</ScrollArea>
+		) : null;
 
 	if (isHalfBanner) {
 		return (

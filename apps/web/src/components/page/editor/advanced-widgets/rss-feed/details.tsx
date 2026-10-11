@@ -11,9 +11,11 @@ import { AdvancedWidgetBadges } from "../../advanced-widget-visuals";
 
 export default function RssFeedWidgetDetails({
 	onRssFeedAdd,
+	onInputChange,
 	badges,
 }: {
 	onRssFeedAdd: (url: string) => Promise<boolean>;
+	onInputChange?: (value: string) => void;
 	badges: AdvancedWidgetModule["badges"];
 }) {
 	const [url, setUrl] = useState("");
@@ -34,6 +36,7 @@ export default function RssFeedWidgetDetails({
 						value={url}
 						onChange={(event) => {
 							setUrl(event.target.value);
+							onInputChange?.(event.target.value);
 							setError(undefined);
 						}}
 					/>

@@ -43,6 +43,8 @@ export default function OwnerPage({
 				widgetActionsRef.current?.onCalendlyAdd(event) ?? Promise.resolve(),
 			onRssFeedAdd: (url) =>
 				widgetActionsRef.current?.onRssFeedAdd(url) ?? Promise.resolve(false),
+			onRssFeedPreview: (url) =>
+				widgetActionsRef.current?.onRssFeedPreview(url) ?? Promise.reject(),
 			onTweetAdd: (url) =>
 				widgetActionsRef.current?.onTweetAdd(url) ?? Promise.resolve(false),
 			onMediaSelect: (file) => widgetActionsRef.current?.onMediaSelect(file),

@@ -1,6 +1,10 @@
 "use client";
 
-import type { CalendlyEventType, ItemType } from "@grabbin/api";
+import type {
+	CalendlyEventType,
+	ItemType,
+	RssFeedResponse,
+} from "@grabbin/api";
 import { Button } from "@grabbin/ui/components/button";
 import {
 	InputGroup,
@@ -21,6 +25,7 @@ export type AddWidgetButtonProps = {
 	onItemAdd: (itemType: Exclude<ItemType, "calendly">, url?: string) => void;
 	onCalendlyAdd: (event: CalendlyEventType) => Promise<void>;
 	onRssFeedAdd: (url: string) => Promise<boolean>;
+	onRssFeedPreview: (url: string) => Promise<RssFeedResponse>;
 	onTweetAdd: (url: string) => Promise<boolean>;
 	onMediaSelect: (file: File) => void;
 };
@@ -29,6 +34,7 @@ export default function AddWidgetButton({
 	onItemAdd,
 	onCalendlyAdd,
 	onRssFeedAdd,
+	onRssFeedPreview,
 	onTweetAdd,
 	onMediaSelect,
 }: AddWidgetButtonProps) {
@@ -140,6 +146,7 @@ export default function AddWidgetButton({
 			<AdvancedWidgetsDialog
 				onCalendlyAdd={onCalendlyAdd}
 				onRssFeedAdd={onRssFeedAdd}
+				onRssFeedPreview={onRssFeedPreview}
 				onSpotifyAdd={async (url) => {
 					onItemAdd("link", url);
 					return true;

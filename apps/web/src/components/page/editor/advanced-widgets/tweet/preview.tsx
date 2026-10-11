@@ -1,5 +1,4 @@
 import { getPresetGeometry } from "@grabbin/bento-layout";
-import { useEffect, useState } from "react";
 import type { BentoItem } from "@/lib/bento/bento-types";
 import { AdvancedWidgetPresetControls } from "../preset-controls";
 import { AdvancedWidgetPreviewFrame } from "../preview-frame";
@@ -33,11 +32,11 @@ const previewItem: Extract<BentoItem, { type: "link" }> = {
 };
 
 export function TweetAdvancedWidgetPreview({
-	tweetInput,
+	inputValue,
 }: {
-	tweetInput?: string;
+	inputValue?: string;
 }) {
-	const [tweetId, setTweetId] = useState<string | null>(null);
+	const debouncedTweetId = getTweetId(inputValue ?? "");
 	const {
 		preset,
 		visiblePreset,
@@ -46,16 +45,8 @@ export function TweetAdvancedWidgetPreview({
 		onTransitionComplete,
 	} = useAdvancedWidgetPreset(advancedWidgetPresets.tweet, "squareLarge");
 
-	useEffect(() => {
-		const timeoutId = window.setTimeout(() => {
-			setTweetId(getTweetId(tweetInput ?? ""));
-		}, 500);
-
-		return () => window.clearTimeout(timeoutId);
-	}, [tweetInput]);
-
-	const previewUrl = tweetId
-		? `https://x.com/i/status/${tweetId}`
+	const previewUrl = debouncedTweetId
+		? `https://x.com/i/status/${debouncedTweetId}`
 		: previewItem.data.url;
 	const item: BentoItem = {
 		...previewItem,
@@ -79,7 +70,7 @@ export function TweetAdvancedWidgetPreview({
 				/>
 			}
 		>
-			{tweetId ? (
+			{debouncedTweetId ? (
 				<TweetWidget
 					url={previewUrl}
 					preset={visiblePreset}

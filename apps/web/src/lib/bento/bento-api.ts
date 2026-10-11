@@ -7,6 +7,7 @@ import {
 	pageItemUploadCompleteResponseSchema,
 	pageItemUploadResponseSchema,
 } from "@grabbin/api";
+import { providerIconUrl } from "@grabbin/page-link";
 import * as v from "valibot";
 import { apiClient, getApiErrorMessage } from "../api-client";
 
@@ -55,7 +56,20 @@ export async function fetchBentoRss(handle: string, url: string) {
 		},
 	);
 	if (!response.ok) throw new Error(await getApiErrorMessage(response));
-	return v.parse(pageItemRssResponseSchema, await response.json());
+	const result = v.parse(pageItemRssResponseSchema, await response.json());
+	return {
+		...result,
+		rss: {
+			...result.rss,
+			source: {
+				...result.rss.source,
+				iconUrl: providerIconUrl(
+					result.rss.source.platform,
+					result.rss.source.platform === "ghost" ? "webp" : "svg",
+				),
+			},
+		},
+	};
 }
 
 export async function uploadBentoMedia(

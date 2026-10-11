@@ -12,10 +12,10 @@ import { getTweetId } from "./tweet-url";
 
 export default function TweetWidgetDetails({
 	onTweetAdd,
-	onTweetInputChange,
+	onInputChange,
 }: {
 	onTweetAdd: (url: string) => Promise<boolean>;
-	onTweetInputChange?: (value: string) => void;
+	onInputChange?: (value: string) => void;
 }) {
 	const [url, setUrl] = useState("");
 	const [isAdding, setIsAdding] = useState(false);
@@ -34,7 +34,7 @@ export default function TweetWidgetDetails({
 						value={url}
 						onChange={(event) => {
 							setUrl(event.target.value);
-							onTweetInputChange?.(event.target.value);
+							onInputChange?.(event.target.value);
 							setError(undefined);
 						}}
 					/>

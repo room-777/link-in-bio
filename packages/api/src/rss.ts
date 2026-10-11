@@ -7,6 +7,18 @@ const rssHttpsUrlSchema = v.pipe(
 	v.check((value) => value.startsWith("https://"), "HTTPS URL required."),
 );
 
+const rssIconUrlSchema = v.pipe(
+	v.union([
+		rssHttpsUrlSchema,
+		v.pipe(
+			v.string(),
+			v.regex(
+				/^\/api\/provider-icons\/(?:medium|substack|note|ghost|hashnode)\.(?:svg|webp)$/,
+			),
+		),
+	]),
+);
+
 export const rssPlatformSchema = v.picklist([
 	"medium",
 	"substack",
@@ -40,12 +52,7 @@ export const rssFeedResponseSchema = v.object({
 		feedUrl: rssHttpsUrlSchema,
 		platform: rssPlatformSchema,
 		type: rssSourceTypeSchema,
-		iconUrl: v.pipe(
-			v.string(),
-			v.regex(
-				/^\/api\/provider-icons\/(?:medium|substack|note|ghost|hashnode)\.(?:svg|webp)$/,
-			),
-		),
+		iconUrl: rssIconUrlSchema,
 		title: v.nullable(v.string()),
 	}),
 	items: v.array(rssFeedItemSchema),

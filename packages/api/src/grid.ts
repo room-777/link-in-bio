@@ -287,6 +287,7 @@ export const providerDataSchema = v.object({
 		v.object({
 			...creatorFields,
 			authorProfileImageUrl: v.optional(tweetAuthorImageUrlSchema),
+			response: v.optional(v.unknown()),
 		}),
 	),
 	github: v.optional(

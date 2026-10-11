@@ -1,16 +1,23 @@
 "use client";
 
-import type { ItemType, PageByHandleResponse } from "@grabbin/api";
+import type {
+	ItemType,
+	PageByHandleResponse,
+	RssFeedResponse,
+} from "@grabbin/api";
 import {
 	type BentoBreakpoint,
 	getBentoGridHeight,
 } from "@grabbin/bento-layout";
 import { providerIconUrl } from "@grabbin/page-link";
 import { toast } from "@grabbin/ui/components/toast";
+import { useMutation, useQueryClient } from "@tanstack/react-query";
 import dynamic from "next/dynamic";
 import { type CSSProperties, useCallback, useEffect, useRef } from "react";
+import type { Tweet as TweetResponse } from "react-tweet/api";
 import { fetchBentoRss } from "@/lib/bento/bento-api";
 import { useBentoStore } from "@/lib/bento/bento-store";
+import { tweetQueryOptions } from "@/lib/tweet-query";
 import type { AddWidgetButtonProps } from "./add-widget-button";
 import { getTweetId } from "./advanced-widgets/tweet/tweet-url";
 import EditMobileShareLinkButton from "./edit-mobile-share-link-button";
@@ -59,6 +66,34 @@ export default function BentoEditor({
 		handle,
 		persistItems: !demoMode,
 	});
+	const rssFeedMutation = useMutation({
+		mutationFn: async ({ handle, url }: { handle: string; url: string }) =>
+			(await fetchBentoRss(handle, url)).rss,
+	});
+	const queryClient = useQueryClient();
+	const rssFeedRequestRef = useRef<{
+		handle: string;
+		url: string;
+		promise: Promise<RssFeedResponse>;
+	} | null>(null);
+	const getRssFeed = useCallback(
+		(url: string) => {
+			const cached = rssFeedRequestRef.current;
+			if (cached?.handle === handle && cached.url === url)
+				return cached.promise;
+
+			const request = rssFeedMutation
+				.mutateAsync({ handle, url })
+				.catch((error) => {
+					if (rssFeedRequestRef.current?.promise === request)
+						rssFeedRequestRef.current = null;
+					throw error;
+				});
+			rssFeedRequestRef.current = { handle, url, promise: request };
+			return request;
+		},
+		[handle, rssFeedMutation.mutateAsync],
+	);
 	useEffect(() => {
 		onGridSavingChange?.(store.status === "saving");
 	}, [onGridSavingChange, store.status]);
@@ -101,7 +136,7 @@ export default function BentoEditor({
 					throw new Error("Enter a supported RSS feed URL.");
 				}
 				const normalizedUrl = parsedUrl.toString();
-				const { rss } = await fetchBentoRss(handle, normalizedUrl);
+				const rss = await getRssFeed(normalizedUrl);
 				const addedItem = store.dispatchCommand({
 					type: "add-item",
 					itemType: "link",
@@ -133,13 +168,32 @@ export default function BentoEditor({
 				return false;
 			}
 		},
-		[handle, store.dispatchCommand],
+		[getRssFeed, store.dispatchCommand],
 	);
 	const addTweet = useCallback(
 		async (url: string) => {
 			const tweetId = getTweetId(url);
 			if (!tweetId) return false;
 			const normalizedUrl = `https://x.com/i/status/${tweetId}`;
+			let tweetResponse: TweetResponse | undefined;
+			try {
+				tweetResponse = await queryClient.fetchQuery(
+					tweetQueryOptions(tweetId),
+				);
+			} catch {
+				toast({
+					message: "Unable to load this Tweet. Try again.",
+					state: "error",
+				});
+				return false;
+			}
+			if (!tweetResponse || tweetResponse.id_str !== tweetId) {
+				toast({
+					message: "Unable to load this Tweet. Try again.",
+					state: "error",
+				});
+				return false;
+			}
 
 			const addedItem = store.dispatchCommand({
 				type: "add-item",
@@ -157,6 +211,9 @@ export default function BentoEditor({
 						title: "X post",
 						faviconUrl: providerIconUrl("tweet"),
 						provider: "tweet",
+						providerData: {
+							tweet: { response: tweetResponse },
+						},
 					},
 				},
 			});
@@ -174,7 +231,11 @@ export default function BentoEditor({
 			});
 			return true;
 		},
-		[store.dispatchCommand],
+		[queryClient, store.dispatchCommand],
+	);
+	const previewRssFeed = useCallback(
+		(url: string) => getRssFeed(url),
+		[getRssFeed],
 	);
 	const editorClassName =
 		breakpoint === "compact"
@@ -214,6 +275,7 @@ export default function BentoEditor({
 			onItemAdd: addItem,
 			onCalendlyAdd: addCalendlyItem,
 			onRssFeedAdd: addRssFeed,
+			onRssFeedPreview: previewRssFeed,
 			onTweetAdd: addTweet,
 			onMediaSelect: selectMedia,
 		});
@@ -221,6 +283,7 @@ export default function BentoEditor({
 		addCalendlyItem,
 		addItem,
 		addRssFeed,
+		previewRssFeed,
 		addTweet,
 		onWidgetActionsChange,
 		selectMedia,
