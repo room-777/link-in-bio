@@ -1,6 +1,6 @@
 import type { CalendlyEventType } from "@grabbin/api";
 import { providerDefinitions, providerIconUrl } from "@grabbin/page-link";
-import type { ComponentType } from "react";
+import { type ComponentType, createElement } from "react";
 import CalendlyWidgetDetails from "@/components/page/editor/advanced-widgets/calendly/details";
 import { CalendlyAdvancedWidgetPreview } from "@/components/page/editor/advanced-widgets/calendly/preview";
 import RssFeedWidgetDetails from "@/components/page/editor/advanced-widgets/rss-feed/details";
@@ -42,6 +42,15 @@ type AdvancedWidgetProvider = Extract<
 type AdvancedWidgetId = AdvancedWidgetProvider["id"];
 
 const EmptyActivity = () => null;
+const ComingSoonActivity = () =>
+	createElement(
+		"div",
+		{
+			className:
+				"flex h-full items-center justify-center text-sm text-muted-foreground",
+		},
+		"Sipping coffee while crafting a polished widget...",
+	);
 
 const advancedWidgetDetails: Record<
 	AdvancedWidgetId,
@@ -50,9 +59,9 @@ const advancedWidgetDetails: Record<
 	calendly: CalendlyWidgetDetails,
 	"rss-feed": RssFeedWidgetDetails,
 	spotify: SpotifyWidgetDetails,
-	soundcloud: EmptyActivity,
-	"apple-music": EmptyActivity,
-	signature: EmptyActivity,
+	soundcloud: ComingSoonActivity,
+	"apple-music": ComingSoonActivity,
+	signature: ComingSoonActivity,
 	tweet: TweetWidgetDetails,
 };
 
