@@ -1,5 +1,6 @@
 import { cn } from "@grabbin/ui/lib/utils";
 import JoinForFreeButton from "@/components/landing/join-for-free-button";
+import LandingCtaGlobe from "@/components/landing/landing-cta-globe";
 
 export default function CtaSection({ className }: { className?: string }) {
 	return (
@@ -7,26 +8,24 @@ export default function CtaSection({ className }: { className?: string }) {
 			aria-labelledby="landing-cta-title"
 			className={cn("mx-auto w-full max-w-5xl px-5 pt-16 md:px-0", className)}
 		>
-			<div className="flex flex-col items-center gap-5 rounded-3xl bg-secondary/60 px-8 py-8 md:py-16">
-				<h2
-					id="landing-cta-title"
-					className="max-w-md text-balance text-center font-medium text-4xl text-fg-4 leading-12 tracking-tight"
-				>
-					Bring everything together in one page
-				</h2>
-				<p className="w-full max-w-sm text-center font-medium text-muted-foreground">
-					Create your page for today and bring your work, links, and story
-					together in one place.
-				</p>
-				<div className="flex flex-row items-center gap-2">
+			<div className="flex flex-col items-center justify-between gap-12 rounded-[3rem] bg-linear-to-b from-secondary/60 to-white px-6 pt-10 pb-0 sm:px-8 md:pt-12 md:pb-0 lg:gap-6">
+				<div className="flex flex-col items-center gap-5">
+					<h2
+						id="landing-cta-title"
+						className="text-balance text-center font-semibold text-3xl text-fg-4 leading-tight tracking-tight sm:text-5xl"
+					>
+						<span className="block">Create your page.</span>
+						<span className="block">Let the world find you.</span>
+					</h2>
 					<JoinForFreeButton
-						variant="brand"
+						variant="brandBlack"
 						size="lg"
-						className="h-12 w-auto shrink-0 rounded-3xl px-5 text-sm sm:text-base"
+						className="h-12 w-auto shrink-0 rounded-full px-8"
 					>
 						Create your page
 					</JoinForFreeButton>
 				</div>
+				<LandingCtaGlobe />
 			</div>
 		</section>
 	);

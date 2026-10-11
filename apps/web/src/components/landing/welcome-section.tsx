@@ -450,8 +450,8 @@ export default function WelcomeSection() {
 			<Image
 				alt=""
 				aria-hidden="true"
-				className="pointer-events-none mt-12 ml-6 h-[auto] w-[1800px] max-w-none shrink-0 self-start sm:mt-12 sm:ml-14 md:ml-18 lg:mt-18 lg:ml-26 xl:ml-34 2xl:ml-38"
-				height={1738}
+				className="pointer-events-none mt-12 h-[auto] w-[1400px] max-w-none shrink-0 self-center sm:mt-12 lg:mt-18"
+				height={2614}
 				style={{
 					maskImage:
 						"linear-gradient(90deg, black 0%, black 97%, transparent 100%)",
@@ -459,8 +459,8 @@ export default function WelcomeSection() {
 						"linear-gradient(90deg, black 0%, black 97%, transparent 100%)",
 				}}
 				unoptimized
-				src="/images/landing/welcome-bento-collage.png"
-				width={3452}
+				src="/images/landing/welcome-bento-04d4981d220b.webp"
+				width={2618}
 			/>
 		</section>
 	);

@@ -10,7 +10,7 @@
 /images/landing/*-sticker.svg
 	Cache-Control: public, max-age=31556952, immutable
 
-/images/landing/welcome-bento-collage.png
+/images/landing/welcome-bento-*.webp
 	Cache-Control: public, max-age=31556952, immutable
 
 /images/test2/*
