@@ -2,7 +2,12 @@ import type { RssFeedResponse } from "@grabbin/api";
 import { getPresetGeometry } from "@grabbin/bento-layout";
 import { providerIconUrl } from "@grabbin/page-link";
 import type { BentoItem } from "@/lib/bento/bento-types";
+import { AdvancedWidgetPresetControls } from "../preset-controls";
 import { AdvancedWidgetPreviewFrame } from "../preview-frame";
+import {
+	advancedWidgetPresets,
+	useAdvancedWidgetPreset,
+} from "../use-advanced-widget-preset";
 import { RssFeedWidget } from "./widget";
 
 const previewFeed: RssFeedResponse = {
@@ -97,13 +102,39 @@ const previewItem: BentoItem = {
 };
 
 export function RssAdvancedWidgetPreview() {
+	const {
+		preset,
+		visiblePreset,
+		transitionPhase,
+		onPresetChange,
+		onTransitionComplete,
+	} = useAdvancedWidgetPreset(advancedWidgetPresets["rss-feed"], "squareLarge");
+	const item: BentoItem = {
+		...previewItem,
+		preset: visiblePreset,
+		layouts: {
+			wide: getPresetGeometry(visiblePreset, "wide"),
+			compact: getPresetGeometry(visiblePreset, "compact"),
+		},
+	};
 	return (
-		<AdvancedWidgetPreviewFrame item={previewItem}>
+		<AdvancedWidgetPreviewFrame
+			item={item}
+			transitionPhase={transitionPhase}
+			onTransitionComplete={onTransitionComplete}
+			controls={
+				<AdvancedWidgetPresetControls
+					presets={advancedWidgetPresets["rss-feed"]}
+					preset={preset}
+					onPresetChange={onPresetChange}
+				/>
+			}
+		>
 			<RssFeedWidget
 				url={previewFeed.source.pageUrl}
 				feed={previewFeed}
 				title="Billy's Substack"
-				preset="squareLarge"
+				preset={visiblePreset}
 				mode="view"
 			/>
 		</AdvancedWidgetPreviewFrame>

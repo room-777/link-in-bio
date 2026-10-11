@@ -1,11 +1,13 @@
 "use client";
 
-import type { PresetName } from "@grabbin/bento-layout";
 import { getPresetGeometry } from "@grabbin/bento-layout";
-import { useState } from "react";
 import type { BentoItem } from "@/lib/bento/bento-types";
+import { AdvancedWidgetPresetControls } from "../preset-controls";
 import { AdvancedWidgetPreviewFrame } from "../preview-frame";
-import { SpotifyPresetControls } from "./preset-controls";
+import {
+	advancedWidgetPresets,
+	useAdvancedWidgetPreset,
+} from "../use-advanced-widget-preset";
 import { SpotifyWidget } from "./widget";
 
 const previewItem: BentoItem = {
@@ -26,15 +28,13 @@ const previewItem: BentoItem = {
 };
 
 export function SpotifyAdvancedWidgetPreview() {
-	const [preset, setPreset] = useState<PresetName>("squareSmall");
-	const [visiblePreset, setVisiblePreset] = useState(preset);
-	const [transitionPhase, setTransitionPhase] = useState<"exit" | "enter">();
-	const handlePresetChange = (nextPreset: PresetName) => {
-		if (nextPreset !== preset) {
-			setPreset(nextPreset);
-			setTransitionPhase("exit");
-		}
-	};
+	const {
+		preset,
+		visiblePreset,
+		transitionPhase,
+		onPresetChange,
+		onTransitionComplete,
+	} = useAdvancedWidgetPreset(advancedWidgetPresets.spotify, "squareSmall");
 	const item: BentoItem = {
 		...previewItem,
 		preset: visiblePreset,
@@ -43,24 +43,16 @@ export function SpotifyAdvancedWidgetPreview() {
 			compact: getPresetGeometry(visiblePreset, "compact"),
 		},
 	};
-	const handleTransitionComplete = (phase: "exit" | "enter") => {
-		if (phase === "exit") {
-			setVisiblePreset(preset);
-			setTransitionPhase("enter");
-		} else {
-			setTransitionPhase(undefined);
-		}
-	};
-
 	return (
 		<AdvancedWidgetPreviewFrame
 			item={item}
 			transitionPhase={transitionPhase}
-			onTransitionComplete={handleTransitionComplete}
+			onTransitionComplete={onTransitionComplete}
 			controls={
-				<SpotifyPresetControls
+				<AdvancedWidgetPresetControls
+					presets={advancedWidgetPresets.spotify}
 					preset={preset}
-					onPresetChange={handlePresetChange}
+					onPresetChange={onPresetChange}
 				/>
 			}
 		>

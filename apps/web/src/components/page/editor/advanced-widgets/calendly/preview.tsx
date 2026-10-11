@@ -1,9 +1,14 @@
 import type { CalendlyEventType } from "@grabbin/api";
 import { getPresetGeometry } from "@grabbin/bento-layout";
 import type { BentoItem } from "@/lib/bento/bento-types";
+import { AdvancedWidgetPresetControls } from "../preset-controls";
 import { AdvancedWidgetPreviewFrame } from "../preview-frame";
+import {
+	advancedWidgetPresets,
+	useAdvancedWidgetPreset,
+} from "../use-advanced-widget-preset";
 import type { CalendlyAvailability } from "./widget";
-import { CalendlyLandscape } from "./widget";
+import { calendlyPresetComponents } from "./widget";
 
 const previewEvent: CalendlyEventType = {
 	uri: "https://api.calendly.com/event_types/preview",
@@ -33,6 +38,25 @@ const previewItem: BentoItem = {
 };
 
 export function CalendlyAdvancedWidgetPreview() {
+	const {
+		preset,
+		visiblePreset,
+		transitionPhase,
+		onPresetChange,
+		onTransitionComplete,
+	} = useAdvancedWidgetPreset(advancedWidgetPresets.calendly, "landscape");
+	const item: BentoItem = {
+		...previewItem,
+		preset: visiblePreset,
+		layouts: {
+			wide: getPresetGeometry(visiblePreset, "wide"),
+			compact: getPresetGeometry(visiblePreset, "compact"),
+		},
+	};
+	const CalendlyWidget =
+		visiblePreset === "fullBanner"
+			? calendlyPresetComponents.landscape
+			: calendlyPresetComponents[visiblePreset];
 	const availability: CalendlyAvailability = {
 		loading: false,
 		error: false,
@@ -54,12 +78,25 @@ export function CalendlyAdvancedWidgetPreview() {
 	};
 
 	return (
-		<AdvancedWidgetPreviewFrame item={previewItem}>
-			<CalendlyLandscape
+		<AdvancedWidgetPreviewFrame
+			item={item}
+			transitionPhase={transitionPhase}
+			onTransitionComplete={onTransitionComplete}
+			controls={
+				<AdvancedWidgetPresetControls
+					presets={advancedWidgetPresets.calendly}
+					preset={preset}
+					onPresetChange={onPresetChange}
+				/>
+			}
+		>
+			<CalendlyWidget
 				event={previewEvent}
 				timeZone={{ name: "UTC", label: "UTC" }}
 				availability={availability}
-				availabilityView="slots"
+				availabilityView={
+					visiblePreset === "squareLarge" ? "calendar" : "slots"
+				}
 			/>
 		</AdvancedWidgetPreviewFrame>
 	);

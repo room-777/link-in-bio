@@ -1,7 +1,12 @@
 import { getPresetGeometry } from "@grabbin/bento-layout";
 import { useEffect, useState } from "react";
 import type { BentoItem } from "@/lib/bento/bento-types";
+import { AdvancedWidgetPresetControls } from "../preset-controls";
 import { AdvancedWidgetPreviewFrame } from "../preview-frame";
+import {
+	advancedWidgetPresets,
+	useAdvancedWidgetPreset,
+} from "../use-advanced-widget-preset";
 import { TweetSkeleton } from "./card";
 import { getTweetId } from "./tweet-url";
 import { TweetWidget } from "./widget";
@@ -33,6 +38,13 @@ export function TweetAdvancedWidgetPreview({
 	tweetInput?: string;
 }) {
 	const [tweetId, setTweetId] = useState<string | null>(null);
+	const {
+		preset,
+		visiblePreset,
+		transitionPhase,
+		onPresetChange,
+		onTransitionComplete,
+	} = useAdvancedWidgetPreset(advancedWidgetPresets.tweet, "squareLarge");
 
 	useEffect(() => {
 		const timeoutId = window.setTimeout(() => {
@@ -48,13 +60,29 @@ export function TweetAdvancedWidgetPreview({
 	const item: BentoItem = {
 		...previewItem,
 		data: { ...previewItem.data, url: previewUrl },
+		preset: visiblePreset,
+		layouts: {
+			wide: getPresetGeometry(visiblePreset, "wide"),
+			compact: getPresetGeometry(visiblePreset, "compact"),
+		},
 	};
-
 	return (
-		<AdvancedWidgetPreviewFrame item={item}>
+		<AdvancedWidgetPreviewFrame
+			item={item}
+			transitionPhase={transitionPhase}
+			onTransitionComplete={onTransitionComplete}
+			controls={
+				<AdvancedWidgetPresetControls
+					presets={advancedWidgetPresets.tweet}
+					preset={preset}
+					onPresetChange={onPresetChange}
+				/>
+			}
+		>
 			{tweetId ? (
 				<TweetWidget
 					url={previewUrl}
+					preset={visiblePreset}
 					className="size-full min-h-0 max-w-none"
 				/>
 			) : (

@@ -1,7 +1,6 @@
 import type { PresetName } from "@grabbin/bento-layout";
-import { getAllowedPresets } from "@grabbin/bento-layout";
 import { Button } from "@grabbin/ui/components/button";
-import BentoPresetIcon from "../../bento/bento-preset-icon";
+import BentoPresetIcon from "../bento/bento-preset-icon";
 
 const presetLabels: Record<PresetName, string> = {
 	fullBanner: "Full banner",
@@ -12,17 +11,19 @@ const presetLabels: Record<PresetName, string> = {
 	portrait: "Portrait",
 };
 
-export function SpotifyPresetControls({
+export function AdvancedWidgetPresetControls({
+	presets,
 	preset,
 	onPresetChange,
 }: {
+	presets: readonly PresetName[];
 	preset: PresetName;
 	onPresetChange: (preset: PresetName) => void;
 }) {
 	return (
 		<fieldset className="flex flex-col gap-1 rounded-lg border-0 bg-foreground/95 p-1 shadow-lg backdrop-blur-sm">
 			<legend className="sr-only">Preview size</legend>
-			{getAllowedPresets("link").map((option) => (
+			{presets.map((option) => (
 				<Button
 					key={option}
 					type="button"
