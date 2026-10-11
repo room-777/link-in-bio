@@ -48,7 +48,7 @@ export function SectionItem({
 				<input
 					ref={inputRef}
 					value={item.data.title}
-					placeholder="Section title..."
+					placeholder="Add title..."
 					aria-label="Section title"
 					className="col-start-1 row-start-1 h-full w-full min-w-32 max-w-full truncate bg-transparent px-2 font-semibold text-xl tracking-tight outline-none placeholder:text-muted-foreground focus-visible:ring-2 focus-visible:ring-ring/60"
 					onChange={(event) =>

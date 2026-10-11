@@ -306,7 +306,7 @@ export function MediaItem({
 				) : null}
 			</div>
 			{hasMediaFrameDecoration ? (
-				<div aria-hidden="true" className="bento-media-border" />
+				<div aria-hidden="true" className="bento-frame-border" />
 			) : null}
 		</div>
 	);

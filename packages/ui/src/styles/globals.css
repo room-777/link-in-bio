@@ -31,7 +31,7 @@
 	--color-ring: var(--ring);
 	--color-input: var(--input);
 	--color-border: var(--border);
-	--color-bento-media-border: var(--bento-media-border);
+	--color-bento-frame-border: var(--bento-frame-border);
 	--color-destructive: var(--destructive);
 	--color-accent-foreground: var(--accent-foreground);
 	--color-accent: var(--accent);
@@ -87,7 +87,7 @@
 	--accent-foreground: oklch(0.205 0 0);
 	--destructive: oklch(0.6438 0.2431 32.13);
 	--border: oklch(0.922 0 0);
-	--bento-media-border: rgba(0, 0, 0, 0.08);
+	--bento-frame-border: rgba(0, 0, 0, 0.08);
 	--input: oklch(0.922 0 0);
 	--ring: oklch(0.708 0 0);
 	--chart-1: oklch(0.87 0 0);
@@ -123,7 +123,7 @@
 	--accent-foreground: oklch(0.985 0 0);
 	--destructive: oklch(0.704 0.191 22.216);
 	--border: oklch(1 0 0 / 10%);
-	--bento-media-border: rgba(255, 255, 255, 0.08);
+	--bento-frame-border: rgba(255, 255, 255, 0.08);
 	--input: oklch(1 0 0 / 15%);
 	--ring: oklch(0.556 0 0);
 	--chart-1: oklch(0.87 0 0);
@@ -190,12 +190,12 @@
 	}
 }
 
-@utility bento-media-border {
+@utility bento-frame-border {
 	position: absolute;
 	inset: 0;
 	z-index: 10;
 	pointer-events: none;
-	border: 1px solid var(--color-bento-media-border);
+	border: 1px solid var(--color-bento-frame-border);
 	border-radius: inherit;
 }
 

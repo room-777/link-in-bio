@@ -7,11 +7,12 @@ import {
 	inferPresetFromLayout,
 } from "@grabbin/bento-layout";
 import { Button } from "@grabbin/ui/components/button";
-import { motion } from "motion/react";
+import { animate, motion } from "motion/react";
 import {
 	type CSSProperties,
 	type ReactNode,
 	useEffect,
+	useLayoutEffect,
 	useRef,
 	useState,
 } from "react";
@@ -168,6 +169,8 @@ export function BentoItemShell({
 		...(item.type === "text"
 			? ({
 					"--text-card-background": cardBackground ?? "var(--background)",
+					"--bento-frame-border":
+						"oklch(from var(--text-card-background) calc(l - 0.06) c h)",
 				} as CSSProperties)
 			: {}),
 		...(item.type === "link"
@@ -176,18 +179,17 @@ export function BentoItemShell({
 					"--bento-item-radius": `${cardRadius}px`,
 				} as CSSProperties)
 			: {}),
+		...(item.type === "section"
+			? ({
+					"--bento-item-border-color": `oklch(from ${cardBackground ?? "var(--background)"} calc(l - 0.06) c h)`,
+				} as CSSProperties)
+			: {}),
 		color:
 			item.type === "text"
 				? getForegroundColor(item.style.backgroundColor)
 				: undefined,
 	};
-	const backgroundColor = item.style.backgroundColor?.toLowerCase();
-	const isWhiteBackground =
-		backgroundColor === "bg-white" ||
-		/^#(?:f{3}|f{4}|f{6}|f{8})$/.test(backgroundColor ?? "");
-	const hasSurfaceLine =
-		(item.type === "text" && Boolean(backgroundColor) && !isWhiteBackground) ||
-		usesCardLink;
+	const hasSurfaceLine = item.type === "text" || usesCardLink;
 	const showControls = mode === "edit" && onCommand && item.type !== "section";
 	const shellRef = useRef<HTMLDivElement>(null);
 	const hideControlsTimer = useRef<number | null>(null);
@@ -209,6 +211,33 @@ export function BentoItemShell({
 		}
 		setControlsOpen(false);
 	}, [isAnyItemDragging, showControls]);
+	useLayoutEffect(() => {
+		const shell = shellRef.current;
+		if (!isEntering || reduceMotion || !shell) return;
+
+		const animation = animate(
+			shell,
+			{
+				opacity: [0, 1],
+				filter: ["blur(2px)", "blur(0px)"],
+				y: [8, 0],
+				scale: [0.8, 1.08, 1],
+			},
+			{
+				opacity: { type: "tween", duration: 0.1, ease: "linear" },
+				filter: { type: "tween", duration: 0.1, ease: "linear" },
+				y: { type: "spring", duration: 0.4, bounce: 0.08 },
+				scale: {
+					type: "tween",
+					duration: 0.4,
+					times: [0, 0.38, 1],
+					ease: ["easeOut", "easeInOut"],
+				},
+			},
+		);
+		animation.then(() => onPopInComplete?.(item.id));
+		return () => animation.stop();
+	}, [isEntering, item.id, onPopInComplete, reduceMotion]);
 
 	const openControls = () => {
 		if (!showControls || isAnyItemDragging) return;
@@ -288,6 +317,9 @@ export function BentoItemShell({
 						<RuntimeFallback item={item} />
 					)}
 				</div>
+				{item.type === "text" ? (
+					<div aria-hidden="true" className="bento-frame-border" />
+				) : null}
 			</Card>
 			{mode === "edit" && onCommand ? (
 				<>
@@ -341,39 +373,17 @@ export function BentoItemShell({
 					: false
 			}
 			animate={
-				isEntering
-					? {
-							opacity: [0, 1],
-							filter: ["blur(2px)", "blur(0px)"],
-							y: [8, 0],
-							scale: [0.8, 1.08, 1],
-						}
-					: isInitialEntryItem && entryReady
-						? { opacity: 1, transform: "translateY(0px)" }
-						: undefined
+				isInitialEntryItem && entryReady
+					? { opacity: 1, transform: "translateY(0px)" }
+					: undefined
 			}
-			transition={
-				isEntering
-					? {
-							opacity: { type: "tween", duration: 0.1, ease: "linear" },
-							filter: { type: "tween", duration: 0.1, ease: "linear" },
-							y: { type: "spring", duration: 0.4, bounce: 0.08 },
-							scale: {
-								type: "tween",
-								duration: 0.4,
-								times: [0, 0.38, 1],
-								ease: ["easeOut", "easeInOut"],
-							},
-						}
-					: {
-							duration: reduceMotion ? 0 : 0.8,
-							delay: reduceMotion ? 0 : entryDelay,
-							ease: [0.2, 1, 0.3, 1],
-						}
-			}
+			transition={{
+				duration: reduceMotion ? 0 : 0.8,
+				delay: reduceMotion ? 0 : entryDelay,
+				ease: [0.2, 1, 0.3, 1],
+			}}
 			onAnimationComplete={() => {
-				if (isEntering) onPopInComplete?.(item.id);
-				else onEntryComplete?.();
+				if (!isEntering) onEntryComplete?.();
 			}}
 		>
 			{item.type === "map" ? (

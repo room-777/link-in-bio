@@ -1,6 +1,6 @@
 "use client";
 
-import type { PresetName } from "@grabbin/bento-layout";
+import { getBentoItemRadius, type PresetName } from "@grabbin/bento-layout";
 import { useEffect, useLayoutEffect, useRef } from "react";
 
 import type { BentoCommand, BentoItem } from "@/lib/bento/bento-types";
@@ -24,14 +24,20 @@ export function TextItem({
 	const textAreaRef = useRef<HTMLTextAreaElement>(null);
 	const viewportRef = useRef<HTMLDivElement>(null);
 	const autoFocusHandledRef = useRef(false);
-	const verticalAlign = item.style.verticalAlign ?? "top";
+	const verticalAlign =
+		item.style.verticalAlign ?? (preset === "halfBanner" ? "center" : "top");
+	const itemRadius = getBentoItemRadius(item.type, preset);
+	const textAreaRadius = itemRadius - 12;
 	useLayoutEffect(() => {
 		const textarea = textAreaRef.current;
 		const viewport = viewportRef.current;
 		if (!textarea || !viewport || textarea.value !== item.data.text) return;
 
 		const alignText = () => {
-			textarea.style.paddingTop = "0px";
+			textarea.style.paddingTop = "";
+			const basePaddingTop = Number.parseFloat(
+				getComputedStyle(textarea).paddingTop,
+			);
 			const previousHeight = textarea.style.height;
 			const previousMaxHeight = textarea.style.maxHeight;
 			textarea.style.height = "auto";
@@ -47,7 +53,7 @@ export function TextItem({
 					: verticalAlign === "center"
 						? freeSpace / 2
 						: 0;
-			textarea.style.paddingTop = `${offset}px`;
+			textarea.style.paddingTop = `${basePaddingTop + offset}px`;
 		};
 
 		alignText();
@@ -72,7 +78,8 @@ export function TextItem({
 	}, [autoFocus, onAutoFocus]);
 	return (
 		<div
-			className={`grid-action relative flex size-full min-h-0 flex-col gap-3 overflow-hidden rounded-lg p-3 ${mode === "edit" ? "cursor-grab" : ""}`}
+			className={`grid-action relative flex size-full min-h-0 flex-col gap-3 overflow-hidden p-3 ${mode === "edit" ? "cursor-grab" : ""}`}
+			style={{ borderRadius: itemRadius }}
 		>
 			<div className="relative z-10 flex min-h-0 flex-1 items-stretch justify-between gap-3">
 				<div
@@ -86,8 +93,11 @@ export function TextItem({
 						placeholder={mode === "edit" ? "Add note..." : undefined}
 						aria-label="Text content"
 						readOnly={mode === "view"}
-						className={`bento-text-input grid-action h-full max-h-full min-h-0 w-full cursor-text! resize-none overflow-y-auto overscroll-contain whitespace-pre-wrap break-all rounded-lg border-0 bg-transparent px-2 py-0 text-current outline-none placeholder:text-current/45 focus-visible:ring-0 ${textSizeClassByPreset[preset]}`}
-						style={{ textAlign: item.style.textAlign ?? "left" }}
+						className={`bento-text-input grid-action h-full max-h-full min-h-0 w-full cursor-text! resize-none overflow-y-auto overscroll-contain whitespace-pre-wrap break-all border-0 bg-transparent px-2 py-1.5 text-current outline-none placeholder:text-current/45 focus-visible:ring-0 ${textSizeClassByPreset[preset]}`}
+						style={{
+							borderRadius: textAreaRadius,
+							textAlign: item.style.textAlign ?? "left",
+						}}
 						onChange={(event) =>
 							onCommand?.({
 								type: "update-data",

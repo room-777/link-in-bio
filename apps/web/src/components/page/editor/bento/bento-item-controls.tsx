@@ -3,6 +3,7 @@
 import {
 	getAllowedPresets,
 	inferPresetFromLayout,
+	type PresetName,
 } from "@grabbin/bento-layout";
 import { env } from "@grabbin/env/web";
 import { Button } from "@grabbin/ui/components/button";
@@ -425,10 +426,12 @@ function MapItemExtraControls() {
 
 function TextStyleControls({
 	item,
+	preset,
 	onCommand,
 	onManageLink,
 }: {
 	item: Extract<BentoItem, { type: "text" }>;
+	preset: PresetName | null;
 	onCommand: (command: BentoCommand) => void;
 	onManageLink: (value: string) => void;
 }) {
@@ -438,6 +441,8 @@ function TextStyleControls({
 		item.style.backgroundColor ?? "#ffffff",
 	);
 	const backgroundColor = item.style.backgroundColor ?? "#ffffff";
+	const verticalAlign =
+		item.style.verticalAlign ?? (preset === "halfBanner" ? "center" : "top");
 	const selectedColor = backgroundColorOptions.find(
 		(option) => option.value === backgroundColor,
 	);
@@ -543,9 +548,7 @@ function TextStyleControls({
 							size="icon"
 							variant="ghost"
 							aria-label="Align text to the top"
-							aria-pressed={
-								item.style.verticalAlign === "top" || !item.style.verticalAlign
-							}
+							aria-pressed={verticalAlign === "top"}
 							className="size-8 rounded-md text-primary-foreground hover:bg-primary-foreground hover:text-primary aria-pressed:bg-primary-foreground aria-pressed:text-primary"
 							onClick={() => updateStyle({ verticalAlign: "top" })}
 						>
@@ -559,7 +562,7 @@ function TextStyleControls({
 							size="icon"
 							variant="ghost"
 							aria-label="Align text to the center"
-							aria-pressed={item.style.verticalAlign === "center"}
+							aria-pressed={verticalAlign === "center"}
 							className="size-8 rounded-md text-primary-foreground hover:bg-primary-foreground hover:text-primary aria-pressed:bg-primary-foreground aria-pressed:text-primary"
 							onClick={() => updateStyle({ verticalAlign: "center" })}
 						>
@@ -573,7 +576,7 @@ function TextStyleControls({
 							size="icon"
 							variant="ghost"
 							aria-label="Align text to the bottom"
-							aria-pressed={item.style.verticalAlign === "bottom"}
+							aria-pressed={verticalAlign === "bottom"}
 							className="size-8 rounded-md text-primary-foreground hover:bg-primary-foreground hover:text-primary aria-pressed:bg-primary-foreground aria-pressed:text-primary"
 							onClick={() => updateStyle({ verticalAlign: "bottom" })}
 						>
@@ -800,6 +803,7 @@ export default function BentoItemControls({
 			{item.type === "text" ? (
 				<TextStyleControls
 					item={item}
+					preset={currentPreset}
 					onCommand={onCommand}
 					onManageLink={commitLink}
 				/>
