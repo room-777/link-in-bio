@@ -274,7 +274,7 @@ export default function PageImageField({
 	return (
 		<div
 			data-page-image-crop-open={cropOpen ? "true" : undefined}
-			className={`group/image relative isolate self-start ${isWide ? "page-wide:size-46! size-28!" : "size-28!"}`}
+			className={`group/image relative isolate self-start ${cropOpen ? "z-[10000]" : ""} ${isWide ? "page-wide:size-46! size-28!" : "size-28!"}`}
 		>
 			<button
 				ref={frameRef}
@@ -282,7 +282,7 @@ export default function PageImageField({
 				aria-label="Change profile image"
 				aria-busy={isUploading}
 				disabled={isUploading}
-				className={`relative flex size-full items-center justify-center rounded-full bg-brand-light-gray font-medium text-muted-foreground text-sm transition-[transform,scale,background-color] duration-150 ease-[cubic-bezier(0.23,1,0.32,1)] ${cropOpen ? "cursor-grab touch-none overflow-visible" : "overflow-visible hover:bg-muted active:scale-[0.97]"}`}
+				className={`relative flex size-full items-center justify-center rounded-full bg-brand-light-gray font-medium text-muted-foreground text-sm transition-[transform,scale,background-color] duration-150 ease-[cubic-bezier(0.23,1,0.32,1)] ${cropOpen ? "cursor-move! touch-none overflow-visible" : "overflow-visible hover:bg-muted active:scale-[0.97]"}`}
 				onClick={() => {
 					if (!cropOpen) inputRef.current?.click();
 				}}
@@ -377,7 +377,7 @@ export default function PageImageField({
 						}
 						disabled={isUploading || !sourceSize.width}
 						onClick={cropOpen ? closeCrop : openCrop}
-						className={`smooth-shadow-xs absolute top-0 left-0 z-30 inline-flex items-center justify-center rounded-full border-0! bg-background opacity-0 outline-depth transition-[opacity,transform,scale,background-color,color] duration-150 ease-[cubic-bezier(0.23,1,0.32,1)] focus-visible:scale-100 focus-visible:opacity-100 group-hover/image:scale-100 group-hover/image:opacity-100 ${isWide ? "page-wide:top-2 page-wide:left-2" : ""} ${cropOpen ? "bg-brand-green text-white! opacity-100 hover:bg-brand-green/80" : ""}`}
+						className={`smooth-shadow-xs absolute top-0 left-0 z-30 inline-flex items-center justify-center rounded-full border-0! bg-background opacity-0 outline-depth transition-[opacity,transform,scale,background-color,color] duration-150 ease-[cubic-bezier(0.23,1,0.32,1)] focus-visible:scale-100 focus-visible:opacity-100 group-hover/image:scale-100 group-hover/image:opacity-100 ${isWide ? "page-wide:top-2 page-wide:left-2" : ""} ${cropOpen ? "cursor-move! bg-brand-green text-white! opacity-100 hover:bg-brand-green/80" : ""}`}
 						style={{
 							width: profileImageControlSize,
 							height: profileImageControlSize,
@@ -391,27 +391,29 @@ export default function PageImageField({
 							}}
 						/>
 					</Button>
-					<Button
-						type="button"
-						variant="ghost"
-						size="icon-sm"
-						aria-label="Remove profile image"
-						disabled={isUploading || cropOpen}
-						onClick={onRemove}
-						className={`smooth-shadow-xs absolute z-30 inline-flex items-center justify-center rounded-full border-0! bg-background opacity-0 outline-depth transition-[opacity,transform,scale,background-color,color] duration-150 ease-[cubic-bezier(0.23,1,0.32,1)] focus-visible:scale-100 focus-visible:opacity-100 group-hover/image:scale-100 group-hover/image:opacity-100 ${isWide ? "page-wide:top-2 top-0 page-wide:right-2 right-0" : "top-0 right-0"}`}
-						style={{
-							width: profileImageControlSize,
-							height: profileImageControlSize,
-						}}
-					>
-						<Trash
-							className="stroke-[2.5px]"
+					{!cropOpen ? (
+						<Button
+							type="button"
+							variant="ghost"
+							size="icon-sm"
+							aria-label="Remove profile image"
+							disabled={isUploading}
+							onClick={onRemove}
+							className={`smooth-shadow-xs absolute z-30 inline-flex items-center justify-center rounded-full border-0! bg-background opacity-0 outline-depth transition-[opacity,transform,scale,background-color,color] duration-150 ease-[cubic-bezier(0.23,1,0.32,1)] focus-visible:scale-100 focus-visible:opacity-100 group-hover/image:scale-100 group-hover/image:opacity-100 ${isWide ? "page-wide:top-2 top-0 page-wide:right-2 right-0" : "top-0 right-0"}`}
 							style={{
-								width: profileImageControlIconSize,
-								height: profileImageControlIconSize,
+								width: profileImageControlSize,
+								height: profileImageControlSize,
 							}}
-						/>
-					</Button>
+						>
+							<Trash
+								className="stroke-[2.5px]"
+								style={{
+									width: profileImageControlIconSize,
+									height: profileImageControlIconSize,
+								}}
+							/>
+						</Button>
+					) : null}
 				</>
 			) : null}
 			<input

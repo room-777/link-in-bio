@@ -50,7 +50,6 @@ export function MediaItem({
 		cropStyle,
 		hasSourceSize,
 		isCropOpen,
-		isDragging,
 		handleImageLoad,
 		handleVideoLoadedMetadata,
 		handleCropPointerDown,
@@ -274,7 +273,7 @@ export function MediaItem({
 						type="button"
 						aria-label="Drag media to crop"
 						data-bento-item-drag-cancel="true"
-						className={`absolute z-20 cursor-grab! touch-none rounded-[inherit] border-0 bg-transparent p-0 focus-visible:ring-2 focus-visible:ring-ring/60 ${isDragging ? "cursor-grabbing!" : ""}`}
+						className="absolute z-20 cursor-move! touch-none rounded-[inherit] border-0 bg-transparent p-0 focus-visible:ring-2 focus-visible:ring-ring/60"
 						style={cropStyle}
 						onPointerDown={handleCropPointerDown}
 						onPointerMove={handleCropPointerMove}
