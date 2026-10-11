@@ -6,8 +6,6 @@
 	--bento-item-pop-distance: 8px;
 	--bento-item-pop-scale: 0.8;
 	--bento-item-pop-blur: 2px;
-	--bento-item-exit-duration: 180ms;
-	--bento-item-exit-ease: cubic-bezier(0.23, 1, 0.32, 1);
 	--bento-position-duration: 700ms;
 	--bento-position-ease: cubic-bezier(0.34, 1.5, 0.4, 1);
 	--bento-drag-follow-duration: 100ms;
@@ -109,18 +107,6 @@
 	opacity: 0;
 	transform: translateY(var(--bento-item-pop-distance))
 		scale(var(--bento-item-pop-scale));
-}
-
-.bento-item-pop-in.is-exiting {
-	filter: blur(var(--bento-item-pop-blur));
-	opacity: 0;
-	transform: translateY(var(--bento-item-pop-distance))
-		scale(var(--bento-item-pop-scale));
-	transition:
-		opacity var(--bento-item-exit-duration) var(--bento-item-exit-ease),
-		transform var(--bento-item-exit-duration) var(--bento-item-exit-ease),
-		filter var(--bento-item-exit-duration) var(--bento-item-exit-ease);
-	will-change: transform, opacity, filter;
 }
 
 /* Drag feedback. RGL's parent keeps the item's grid position; this card appears lifted. */
@@ -299,7 +285,6 @@
 
 @media (prefers-reduced-motion: reduce) {
 	.bento-item-pop-in,
-	.bento-item-pop-in.is-exiting,
 	.bento-item-card,
 	.bento-layout .react-grid-item,
 	.bento-layout .react-grid-placeholder {

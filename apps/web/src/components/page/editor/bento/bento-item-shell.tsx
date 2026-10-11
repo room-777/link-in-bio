@@ -7,7 +7,7 @@ import {
 	inferPresetFromLayout,
 } from "@grabbin/bento-layout";
 import { Button } from "@grabbin/ui/components/button";
-import { animate, motion } from "motion/react";
+import { motion } from "motion/react";
 import {
 	type CSSProperties,
 	type ReactNode,
@@ -92,7 +92,6 @@ export function BentoItemShell({
 	isAnyItemDragging = false,
 	disableLocationSearch = false,
 	isEntering = false,
-	isExiting = false,
 	isInitialEntryItem = false,
 	entryReady = true,
 	entryDelay = 0,
@@ -116,7 +115,6 @@ export function BentoItemShell({
 	isAnyItemDragging?: boolean;
 	disableLocationSearch?: boolean;
 	isEntering?: boolean;
-	isExiting?: boolean;
 	isInitialEntryItem?: boolean;
 	entryReady?: boolean;
 	entryDelay?: number;
@@ -190,8 +188,7 @@ export function BentoItemShell({
 	const hasSurfaceLine =
 		(item.type === "text" && Boolean(backgroundColor) && !isWhiteBackground) ||
 		usesCardLink;
-	const showControls =
-		mode === "edit" && onCommand && item.type !== "section" && !isExiting;
+	const showControls = mode === "edit" && onCommand && item.type !== "section";
 	const shellRef = useRef<HTMLDivElement>(null);
 	const hideControlsTimer = useRef<number | null>(null);
 	const [controlsOpen, setControlsOpen] = useState(false);
@@ -205,43 +202,16 @@ export function BentoItemShell({
 	}, []);
 
 	useEffect(() => {
-		if (showControls && !isAnyItemDragging && !isExiting) return;
+		if (showControls && !isAnyItemDragging) return;
 		if (hideControlsTimer.current !== null) {
 			window.clearTimeout(hideControlsTimer.current);
 			hideControlsTimer.current = null;
 		}
 		setControlsOpen(false);
-	}, [isAnyItemDragging, isExiting, showControls]);
-	useEffect(() => {
-		const shell = shellRef.current;
-		if (!isEntering || isExiting || reduceMotion || !shell) return;
-
-		const animation = animate(
-			shell,
-			{
-				opacity: [0, 1],
-				filter: ["blur(2px)", "blur(0px)"],
-				y: [8, 0],
-				scale: [0.8, 1.08, 1],
-			},
-			{
-				opacity: { type: "tween", duration: 0.1, ease: "linear" },
-				filter: { type: "tween", duration: 0.1, ease: "linear" },
-				y: { type: "spring", duration: 0.4, bounce: 0.08 },
-				scale: {
-					type: "tween",
-					duration: 0.4,
-					times: [0, 0.38, 1],
-					ease: ["easeOut", "easeInOut"],
-				},
-			},
-		);
-		animation.then(() => onPopInComplete?.(item.id));
-		return () => animation.stop();
-	}, [isEntering, isExiting, item.id, onPopInComplete, reduceMotion]);
+	}, [isAnyItemDragging, showControls]);
 
 	const openControls = () => {
-		if (!showControls || isAnyItemDragging || isExiting) return;
+		if (!showControls || isAnyItemDragging) return;
 		if (hideControlsTimer.current !== null) {
 			window.clearTimeout(hideControlsTimer.current);
 			hideControlsTimer.current = null;
@@ -329,7 +299,7 @@ export function BentoItemShell({
 						title="Delete item"
 						data-bento-item-delete-control="true"
 						onClick={() => onCommand({ type: "delete-item", itemId: item.id })}
-						className={`pointer-events-none absolute -top-4 -right-4 z-20 size-10 cursor-pointer! rounded-full p-1 opacity-0 transition-[opacity,transform,scale] duration-150 focus-visible:pointer-events-auto focus-visible:scale-100 focus-visible:opacity-100 group-hover/bento-item:pointer-events-auto group-hover/bento-item:scale-100 group-hover/bento-item:opacity-100 motion-reduce:transition-none ${isAnyItemDragging || isExiting ? "pointer-events-none! opacity-0!" : ""}`}
+						className={`pointer-events-none absolute -top-4 -right-4 z-20 size-10 cursor-pointer! rounded-full p-1 opacity-0 transition-[opacity,transform,scale] duration-150 focus-visible:pointer-events-auto focus-visible:scale-100 focus-visible:opacity-100 group-hover/bento-item:pointer-events-auto group-hover/bento-item:scale-100 group-hover/bento-item:opacity-100 motion-reduce:transition-none ${isAnyItemDragging ? "pointer-events-none! opacity-0!" : ""}`}
 					>
 						<Trash className="size-5 stroke-[2.5px]" />
 					</Button>
@@ -363,7 +333,7 @@ export function BentoItemShell({
 				}
 				scheduleCloseControls();
 			}}
-			className={`group/bento-item bento-item-pop-in relative size-full overflow-visible transition-[z-index] focus-within:z-50 hover:z-50 ${isEntering ? "is-entering" : ""} ${isExiting ? "is-exiting" : ""} ${isInitialEntryItem ? "bento-item-initial-entering" : ""}`}
+			className={`group/bento-item bento-item-pop-in relative size-full overflow-visible transition-[z-index] focus-within:z-50 hover:z-50 ${isEntering ? "is-entering" : ""} ${isInitialEntryItem ? "bento-item-initial-entering" : ""}`}
 			style={{ borderRadius: cardRadius }}
 			initial={
 				isInitialEntryItem && !reduceMotion
@@ -371,19 +341,39 @@ export function BentoItemShell({
 					: false
 			}
 			animate={
-				isExiting
-					? { opacity: 0, filter: "blur(2px)", y: 8, scale: 0.88 }
+				isEntering
+					? {
+							opacity: [0, 1],
+							filter: ["blur(2px)", "blur(0px)"],
+							y: [8, 0],
+							scale: [0.8, 1.08, 1],
+						}
 					: isInitialEntryItem && entryReady
 						? { opacity: 1, transform: "translateY(0px)" }
 						: undefined
 			}
-			transition={{
-				duration: reduceMotion ? 0 : isExiting ? 0.18 : 0.8,
-				delay: isExiting || reduceMotion ? 0 : entryDelay,
-				ease: [0.2, 1, 0.3, 1],
-			}}
+			transition={
+				isEntering
+					? {
+							opacity: { type: "tween", duration: 0.1, ease: "linear" },
+							filter: { type: "tween", duration: 0.1, ease: "linear" },
+							y: { type: "spring", duration: 0.4, bounce: 0.08 },
+							scale: {
+								type: "tween",
+								duration: 0.4,
+								times: [0, 0.38, 1],
+								ease: ["easeOut", "easeInOut"],
+							},
+						}
+					: {
+							duration: reduceMotion ? 0 : 0.8,
+							delay: reduceMotion ? 0 : entryDelay,
+							ease: [0.2, 1, 0.3, 1],
+						}
+			}
 			onAnimationComplete={() => {
-				if (!isExiting) onEntryComplete?.();
+				if (isEntering) onPopInComplete?.(item.id);
+				else onEntryComplete?.();
 			}}
 		>
 			{item.type === "map" ? (

@@ -55,7 +55,6 @@ type BentoSectionProps = {
 };
 
 const WIDE_CONTAINER_MIN_WIDTH = getBentoWidth("wide");
-const BENTO_ITEM_EXIT_DURATION = 180;
 
 export default function BentoSection({
 	handle,
@@ -104,19 +103,12 @@ export default function BentoSection({
 	const knownItemIdsRef = useRef(new Set(initialItemIds));
 	const enteringItemFramesRef = useRef(new Map<string, number>());
 	const newItemScrollFramesRef = useRef(new Map<string, number>());
-	const exitingItemTimersRef = useRef(new Map<string, number>());
-	const previousItemsByIdRef = useRef(
-		new Map(items.map((item) => [item.id, item])),
-	);
 	const [enteringItemIds, setEnteringItemIds] = useState<ReadonlySet<string>>(
 		new Set(),
 	);
 	const [initialEntryItemIds, setInitialEntryItemIds] = useState(
 		() => new Set(initialItemIds),
 	);
-	const [exitingItems, setExitingItems] = useState<
-		ReadonlyMap<string, BentoItemData>
-	>(new Map());
 	const [layoutRevision, setLayoutRevision] = useState(0);
 	const [draggingItemId, setDraggingItemId] = useState<string | null>(null);
 	const dragMotion = useBentoDragMotion();
@@ -140,30 +132,6 @@ export default function BentoSection({
 			setInitialEntryItemIds(new Set());
 		}
 	}, [entryReady, initialEntryItemIds.size, reduceMotion]);
-	const displayItems = useMemo(() => {
-		const itemIds = new Set(items.map((item) => item.id));
-		return [
-			...items,
-			...[...exitingItems.entries()]
-				.filter(([itemId]) => !itemIds.has(itemId))
-				.map(([, item]) => item),
-		];
-	}, [exitingItems, items]);
-	const startItemExit = useCallback((item: BentoItemData) => {
-		if (exitingItemTimersRef.current.has(item.id)) return;
-		setExitingItems((current) => new Map(current).set(item.id, item));
-		exitingItemTimersRef.current.set(
-			item.id,
-			window.setTimeout(() => {
-				setExitingItems((current) => {
-					const next = new Map(current);
-					next.delete(item.id);
-					return next;
-				});
-				exitingItemTimersRef.current.delete(item.id);
-			}, BENTO_ITEM_EXIT_DURATION),
-		);
-	}, []);
 	useEffect(() => {
 		if (mode !== "edit" || !mounted) return;
 		const newItemIds = items
@@ -203,24 +171,6 @@ export default function BentoSection({
 			enteringItemFramesRef.current.set(itemId, firstFrame);
 		}
 	}, [items, mode, mounted, reduceMotion]);
-	useEffect(() => {
-		const currentItemsById = new Map(items.map((item) => [item.id, item]));
-		for (const [itemId, previousItem] of previousItemsByIdRef.current) {
-			if (!currentItemsById.has(itemId)) startItemExit(previousItem);
-		}
-		for (const itemId of currentItemsById.keys()) {
-			const timer = exitingItemTimersRef.current.get(itemId);
-			if (timer === undefined) continue;
-			window.clearTimeout(timer);
-			exitingItemTimersRef.current.delete(itemId);
-			setExitingItems((current) => {
-				const next = new Map(current);
-				next.delete(itemId);
-				return next;
-			});
-		}
-		previousItemsByIdRef.current = currentItemsById;
-	}, [items, startItemExit]);
 	useEffect(
 		() => () => {
 			for (const frame of enteringItemFramesRef.current.values()) {
@@ -228,9 +178,6 @@ export default function BentoSection({
 			}
 			for (const frame of newItemScrollFramesRef.current.values()) {
 				window.cancelAnimationFrame(frame);
-			}
-			for (const timer of exitingItemTimersRef.current.values()) {
-				window.clearTimeout(timer);
 			}
 		},
 		[],
@@ -243,29 +190,17 @@ export default function BentoSection({
 			return next;
 		});
 	}, []);
-	const handleBentoCommand = useCallback(
-		(command: BentoCommand) => {
-			if (command.type === "delete-item") {
-				const item = displayItems.find(
-					(candidate) => candidate.id === command.itemId,
-				);
-				if (item) startItemExit(item);
-			}
-			onCommand?.(command);
-		},
-		[displayItems, onCommand, startItemExit],
-	);
 	const layout = useMemo(
 		() =>
-			displayItems.map((item) => ({
+			items.map((item) => ({
 				i: item.id,
 				...item.layouts[breakpoint],
 				isResizable: false,
 				resizeHandles: [],
 			})),
-		[breakpoint, displayItems],
+		[breakpoint, items],
 	);
-	const draggingItem = displayItems.find((item) => item.id === draggingItemId);
+	const draggingItem = items.find((item) => item.id === draggingItemId);
 	const draggingPreset = draggingItem
 		? inferPresetFromLayout(
 				draggingItem.type,
@@ -323,14 +258,14 @@ export default function BentoSection({
 			setDraggingItemId(null);
 			if (resolved.outsideGrid) setLayoutRevision((revision) => revision + 1);
 			if (validateBentoLayout(resolved.layout, cols)) {
-				handleBentoCommand({
+				onCommand?.({
 					type: "replace-layout",
 					breakpoint,
 					layout: resolved.layout,
 				});
 			}
 		},
-		[breakpoint, cols, dragMotion, handleBentoCommand, layout],
+		[breakpoint, cols, dragMotion, layout, onCommand],
 	);
 	const lastInitialEntryItemId = [...items]
 		.reverse()
@@ -381,7 +316,7 @@ export default function BentoSection({
 					onDrag={mode === "edit" ? handleDrag : undefined}
 					onDragStop={mode === "edit" ? handleDragStop : undefined}
 				>
-					{displayItems.map((item, index) => {
+					{items.map((item, index) => {
 						const isInitialEntryItem = initialEntryItemIds.has(item.id);
 						const itemShell = (
 							<BentoItemShell
@@ -395,10 +330,9 @@ export default function BentoSection({
 										? () => onAutoFocus?.(item.id)
 										: undefined
 								}
-								onCommand={handleBentoCommand}
+								onCommand={onCommand}
 								isAnyItemDragging={draggingItemId !== null}
 								isEntering={enteringItemIds.has(item.id)}
-								isExiting={exitingItems.has(item.id)}
 								isInitialEntryItem={isInitialEntryItem}
 								entryReady={entryReady}
 								entryDelay={index * 0.1}
