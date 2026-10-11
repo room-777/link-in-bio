@@ -32,6 +32,8 @@
 		"evlog": "catalog:runtime",
 		"hono": "catalog:runtime",
 		"rss-parser": "^3.13.0",
+		"top-user-agents": "^2.1.139",
+		"unique-random-array": "^4.0.0",
 		"valibot": "catalog:runtime"
 	},
 	"devDependencies": {
