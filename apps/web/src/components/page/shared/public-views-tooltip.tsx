@@ -48,22 +48,18 @@ export function getPublicViewsTooltipControl({
 
 	return {
 		id: "views",
-		trigger: today ? (
+		trigger: (
 			<Button
 				variant="ghost"
 				size="lg"
 				className="w-28 px-2 text-muted-foreground/80"
-				aria-label={`${today.count} views today`}
+				aria-label={`${today?.count ?? 0} views today`}
 			>
-				<SpinningCounter value={today.value} />
-				{today.unit}
+				<SpinningCounter value={today?.value ?? 0} />
+				{today?.unit ?? ""}
 				<span className="ml-0">views today</span>
 			</Button>
-		) : (
-			getUnavailableTrigger()
 		),
-		content: yesterday
-			? `${yesterday.value}${yesterday.unit} views yesterday`
-			: "Yesterday's view count stepped out for a moment. Try again soon.",
+		content: `${yesterday?.value ?? 0}${yesterday?.unit ?? ""} views yesterday`,
 	};
 }

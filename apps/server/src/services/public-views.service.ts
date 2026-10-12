@@ -52,19 +52,17 @@ async function getPageviews(pageId: string, timezone: string, date: string) {
 		timezone,
 	}).toString();
 
-	try {
-		const response = await fetch(url);
-		if (!response.ok) return null;
-		const data: unknown = await response.json();
-		if (typeof data !== "object" || data === null || !("pageviews" in data)) {
-			return null;
-		}
-		return typeof data.pageviews === "number" && Number.isFinite(data.pageviews)
-			? data.pageviews
-			: null;
-	} catch {
-		return null;
+	const response = await fetch(url);
+	if (!response.ok) throw new Error("Simple Analytics request failed.");
+	const data: unknown = await response.json();
+	if (typeof data !== "object" || data === null || !("pageviews" in data)) {
+		throw new Error("Simple Analytics response is invalid.");
 	}
+	if (data.pageviews === null) return null;
+	if (typeof data.pageviews === "number" && Number.isFinite(data.pageviews)) {
+		return data.pageviews;
+	}
+	throw new Error("Simple Analytics response is invalid.");
 }
 
 export async function getPublicViews(pageId: string, timezone: string) {
