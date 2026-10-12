@@ -1,4 +1,8 @@
-import type { CalendlyEventType, RssFeedResponse } from "@grabbin/api";
+import type {
+	CalendlyEventType,
+	PageItemLinkMetadata,
+	RssFeedResponse,
+} from "@grabbin/api";
 import { providerDefinitions, providerIconUrl } from "@grabbin/page-link";
 import { type ComponentType, createElement } from "react";
 import CalendlyWidgetDetails from "@/components/page/editor/advanced-widgets/calendly/details";
@@ -13,7 +17,12 @@ import { TweetAdvancedWidgetPreview } from "@/components/page/editor/advanced-wi
 type AdvancedWidgetDetailsProps = {
 	onAdd: (event: CalendlyEventType) => Promise<void>;
 	onRssFeedAdd: (url: string) => Promise<boolean>;
-	onSpotifyAdd: (url: string) => Promise<boolean>;
+	onSpotifyAdd: (
+		url: string,
+		metadata: PageItemLinkMetadata,
+	) => Promise<boolean>;
+	spotifyPreview?: { url: string; metadata: PageItemLinkMetadata };
+	spotifyPreviewError?: boolean;
 	onTweetAdd: (url: string) => Promise<boolean>;
 	onInputChange?: (value: string) => void;
 	badges: AdvancedWidgetModule["badges"];
@@ -22,6 +31,7 @@ type AdvancedWidgetDetailsProps = {
 type AdvancedWidgetPreviewProps = {
 	inputValue?: string;
 	rssFeed?: RssFeedResponse;
+	spotifyPreview?: { url: string; metadata: PageItemLinkMetadata };
 };
 
 export type AdvancedWidgetModule = {

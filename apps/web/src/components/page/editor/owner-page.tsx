@@ -45,6 +45,11 @@ export default function OwnerPage({
 				widgetActionsRef.current?.onRssFeedAdd(url) ?? Promise.resolve(false),
 			onRssFeedPreview: (url) =>
 				widgetActionsRef.current?.onRssFeedPreview(url) ?? Promise.reject(),
+			onSpotifyPreview: (url) =>
+				widgetActionsRef.current?.onSpotifyPreview(url) ?? Promise.reject(),
+			onSpotifyAdd: (url, metadata) =>
+				widgetActionsRef.current?.onSpotifyAdd(url, metadata) ??
+				Promise.resolve(false),
 			onTweetAdd: (url) =>
 				widgetActionsRef.current?.onTweetAdd(url) ?? Promise.resolve(false),
 			onMediaSelect: (file) => widgetActionsRef.current?.onMediaSelect(file),

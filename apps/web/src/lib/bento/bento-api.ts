@@ -4,6 +4,7 @@ import {
 	pageItemBatchResponseSchema,
 	pageItemMetadataResponseSchema,
 	pageItemRssResponseSchema,
+	pageItemSpotifyPreviewResponseSchema,
 	pageItemUploadCompleteResponseSchema,
 	pageItemUploadResponseSchema,
 } from "@grabbin/api";
@@ -70,6 +71,21 @@ export async function fetchBentoRss(handle: string, url: string) {
 			},
 		},
 	};
+}
+
+export async function fetchBentoSpotifyPreview(handle: string, url: string) {
+	const response = await apiClient.pages[":handle"].metadata.$post(
+		{ param: { handle } },
+		{
+			init: {
+				body: JSON.stringify({ kind: "spotify", url }),
+				headers: { "Content-Type": "application/json" },
+			},
+		},
+	);
+	if (!response.ok) throw new Error(await getApiErrorMessage(response));
+	return v.parse(pageItemSpotifyPreviewResponseSchema, await response.json())
+		.metadata;
 }
 
 export async function uploadBentoMedia(

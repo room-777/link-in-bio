@@ -3,6 +3,7 @@
 import type {
 	CalendlyEventType,
 	ItemType,
+	PageItemLinkMetadata,
 	RssFeedResponse,
 } from "@grabbin/api";
 import { Button } from "@grabbin/ui/components/button";
@@ -26,6 +27,11 @@ export type AddWidgetButtonProps = {
 	onCalendlyAdd: (event: CalendlyEventType) => Promise<void>;
 	onRssFeedAdd: (url: string) => Promise<boolean>;
 	onRssFeedPreview: (url: string) => Promise<RssFeedResponse>;
+	onSpotifyPreview: (url: string) => Promise<PageItemLinkMetadata>;
+	onSpotifyAdd: (
+		url: string,
+		metadata: PageItemLinkMetadata,
+	) => Promise<boolean>;
 	onTweetAdd: (url: string) => Promise<boolean>;
 	onMediaSelect: (file: File) => void;
 };
@@ -35,6 +41,8 @@ export default function AddWidgetButton({
 	onCalendlyAdd,
 	onRssFeedAdd,
 	onRssFeedPreview,
+	onSpotifyPreview,
+	onSpotifyAdd,
 	onTweetAdd,
 	onMediaSelect,
 }: AddWidgetButtonProps) {
@@ -147,10 +155,8 @@ export default function AddWidgetButton({
 				onCalendlyAdd={onCalendlyAdd}
 				onRssFeedAdd={onRssFeedAdd}
 				onRssFeedPreview={onRssFeedPreview}
-				onSpotifyAdd={async (url) => {
-					onItemAdd("link", url);
-					return true;
-				}}
+				onSpotifyPreview={onSpotifyPreview}
+				onSpotifyAdd={onSpotifyAdd}
 				onTweetAdd={onTweetAdd}
 			/>
 		</div>

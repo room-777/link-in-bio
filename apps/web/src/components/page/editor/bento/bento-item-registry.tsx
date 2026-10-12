@@ -85,8 +85,8 @@ function renderLink({ item, preset, options }: Parameters<ItemRenderer>[0]) {
 	if (item.data.metadata?.provider === "tweet") {
 		return <TweetItem item={item} mode={options.mode} preset={preset} />;
 	}
-	if (item.data.metadata?.provider === "spotify") {
-		return <SpotifyItem item={item} />;
+	if (item.data.metadata?.widget === "spotify") {
+		return <SpotifyItem item={item} preset={preset} />;
 	}
 	return (
 		<LinkItem

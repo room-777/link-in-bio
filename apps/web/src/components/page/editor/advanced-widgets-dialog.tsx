@@ -1,6 +1,10 @@
 "use client";
 
-import type { CalendlyEventType, RssFeedResponse } from "@grabbin/api";
+import type {
+	CalendlyEventType,
+	PageItemLinkMetadata,
+	RssFeedResponse,
+} from "@grabbin/api";
 import { Button } from "@grabbin/ui/components/button";
 import {
 	Dialog,
@@ -35,13 +39,18 @@ export default function AdvancedWidgetsDialog({
 	onCalendlyAdd,
 	onRssFeedAdd,
 	onRssFeedPreview,
+	onSpotifyPreview,
 	onSpotifyAdd,
 	onTweetAdd,
 }: {
 	onCalendlyAdd: (event: CalendlyEventType) => Promise<void>;
 	onRssFeedAdd: (url: string) => Promise<boolean>;
 	onRssFeedPreview: (url: string) => Promise<RssFeedResponse>;
-	onSpotifyAdd: (url: string) => Promise<boolean>;
+	onSpotifyPreview: (url: string) => Promise<PageItemLinkMetadata>;
+	onSpotifyAdd: (
+		url: string,
+		metadata: PageItemLinkMetadata,
+	) => Promise<boolean>;
 	onTweetAdd: (url: string) => Promise<boolean>;
 }) {
 	const isMobile = useIsMobile();
@@ -74,6 +83,7 @@ export default function AdvancedWidgetsDialog({
 						onCalendlyAdd={onCalendlyAdd}
 						onRssFeedAdd={onRssFeedAdd}
 						onRssFeedPreview={onRssFeedPreview}
+						onSpotifyPreview={onSpotifyPreview}
 						onSpotifyAdd={onSpotifyAdd}
 						onTweetAdd={onTweetAdd}
 					/>
@@ -101,6 +111,7 @@ function AdvancedWidgetsOverlay({
 	onCalendlyAdd,
 	onRssFeedAdd,
 	onRssFeedPreview,
+	onSpotifyPreview,
 	onSpotifyAdd,
 	onTweetAdd,
 }: {
@@ -112,7 +123,11 @@ function AdvancedWidgetsOverlay({
 	onCalendlyAdd: (event: CalendlyEventType) => Promise<void>;
 	onRssFeedAdd: (url: string) => Promise<boolean>;
 	onRssFeedPreview: (url: string) => Promise<RssFeedResponse>;
-	onSpotifyAdd: (url: string) => Promise<boolean>;
+	onSpotifyPreview: (url: string) => Promise<PageItemLinkMetadata>;
+	onSpotifyAdd: (
+		url: string,
+		metadata: PageItemLinkMetadata,
+	) => Promise<boolean>;
 	onTweetAdd: (url: string) => Promise<boolean>;
 }) {
 	const reduceMotion = useReducedMotion() ?? false;
@@ -315,8 +330,9 @@ function AdvancedWidgetsOverlay({
 									return added;
 								}}
 								onRssFeedPreview={onRssFeedPreview}
-								onSpotifyAdd={async (url) => {
-									const added = await onSpotifyAdd(url);
+								onSpotifyPreview={onSpotifyPreview}
+								onSpotifyAdd={async (url, metadata) => {
+									const added = await onSpotifyAdd(url, metadata);
 									if (added) handleOpenChange(false);
 									return added;
 								}}

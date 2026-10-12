@@ -1,7 +1,10 @@
 "use client";
 
-import { getPresetGeometry } from "@grabbin/bento-layout";
+import type { PageItemLinkMetadata } from "@grabbin/api";
+import { getPresetGeometry, type PresetName } from "@grabbin/bento-layout";
+import { Skeleton } from "@grabbin/ui/components/skeleton";
 import type { BentoItem } from "@/lib/bento/bento-types";
+import { normalizeHttpsUrl } from "@/lib/normalize-https-url";
 import { AdvancedWidgetPresetControls } from "../preset-controls";
 import { AdvancedWidgetPreviewFrame } from "../preview-frame";
 import {
@@ -10,24 +13,64 @@ import {
 } from "../use-advanced-widget-preset";
 import { SpotifyWidget } from "./widget";
 
-const previewItem: BentoItem = {
-	id: "advanced-widget-preview-spotify",
-	type: "link",
-	data: {
-		url: "https://open.spotify.com/track/5nTtCOCds6I0PHMNtqelas",
-		metadata: { provider: "spotify" },
-	},
-	style: {},
-	layouts: {
-		wide: getPresetGeometry("squareSmall", "wide"),
-		compact: getPresetGeometry("squareSmall", "compact"),
-	},
-	createdAt: "2026-10-11T00:00:00.000Z",
-	updatedAt: "2026-10-11T00:00:00.000Z",
-	preset: "squareSmall",
-};
+function SpotifyWidgetSkeleton({ preset }: { preset: PresetName }) {
+	const spotifyPreset = preset === "fullBanner" ? "squareSmall" : preset;
+	if (spotifyPreset === "squareSmall") {
+		return (
+			<div
+				role="status"
+				aria-label="Loading Spotify preview"
+				className="relative size-full overflow-hidden rounded-[inherit]"
+			>
+				<Skeleton className="size-full rounded-[inherit]" />
+				<Skeleton className="absolute bottom-4 left-3 h-4 w-1/2" />
+				<Skeleton className="absolute top-3 right-3 size-10 rounded-full" />
+			</div>
+		);
+	}
 
-export function SpotifyAdvancedWidgetPreview() {
+	if (spotifyPreset === "halfBanner") {
+		return (
+			<div
+				role="status"
+				aria-label="Loading Spotify preview"
+				className="flex size-full items-center gap-3 rounded-[inherit] p-5"
+			>
+				<Skeleton className="size-10 shrink-0 rounded-md" />
+				<div className="flex min-w-0 flex-1 flex-col gap-2">
+					<Skeleton className="h-4 w-3/4" />
+					<Skeleton className="h-3 w-1/2" />
+				</div>
+				<Skeleton className="size-8 shrink-0 rounded-full" />
+			</div>
+		);
+	}
+
+	return (
+		<div
+			role="status"
+			aria-label="Loading Spotify preview"
+			className={`flex size-full min-h-0 gap-3 rounded-[inherit] p-3 ${spotifyPreset === "landscape" ? "flex-row" : "flex-col"}`}
+		>
+			<Skeleton
+				className={`shrink-0 rounded-xl ${spotifyPreset === "landscape" ? "aspect-square h-full" : "h-1/2 w-full"}`}
+			/>
+			<div className="flex min-h-0 min-w-0 flex-1 flex-col gap-3 py-1">
+				<Skeleton className="h-4 w-3/4 shrink-0" />
+				<Skeleton className="h-4 w-full shrink-0" />
+				<Skeleton className="h-4 w-5/6 shrink-0" />
+			</div>
+		</div>
+	);
+}
+
+export function SpotifyAdvancedWidgetPreview({
+	inputValue,
+	spotifyPreview,
+}: {
+	inputValue?: string;
+	spotifyPreview?: { url: string; metadata: PageItemLinkMetadata };
+}) {
 	const {
 		preset,
 		visiblePreset,
@@ -35,19 +78,29 @@ export function SpotifyAdvancedWidgetPreview() {
 		onPresetChange,
 		onTransitionComplete,
 	} = useAdvancedWidgetPreset(advancedWidgetPresets.spotify, "squareSmall");
-	const item: BentoItem = {
-		...previewItem,
-		preset: visiblePreset,
+	const url =
+		normalizeHttpsUrl(inputValue ?? "") ?? "https://open.spotify.com/";
+	const metadata =
+		spotifyPreview?.url === url ? spotifyPreview.metadata : undefined;
+	const item: Extract<BentoItem, { type: "link" }> = {
+		id: "advanced-widget-preview-spotify",
+		type: "link",
+		data: { url, ...(metadata ? { metadata } : {}) },
+		style: {},
 		layouts: {
 			wide: getPresetGeometry(visiblePreset, "wide"),
 			compact: getPresetGeometry(visiblePreset, "compact"),
 		},
+		createdAt: "2026-10-11T00:00:00.000Z",
+		updatedAt: "2026-10-11T00:00:00.000Z",
+		preset: visiblePreset,
 	};
 	return (
 		<AdvancedWidgetPreviewFrame
 			item={item}
 			transitionPhase={transitionPhase}
 			onTransitionComplete={onTransitionComplete}
+			interactive={Boolean(metadata)}
 			controls={
 				<AdvancedWidgetPresetControls
 					presets={advancedWidgetPresets.spotify}
@@ -56,7 +109,11 @@ export function SpotifyAdvancedWidgetPreview() {
 				/>
 			}
 		>
-			<SpotifyWidget />
+			{metadata ? (
+				<SpotifyWidget item={item} preset={visiblePreset} />
+			) : (
+				<SpotifyWidgetSkeleton preset={visiblePreset} />
+			)}
 		</AdvancedWidgetPreviewFrame>
 	);
 }

@@ -3,19 +3,20 @@
 import type {
 	ItemType,
 	PageByHandleResponse,
+	PageItemLinkMetadata,
 	RssFeedResponse,
 } from "@grabbin/api";
 import {
 	type BentoBreakpoint,
 	getBentoGridHeight,
 } from "@grabbin/bento-layout";
-import { providerIconUrl } from "@grabbin/page-link";
+import { providerIconUrl, resolveLinkProvider } from "@grabbin/page-link";
 import { toast } from "@grabbin/ui/components/toast";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import dynamic from "next/dynamic";
 import { type CSSProperties, useCallback, useEffect, useRef } from "react";
 import type { Tweet as TweetResponse } from "react-tweet/api";
-import { fetchBentoRss } from "@/lib/bento/bento-api";
+import { fetchBentoRss, fetchBentoSpotifyPreview } from "@/lib/bento/bento-api";
 import { useBentoStore } from "@/lib/bento/bento-store";
 import { tweetQueryOptions } from "@/lib/tweet-query";
 import type { AddWidgetButtonProps } from "./add-widget-button";
@@ -75,6 +76,11 @@ export default function BentoEditor({
 		handle: string;
 		url: string;
 		promise: Promise<RssFeedResponse>;
+	} | null>(null);
+	const spotifyPreviewRequestRef = useRef<{
+		handle: string;
+		url: string;
+		promise: Promise<PageItemLinkMetadata>;
 	} | null>(null);
 	const getRssFeed = useCallback(
 		(url: string) => {
@@ -233,6 +239,65 @@ export default function BentoEditor({
 		},
 		[queryClient, store.dispatchCommand],
 	);
+	const previewSpotify = useCallback(
+		(url: string) => {
+			const cached = spotifyPreviewRequestRef.current;
+			if (cached?.handle === handle && cached.url === url)
+				return cached.promise;
+
+			const request = fetchBentoSpotifyPreview(handle, url).catch((error) => {
+				if (spotifyPreviewRequestRef.current?.promise === request)
+					spotifyPreviewRequestRef.current = null;
+				throw error;
+			});
+			spotifyPreviewRequestRef.current = { handle, url, promise: request };
+			return request;
+		},
+		[handle],
+	);
+	const addSpotify = useCallback(
+		async (url: string, metadata: PageItemLinkMetadata) => {
+			let parsedUrl: URL;
+			try {
+				parsedUrl = new URL(url.trim());
+			} catch {
+				return false;
+			}
+			const resolved = resolveLinkProvider(parsedUrl);
+			if (
+				parsedUrl.protocol !== "https:" ||
+				resolved.id !== "spotify" ||
+				!resolved.target ||
+				metadata.provider !== "spotify" ||
+				!metadata.title ||
+				!metadata.providerData?.spotify
+			)
+				return false;
+
+			const normalizedUrl = parsedUrl.toString();
+			const addedItem = store.dispatchCommand({
+				type: "add-item",
+				itemType: "link",
+				url: normalizedUrl,
+			});
+			if (addedItem?.type !== "link") return false;
+
+			store.dispatchCommand({
+				type: "update-data",
+				itemId: addedItem.id,
+				data: {
+					...addedItem.data,
+					metadata: {
+						...metadata,
+						faviconUrl: metadata.faviconUrl ?? providerIconUrl("spotify"),
+						widget: "spotify",
+					},
+				},
+			});
+			return true;
+		},
+		[store.dispatchCommand],
+	);
 	const previewRssFeed = useCallback(
 		(url: string) => getRssFeed(url),
 		[getRssFeed],
@@ -276,6 +341,8 @@ export default function BentoEditor({
 			onCalendlyAdd: addCalendlyItem,
 			onRssFeedAdd: addRssFeed,
 			onRssFeedPreview: previewRssFeed,
+			onSpotifyPreview: previewSpotify,
+			onSpotifyAdd: addSpotify,
 			onTweetAdd: addTweet,
 			onMediaSelect: selectMedia,
 		});
@@ -284,6 +351,8 @@ export default function BentoEditor({
 		addItem,
 		addRssFeed,
 		previewRssFeed,
+		previewSpotify,
+		addSpotify,
 		addTweet,
 		onWidgetActionsChange,
 		selectMedia,

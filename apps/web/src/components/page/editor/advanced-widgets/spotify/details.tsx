@@ -1,3 +1,4 @@
+import type { PageItemLinkMetadata } from "@grabbin/api";
 import { resolveLinkProvider } from "@grabbin/page-link";
 import { Button } from "@grabbin/ui/components/button";
 import {
@@ -7,6 +8,7 @@ import {
 import { Label } from "@grabbin/ui/components/label";
 import Loading from "@grabbin/ui/components/loading";
 import { useState } from "react";
+import { normalizeHttpsUrl } from "@/lib/normalize-https-url";
 
 const spotifyTypes = [
 	"artist",
@@ -19,7 +21,9 @@ type SpotifyType = (typeof spotifyTypes)[number];
 
 function getSpotifyType(value: string): SpotifyType | undefined {
 	try {
-		const url = new URL(value.trim());
+		const normalizedUrl = normalizeHttpsUrl(value);
+		if (!normalizedUrl) return undefined;
+		const url = new URL(normalizedUrl);
 		if (url.protocol !== "https:" || resolveLinkProvider(url).id !== "spotify")
 			return undefined;
 		return url.pathname
@@ -34,12 +38,27 @@ function getSpotifyType(value: string): SpotifyType | undefined {
 
 export default function SpotifyWidgetDetails({
 	onSpotifyAdd,
+	onInputChange,
+	spotifyPreview,
+	spotifyPreviewError,
 }: {
-	onSpotifyAdd: (url: string) => Promise<boolean>;
+	onSpotifyAdd: (
+		url: string,
+		metadata: PageItemLinkMetadata,
+	) => Promise<boolean>;
+	onInputChange?: (value: string) => void;
+	spotifyPreview?: { url: string; metadata: PageItemLinkMetadata };
+	spotifyPreviewError?: boolean;
 }) {
 	const [url, setUrl] = useState("");
 	const [isAdding, setIsAdding] = useState(false);
 	const [error, setError] = useState<string>();
+	const normalizedUrl = normalizeHttpsUrl(url);
+	const hasInvalidUrl = Boolean(url.trim() && !getSpotifyType(url));
+	const previewMetadata =
+		normalizedUrl && spotifyPreview?.url === normalizedUrl
+			? spotifyPreview.metadata
+			: undefined;
 
 	return (
 		<div className="flex h-full min-h-0 flex-col gap-3">
@@ -56,6 +75,7 @@ export default function SpotifyWidgetDetails({
 						value={url}
 						onChange={(event) => {
 							setUrl(event.target.value);
+							onInputChange?.(event.target.value);
 							setError(undefined);
 						}}
 					/>
@@ -70,6 +90,19 @@ export default function SpotifyWidgetDetails({
 					{error}
 				</p>
 			) : null}
+			{hasInvalidUrl ? (
+				<p role="alert" className="text-destructive text-sm">
+					Enter a Spotify artist, album, track, playlist, or episode URL.
+				</p>
+			) : null}
+			{spotifyPreviewError &&
+			normalizedUrl &&
+			!previewMetadata &&
+			!hasInvalidUrl ? (
+				<p role="alert" className="text-destructive text-sm">
+					Could not load Spotify data. Check the URL and try again.
+				</p>
+			) : null}
 			<div className="mt-auto flex shrink-0 justify-end">
 				<Button
 					type="button"
@@ -77,7 +110,7 @@ export default function SpotifyWidgetDetails({
 					size="xl"
 					aria-busy={isAdding}
 					aria-label={isAdding ? "Adding Spotify link" : undefined}
-					disabled={!url.trim() || isAdding}
+					disabled={!previewMetadata || isAdding}
 					className="relative px-5 text-base"
 					onClick={async () => {
 						if (!getSpotifyType(url)) {
@@ -88,7 +121,11 @@ export default function SpotifyWidgetDetails({
 						}
 						setIsAdding(true);
 						try {
-							if (!(await onSpotifyAdd(url.trim()))) {
+							if (
+								!normalizedUrl ||
+								!previewMetadata ||
+								!(await onSpotifyAdd(normalizedUrl, previewMetadata))
+							) {
 								setError("Could not add this Spotify link. Try again.");
 							}
 						} catch {

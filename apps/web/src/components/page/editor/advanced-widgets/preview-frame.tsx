@@ -30,15 +30,18 @@ export function AdvancedWidgetPreviewFrame({
 	controls,
 	transitionPhase,
 	onTransitionComplete,
+	interactive = false,
 }: {
 	item: BentoItem;
 	children: ReactNode;
 	controls?: ReactNode;
 	transitionPhase?: "exit" | "enter";
 	onTransitionComplete?: (phase: "exit" | "enter") => void;
+	interactive?: boolean;
 }) {
 	const previewAreaRef = useRef<HTMLDivElement>(null);
 	const reduceMotion = useReducedMotion() ?? false;
+	const isInteractive = interactive && !transitionPhase;
 	const layoutSize = getLayoutSize(item);
 	const [previewSize, setPreviewSize] = useState(layoutSize);
 
@@ -78,8 +81,8 @@ export function AdvancedWidgetPreviewFrame({
 			className="relative flex h-[55%] min-h-0 shrink-0 justify-center rounded-2xl bg-secondary/60 py-6 outline-depth"
 		>
 			<div
-				aria-hidden="true"
-				inert
+				aria-hidden={isInteractive ? undefined : true}
+				inert={!isInteractive}
 				className="self-center"
 				style={{ width: previewSize.width, height: previewSize.height }}
 			>

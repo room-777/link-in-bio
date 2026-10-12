@@ -139,6 +139,8 @@ export function BentoItemShell({
 		item.type === "link" && item.data.metadata?.provider === "rss-feed";
 	const isTweetWidget =
 		item.type === "link" && item.data.metadata?.provider === "tweet";
+	const isSpotifyWidget =
+		item.type === "link" && item.data.metadata?.widget === "spotify";
 	const publicLink =
 		mode === "view" &&
 		!disableCardLink &&
@@ -297,7 +299,7 @@ export function BentoItemShell({
 							}
 						: undefined
 				}
-				className={`bento-item-card relative size-full overflow-hidden bg-background ${publicLink ? "bento-link-card block cursor-pointer! touch-manipulation outline-none focus-visible:outline-2 focus-visible:outline-ring focus-visible:outline-offset-2" : ""} ${hasSurfaceLine ? "surface-line" : ""} ${linkTheme ? "link-card-themed" : ""} ${cardClassName ?? ""}`}
+				className={`bento-item-card relative size-full overflow-hidden bg-background ${publicLink ? "bento-link-card block cursor-pointer! touch-manipulation outline-none focus-visible:outline-2 focus-visible:outline-ring focus-visible:outline-offset-2" : ""} ${hasSurfaceLine ? "surface-line" : ""} ${linkTheme ? "link-card-themed" : ""} ${isSpotifyWidget ? "spotify-widget-card" : ""} ${cardClassName ?? ""}`}
 				style={cardStyle}
 			>
 				<div className="relative z-10 size-full min-h-0 rounded-[inherit]">

@@ -125,6 +125,10 @@
 	backface-visibility: hidden;
 }
 
+.bento-item-card.spotify-widget-card {
+	border: 0;
+}
+
 :is(
 		[data-bento-item-type="map"],
 		[data-bento-item-type="media"],
