@@ -31,7 +31,7 @@ import { Trash } from "@/components/trash";
 import { apiClient, getApiErrorMessage } from "@/lib/api-client";
 import { getErrorMessage } from "@/lib/error-message";
 import { getPageImageUrl } from "@/lib/page-image-url";
-import { openPlanDialog } from "../../billing/plan-dialog";
+import { openPlanDialog } from "../../../billing/plan-dialog";
 import CreatePageForm from "./create-page-form";
 
 type Activity = "manage" | "create";

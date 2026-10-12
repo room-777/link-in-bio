@@ -16,8 +16,8 @@ import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { usePublicViews } from "@/hooks/use-public-views";
 import { authClient, getAuthErrorMessage } from "@/lib/auth-client";
-import { openChangeHandleDialog } from "../management/change-handle-dialog";
 import { openDeleteAccountDialog } from "../management/delete-account-dialog";
+import { openChangeHandleDialog } from "../management/pages/open-change-handle-dialog";
 import { openSettingDialog } from "../management/setting-dialog";
 import { openShareLinkDialog } from "../sharing/share-link-dialog";
 import {
@@ -106,7 +106,7 @@ export default function OwnerFooter({
 							className="h-16 w-full justify-start px-3"
 							onClick={() => {
 								setIsOpen(false);
-								openChangeHandleDialog(handle, onHandleChange);
+								openChangeHandleDialog(handle, onHandleChange, isMobile);
 							}}
 						>
 							<span className="flex flex-col items-start gap-0.5 text-left">
