@@ -193,7 +193,7 @@ export default function HeroSection() {
 					/>
 					<div className="absolute inset-y-0 right-[2.8%] left-[2.8%] h-full overflow-hidden rounded-[10%]">
 						<img
-							src="/images/test2/profile-preview.webp"
+							src="/images/landing/hero-profile-preview-6c812da2.webp"
 							alt="Example Grabbin profile page"
 							className="h-full w-full object-contain object-center"
 							width={800}
@@ -204,7 +204,7 @@ export default function HeroSection() {
 						/>
 					</div>
 					<img
-						src="/images/test2/phone-frame.webp"
+						src="/images/landing/hero-phone-frame-20a5f043.webp"
 						alt=""
 						aria-hidden="true"
 						className="relative z-20 block h-auto w-full"
