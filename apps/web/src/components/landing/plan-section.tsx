@@ -78,6 +78,9 @@ export default function PlanSection({
 							or Join for free
 						</JoinForFreeButton>
 					</div>
+					<p className="text-center text-muted-foreground text-sm">
+						Free as long as we can sustainably support them.
+					</p>
 				</motion.div>
 			</div>
 		</section>
