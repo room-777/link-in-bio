@@ -12,15 +12,14 @@ import { Label } from "@grabbin/ui/components/label";
 import Loading from "@grabbin/ui/components/loading";
 import { ScrollArea } from "@grabbin/ui/components/scroll-area";
 import { Skeleton } from "@grabbin/ui/components/skeleton";
-import { useQuery } from "@tanstack/react-query";
 import { type CSSProperties, useEffect, useState } from "react";
+import { CalendlyConnectionError } from "@/api/calendly/api";
 import CalendlyConnectButton from "@/components/page/calendly-connect-button";
 import { authClient } from "@/lib/auth-client";
 import {
-	CalendlyConnectionError,
-	getCalendlyConnectionQueryOptions,
-	getCalendlyEventsQueryOptions,
-} from "@/query/calendly";
+	useCalendlyConnectionQuery,
+	useCalendlyEventsQuery,
+} from "@/query/calendly/query";
 
 const calendlyBrandColor = providerDefinitions.find(
 	(provider) => provider.id === "calendly",
@@ -79,11 +78,10 @@ export default function CalendlyWidgetDetails({
 		setTimeZone(Intl.DateTimeFormat().resolvedOptions().timeZone || "UTC");
 	}, []);
 	const timeZoneOffset = timeZone ? formatTimeZoneOffset(timeZone) : undefined;
-	const connectionQuery = useQuery(getCalendlyConnectionQueryOptions());
-	const eventsQuery = useQuery({
-		...getCalendlyEventsQueryOptions(),
-		enabled: connectionQuery.data?.connected === true,
-	});
+	const connectionQuery = useCalendlyConnectionQuery();
+	const eventsQuery = useCalendlyEventsQuery(
+		connectionQuery.data?.connected === true,
+	);
 	const selectedEvent = eventsQuery.data?.find(
 		(event) => event.uri === selectedEventUri,
 	);

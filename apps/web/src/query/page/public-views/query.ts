@@ -1,10 +1,6 @@
-import {
-	type PublicViewsResponse,
-	publicViewsResponseSchema,
-} from "@grabbin/api";
-import { env } from "@grabbin/env/web";
-import { queryOptions } from "@tanstack/react-query";
-import * as v from "valibot";
+import type { PublicViewsResponse } from "@grabbin/api";
+import { queryOptions, useQuery } from "@tanstack/react-query";
+import { getPublicViews } from "@/api/public-views/api";
 
 const VIEWS_CACHE_TTL_MS = 15 * 60 * 1000;
 
@@ -29,21 +25,15 @@ function selectPublicViews({
 export function getPublicViewsQueryOptions(handle: string, timezone: string) {
 	return queryOptions({
 		queryKey: ["public-views", handle, timezone] as const,
-		queryFn: async ({ signal }) => {
-			const url = new URL(
-				`/pages/${encodeURIComponent(handle)}/views`,
-				env.NEXT_PUBLIC_SERVER_URL,
-			);
-			url.searchParams.set("timezone", timezone);
-			const response = await fetch(url, {
-				credentials: "include",
-				headers: { accept: "application/json" },
-				signal,
-			});
-			if (!response.ok) throw new Error("Public views request failed.");
-			return v.parse(publicViewsResponseSchema, await response.json());
-		},
+		queryFn: ({ signal }) => getPublicViews(handle, timezone, signal),
 		select: selectPublicViews,
 		staleTime: VIEWS_CACHE_TTL_MS,
+	});
+}
+
+export function usePublicViewsQuery(handle?: string, timezone?: string | null) {
+	return useQuery({
+		...getPublicViewsQueryOptions(handle ?? "", timezone ?? "UTC"),
+		enabled: Boolean(handle && timezone),
 	});
 }

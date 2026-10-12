@@ -5,10 +5,11 @@ import { providerIconUrl } from "@grabbin/page-link";
 import { Button, buttonVariants } from "@grabbin/ui/components/button";
 import Loading from "@grabbin/ui/components/loading";
 import { Skeleton } from "@grabbin/ui/components/skeleton";
-import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { useEffect, useState } from "react";
 import { CheckCircle } from "reicon-react/icons/CheckCircle";
 import * as v from "valibot";
+import { CalendlyConnectionError } from "@/api/calendly/api";
 import CalendlyConnectButton from "@/components/page/calendly-connect-button";
 import {
 	calendlyConnectionErrorFallback,
@@ -18,10 +19,9 @@ import { apiClient, getApiErrorMessage } from "@/lib/api-client";
 import { getSignInHref } from "@/lib/auth-redirect";
 import { getErrorMessage } from "@/lib/error-message";
 import {
-	CalendlyConnectionError,
 	calendlyConnectionQueryKey,
-	getCalendlyConnectionQueryOptions,
-} from "@/query/calendly";
+	useCalendlyConnectionQuery,
+} from "@/query/calendly/query";
 
 const signInHref = getSignInHref();
 
@@ -33,7 +33,7 @@ function getDisconnectingLabel(isPending: boolean) {
 export function CalendlyAccountTabContent({ isPro }: { isPro: boolean }) {
 	const queryClient = useQueryClient();
 	const [connectionError, setConnectionError] = useState("");
-	const connectionQuery = useQuery(getCalendlyConnectionQueryOptions());
+	const connectionQuery = useCalendlyConnectionQuery();
 	const connected = connectionQuery.data?.connected ?? false;
 	const disconnectMutation = useMutation({
 		mutationFn: async () => {

@@ -3,7 +3,7 @@
 import { Button } from "@grabbin/ui/components/button";
 import { CheckCircle } from "reicon-react/icons/CheckCircle";
 import { Verified } from "reicon-react/icons/Verified";
-import { CalendlyAccountTabContent } from "./calendly-account-tab-content";
+import { CalendlyAccountTabContent } from "./calendly/account-tab-content";
 
 export function AccountTabContent({
 	email,

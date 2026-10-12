@@ -1,35 +1,13 @@
 "use client";
 
-import {
-	calendlyWidgetResponseSchema,
-	type PageItemResponse,
-} from "@grabbin/api";
+import type { PageItemResponse } from "@grabbin/api";
 import type { PresetName } from "@grabbin/bento-layout";
-import { env } from "@grabbin/env/web";
-import { useQuery } from "@tanstack/react-query";
 import { useState } from "react";
-import * as v from "valibot";
+import {
+	getCalendlyAvailabilityRange,
+	useCalendlyAvailabilityQuery,
+} from "@/query/calendly/query";
 import { calendlyPresetComponents } from "./widget";
-
-const apiUrl = env.NEXT_PUBLIC_SERVER_URL;
-
-function getAvailabilityRange(date: Date) {
-	const now = new Date();
-	const currentMonth = new Date(now.getFullYear(), now.getMonth(), 1);
-	const requestedMonth = new Date(date.getFullYear(), date.getMonth(), 1);
-	const monthStart =
-		requestedMonth < currentMonth ? currentMonth : requestedMonth;
-	const start =
-		monthStart > now ? monthStart : new Date(now.getTime() + 5 * 60_000);
-	const monthEnd = new Date(
-		monthStart.getFullYear(),
-		monthStart.getMonth() + 1,
-		1,
-	);
-	const maxEnd = new Date(start.getTime() + 31 * 24 * 60 * 60 * 1000);
-	const end = monthEnd > start && monthEnd < maxEnd ? monthEnd : maxEnd;
-	return { startTime: start.toISOString(), endTime: end.toISOString() };
-}
 
 export function CalendlyItem({
 	item,
@@ -41,38 +19,8 @@ export function CalendlyItem({
 	handle?: string;
 }) {
 	const [selectedDate, setSelectedDate] = useState(() => new Date());
-	const range = getAvailabilityRange(selectedDate);
-	const query = useQuery({
-		queryKey: [
-			"calendly",
-			"widget",
-			handle,
-			item.id,
-			selectedDate.getFullYear(),
-			selectedDate.getMonth(),
-		],
-		enabled: Boolean(handle),
-		retry: 1,
-		queryFn: async ({ signal }) => {
-			const params = new URLSearchParams({
-				start_time: range.startTime,
-				end_time: range.endTime,
-			});
-			const response = await fetch(
-				`${apiUrl}/pages/${encodeURIComponent(handle ?? "")}/items/${encodeURIComponent(item.id)}/calendly?${params}`,
-				{ signal },
-			);
-			if (!response.ok)
-				throw new Error("Could not load Calendly availability.");
-			const result = v.safeParse(
-				calendlyWidgetResponseSchema,
-				await response.json(),
-			);
-			if (!result.success)
-				throw new Error("Could not load Calendly availability.");
-			return result.output;
-		},
-	});
+	const range = getCalendlyAvailabilityRange(selectedDate);
+	const query = useCalendlyAvailabilityQuery(handle, item.id, selectedDate);
 	const now = new Date();
 	const event = query.data?.event ?? {
 		uri: item.data.eventTypeUri,

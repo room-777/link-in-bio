@@ -5,14 +5,13 @@ import { toast } from "@grabbin/ui/components/toast";
 import { useMutation } from "@tanstack/react-query";
 import { useCallback, useEffect, useRef, useState } from "react";
 import * as v from "valibot";
-
-import { usePageAutoSave } from "@/hooks/use-page-auto-save";
-import { getErrorMessage } from "@/lib/error-message";
-import { getPageImageUrl } from "@/lib/page-image-url";
 import {
 	cleanupUploadedPageProfileImage,
 	uploadPageProfileImage,
-} from "@/query/page/profile-image";
+} from "@/api/page-profile-image/api";
+import { usePageAutoSave } from "@/hooks/use-page-auto-save";
+import { getErrorMessage } from "@/lib/error-message";
+import { getPageImageUrl } from "@/lib/page-image-url";
 
 export function usePageProfileForm(page: PageData, demoMode: boolean) {
 	const uploadImageMutation = useMutation({
