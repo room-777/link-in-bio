@@ -5,114 +5,22 @@ import { Button } from "@grabbin/ui/components/button";
 import Loading from "@grabbin/ui/components/loading";
 import { Tabs, TabsList, TabsTrigger } from "@grabbin/ui/components/tabs";
 import { cn } from "@grabbin/ui/lib/utils";
-import { BarChart3, Sparkles } from "lucide-react";
-import { AnimatePresence, motion, useReducedMotion } from "motion/react";
 import { useState } from "react";
 import { CheckCircle } from "reicon-react/icons/CheckCircle";
+import { Diamonds } from "reicon-react/icons/Diamonds";
+import { Globe } from "reicon-react/icons/Globe";
+import { Tag5 } from "reicon-react/icons/Tag5";
+import SpinningCounter from "@/components/page/shared/spinning-counter";
 import { isMultiPageEnabled } from "@/lib/feature-flags";
 
-const upcomingFeatures = [
-	{ label: "Advanced Widgets", Icon: Sparkles },
-	{ label: "Advanced analytics", Icon: BarChart3 },
-];
-
-function SlidingNumber({
-	value,
-	reduceMotion,
-}: {
-	value: string;
-	reduceMotion: boolean;
-}) {
-	const [whole, fraction] = value.replace("$", "").split(".");
-
-	return (
-		<span className="inline-flex items-baseline">
-			<span className="sr-only">{value}</span>
-			<span className="inline-flex items-baseline" aria-hidden="true">
-				<span>$</span>
-				{whole.split("").map((digit, index) => (
-					<SlidingDigit
-						key={`whole-${index}`}
-						digit={digit}
-						reduceMotion={reduceMotion}
-					/>
-				))}
-				{fraction !== undefined && (
-					<>
-						<span>.</span>
-						{fraction.split("").map((digit, index) => (
-							<SlidingDigit
-								key={`fraction-${index}`}
-								digit={digit}
-								reduceMotion={reduceMotion}
-							/>
-						))}
-					</>
-				)}
-			</span>
-		</span>
-	);
-}
-
-function SlidingDigit({
-	digit,
-	reduceMotion,
-}: {
-	digit: string;
-	reduceMotion: boolean;
-}) {
-	return (
-		<span className="relative inline-block h-[1em] overflow-hidden align-bottom">
-			<motion.span
-				className="flex flex-col leading-none"
-				initial={false}
-				animate={{ y: `-${digit}em` }}
-				transition={
-					reduceMotion
-						? { duration: 0 }
-						: { type: "spring", duration: 0.45, bounce: 0 }
-				}
-			>
-				{Array.from({ length: 10 }, (_, number) => (
-					<span key={number} className="h-[1em]">
-						{number}
-					</span>
-				))}
-			</motion.span>
-		</span>
-	);
-}
-
-function SlidingText({
-	value,
-	reduceMotion,
-}: {
-	value: string;
-	reduceMotion: boolean;
-}) {
-	return (
-		<span className="inline-grid h-[1.5em] overflow-hidden align-bottom">
-			<AnimatePresence initial={false} mode="wait">
-				<motion.span
-					key={value}
-					initial={reduceMotion ? false : { y: "100%" }}
-					animate={{ y: "0%" }}
-					exit={{ y: "-100%" }}
-					transition={{
-						duration: reduceMotion ? 0 : 0.22,
-						ease: [0.23, 1, 0.32, 1],
-					}}
-					className="col-start-1 row-start-1 inline-block"
-				>
-					{value}
-				</motion.span>
-			</AnimatePresence>
-		</span>
-	);
-}
-
 export type BillingPeriod = "monthly" | "yearly";
-export type PlanCardVariant = "default" | "horizontal";
+export type PlanCardVariant = "default" | "horizontal" | "landing";
+
+type PlanFeature = {
+	label: string;
+	Icon?: typeof CheckCircle;
+	color?: string;
+};
 
 export function PlanCard({
 	variant = "default",
@@ -125,17 +33,44 @@ export function PlanCard({
 	loading?: boolean;
 	onChoose: (period: BillingPeriod) => void;
 }) {
-	const reduceMotion = useReducedMotion() ?? false;
 	const isHorizontal = variant === "horizontal";
+	const isLanding = variant === "landing";
 	const [period, setPeriod] = useState<BillingPeriod>("monthly");
 	const isYearly = period === "yearly";
 	const price = isYearly ? "$86" : "$9";
+	const features: PlanFeature[] = isLanding
+		? [
+				{
+					label: "Remove watermark",
+					Icon: Tag5,
+					color: "text-amber-400",
+				},
+				{
+					label: "Connect your own domain",
+					Icon: Globe,
+					color: "text-brand-green",
+				},
+				{
+					label: "Customize with Premium Widgets",
+					Icon: Diamonds,
+					color: "text-sky-400",
+				},
+			]
+		: [
+				{ label: "All Free plan features included" },
+				...(isMultiPageEnabled ? [{ label: "Up to 3 pages per account" }] : []),
+				{ label: "Remove watermark" },
+				{ label: "Custom domain" },
+				{ label: "Advanced Widgets" },
+			];
+	const Container = isLanding ? "div" : "section";
 
 	return (
-		<section
+		<Container
 			className={cn(
-				isHorizontal && "smooth-shadow-ring-sm",
 				"grid gap-4 rounded-2xl bg-card p-5",
+				isHorizontal && "smooth-shadow-ring-sm",
+				isLanding && "pb-0",
 				className,
 			)}
 		>
@@ -146,16 +81,18 @@ export function PlanCard({
 						: "contents"
 				}
 			>
-				<div
-					className={
-						isHorizontal ? "grid gap-1" : "order-1 grid gap-1 text-center"
-					}
-				>
-					<h2 className="font-heading font-medium text-lg">Pro</h2>
-					<p className="text-muted-foreground text-sm">
-						Everything you need to grow your page.
-					</p>
-				</div>
+				{!isLanding && (
+					<div
+						className={
+							isHorizontal ? "grid gap-1" : "order-1 grid gap-1 text-center"
+						}
+					>
+						<h2 className="font-heading font-medium text-lg">Pro</h2>
+						<p className="text-muted-foreground text-sm">
+							Everything you need to grow your page.
+						</p>
+					</div>
+				)}
 				{isHorizontal && (
 					<Tabs
 						value={period}
@@ -178,27 +115,50 @@ export function PlanCard({
 						isHorizontal ? "flex min-w-0 flex-1 flex-col gap-4" : "contents"
 					}
 				>
-					<div className="order-3 grid gap-1" aria-live="polite">
-						<div className="flex items-center justify-between gap-2">
+					<div
+						className={cn(
+							"order-3 grid gap-1",
+							isLanding && "justify-items-center",
+						)}
+						aria-live="polite"
+					>
+						<div
+							className={cn(
+								"flex items-center justify-between gap-2",
+								isLanding && "flex-col justify-center",
+							)}
+						>
+							{isLanding && (
+								<div className="flex h-5 items-center justify-center">
+									{isYearly && (
+										<Badge variant="secondary" className="shrink-0 rounded-sm">
+											Save 20%
+										</Badge>
+									)}
+								</div>
+							)}
 							<div className="flex items-baseline gap-2">
 								<span className="font-heading font-semibold text-4xl tabular-nums tracking-tight">
-									<SlidingNumber value={price} reduceMotion={reduceMotion} />
+									<span className="sr-only">{price}</span>
+									<span
+										aria-hidden="true"
+										className="inline-flex items-baseline [--reel-cell:36px]"
+									>
+										$
+										<SpinningCounter value={Number(price.slice(1))} />
+									</span>
 								</span>
-								<span className="text-muted-foreground text-sm">
-									<SlidingText
-										value={isYearly ? "/ year" : "/ month"}
-										reduceMotion={reduceMotion}
-									/>
-								</span>
+								{isYearly && (
+									<span className="font-heading font-semibold text-4xl text-muted-foreground tabular-nums tracking-tight line-through">
+										$108
+									</span>
+								)}
 							</div>
-							{isYearly && (
+							{isYearly && !isLanding && (
 								<Badge variant="secondary" className="shrink-0 rounded-sm">
 									Save 20%
 								</Badge>
 							)}
-						</div>
-						<div className="min-h-5 text-muted-foreground text-sm">
-							{isYearly && <span className="line-through">$108</span>}
 						</div>
 					</div>
 
@@ -206,11 +166,20 @@ export function PlanCard({
 						type="button"
 						size="xl"
 						variant="brandBlack"
-						className="order-5 h-12 w-full rounded-lg text-lg"
+						className={cn(
+							"order-5 h-12 w-full rounded-lg text-lg",
+							isLanding && "mx-auto max-w-sm rounded-full",
+						)}
 						disabled={loading}
 						onClick={() => onChoose(period)}
 					>
-						{loading ? <Loading /> : "Get Pro"}
+						{loading ? (
+							<Loading />
+						) : isLanding ? (
+							`Start at ${price}/${isYearly ? "year" : "month"}`
+						) : (
+							"Get Pro"
+						)}
 					</Button>
 				</div>
 
@@ -221,78 +190,82 @@ export function PlanCard({
 							onValueChange={(value) => {
 								if (value === "monthly" || value === "yearly") setPeriod(value);
 							}}
-							className="order-2"
+							className={cn(
+								"order-2",
+								isLanding && "mx-auto mb-4 w-full max-w-72",
+							)}
 						>
-							<TabsList size="lg" className="grid w-full grid-cols-2">
-								<TabsTrigger value="monthly">Monthly</TabsTrigger>
-								<TabsTrigger value="yearly">Yearly</TabsTrigger>
+							<TabsList
+								size={isLanding ? "xl" : "lg"}
+								className={cn(
+									"grid w-full grid-cols-2",
+									isLanding &&
+										"rounded-full [&_[data-slot=tabs-indicator]]:rounded-full",
+								)}
+							>
+								<TabsTrigger
+									value="monthly"
+									className={isLanding ? "rounded-full" : undefined}
+								>
+									Monthly
+								</TabsTrigger>
+								<TabsTrigger
+									value="yearly"
+									className={isLanding ? "rounded-full" : undefined}
+								>
+									Yearly
+								</TabsTrigger>
 							</TabsList>
 						</Tabs>
 					)}
 
 					<ul
-						className={`order-4 grid gap-2 font-medium ${isHorizontal ? "xl:grid-cols-2" : "pt-4"}`}
+						className={cn(
+							"order-4 grid gap-2 font-medium",
+							isHorizontal ? "xl:grid-cols-2" : !isLanding && "pt-4",
+							isLanding && "justify-items-center text-center",
+						)}
 					>
-						<li className="flex items-center gap-2.5 text-base">
-							<CheckCircle
-								aria-hidden="true"
-								weight="Filled"
-								className="size-5 shrink-0 text-brand-green"
-							/>
-							<span>All Free plan features included</span>
-						</li>
-						{isMultiPageEnabled && (
-							<li className="flex items-center gap-2.5 text-base">
-								<CheckCircle
-									aria-hidden="true"
-									weight="Filled"
-									className="size-5 shrink-0 text-brand-green"
-								/>
-								<span>Up to 3 pages per account</span>
-							</li>
-						)}
-						<li className="flex items-center gap-2.5 text-base">
-							<CheckCircle
-								aria-hidden="true"
-								weight="Filled"
-								className="size-5 shrink-0 text-brand-green"
-							/>
-							<span>Remove watermark</span>
-						</li>
-						<li className="flex items-center gap-2.5 text-base">
-							<CheckCircle
-								aria-hidden="true"
-								weight="Filled"
-								className="size-5 shrink-0 text-brand-green"
-							/>
-							<span>Custom domain</span>
-						</li>
-						{!isHorizontal && (
-							<li className="flex items-center gap-3 pt-2 text-muted-foreground text-xs uppercase">
-								<span>Coming soon</span>
-								<span aria-hidden="true" className="h-px flex-1 bg-border" />
-							</li>
-						)}
-						{upcomingFeatures.map(({ label, Icon }) => (
+						{features.map(({ label, Icon = CheckCircle, color }) => (
 							<li
 								key={label}
-								className="flex items-center gap-2.5 text-base text-muted-foreground"
-							>
-								<Icon aria-hidden="true" className="size-4 shrink-0" />
-								<span>{label}</span>
-								{isHorizontal && (
-									<Badge
-										variant="outline"
-										className="ml-auto rounded-sm text-xs"
-									>
-										Coming soon
-									</Badge>
+								className={cn(
+									"flex items-start gap-2.5 text-base",
+									isLanding &&
+										"whitespace-nowrap text-sm leading-snug sm:text-xl",
+									isLanding && "justify-center",
 								)}
+							>
+								{!isLanding && (
+									<Icon
+										aria-hidden="true"
+										weight="Filled"
+										className={cn(
+											"mt-0.5 size-5 shrink-0",
+											color ?? "text-brand-green",
+										)}
+									/>
+								)}
+								<span>
+									{label}
+									{isLanding && (
+										<Icon
+											aria-hidden="true"
+											weight="Filled"
+											className={cn(
+												"ml-1.5 inline-block size-[1.2em] overflow-visible align-[-0.2em] drop-shadow-[0_2px_2px_rgba(0,0,0,0.15)]",
+												color,
+											)}
+											stroke="white"
+											style={{ strokeWidth: 3.5, paintOrder: "stroke" }}
+										/>
+									)}
+								</span>
 							</li>
 						))}
 					</ul>
 				</div>
 			</div>
-		</section>
+		</Container>
 	);
 }

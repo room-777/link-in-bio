@@ -1,8 +1,14 @@
 "use client";
 
 import { motion, useReducedMotion } from "motion/react";
-import Image from "next/image";
 import { PlanPicker } from "@/components/billing/plan-dialog";
+import JoinForFreeButton from "@/components/landing/join-for-free-button";
+
+const freeFeatures = [
+	"Unlimited photos and videos",
+	"Unlimited links",
+	"Customize your page with drag and drop",
+];
 
 export default function PlanSection({
 	isAuthenticated,
@@ -17,15 +23,17 @@ export default function PlanSection({
 		ease: [0.22, 1, 0.36, 1] as const,
 	};
 	const viewport = { once: true, amount: 0.2 };
+	const horizontalPadding =
+		"px-8 sm:px-16 md:px-20 lg:px-28 xl:px-36 2xl:px-40";
 
 	return (
 		<section
 			aria-labelledby="landing-plan-title"
-			className="w-full px-6 py-24 sm:px-10 sm:py-32"
+			className="w-full py-24 sm:py-32"
 		>
-			<div className="mx-auto flex w-full max-w-5xl flex-col items-center gap-10 sm:gap-14">
+			<div className="flex w-full flex-col gap-10 sm:gap-14">
 				<motion.div
-					className="flex flex-col items-center gap-5 text-center"
+					className="flex w-full flex-col items-center gap-5 text-center"
 					initial={initial}
 					whileInView={animate}
 					viewport={viewport}
@@ -33,43 +41,44 @@ export default function PlanSection({
 				>
 					<h2
 						id="landing-plan-title"
-						className="max-w-lg text-balance text-center font-medium text-4xl leading-11 tracking-tighter"
+						className={`w-full max-w-screen-2xl text-balance ${horizontalPadding} font-semibold text-[clamp(1.25rem,6.2vw,1.75rem)] leading-tight tracking-tighter sm:text-[clamp(1.75rem,3.5vw,3.25rem)] lg:text-[clamp(2.25rem,3.5vw,3.25rem)]`}
 					>
-						A thoughtful page, free to start.
+						<span className="block">Build for free.</span>
+						<span className="mt-1.5 block">Upgrade when you need.</span>
 					</h2>
-					<p className="w-full max-w-md text-center font-medium text-lg/6 text-muted-foreground">
-						Build for free. Move to Pro to remove the watermark or connect a
-						custom domain.
-					</p>
 				</motion.div>
-				<div className="relative mx-auto mt-8 w-full max-w-sm">
-					<motion.div
-						className="relative isolate mx-auto h-full w-full max-w-sm"
-						initial={reduceMotion ? false : { opacity: 0, x: 24 }}
-						whileInView={{ opacity: 1, x: 0 }}
-						viewport={viewport}
-						transition={{ ...transition, delay: reduceMotion ? 0 : 0.1 }}
-					>
-						<Image
-							alt=""
-							aria-hidden="true"
-							className="pointer-events-none absolute top-[9rem] right-[-4rem] z-0 hidden w-36 rotate-12 md:block lg:w-52"
-							height={1254}
-							loading="lazy"
-							quality={55}
-							sizes="(min-width: 1024px) 208px, 144px"
-							src="/images/landing/media-doodles-2.png"
-							width={1254}
+
+				<motion.div
+					className={`mx-auto flex w-full max-w-screen-2xl flex-col gap-10 ${horizontalPadding}`}
+					initial={initial}
+					whileInView={animate}
+					viewport={viewport}
+					transition={transition}
+				>
+					<div className="text-center lg:pt-1">
+						<ul className="flex flex-col justify-items-center gap-2 text-base leading-snug sm:text-2xl">
+							{freeFeatures.map((feature) => (
+								<li key={feature}>{feature}</li>
+							))}
+						</ul>
+					</div>
+					<div className="my-6 text-center text-base text-muted-foreground sm:text-2xl">
+						<p>or...</p>
+					</div>
+					<div className="smooth-shadow-xs mx-auto flex w-full max-w-md flex-col gap-3 rounded-[2rem] border border-border p-3 pb-7 text-center">
+						<PlanPicker
+							variant="landing"
+							className="w-full"
+							isAuthenticated={isAuthenticated}
 						/>
-						<div className="relative z-10 h-full">
-							<PlanPicker
-								variant="default"
-								className="smooth-shadow-ring-sm flex h-full min-h-[26rem] flex-col rounded-[2rem] pb-6 [&_[data-slot=button]]:mt-auto"
-								isAuthenticated={isAuthenticated}
-							/>
-						</div>
-					</motion.div>
-				</div>
+						<JoinForFreeButton
+							variant="outline"
+							className="mx-auto h-12 w-full max-w-sm rounded-full text-lg"
+						>
+							or Join for free
+						</JoinForFreeButton>
+					</div>
+				</motion.div>
 			</div>
 		</section>
 	);

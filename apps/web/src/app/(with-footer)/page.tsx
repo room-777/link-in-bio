@@ -3,9 +3,7 @@ import { headers } from "next/headers";
 import { notFound } from "next/navigation";
 import { cache } from "react";
 import CtaSection from "@/components/landing/cta-section";
-import FeatureSection from "@/components/landing/feature-section";
 import HeroSection from "@/components/landing/hero-section";
-import JoinForFreeButton from "@/components/landing/join-for-free-button";
 import PlanSection from "@/components/landing/plan-section";
 import WelcomeSection from "@/components/landing/welcome-section";
 import HandlePage from "@/components/page/public/handle-page";
@@ -134,14 +132,6 @@ export default async function Home() {
 		<main className="landing-page flex flex-col items-center justify-center font-sans">
 			<HeroSection />
 			<WelcomeSection />
-			<FeatureSection
-				joinButton={
-					<JoinForFreeButton
-						variant="brandBlack"
-						className="h-12 w-full max-w-sm rounded-lg text-lg"
-					/>
-				}
-			/>
 			<PlanSection />
 			<CtaSection />
 		</main>
