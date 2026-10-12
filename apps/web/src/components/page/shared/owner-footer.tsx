@@ -18,7 +18,7 @@ import { usePublicViews } from "@/hooks/use-public-views";
 import { authClient, getAuthErrorMessage } from "@/lib/auth-client";
 import { openDeleteAccountDialog } from "../management/account/delete-account/open-delete-account-dialog";
 import { openChangeHandleDialog } from "../management/pages/open-change-handle-dialog";
-import { openSettingDialog } from "../management/setting-dialog";
+import { openSettingDialog } from "../management/settings/open-setting-dialog";
 import { openShareLinkDialog } from "../sharing/share-link-dialog";
 import {
 	getDiscordTooltipControl,
