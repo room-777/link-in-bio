@@ -8,7 +8,7 @@ import {
 	InputGroupTextarea,
 } from "@grabbin/ui/components/input-group";
 
-import { MadeWithGrabbinBadge } from "../shared/page-footer";
+import { MadeWithGrabbinBadge } from "../shared/made-with-grabbin-badge";
 import PageImageField from "./page-image-field";
 
 export default function PageProfileFields({
