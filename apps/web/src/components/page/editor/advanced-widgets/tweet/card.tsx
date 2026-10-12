@@ -6,6 +6,7 @@ import { Check, Link2 } from "lucide-react";
 import { useLayoutEffect, useRef, useState } from "react";
 import { type EnrichedTweet, enrichTweet } from "react-tweet";
 import type { Tweet as TweetResponse } from "react-tweet/api";
+import { useClipboardCopy } from "@/hooks/use-clipboard-copy";
 import { tweetQueryOptions } from "@/lib/tweet-query";
 
 const VerifiedBadge = ({ className }: { className?: string }) => (
@@ -340,12 +341,11 @@ const TweetFooter = ({
 	showLikeButton = true,
 	showCopyLink = true,
 }: TweetFooterProps) => {
-	const [isCopied, setIsCopied] = useState(false);
+	const { copiedKey, copyText } = useClipboardCopy(1500);
+	const isCopied = copiedKey === "tweet-link";
 
 	const handleCopyLink = () => {
-		navigator.clipboard.writeText(tweet.url).catch(() => {});
-		setIsCopied(true);
-		setTimeout(() => setIsCopied(false), 1500);
+		void copyText(tweet.url, "tweet-link");
 	};
 
 	const showActions = showLikeButton || showCopyLink;

@@ -19,8 +19,8 @@ import Loading from "@grabbin/ui/components/loading";
 import { Marquee } from "@grabbin/ui/components/marquee";
 import { cn } from "@grabbin/ui/lib/utils";
 import { useQuery } from "@tanstack/react-query";
-import { Check, Copy, Globe } from "lucide-react";
-import { AnimatePresence, motion, useReducedMotion } from "motion/react";
+import { Globe } from "lucide-react";
+import { motion, useReducedMotion } from "motion/react";
 import { useRouter } from "next/navigation";
 import { Activity, type FormEvent, useEffect, useState } from "react";
 import Confetti from "react-confetti";
@@ -28,7 +28,8 @@ import { CheckCircle } from "reicon-react/icons/CheckCircle";
 import { CloseCircle } from "reicon-react/icons/CloseCircle";
 import { Loader } from "reicon-react/icons/Loader";
 import * as v from "valibot";
-
+import { CopyStateIcon } from "@/components/copy-state-icon";
+import { useClipboardCopy } from "@/hooks/use-clipboard-copy";
 import { apiClient, getApiErrorMessage } from "@/lib/api-client";
 import { getErrorMessage } from "@/lib/error-message";
 
@@ -457,7 +458,8 @@ function PageOnboardingComplete({
 	actionLabel?: string;
 }) {
 	const [isShown, setIsShown] = useState(false);
-	const [isCopied, setIsCopied] = useState(false);
+	const { copiedKey, copyText } = useClipboardCopy();
+	const isCopied = copiedKey === "page-link";
 	const reduceMotion = useReducedMotion();
 	const domain = env.NEXT_PUBLIC_PAGE_DOMAIN ?? "grabbin.me";
 
@@ -465,21 +467,11 @@ function PageOnboardingComplete({
 		setIsShown(true);
 	}, []);
 
-	useEffect(() => {
-		if (!isCopied) return;
-		const timeout = window.setTimeout(() => setIsCopied(false), 1800);
-		return () => window.clearTimeout(timeout);
-	}, [isCopied]);
-
 	const handleCopy = async () => {
-		try {
-			await navigator.clipboard.writeText(
-				new URL(`/${page.handle}`, window.location.origin).toString(),
-			);
-			setIsCopied(true);
-		} catch {
-			setIsCopied(false);
-		}
+		await copyText(
+			new URL(`/${page.handle}`, window.location.origin).toString(),
+			"page-link",
+		);
 	};
 
 	return (
@@ -515,44 +507,10 @@ function PageOnboardingComplete({
 						onClick={handleCopy}
 						className="rounded-md hover:bg-background"
 					>
-						<span className="relative inline-grid place-items-center">
-							<AnimatePresence initial={false} mode="popLayout">
-								<motion.span
-									key={isCopied ? "copied" : "copy-link"}
-									initial={
-										reduceMotion
-											? false
-											: {
-													opacity: 0,
-													scale: 0.25,
-													filter: "blur(4px)",
-												}
-									}
-									animate={{
-										opacity: 1,
-										scale: 1,
-										filter: "blur(0px)",
-									}}
-									exit={{
-										opacity: 0,
-										scale: 0.25,
-										filter: "blur(4px)",
-									}}
-									transition={{
-										type: "spring",
-										duration: 0.3,
-										bounce: 0,
-									}}
-									className="col-start-1 row-start-1 inline-flex items-center gap-1.5"
-								>
-									{isCopied ? (
-										<Check className="size-4" aria-hidden={true} />
-									) : (
-										<Copy className="size-4" aria-hidden={true} />
-									)}
-								</motion.span>
-							</AnimatePresence>
-						</span>
+						<CopyStateIcon
+							copied={isCopied}
+							reduceMotion={reduceMotion ?? false}
+						/>
 					</Button>
 				</div>
 				<Button
