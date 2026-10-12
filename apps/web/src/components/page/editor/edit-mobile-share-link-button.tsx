@@ -1,18 +1,10 @@
 "use client";
 
 import { Button } from "@grabbin/ui/components/button";
-import {
-	Drawer,
-	DrawerContent,
-	DrawerDescription,
-	DrawerHeader,
-	DrawerTitle,
-} from "@grabbin/ui/components/drawer";
 import Loading from "@grabbin/ui/components/loading";
 import { QrCode } from "lucide-react";
 import { AnimatePresence, motion, useReducedMotion } from "motion/react";
-import { overlay } from "overlay-kit";
-import ShareLinkContent from "../sharing/share-link-content";
+import { openShareLinkDialog } from "../sharing/share-link-dialog";
 
 export default function MobileShareLinkButton({
 	isAutoSaving,
@@ -32,28 +24,7 @@ export default function MobileShareLinkButton({
 				className="fixed right-6 bottom-9 z-50 page-wide:hidden size-15 rounded-full"
 				aria-label={isAutoSaving ? "Saving..." : "Share link"}
 				disabled={isAutoSaving}
-				onClick={() =>
-					overlay.open(({ isOpen, close, unmount }) => (
-						<Drawer
-							open={isOpen}
-							showSwipeHandle
-							onOpenChange={(nextOpen) => !nextOpen && close()}
-							onOpenChangeComplete={(nextOpen) => !nextOpen && unmount()}
-						>
-							<DrawerContent className="max-h-[calc(100dvh-2rem)]">
-								<DrawerHeader className="sr-only">
-									<DrawerTitle>Share your page</DrawerTitle>
-									<DrawerDescription>
-										Scan this QR code to open your page.
-									</DrawerDescription>
-								</DrawerHeader>
-								<div className="flex flex-col gap-6 p-5">
-									<ShareLinkContent profileImageUrl={profileImageUrl} />
-								</div>
-							</DrawerContent>
-						</Drawer>
-					))
-				}
+				onClick={() => openShareLinkDialog(profileImageUrl, true)}
 			>
 				<span className="relative inline-grid size-6 place-items-center">
 					<AnimatePresence initial={false} mode="popLayout">
