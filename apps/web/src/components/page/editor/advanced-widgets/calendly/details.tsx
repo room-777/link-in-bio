@@ -1,10 +1,5 @@
 "use client";
 
-import {
-	calendlyConnectionStatusSchema,
-	calendlyEventsResponseSchema,
-} from "@grabbin/api";
-import { env } from "@grabbin/env/web";
 import { providerDefinitions } from "@grabbin/page-link";
 import { Button } from "@grabbin/ui/components/button";
 import {
@@ -19,13 +14,14 @@ import { ScrollArea } from "@grabbin/ui/components/scroll-area";
 import { Skeleton } from "@grabbin/ui/components/skeleton";
 import { useQuery } from "@tanstack/react-query";
 import { type CSSProperties, useEffect, useState } from "react";
-import * as v from "valibot";
 import CalendlyConnectButton from "@/components/page/calendly-connect-button";
 import { authClient } from "@/lib/auth-client";
-import { calendlyConnectionQueryKey } from "@/lib/calendly";
+import {
+	CalendlyConnectionError,
+	getCalendlyConnectionQueryOptions,
+	getCalendlyEventsQueryOptions,
+} from "@/query/calendly";
 
-const apiUrl = env.NEXT_PUBLIC_SERVER_URL;
-const calendlyEventsQueryKey = ["calendly", "events"] as const;
 const calendlyBrandColor = providerDefinitions.find(
 	(provider) => provider.id === "calendly",
 )?.theme?.faviconBackground;
@@ -83,41 +79,10 @@ export default function CalendlyWidgetDetails({
 		setTimeZone(Intl.DateTimeFormat().resolvedOptions().timeZone || "UTC");
 	}, []);
 	const timeZoneOffset = timeZone ? formatTimeZoneOffset(timeZone) : undefined;
-	const connectionQuery = useQuery({
-		queryKey: calendlyConnectionQueryKey,
-		retry: false,
-		queryFn: async ({ signal }) => {
-			const response = await fetch(`${apiUrl}/auth/calendly`, {
-				credentials: "include",
-				signal,
-			});
-			if (!response.ok)
-				throw new Error("Could not check your Calendly connection.");
-			const result = v.safeParse(
-				calendlyConnectionStatusSchema,
-				await response.json(),
-			);
-			if (!result.success)
-				throw new Error("Could not check your Calendly connection.");
-			return result.output;
-		},
-	});
+	const connectionQuery = useQuery(getCalendlyConnectionQueryOptions());
 	const eventsQuery = useQuery({
-		queryKey: calendlyEventsQueryKey,
+		...getCalendlyEventsQueryOptions(),
 		enabled: connectionQuery.data?.connected === true,
-		queryFn: async ({ signal }) => {
-			const response = await fetch(`${apiUrl}/auth/calendly/events`, {
-				credentials: "include",
-				signal,
-			});
-			if (!response.ok) throw new Error("Could not load Calendly events.");
-			const result = v.safeParse(
-				calendlyEventsResponseSchema,
-				await response.json(),
-			);
-			if (!result.success) throw new Error("Could not load Calendly events.");
-			return result.output.events;
-		},
 	});
 	const selectedEvent = eventsQuery.data?.find(
 		(event) => event.uri === selectedEventUri,
@@ -127,10 +92,15 @@ export default function CalendlyWidgetDetails({
 		return <p className="text-muted-foreground text-sm">Loading Calendly…</p>;
 	}
 	if (connectionQuery.isError) {
+		const message =
+			connectionQuery.error instanceof CalendlyConnectionError &&
+			connectionQuery.error.status === 401
+				? "Could not check your Calendly connection."
+				: connectionQuery.error.message;
 		return (
 			<div className="flex flex-col items-center gap-3 text-center">
 				<p role="alert" className="text-destructive text-sm">
-					{connectionQuery.error.message}
+					{message}
 				</p>
 				<Button
 					type="button"

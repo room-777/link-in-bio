@@ -1,4 +1,7 @@
-import { pageItemCalendlyDataSchema } from "@grabbin/api";
+import {
+	type CalendlyConnectionErrorCode,
+	pageItemCalendlyDataSchema,
+} from "@grabbin/api";
 import { and, eq } from "@grabbin/db/drizzle";
 import { pageItems } from "@grabbin/db/schema/index";
 import { env } from "@grabbin/env/server";
@@ -103,8 +106,8 @@ function decodeBase64Url(value: string) {
 function returnUrl(
 	webOrigin: string,
 	returnTo: string,
-	result: string,
-	reason?: string,
+	result: "connected" | "error",
+	reason?: CalendlyConnectionErrorCode,
 ) {
 	const url = new URL(safeReturnTo(returnTo, webOrigin), webOrigin);
 	url.searchParams.set("calendly", result);
@@ -220,7 +223,7 @@ export function createCalendlyController({
 			const currentUserId = base64Url(
 				new TextEncoder().encode(c.var.session?.user.id ?? ""),
 			);
-			const stateError = !code
+			const stateError: CalendlyConnectionErrorCode | null = !code
 				? c.req.query("error")
 					? "authorization_denied"
 					: "missing_code"
@@ -271,7 +274,7 @@ export function createCalendlyController({
 				return c.redirect(returnUrl(webOrigin, returnTo, "connected"));
 			} catch (error) {
 				clearOauthCookie(c);
-				const reason =
+				const reason: CalendlyConnectionErrorCode =
 					error instanceof Error &&
 					error.message === "CALENDLY_TOKEN_REQUEST_FAILED"
 						? "token_exchange"

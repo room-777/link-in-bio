@@ -1,5 +1,22 @@
 import * as v from "valibot";
 
+export const calendlyConnectionErrorCodeSchema = v.picklist([
+	"authorization_denied",
+	"missing_code",
+	"missing_cookie",
+	"malformed_cookie",
+	"state_mismatch",
+	"user_mismatch",
+	"signature_mismatch",
+	"pro_required",
+	"token_exchange",
+	"save_connection",
+]);
+
+export type CalendlyConnectionErrorCode = v.InferOutput<
+	typeof calendlyConnectionErrorCodeSchema
+>;
+
 export const calendlyEventTypeSchema = v.object({
 	uri: v.string(),
 	name: v.string(),
