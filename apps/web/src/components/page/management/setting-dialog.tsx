@@ -21,6 +21,7 @@ import { useReducedMotion } from "motion/react";
 import { overlay } from "overlay-kit";
 import { Activity, useLayoutEffect, useRef, useState } from "react";
 import { authClient } from "@/lib/auth-client";
+import { getErrorMessage } from "@/lib/error-message";
 import { isMultiPageEnabled } from "@/lib/feature-flags";
 import { openPlanDialog } from "../../billing/plan-dialog";
 import { AccountTabContent } from "./account-tab-content";
@@ -103,10 +104,10 @@ export default function SettingDialog({
 			else throw new Error("Could not open the plan portal. Please try again.");
 		} catch (error) {
 			toast({
-				message:
-					error instanceof Error
-						? error.message
-						: "Could not open the plan portal. Please try again.",
+				message: getErrorMessage(
+					error,
+					"Could not open the plan portal. Please try again.",
+				),
 				state: "error",
 			});
 			setIsOpeningPortal(false);

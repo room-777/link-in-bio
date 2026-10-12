@@ -32,6 +32,7 @@ import { type FormEvent, useEffect, useState } from "react";
 import { CheckCircle as StatusCheck } from "reicon-react/icons/CheckCircle";
 import { Verified } from "reicon-react/icons/Verified";
 import { apiClient, getApiErrorMessage } from "@/lib/api-client";
+import { getErrorMessage } from "@/lib/error-message";
 
 const statusLabels = {
 	waiting_dns: "Waiting for DNS records",
@@ -235,10 +236,7 @@ export default function CustomDomainTabContent({
 		},
 		onError: (error) =>
 			toast({
-				message:
-					error instanceof Error
-						? error.message
-						: "Could not connect this domain.",
+				message: getErrorMessage(error, "Could not connect this domain."),
 				state: "error",
 			}),
 	});
@@ -257,10 +255,7 @@ export default function CustomDomainTabContent({
 		},
 		onError: (error) =>
 			toast({
-				message:
-					error instanceof Error
-						? error.message
-						: "Could not check this domain.",
+				message: getErrorMessage(error, "Could not check this domain."),
 				state: "error",
 			}),
 	});
@@ -279,10 +274,7 @@ export default function CustomDomainTabContent({
 		},
 		onError: (error) =>
 			toast({
-				message:
-					error instanceof Error
-						? error.message
-						: "Could not disconnect this domain.",
+				message: getErrorMessage(error, "Could not disconnect this domain."),
 				state: "error",
 			}),
 	});
@@ -328,9 +320,10 @@ export default function CustomDomainTabContent({
 				) : domainQuery.isError ? (
 					<div className="mt-4 flex flex-col items-start gap-2">
 						<p className="text-destructive text-sm" role="alert">
-							{domainQuery.error instanceof Error
-								? domainQuery.error.message
-								: "Could not load domain settings."}
+							{getErrorMessage(
+								domainQuery.error,
+								"Could not load domain settings.",
+							)}
 						</p>
 						<Button
 							variant="outline"

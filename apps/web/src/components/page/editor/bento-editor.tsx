@@ -18,6 +18,7 @@ import { type CSSProperties, useCallback, useEffect, useRef } from "react";
 import type { Tweet as TweetResponse } from "react-tweet/api";
 import { fetchBentoRss, fetchBentoSpotifyPreview } from "@/lib/bento/bento-api";
 import { useBentoStore } from "@/lib/bento/bento-store";
+import { getErrorMessage } from "@/lib/error-message";
 import { tweetQueryOptions } from "@/lib/tweet-query";
 import type { AddWidgetButtonProps } from "./add-widget-button";
 import { getTweetId } from "./advanced-widgets/tweet/tweet-url";
@@ -165,10 +166,7 @@ export default function BentoEditor({
 				return true;
 			} catch (error) {
 				toast({
-					message:
-						error instanceof Error
-							? error.message
-							: "Enter a supported RSS feed URL.",
+					message: getErrorMessage(error, "Enter a supported RSS feed URL."),
 					state: "error",
 				});
 				return false;
@@ -327,8 +325,7 @@ export default function BentoEditor({
 				await store.addMediaUpload(file);
 			} catch (error) {
 				toast({
-					message:
-						error instanceof Error ? error.message : "The media upload failed.",
+					message: getErrorMessage(error, "The media upload failed."),
 					state: "error",
 				});
 			}
@@ -366,8 +363,7 @@ export default function BentoEditor({
 			await store.replaceLinkImage(itemId, file);
 		} catch (error) {
 			toast({
-				message:
-					error instanceof Error ? error.message : "The image upload failed.",
+				message: getErrorMessage(error, "The image upload failed."),
 				state: "error",
 			});
 		}

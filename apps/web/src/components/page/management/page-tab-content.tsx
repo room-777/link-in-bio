@@ -29,6 +29,7 @@ import { overlay } from "overlay-kit";
 import { type MouseEvent, useEffect, useState } from "react";
 import { Trash } from "@/components/trash";
 import { apiClient, getApiErrorMessage } from "@/lib/api-client";
+import { getErrorMessage } from "@/lib/error-message";
 import { getPageImageUrl } from "@/lib/page-image-url";
 import { openPlanDialog } from "../../billing/plan-dialog";
 import CreatePageForm from "./create-page-form";
@@ -149,7 +150,7 @@ export default function PageTabContent({
 			await pagesQuery.refetch();
 		} catch (error) {
 			toast({
-				message: error instanceof Error ? error.message : "Please try again.",
+				message: getErrorMessage(error, "Please try again."),
 				state: "error",
 			});
 		} finally {
@@ -168,7 +169,7 @@ export default function PageTabContent({
 			return true;
 		} catch (error) {
 			toast({
-				message: error instanceof Error ? error.message : "Please try again.",
+				message: getErrorMessage(error, "Please try again."),
 				state: "error",
 			});
 			return false;

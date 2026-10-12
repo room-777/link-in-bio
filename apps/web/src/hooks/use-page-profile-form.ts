@@ -7,6 +7,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import * as v from "valibot";
 
 import { usePageAutoSave } from "@/hooks/use-page-auto-save";
+import { getErrorMessage } from "@/lib/error-message";
 import { getPageImageUrl } from "@/lib/page-image-url";
 import {
 	cleanupUploadedPageProfileImage,
@@ -116,8 +117,7 @@ export function usePageProfileForm(page: PageData, demoMode: boolean) {
 			if (currentUploadVersion !== uploadVersionRef.current) return;
 			setImageUrl(getPageImageUrl(draft.imageKey) ?? "");
 			toast({
-				message:
-					caught instanceof Error ? caught.message : "The image upload failed.",
+				message: getErrorMessage(caught, "The image upload failed."),
 				state: "error",
 			});
 		}

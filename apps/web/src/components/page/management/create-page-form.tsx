@@ -30,6 +30,7 @@ import { Loader } from "reicon-react/icons/Loader";
 import * as v from "valibot";
 
 import { apiClient, getApiErrorMessage } from "@/lib/api-client";
+import { getErrorMessage } from "@/lib/error-message";
 
 type Availability = "idle" | "checking" | "available" | "taken" | "invalid";
 
@@ -156,7 +157,7 @@ export function PageHandleForm({
 		try {
 			await onSubmit(parsed.output.handle);
 		} catch (caught) {
-			setError(caught instanceof Error ? caught.message : "Please try again.");
+			setError(getErrorMessage(caught, "Please try again."));
 		} finally {
 			setIsSubmitting(false);
 		}

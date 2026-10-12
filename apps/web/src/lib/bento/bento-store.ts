@@ -4,6 +4,7 @@ import type { PageItemBatchRequest, PageItemResponse } from "@grabbin/api";
 import { resolveLinkMetadata } from "@grabbin/page-link";
 import { toast } from "@grabbin/ui/components/toast";
 import { useCallback, useEffect, useRef, useState } from "react";
+import { getErrorMessage } from "../error-message";
 import {
 	cancelBentoMediaUpload,
 	patchBentoBatch,
@@ -564,10 +565,10 @@ export function useBentoStore({
 				setItems(nextDraft);
 				setStatus(hasBentoBatchChanges(pendingRef.current) ? "dirty" : "saved");
 			} catch (error) {
-				const message =
-					error instanceof Error
-						? error.message
-						: "Unable to refresh link metadata.";
+				const message = getErrorMessage(
+					error,
+					"Unable to refresh link metadata.",
+				);
 				setStatus("error");
 				toast({ message, state: "error" });
 				throw error;

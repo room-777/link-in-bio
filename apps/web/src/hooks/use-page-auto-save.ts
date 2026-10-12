@@ -6,6 +6,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import * as v from "valibot";
 
 import { apiClient, getApiErrorMessage } from "@/lib/api-client";
+import { getErrorMessage } from "@/lib/error-message";
 
 export const PAGE_AUTO_SAVE_DELAY = 1500;
 
@@ -65,10 +66,6 @@ function getChangedFields(draft: PageDraft, saved: PageSnapshot) {
 	}
 
 	return hasChanges ? changes : null;
-}
-
-function errorMessage(error: unknown) {
-	return error instanceof Error ? error.message : "Could not save changes.";
 }
 
 export function usePageAutoSave({
@@ -183,7 +180,7 @@ export function usePageAutoSave({
 				draftRef.current = nextDraft;
 				setDraft(nextDraft);
 				setStatus("error");
-				setError(errorMessage(caught));
+				setError(getErrorMessage(caught, "Could not save changes."));
 				onSaveFailure?.(changes, discardedImageKey, savedImageKey);
 				return false;
 			} finally {
