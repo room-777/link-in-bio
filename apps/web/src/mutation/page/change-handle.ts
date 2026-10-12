@@ -1,7 +1,10 @@
-import { useMutation } from "@tanstack/react-query";
+import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { changePageHandle } from "@/api/page/api";
+import { PAGE_HANDLE_CHECK_QUERY_KEY_PREFIX } from "@/query/page-handle/query";
 
 export function useChangePageHandle() {
+	const queryClient = useQueryClient();
+
 	return useMutation({
 		mutationFn: ({
 			handle,
@@ -10,5 +13,9 @@ export function useChangePageHandle() {
 			handle: string;
 			nextHandle: string;
 		}) => changePageHandle(handle, nextHandle),
+		onSuccess: () =>
+			queryClient.invalidateQueries({
+				queryKey: PAGE_HANDLE_CHECK_QUERY_KEY_PREFIX,
+			}),
 	});
 }
