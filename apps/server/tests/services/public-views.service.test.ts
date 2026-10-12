@@ -5,11 +5,9 @@ const { mock } = require("bun:test") as {
 	mock: { module: (specifier: string, factory: () => unknown) => void };
 };
 
-mock.module("@grabbin/env/server", () => ({
-	env: {
-		PAGE_DOMAIN: "example.test",
-	},
-}));
+const testEnv = { PAGE_DOMAIN: "example.test" };
+
+mock.module("@grabbin/env/server", () => ({ env: testEnv }));
 
 const { getPublicViews } = await import(
 	"../../src/services/public-views.service"
@@ -103,6 +101,36 @@ describe("public views service", () => {
 			);
 		} finally {
 			globalThis.fetch = originalFetch;
+		}
+	});
+
+	/**
+	 * Case ID: PUBLIC-VIEWS-004
+	 * Given: the page domain points to a local development server.
+	 * When: views are requested for the page.
+	 * Then: missing analytics counts are returned without calling Simple Analytics.
+	 * Evidence: null counts and zero provider requests.
+	 * Result: Pass | Fail | Blocked | Not Run
+	 */
+	it("PUBLIC-VIEWS-004 skips analytics requests for localhost", async () => {
+		const originalFetch = globalThis.fetch;
+		const originalPageDomain = testEnv.PAGE_DOMAIN;
+		let requestCount = 0;
+		testEnv.PAGE_DOMAIN = "localhost:3000";
+		globalThis.fetch = (async () => {
+			requestCount++;
+			return Response.json({ pageviews: 1 });
+		}) as typeof fetch;
+
+		try {
+			assert.deepEqual(await getPublicViews("case-page-004", "UTC"), {
+				todayViews: null,
+				yesterdayViews: null,
+			});
+			assert.equal(requestCount, 0);
+		} finally {
+			globalThis.fetch = originalFetch;
+			testEnv.PAGE_DOMAIN = originalPageDomain;
 		}
 	});
 });

@@ -41,6 +41,10 @@ function getLocalDates(timezone: string) {
 }
 
 async function getPageviews(pageId: string, timezone: string, date: string) {
+	if (new URL(`http://${env.PAGE_DOMAIN}`).hostname === "localhost") {
+		return null;
+	}
+
 	const url = new URL(
 		`https://simpleanalytics.com/${env.PAGE_DOMAIN}/__analytics/pages/${encodeURIComponent(pageId)}.json`,
 	);
