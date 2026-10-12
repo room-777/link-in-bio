@@ -4,6 +4,10 @@ import { normalizedCropSchema, pageItemResponseSchema } from "./grid";
 
 export const createPageSchema = v.object({ handle: v.string() });
 
+export const pageHandleResponseSchema = v.object({
+	page: v.object({ handle: v.string() }),
+});
+
 export const pageImageContentTypes = [
 	"image/avif",
 	"image/gif",

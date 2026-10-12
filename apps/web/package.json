@@ -18,6 +18,7 @@
 		"@grabbin/auth": "workspace:*",
 		"@grabbin/bento-layout": "workspace:*",
 		"@grabbin/env": "workspace:*",
+		"@grabbin/page-handle": "workspace:*",
 		"@grabbin/page-link": "workspace:*",
 		"@grabbin/plan": "workspace:*",
 		"@grabbin/ui": "workspace:*",
