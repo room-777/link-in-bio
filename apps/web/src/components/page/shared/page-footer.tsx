@@ -35,21 +35,20 @@ import { Skeleton } from "@grabbin/ui/components/skeleton";
 import { toast } from "@grabbin/ui/components/toast";
 import { useIsMobile } from "@grabbin/ui/components/use-mobile";
 import { cn } from "@grabbin/ui/lib/utils";
-import { useQuery } from "@tanstack/react-query";
 import { ShareIcon, SlidersHorizontal } from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { overlay } from "overlay-kit";
 import type { ComponentPropsWithoutRef } from "react";
 import { forwardRef, useEffect, useState } from "react";
+import { usePublicViews } from "@/hooks/use-public-views";
 import { authClient, getAuthErrorMessage } from "@/lib/auth-client";
 import { getSignInHref } from "@/lib/auth-redirect";
-import { getPublicViewsQueryOptions } from "@/lib/public-views-api";
 import { openChangeHandleDialog } from "../management/change-handle-dialog";
 import { openDeleteAccountDialog } from "../management/delete-account-dialog";
 import { openSettingDialog } from "../management/setting-dialog";
-import SpinningCounter from "../management/spinning-counter";
 import ShareLinkContent from "../sharing/share-link-content";
+import { getPublicViewsTooltipControl } from "./public-views-tooltip";
 
 type DiscordLinkProps = ComponentPropsWithoutRef<"a">;
 
@@ -160,59 +159,6 @@ function openPageShareDialog(
 	});
 }
 
-function usePublicViewsTooltip(handle?: string) {
-	const [timezone, setTimezone] = useState<string | null>(null);
-	useEffect(() => {
-		setTimezone(Intl.DateTimeFormat().resolvedOptions().timeZone || "UTC");
-	}, []);
-
-	const { data, isPending, isError } = useQuery({
-		...getPublicViewsQueryOptions(handle ?? "", timezone ?? "UTC"),
-		enabled: Boolean(handle && timezone),
-	});
-
-	if (!handle) return { control: null };
-	if (timezone === null || isPending) {
-		return {
-			control: {
-				id: "views-loading",
-				element: <Skeleton aria-busy="true" className="h-8 w-28 rounded-md" />,
-			},
-		};
-	}
-	if (isError || !data) return { control: null };
-
-	const todayViews = data.todayViews ?? 0;
-	const yesterdayViews = data.yesterdayViews ?? 0;
-	const formatViews = (views: number) => {
-		if (views >= 1_000_000)
-			return { value: Math.floor(views / 1_000_000), unit: "M" };
-		if (views >= 1_000) return { value: Math.floor(views / 1_000), unit: "K" };
-		return { value: views, unit: "" };
-	};
-	const today = formatViews(todayViews);
-	const yesterday = formatViews(yesterdayViews);
-
-	return {
-		control: {
-			id: "views",
-			trigger: (
-				<Button
-					variant="ghost"
-					size="lg"
-					className="w-28 px-2 text-muted-foreground/80"
-					aria-label={`${todayViews} views today`}
-				>
-					<SpinningCounter value={today.value} />
-					{today.unit}
-					<span className="ml-0">views today</span>
-				</Button>
-			),
-			content: `${yesterday.value}${yesterday.unit} views yesterday`,
-		},
-	};
-}
-
 function OwnerFooter({
 	handle,
 	onHandleChange,
@@ -228,7 +174,8 @@ function OwnerFooter({
 	const isMobile = useIsMobile();
 	const [isOpen, setIsOpen] = useState(false);
 	const [isSigningOut, setIsSigningOut] = useState(false);
-	const viewsTooltip = usePublicViewsTooltip(handle);
+	const viewsTooltip = getPublicViewsTooltipControl(usePublicViews(handle));
+
 	async function handleSignOut() {
 		setIsSigningOut(true);
 		const { error } = await authClient.signOut();
@@ -272,12 +219,12 @@ function OwnerFooter({
 								),
 							},
 							getDiscordTooltipControl(),
-							...(viewsTooltip.control ? [viewsTooltip.control] : []),
+							viewsTooltip,
 							getShareTooltipControl(
 								() => openPageShareDialog(profileImageUrl, isMobile),
 								isAutoSaving,
 							),
-						]}
+						].filter((control) => control !== null)}
 					/>
 					<PopoverContent
 						align="start"
@@ -351,7 +298,7 @@ function ViewerFooter({
 	const { data: session, isPending } = authClient.useSession();
 	const isMobile = useIsMobile();
 	const [isHydrated, setIsHydrated] = useState(false);
-	const viewsTooltip = usePublicViewsTooltip(handle);
+	const viewsTooltip = getPublicViewsTooltipControl(usePublicViews(handle));
 
 	useEffect(() => setIsHydrated(true), []);
 
@@ -374,11 +321,11 @@ function ViewerFooter({
 					className="bg-background"
 					controls={[
 						getDiscordTooltipControl(),
-						...(viewsTooltip.control ? [viewsTooltip.control] : []),
+						viewsTooltip,
 						getShareTooltipControl(() =>
 							openPageShareDialog(profileImageUrl, isMobile),
 						),
-					]}
+					].filter((control) => control !== null)}
 				/>
 			</div>
 		);
@@ -417,11 +364,11 @@ function ViewerFooter({
 				className="bg-background"
 				controls={[
 					getDiscordTooltipControl(),
-					...(viewsTooltip.control ? [viewsTooltip.control] : []),
+					viewsTooltip,
 					getShareTooltipControl(() =>
 						openPageShareDialog(profileImageUrl, isMobile),
 					),
-				]}
+				].filter((control) => control !== null)}
 			/>
 		</div>
 	);
