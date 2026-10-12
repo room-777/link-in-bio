@@ -56,7 +56,7 @@ export default function PlanSection({
 					transition={transition}
 				>
 					<div className="text-center lg:pt-1">
-						<ul className="flex flex-col justify-items-center gap-2 text-base leading-snug sm:text-2xl">
+						<ul className="flex flex-col justify-items-center gap-2 text-lg leading-snug sm:text-2xl">
 							{freeFeatures.map((feature) => (
 								<li key={feature}>{feature}</li>
 							))}
@@ -73,7 +73,7 @@ export default function PlanSection({
 						/>
 						<JoinForFreeButton
 							variant="outline"
-							className="mx-auto h-12 w-full max-w-sm rounded-full text-lg"
+							className="mx-5 h-12 w-auto max-w-sm rounded-full text-lg"
 						>
 							or Join for free
 						</JoinForFreeButton>

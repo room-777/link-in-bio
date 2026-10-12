@@ -70,7 +70,7 @@ export function PlanCard({
 			className={cn(
 				"grid gap-4 rounded-2xl bg-card p-5",
 				isHorizontal && "smooth-shadow-ring-sm",
-				isLanding && "pb-0",
+				isLanding && "min-w-0 grid-cols-1 pb-0",
 				className,
 			)}
 		>
@@ -221,7 +221,7 @@ export function PlanCard({
 
 					<ul
 						className={cn(
-							"order-4 grid gap-2 font-medium",
+							"order-4 grid gap-2",
 							isHorizontal ? "xl:grid-cols-2" : !isLanding && "pt-4",
 							isLanding && "justify-items-center text-center",
 						)}
@@ -232,7 +232,7 @@ export function PlanCard({
 								className={cn(
 									"flex items-start gap-2.5 text-base",
 									isLanding &&
-										"whitespace-nowrap text-sm leading-snug sm:text-xl",
+										"whitespace-nowrap text-lg leading-snug sm:text-xl",
 									isLanding && "justify-center",
 								)}
 							>
