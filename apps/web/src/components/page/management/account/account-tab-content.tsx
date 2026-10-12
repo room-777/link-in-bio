@@ -3,7 +3,7 @@
 import { Button } from "@grabbin/ui/components/button";
 import { CheckCircle } from "reicon-react/icons/CheckCircle";
 import { Verified } from "reicon-react/icons/Verified";
-import { CalendlyAccountTabContent } from "./calendly/account-tab-content";
+import { CalendlyConnectionContent } from "./calendly-connection-content";
 
 export function AccountTabContent({
 	email,
@@ -53,7 +53,7 @@ export function AccountTabContent({
 						</p>
 					) : null}
 				</div>
-				<CalendlyAccountTabContent isPro={isPro} />
+				<CalendlyConnectionContent isPro={isPro} />
 			</section>
 		</>
 	);

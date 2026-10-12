@@ -24,7 +24,7 @@ import { authClient } from "@/lib/auth-client";
 import { getErrorMessage } from "@/lib/error-message";
 import { isMultiPageEnabled } from "@/lib/feature-flags";
 import { openPlanDialog } from "../../billing/plan-dialog";
-import { AccountTabContent } from "./account-tab-content";
+import { AccountTabContent } from "./account/account-tab-content";
 import { BillingTabContent } from "./billing-tab-content";
 import CustomDomainTabContent from "./custom-domain/tab-content";
 import PageTabContent from "./pages/page-tab-content";

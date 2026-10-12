@@ -30,7 +30,7 @@ function getDisconnectingLabel(isPending: boolean) {
 	return "Disconnecting";
 }
 
-export function CalendlyAccountTabContent({ isPro }: { isPro: boolean }) {
+export function CalendlyConnectionContent({ isPro }: { isPro: boolean }) {
 	const queryClient = useQueryClient();
 	const [connectionError, setConnectionError] = useState("");
 	const connectionQuery = useCalendlyConnectionQuery();
