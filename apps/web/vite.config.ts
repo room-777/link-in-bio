@@ -32,6 +32,9 @@ export default defineConfig(({ command }) => ({
 	},
 	environments: {
 		rsc: {
+			resolve: {
+				noExternal: ["@grabbin/page-handle"],
+			},
 			optimizeDeps: {
 				include: [
 					"use-sync-external-store/shim",
@@ -41,6 +44,9 @@ export default defineConfig(({ command }) => ({
 			},
 		},
 		ssr: {
+			resolve: {
+				noExternal: ["@grabbin/page-handle"],
+			},
 			optimizeDeps: {
 				include: [
 					"use-sync-external-store/shim",
