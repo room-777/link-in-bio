@@ -1,4 +1,9 @@
-import type { BentoLayoutMap } from "@grabbin/bento-layout";
+import {
+	type BentoLayoutMap,
+	validateBentoLayout,
+} from "@grabbin/bento-layout";
+import { moveElement } from "react-grid-layout";
+import { fastVerticalCompactor } from "react-grid-layout/extras";
 
 type GridPosition = {
 	i: string;
@@ -26,11 +31,36 @@ export function resolveBentoDragLayout(input: {
 	nextLayout: readonly GridPosition[];
 	startLayout: BentoLayoutMap;
 	columns: number;
+	activeItemId?: string;
+	position?: { x: number; y: number };
 }) {
-	const nextLayout = toBentoLayoutMap(input.nextLayout);
+	let nextLayout = toBentoLayoutMap(input.nextLayout);
+	if (input.activeItemId && input.position) {
+		const rglLayout = Object.entries(input.startLayout).map(([i, item]) => ({
+			i,
+			...item,
+		}));
+		const activeItem = rglLayout.find((item) => item.i === input.activeItemId);
+		if (activeItem) {
+			const movedLayout = moveElement(
+				rglLayout,
+				activeItem,
+				input.position.x,
+				input.position.y,
+				true,
+				false,
+				"vertical",
+				input.columns,
+				false,
+			);
+			nextLayout = toBentoLayoutMap(
+				fastVerticalCompactor.compact(movedLayout, input.columns),
+			);
+		}
+	}
 	const outsideGrid = isOutsideBentoGrid(nextLayout, input.columns);
-	return {
-		layout: outsideGrid ? input.startLayout : nextLayout,
-		outsideGrid,
-	};
+	if (outsideGrid || !validateBentoLayout(nextLayout, input.columns)) {
+		return { layout: input.startLayout, outsideGrid };
+	}
+	return { layout: nextLayout, outsideGrid };
 }

@@ -249,10 +249,13 @@ export default function BentoSection({
 				event,
 				element,
 			);
+			const targetItem = placeholder ?? newItem;
 			const resolved = resolveBentoDragLayout({
 				nextLayout,
 				startLayout: dragStartLayoutRef.current ?? toBentoLayoutMap(layout),
 				columns: cols,
+				activeItemId: oldItem?.i,
+				position: targetItem ? { x: targetItem.x, y: targetItem.y } : undefined,
 			});
 			dragStartLayoutRef.current = null;
 			setDraggingItemId(null);
