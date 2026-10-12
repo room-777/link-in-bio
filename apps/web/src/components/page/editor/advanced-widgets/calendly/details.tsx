@@ -14,7 +14,7 @@ import { ScrollArea } from "@grabbin/ui/components/scroll-area";
 import { Skeleton } from "@grabbin/ui/components/skeleton";
 import { type CSSProperties, useEffect, useState } from "react";
 import { CalendlyConnectionError } from "@/api/calendly/api";
-import CalendlyConnectButton from "@/components/page/calendly-connect-button";
+import CalendlyConnectButton from "@/components/page/management/account/calendly-connect-button";
 import { authClient } from "@/lib/auth-client";
 import {
 	useCalendlyConnectionQuery,

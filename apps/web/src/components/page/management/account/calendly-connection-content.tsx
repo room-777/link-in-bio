@@ -10,7 +10,7 @@ import { useEffect, useState } from "react";
 import { CheckCircle } from "reicon-react/icons/CheckCircle";
 import * as v from "valibot";
 import { CalendlyConnectionError } from "@/api/calendly/api";
-import CalendlyConnectButton from "@/components/page/calendly-connect-button";
+import CalendlyConnectButton from "@/components/page/management/account/calendly-connect-button";
 import {
 	calendlyConnectionErrorFallback,
 	calendlyConnectionErrorMessages,
