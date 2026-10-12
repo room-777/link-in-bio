@@ -24,7 +24,6 @@ import Loading from "@grabbin/ui/components/loading";
 import { toast } from "@grabbin/ui/components/toast";
 import { useIsMobile } from "@grabbin/ui/components/use-mobile";
 import { cn } from "@grabbin/ui/lib/utils";
-import { overlay } from "overlay-kit";
 import { Activity } from "react";
 import { CheckCircle } from "reicon-react/icons/CheckCircle";
 import { useDeleteAccount } from "@/hooks/use-delete-account";
@@ -233,16 +232,6 @@ export default function DeleteAccountDialog({
 			</AlertDialogContent>
 		</AlertDialog>
 	);
-}
-
-export function openDeleteAccountDialog() {
-	overlay.open(({ isOpen, close, unmount }) => (
-		<DeleteAccountDialog
-			open={isOpen}
-			onOpenChange={(nextOpen) => !nextOpen && close()}
-			onOpenChangeComplete={(nextOpen) => !nextOpen && unmount()}
-		/>
-	));
 }
 
 function DeleteButtonContent({
