@@ -34,8 +34,6 @@ export type CalendlyPresetWidgetProps = {
 	availability: CalendlyAvailability;
 	availabilityView: AvailabilityView;
 };
-type CalendlyPresetPreviewProps = CalendlyPresetWidgetProps;
-
 const selectedDateFormatter = new Intl.DateTimeFormat("en-US", {
 	weekday: "short",
 	month: "short",
@@ -311,32 +309,65 @@ function CalendlyAvailabilityPicker({
 	);
 }
 
-function CalendlyPresetPreview({
+function CalendlyEventInfo({
 	event,
 	timeZone,
-	availability,
-	availabilityView,
-	preset,
-}: CalendlyPresetPreviewProps & { preset: CalendlyPreset }) {
-	const cardLayoutClass = {
-		squareSmall: "flex-col items-stretch justify-between",
-		halfBanner: "flex-row items-center justify-between",
-		landscape: "flex-row items-stretch justify-between",
-		portrait: "flex-col items-stretch justify-between",
-		squareLarge: "flex-col items-stretch justify-between",
-	}[preset];
-	const infoLayoutClass =
-		preset === "landscape"
-			? "flex-1 basis-0 flex-col justify-between"
-			: preset === "squareLarge"
-				? "w-full flex-row items-start"
-				: `flex-row items-start ${preset === "halfBanner" ? "flex-1" : ""}`;
-	const fullWidthButton =
-		preset === "squareSmall" ||
-		preset === "landscape" ||
-		preset === "portrait" ||
-		preset === "squareLarge";
-	const bookButton = (
+	loading,
+	className = "flex-1",
+}: {
+	event: CalendlyEventType;
+	timeZone: CalendlyPresetWidgetProps["timeZone"];
+	loading: boolean;
+	className?: string;
+}) {
+	return (
+		<div className={`flex min-w-0 flex-row items-stretch gap-2 ${className}`}>
+			<div className="smooth-shadow-xs flex size-9.5 shrink-0 items-center justify-center rounded-lg border border-border bg-white">
+				<img
+					src={providerIconUrl("calendly")}
+					alt=""
+					aria-hidden="true"
+					className="size-6 object-contain"
+				/>
+			</div>
+			<div className="flex min-w-0 flex-1 flex-col gap-0.5">
+				{loading ? (
+					<Skeleton aria-hidden="true" className="h-4 w-3/4 rounded-sm" />
+				) : (
+					<h3 className="truncate font-medium text-neutral-900 text-sm">
+						{event.name}
+					</h3>
+				)}
+				{loading ? (
+					<Skeleton aria-hidden="true" className="h-3 w-1/2 rounded-sm" />
+				) : (
+					<div className="flex min-w-0 items-center gap-0.5 text-neutral-500 text-xs">
+						<p className="shrink-0 whitespace-nowrap">
+							{formatSessionDuration(event.duration)}
+						</p>
+						{timeZone ? (
+							<>
+								<span aria-hidden="true">·</span>
+								<span className="truncate" title={timeZone.name}>
+									{timeZone.label}
+								</span>
+							</>
+						) : null}
+					</div>
+				)}
+			</div>
+		</div>
+	);
+}
+
+function CalendlyBookButton({
+	event,
+	compact = false,
+}: {
+	event: CalendlyEventType;
+	compact?: boolean;
+}) {
+	return (
 		<Button
 			render={
 				<a
@@ -347,119 +378,167 @@ function CalendlyPresetPreview({
 				/>
 			}
 			variant="outline"
-			size={fullWidthButton ? "xl" : "sm"}
-			className={`rounded-md font-medium ${fullWidthButton ? "h-10 w-full" : "h-8"}`}
+			size={compact ? "sm" : "xl"}
+			className={`rounded-md font-medium ${compact ? "h-8" : "h-10 w-full"}`}
 		>
 			Book a time
 		</Button>
 	);
-	const showError =
-		availability.error &&
-		(preset === "landscape" ||
-			preset === "portrait" ||
-			preset === "squareLarge");
-	const showAvailability =
-		preset === "landscape" || preset === "portrait" || preset === "squareLarge";
-	const errorAreaClass = {
-		squareSmall: "",
-		halfBanner: "",
-		landscape: "flex min-w-0 flex-1 basis-0 items-center justify-center",
-		portrait: "flex min-h-0 min-w-0 flex-1 flex-col items-center gap-2",
-		squareLarge:
-			"flex min-h-0 min-w-0 flex-1 flex-col items-stretch justify-between",
-	}[preset];
+}
 
+function CalendlyAvailabilityError({
+	message,
+	className = "",
+}: {
+	message?: string;
+	className?: string;
+}) {
+	return (
+		<p
+			role="alert"
+			className={`text-center font-medium text-muted-foreground/50 text-sm ${className}`}
+		>
+			<span className="block">{message ?? "Could not load availability."}</span>
+			<span className="block">Book directly on Calendly.</span>
+		</p>
+	);
+}
+
+export function CalendlySquareSmall(props: CalendlyPresetWidgetProps) {
+	const { event, timeZone, availability } = props;
 	return (
 		<article
-			data-bento-preset={preset}
-			style={{
-				borderRadius: getBentoItemRadius("link", preset),
-			}}
-			className={`flex size-full min-h-0 gap-3 overflow-hidden bg-white p-5 ${cardLayoutClass}`}
+			data-bento-preset="squareSmall"
+			style={{ borderRadius: getBentoItemRadius("link", "squareSmall") }}
+			className="flex size-full min-h-0 flex-col items-stretch justify-between gap-3 overflow-hidden bg-white p-5"
 		>
-			<div className={`flex min-w-0 gap-2 ${infoLayoutClass}`}>
-				<div
-					className={`flex min-w-0 flex-row items-stretch gap-2 ${preset === "landscape" ? "" : "flex-1"}`}
-				>
-					<div className="smooth-shadow-xs flex size-9.5 shrink-0 items-center justify-center rounded-lg border border-border bg-white">
-						<img
-							src={providerIconUrl("calendly")}
-							alt=""
-							aria-hidden="true"
-							className="size-6 object-contain"
-						/>
-					</div>
-					<div className="flex min-w-0 flex-1 flex-col gap-0.5">
-						{availability.loading ? (
-							<Skeleton aria-hidden="true" className="h-4 w-3/4 rounded-sm" />
-						) : (
-							<h3 className="truncate font-medium text-neutral-900 text-sm">
-								{event.name}
-							</h3>
-						)}
-						{availability.loading ? (
-							<Skeleton aria-hidden="true" className="h-3 w-1/2 rounded-sm" />
-						) : (
-							<div className="flex min-w-0 items-center gap-0.5 text-neutral-500 text-xs">
-								<p className="shrink-0 whitespace-nowrap">
-									{formatSessionDuration(event.duration)}
-								</p>
-								{timeZone ? (
-									<>
-										<span aria-hidden="true">·</span>
-										<span className="truncate" title={timeZone.name}>
-											{timeZone.label}
-										</span>
-									</>
-								) : null}
-							</div>
-						)}
-					</div>
-				</div>
-				{preset === "landscape" ? bookButton : null}
+			<div className="flex min-w-0 flex-row items-start gap-2">
+				<CalendlyEventInfo
+					event={event}
+					timeZone={timeZone}
+					loading={availability.loading}
+				/>
 			</div>
-			<div className={errorAreaClass}>
-				{showError ? (
-					<p
-						role="alert"
-						className={`text-center font-medium text-muted-foreground/50 text-sm ${preset === "portrait" ? "flex min-h-0 flex-1 flex-col items-center justify-center" : ""}`}
-					>
-						<span className="block">
-							{availability.errorMessage ?? "Could not load availability."}
-						</span>
-						<span className="block">Book directly on Calendly.</span>
-					</p>
-				) : showAvailability ? (
+			<CalendlyBookButton event={event} />
+		</article>
+	);
+}
+
+export function CalendlyHalfBanner(props: CalendlyPresetWidgetProps) {
+	const { event, timeZone, availability } = props;
+	return (
+		<article
+			data-bento-preset="halfBanner"
+			style={{ borderRadius: getBentoItemRadius("link", "halfBanner") }}
+			className="flex size-full min-h-0 flex-row items-center justify-between gap-3 overflow-hidden bg-white p-5"
+		>
+			<div className="flex min-w-0 flex-1 flex-row items-start gap-2">
+				<CalendlyEventInfo
+					event={event}
+					timeZone={timeZone}
+					loading={availability.loading}
+				/>
+			</div>
+			<CalendlyBookButton event={event} compact />
+		</article>
+	);
+}
+
+export function CalendlyLandscape(props: CalendlyPresetWidgetProps) {
+	const { event, timeZone, availability, availabilityView } = props;
+	return (
+		<article
+			data-bento-preset="landscape"
+			style={{ borderRadius: getBentoItemRadius("link", "landscape") }}
+			className="flex size-full min-h-0 flex-row items-stretch justify-between gap-3 overflow-hidden bg-white p-5"
+		>
+			<div className="flex min-w-0 flex-1 basis-0 flex-col justify-between gap-2">
+				<CalendlyEventInfo
+					event={event}
+					timeZone={timeZone}
+					loading={availability.loading}
+					className=""
+				/>
+				<CalendlyBookButton event={event} />
+			</div>
+			<div className="flex min-w-0 flex-1 basis-0 items-center justify-center">
+				{availability.error ? (
+					<CalendlyAvailabilityError message={availability.errorMessage} />
+				) : (
 					<CalendlyAvailabilityPicker
 						availability={availability}
-						preset={preset}
+						preset="landscape"
 						view={availabilityView}
 					/>
-				) : null}
-				{preset !== "landscape" ? bookButton : null}
+				)}
 			</div>
 		</article>
 	);
 }
 
-export function CalendlySquareSmall(props: CalendlyPresetWidgetProps) {
-	return <CalendlyPresetPreview {...props} preset="squareSmall" />;
-}
-
-export function CalendlyHalfBanner(props: CalendlyPresetWidgetProps) {
-	return <CalendlyPresetPreview {...props} preset="halfBanner" />;
-}
-
-export function CalendlyLandscape(props: CalendlyPresetWidgetProps) {
-	return <CalendlyPresetPreview {...props} preset="landscape" />;
-}
-
 export function CalendlyPortrait(props: CalendlyPresetWidgetProps) {
-	return <CalendlyPresetPreview {...props} preset="portrait" />;
+	const { event, timeZone, availability, availabilityView } = props;
+	return (
+		<article
+			data-bento-preset="portrait"
+			style={{ borderRadius: getBentoItemRadius("link", "portrait") }}
+			className="flex size-full min-h-0 flex-col items-stretch justify-between gap-3 overflow-hidden bg-white p-5"
+		>
+			<div className="flex min-w-0 flex-row items-start gap-2">
+				<CalendlyEventInfo
+					event={event}
+					timeZone={timeZone}
+					loading={availability.loading}
+				/>
+			</div>
+			<div className="flex min-h-0 min-w-0 flex-1 flex-col items-center gap-2">
+				{availability.error ? (
+					<CalendlyAvailabilityError
+						message={availability.errorMessage}
+						className="flex min-h-0 flex-1 flex-col items-center justify-center"
+					/>
+				) : (
+					<CalendlyAvailabilityPicker
+						availability={availability}
+						preset="portrait"
+						view={availabilityView}
+					/>
+				)}
+				<CalendlyBookButton event={event} />
+			</div>
+		</article>
+	);
 }
 
 export function CalendlySquareLarge(props: CalendlyPresetWidgetProps) {
-	return <CalendlyPresetPreview {...props} preset="squareLarge" />;
+	const { event, timeZone, availability, availabilityView } = props;
+	return (
+		<article
+			data-bento-preset="squareLarge"
+			style={{ borderRadius: getBentoItemRadius("link", "squareLarge") }}
+			className="flex size-full min-h-0 flex-col items-stretch justify-between gap-3 overflow-hidden bg-white p-5"
+		>
+			<div className="flex w-full min-w-0 flex-row items-start gap-2">
+				<CalendlyEventInfo
+					event={event}
+					timeZone={timeZone}
+					loading={availability.loading}
+				/>
+			</div>
+			<div className="flex min-h-0 min-w-0 flex-1 flex-col items-stretch justify-between">
+				{availability.error ? (
+					<CalendlyAvailabilityError message={availability.errorMessage} />
+				) : (
+					<CalendlyAvailabilityPicker
+						availability={availability}
+						preset="squareLarge"
+						view={availabilityView}
+					/>
+				)}
+				<CalendlyBookButton event={event} />
+			</div>
+		</article>
+	);
 }
 
 export const calendlyPresetComponents: Record<
