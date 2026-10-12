@@ -24,13 +24,11 @@ import Loading from "@grabbin/ui/components/loading";
 import { toast } from "@grabbin/ui/components/toast";
 import { useIsMobile } from "@grabbin/ui/components/use-mobile";
 import { cn } from "@grabbin/ui/lib/utils";
-import { useReducedMotion } from "motion/react";
 import { overlay } from "overlay-kit";
-import { Activity, useEffect, useRef, useState } from "react";
+import { Activity } from "react";
 import { CheckCircle } from "reicon-react/icons/CheckCircle";
-import { authClient, getAuthErrorMessage } from "@/lib/auth-client";
-
-type DeleteActivity = "confirm" | "sent";
+import { useDeleteAccount } from "@/hooks/use-delete-account";
+import { authClient } from "@/lib/auth-client";
 
 type DeleteAccountDialogProps = {
 	onOpenChange: (open: boolean) => void;
@@ -43,82 +41,31 @@ export default function DeleteAccountDialog({
 	onOpenChangeComplete,
 	open,
 }: DeleteAccountDialogProps) {
-	const reduceMotion = useReducedMotion();
 	const isMobile = useIsMobile();
 	const { data: session } = authClient.useSession();
-	const [deleteActivity, setDeleteActivity] =
-		useState<DeleteActivity>("confirm");
-	const [deleteClickCount, setDeleteClickCount] = useState(0);
-	const [isRequestingDelete, setIsRequestingDelete] = useState(false);
-	const deleteResetTimerRef = useRef<ReturnType<typeof setTimeout> | null>(
-		null,
-	);
-	const deleteProgress = Math.min(deleteClickCount, 3) / 3;
-	const deleteButtonLabel = isRequestingDelete
-		? "Sending link…"
-		: deleteClickCount === 0
-			? "Delete"
-			: deleteClickCount === 1
-				? "Click again"
-				: deleteClickCount === 2
-					? "One more time"
-					: "Delete anyway";
-
-	const resetDeleteDialog = () => {
-		setDeleteActivity("confirm");
-		setDeleteClickCount(0);
-		setIsRequestingDelete(false);
-	};
-
-	useEffect(() => {
-		if (!open) return;
-		setDeleteActivity("confirm");
-		setDeleteClickCount(0);
-		setIsRequestingDelete(false);
-	}, [open]);
-
-	useEffect(() => {
-		return () => {
-			if (deleteResetTimerRef.current) {
-				clearTimeout(deleteResetTimerRef.current);
-			}
-		};
-	}, []);
+	const deleteAccount = useDeleteAccount(open);
 
 	const handleOpenChange = (nextOpen: boolean) => {
-		if (deleteResetTimerRef.current) {
-			clearTimeout(deleteResetTimerRef.current);
-			deleteResetTimerRef.current = null;
-		}
-
+		deleteAccount.handleOpenChange(nextOpen);
 		onOpenChange(nextOpen);
-		if (nextOpen) return;
-
-		setIsRequestingDelete(false);
-		deleteResetTimerRef.current = setTimeout(
-			resetDeleteDialog,
-			reduceMotion ? 0 : 150,
-		);
 	};
 
 	const handleDeleteAccount = async () => {
-		const nextClickCount = deleteClickCount + 1;
-		setDeleteClickCount(nextClickCount);
-		if (nextClickCount < 4) return;
-
-		setIsRequestingDelete(true);
-		const { error } = await authClient.deleteUser({
-			callbackURL: window.location.origin,
-		});
-		setIsRequestingDelete(false);
-
-		if (error) {
-			toast({ message: getAuthErrorMessage(error), state: "error" });
-			return;
-		}
-
-		setDeleteActivity("sent");
+		const errorMessage = await deleteAccount.handleDeleteAccount();
+		if (errorMessage) toast({ message: errorMessage, state: "error" });
 	};
+	const deleteProgress = Math.min(deleteAccount.clickCount, 3) / 3;
+	const deleteButtonLabel = deleteAccount.isRequesting
+		? "Sending link…"
+		: deleteAccount.clickCount === 0
+			? "Delete"
+			: deleteAccount.clickCount === 1
+				? "Click again"
+				: deleteAccount.clickCount === 2
+					? "One more time"
+					: "Delete anyway";
+	const deleteActivity = deleteAccount.activity;
+	const isRequestingDelete = deleteAccount.isRequesting;
 
 	return isMobile ? (
 		<Drawer
