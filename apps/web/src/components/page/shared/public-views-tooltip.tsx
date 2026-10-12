@@ -2,7 +2,7 @@ import type { AnimatedTooltipControl } from "@grabbin/ui/components/animated-too
 import { Button } from "@grabbin/ui/components/button";
 import { Skeleton } from "@grabbin/ui/components/skeleton";
 import type { usePublicViews } from "@/hooks/use-public-views";
-import SpinningCounter from "../management/spinning-counter";
+import SpinningCounter from "./spinning-counter";
 
 type PublicViewsState = ReturnType<typeof usePublicViews>;
 
