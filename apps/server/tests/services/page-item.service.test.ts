@@ -97,7 +97,7 @@ describe("page item service", () => {
 							type: "link",
 							data: {
 								url: "https://open.spotify.com/track/123",
-								metadata: { provider: "spotify" },
+								metadata: { provider: "spotify", widget: "spotify" },
 							},
 							style: {},
 							layouts: { wide: layout, compact: layout },
@@ -110,6 +110,57 @@ describe("page item service", () => {
 				error instanceof PageItemServiceError && error.code === "PRO_REQUIRED",
 		);
 		assert.equal(insertCount, 0);
+	});
+
+	/**
+	 * Case ID: PAGE-ITEM-SERVICE-014
+	 * Given: a free account adds a Spotify URL as a regular link.
+	 * When: persistPageItemBatch checks whether the item is an advanced widget.
+	 * Then: Spotify provider metadata alone does not require Pro.
+	 * Evidence: persistence reaches the insert step instead of returning PRO_REQUIRED.
+	 * Result: Pass | Fail | Blocked | Not Run
+	 */
+	it("PAGE-ITEM-SERVICE-014 allows Spotify links without the widget marker", async () => {
+		const reachedInsert = new Error("insert reached");
+		const tx = {
+			query: {
+				pages: { findFirst: async () => ({ id: "page-1" }) },
+				pageItems: { findMany: async () => [] },
+				creemSubscription: { findMany: async () => [] },
+			},
+			insert: () => {
+				throw reachedInsert;
+			},
+		};
+		const db = {
+			transaction: async (callback: (value: typeof tx) => unknown) =>
+				callback(tx),
+		} as unknown as DatabaseClient;
+
+		await assert.rejects(
+			persistPageItemBatch({
+				db,
+				handle: "jane",
+				userId: "user-1",
+				proProductIds: ["pro-monthly"],
+				batch: {
+					upserts: [
+						{
+							id: "spotify-link-1",
+							type: "link",
+							data: {
+								url: "https://open.spotify.com/track/123",
+								metadata: { provider: "spotify" },
+							},
+							style: {},
+							layouts: { wide: layout, compact: layout },
+						},
+					],
+					deletes: [],
+				},
+			}),
+			(error: unknown) => error === reachedInsert,
+		);
 	});
 
 	/**

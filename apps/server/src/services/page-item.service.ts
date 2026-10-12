@@ -40,10 +40,12 @@ const advancedWidgetProviderIds = new Set<string>(
 );
 
 function isAdvancedWidget(item: PageItemBatchRequest["upserts"][number]) {
+	if (item.type === "calendly") return true;
+	if (item.type !== "link") return false;
+	const metadata = item.data.metadata;
 	return (
-		item.type === "calendly" ||
-		(item.type === "link" &&
-			advancedWidgetProviderIds.has(item.data.metadata?.provider ?? ""))
+		advancedWidgetProviderIds.has(metadata?.provider ?? "") &&
+		(metadata?.provider !== "spotify" || metadata.widget === "spotify")
 	);
 }
 

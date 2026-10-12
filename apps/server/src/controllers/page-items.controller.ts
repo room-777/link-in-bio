@@ -1,6 +1,7 @@
 import type {
 	PageItemBatchRequest,
 	PageItemBatchResponse,
+	PageItemLinkMetadata,
 	PageItemMetadataRequest,
 	PageItemResponse,
 	RssFeedResponse,
@@ -58,6 +59,7 @@ const pageItemErrorDetails = {
 	INVALID_RSS_FEED: "The RSS feed returned invalid data.",
 	ITEM_NOT_LINK: "The item is not a link.",
 	STALE_LINK_METADATA: "The link URL changed before metadata completed.",
+	SPOTIFY_PREVIEW_UNAVAILABLE: "Spotify data could not be loaded. Try again.",
 } as const;
 
 function pageItemErrorResponse(
@@ -76,7 +78,9 @@ function pageItemErrorResponse(
 						? 409
 						: error.code === "STALE_LINK_METADATA"
 							? 409
-							: 422;
+							: error.code === "SPOTIFY_PREVIEW_UNAVAILABLE"
+								? 502
+								: 422;
 	return jsonApiError(c, {
 		status,
 		code: error.code,
@@ -103,6 +107,12 @@ type EnrichPageItemMetadata = (input: {
 	fetch: typeof fetch;
 	env?: LinkProviderEnvironment;
 }) => Promise<PageItemResponse>;
+
+type PreviewSpotifyMetadata = (input: {
+	url: PageItemMetadataRequest["url"];
+	fetch: typeof fetch;
+	env?: LinkProviderEnvironment;
+}) => Promise<PageItemLinkMetadata>;
 
 async function readJson(c: Context<AppEnv>) {
 	return c.req.json().catch(() => null);
@@ -162,6 +172,7 @@ export type PageItemsControllerOptions = {
 	sessionMiddleware: MiddlewareHandler<AppEnv>;
 	persist: PersistPageItemBatch;
 	enrichMetadata: EnrichPageItemMetadata;
+	previewSpotify: PreviewSpotifyMetadata;
 	fetchRss?: (input: {
 		url: string;
 		fetch: typeof fetch;
@@ -172,6 +183,7 @@ export function createPageItemsController({
 	sessionMiddleware,
 	persist,
 	enrichMetadata,
+	previewSpotify,
 	fetchRss = async () => {
 		throw new RssServiceError("RSS_FEED_UNAVAILABLE");
 	},
@@ -216,6 +228,22 @@ export function createPageItemsController({
 
 			if ("kind" in parsed.output && parsed.output.kind === "rss") {
 				return rssFeedResponse(c, fetchRss, parsed.output.url);
+			}
+
+			if ("kind" in parsed.output && parsed.output.kind === "spotify") {
+				try {
+					return c.json({
+						metadata: await previewSpotify({
+							url: parsed.output.url,
+							fetch: (input, init) => fetch(input, init),
+							env: c.env,
+						}),
+					});
+				} catch (error) {
+					if (error instanceof PageItemServiceError)
+						return pageItemErrorResponse(c, error);
+					throw error;
+				}
 			}
 
 			if (!("itemId" in parsed.output)) {

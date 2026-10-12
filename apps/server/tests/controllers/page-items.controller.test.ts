@@ -40,10 +40,20 @@ function createTestApp(
 	>[0]["enrichMetadata"] = async () => {
 		throw new Error("metadata service should not run");
 	},
+	previewSpotify: Parameters<
+		typeof createPageItemsController
+	>[0]["previewSpotify"] = async () => {
+		throw new Error("Spotify preview service should not run");
+	},
 ) {
 	const app = new Hono<AppEnv>().route(
 		"/pages",
-		createPageItemsController({ sessionMiddleware, persist, enrichMetadata }),
+		createPageItemsController({
+			sessionMiddleware,
+			persist,
+			enrichMetadata,
+			previewSpotify,
+		}),
 	);
 	const bindings = {
 		CREEM_PRO_MONTHLY_PRODUCT_ID: "",
@@ -275,6 +285,75 @@ describe("page items controller", () => {
 		});
 		const body = (await response.json()) as { item: unknown };
 		assert.deepEqual(body.item, item);
+	});
+
+	/**
+	 * Case ID: PAGE-ITEM-API-010
+	 * Given: an authenticated owner requests preview data for a Spotify URL.
+	 * When: POST /pages/:handle/metadata sends kind=spotify.
+	 * Then: the URL is sent to the preview service and its metadata is returned.
+	 * Evidence: HTTP status=200, captured URL, and metadata response body.
+	 * Result: Pass | Fail | Blocked | Not Run
+	 */
+	it("PAGE-ITEM-API-010 returns metadata for a Spotify preview", async () => {
+		let capturedUrl: string | undefined;
+		const metadata = {
+			title: "Featured album",
+			provider: "spotify",
+		};
+		const app = createTestApp(
+			async () => ({ items: [] }),
+			undefined,
+			async ({ url }) => {
+				capturedUrl = url;
+				return metadata;
+			},
+		);
+
+		const response = await app.request("/pages/jane/metadata", {
+			method: "POST",
+			headers: { "Content-Type": "application/json" },
+			body: JSON.stringify({
+				kind: "spotify",
+				url: "https://open.spotify.com/album/123",
+			}),
+		});
+
+		assert.equal(response.status, 200);
+		assert.equal(capturedUrl, "https://open.spotify.com/album/123");
+		assert.deepEqual(await response.json(), { metadata });
+	});
+
+	/**
+	 * Case ID: PAGE-ITEM-API-011
+	 * Given: a Spotify preview request contains a non-HTTPS URL.
+	 * When: the metadata endpoint validates the request.
+	 * Then: it rejects the URL without calling the preview service.
+	 * Evidence: HTTP status=422 and preview call count=0.
+	 * Result: Pass | Fail | Blocked | Not Run
+	 */
+	it("PAGE-ITEM-API-011 rejects invalid Spotify preview URLs", async () => {
+		let previewCalls = 0;
+		const app = createTestApp(
+			async () => ({ items: [] }),
+			undefined,
+			async () => {
+				previewCalls += 1;
+				return { provider: "spotify" };
+			},
+		);
+
+		const response = await app.request("/pages/jane/metadata", {
+			method: "POST",
+			headers: { "Content-Type": "application/json" },
+			body: JSON.stringify({
+				kind: "spotify",
+				url: "http://open.spotify.com/album/123",
+			}),
+		});
+
+		assert.equal(response.status, 422);
+		assert.equal(previewCalls, 0);
 	});
 
 	it("PAGE-ITEM-API-007 rejects an invalid metadata refresh body", async () => {

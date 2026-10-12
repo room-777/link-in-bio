@@ -466,6 +466,7 @@ const pageItemLinkMetadataEntries = {
 	faviconUrl: v.optional(faviconUrlSchema),
 	imageUrl: v.optional(httpsUrlSchema),
 	provider: v.optional(v.string()),
+	widget: v.optional(v.literal("spotify")),
 	rss: v.optional(rssFeedResponseSchema),
 	providerData: v.optional(v.unknown()),
 };
@@ -648,6 +649,10 @@ export const pageItemMetadataRequestSchema = v.union([
 		kind: v.literal("rss"),
 		url: pageItemLinkUrlSchema,
 	}),
+	v.object({
+		kind: v.literal("spotify"),
+		url: pageItemLinkUrlSchema,
+	}),
 ]);
 
 export type PageItemMetadataRequest = v.InferOutput<
@@ -657,6 +662,14 @@ export type PageItemMetadataRequest = v.InferOutput<
 export const pageItemMetadataResponseSchema = v.object({
 	item: pageItemResponseSchema,
 });
+
+export const pageItemSpotifyPreviewResponseSchema = v.object({
+	metadata: pageItemLinkMetadataSchema,
+});
+
+export type PageItemSpotifyPreviewResponse = v.InferOutput<
+	typeof pageItemSpotifyPreviewResponseSchema
+>;
 
 export const pageItemRssResponseSchema = v.object({
 	rss: rssFeedResponseSchema,

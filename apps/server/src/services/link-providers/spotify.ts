@@ -108,7 +108,7 @@ export async function enrichSpotify(
 				audio: getHttpsUrl(preview.audio),
 				link: getHttpsUrl(preview.link),
 				embed: getHttpsUrl(preview.embed),
-				tracks: details.tracks.slice(0, 100).map((track) => ({
+				tracks: details.tracks.slice(0, 15).map((track) => ({
 					...track,
 					previewUrl: getHttpsUrl(track.previewUrl),
 				})),
