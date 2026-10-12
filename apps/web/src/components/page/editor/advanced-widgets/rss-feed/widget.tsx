@@ -15,7 +15,7 @@ import { ScrollArea } from "@grabbin/ui/components/scroll-area";
 import { Separator } from "@grabbin/ui/components/separator";
 import { Skeleton } from "@grabbin/ui/components/skeleton";
 import { Textarea } from "@grabbin/ui/components/textarea";
-import { useEffect, useState } from "react";
+import { type ComponentType, type ReactNode, useEffect, useState } from "react";
 import { useBentoLineHeight } from "@/hooks/use-bento-line-height";
 
 function RssArticle({
@@ -80,6 +80,112 @@ function RssArticle({
 	);
 }
 
+type RssPreset = Exclude<PresetName, "fullBanner">;
+
+type RssPresetWidgetProps = {
+	source: ReactNode;
+	sourceIcon: ReactNode;
+	titleArea: ReactNode;
+	attribution: ReactNode;
+	articleList: ReactNode;
+};
+
+function RssHalfBannerWidget({ source, attribution }: RssPresetWidgetProps) {
+	return (
+		<div className="flex size-full min-h-0 min-w-0 items-center gap-3 p-5">
+			{source}
+			{attribution}
+		</div>
+	);
+}
+
+function RssLandscapeWidget({
+	source,
+	attribution,
+	articleList,
+}: RssPresetWidgetProps) {
+	return (
+		<div className="flex size-full min-h-0 min-w-0 gap-2 p-5">
+			<div className="flex min-h-0 w-1/2 min-w-0 flex-col justify-between gap-3">
+				{source}
+				{attribution}
+			</div>
+			<Separator
+				orientation="vertical"
+				className="mx-2 rounded-lg bg-border/50 data-vertical:my-14 data-vertical:w-[3px]"
+			/>
+			<div className="flex min-h-0 w-1/2 min-w-0">{articleList}</div>
+		</div>
+	);
+}
+
+function RssSquareLargeWidget({
+	source,
+	attribution,
+	articleList,
+}: RssPresetWidgetProps) {
+	return (
+		<div className="flex size-full min-h-0 min-w-0 flex-col items-center gap-3 p-5">
+			<div className="flex w-full flex-row items-center gap-2">
+				{source}
+				{attribution}
+			</div>
+			<Separator
+				orientation="horizontal"
+				className="w-6! rounded-lg bg-border/50 data-horizontal:h-[3px]"
+			/>
+			{articleList}
+		</div>
+	);
+}
+
+function RssPortraitWidget({
+	sourceIcon,
+	titleArea,
+	attribution,
+	articleList,
+}: RssPresetWidgetProps) {
+	return (
+		<div className="flex size-full min-h-0 min-w-0 flex-col items-center gap-2 p-5">
+			<div className="flex w-full flex-row items-center justify-between">
+				{sourceIcon}
+				{attribution}
+			</div>
+			{titleArea}
+			<Separator
+				orientation="horizontal"
+				className="w-6! rounded-lg bg-border/50 data-horizontal:h-[3px]"
+			/>
+			{articleList}
+		</div>
+	);
+}
+
+function RssSquareSmallWidget({
+	source,
+	attribution,
+	articleList,
+}: RssPresetWidgetProps) {
+	return (
+		<div className="flex size-full min-h-0 min-w-0 flex-col justify-between gap-3 p-5">
+			{source}
+			{articleList}
+			<div className="flex justify-end">{attribution}</div>
+		</div>
+	);
+}
+
+const rssPresetWidgets: Record<
+	RssPreset,
+	ComponentType<RssPresetWidgetProps>
+> = {
+	squareSmall: RssSquareSmallWidget,
+	halfBanner: RssHalfBannerWidget,
+	landscape: RssLandscapeWidget,
+	portrait: RssPortraitWidget,
+	squareLarge: RssSquareLargeWidget,
+};
+
 export function RssFeedWidget({
 	url,
 	feed,
@@ -97,11 +203,11 @@ export function RssFeedWidget({
 	onTitleCommit?: (title: string) => void;
 	isLoading?: boolean;
 }) {
-	const isHalfBanner = preset === "halfBanner";
-	const isLandscape = preset === "landscape";
-	const isSquareSmall = preset === "squareSmall";
-	const isPortrait = preset === "portrait";
-	const isSquareLarge = preset === "squareLarge";
+	const widgetPreset = preset === "fullBanner" ? "squareSmall" : preset;
+	const isHalfBanner = widgetPreset === "halfBanner";
+	const isLandscape = widgetPreset === "landscape";
+	const isSquareSmall = widgetPreset === "squareSmall";
+	const isSquareLarge = widgetPreset === "squareLarge";
 	const singleLineTitle = isHalfBanner || isSquareLarge;
 	const titleAreaCanGrow = isSquareSmall || isLandscape;
 	const titleAreaClassName = singleLineTitle
@@ -119,9 +225,7 @@ export function RssFeedWidget({
 	};
 	const sourceTitle = title;
 	const articles =
-		preset === "halfBanner" || preset === "squareSmall"
-			? []
-			: (feed?.items ?? []);
+		widgetPreset === "halfBanner" || isSquareSmall ? [] : (feed?.items ?? []);
 	const titleArea = (
 		<div
 			ref={viewportRef}
@@ -229,7 +333,7 @@ export function RssFeedWidget({
 		</span>
 	) : null;
 	const articleList =
-		isLoading && preset !== "halfBanner" && !isSquareSmall ? (
+		isLoading && !isHalfBanner && !isSquareSmall ? (
 			<ScrollArea
 				aria-hidden="true"
 				className="[&_[data-slot=scroll-area-viewport]]:scroll-fade-y [&_[data-slot=scroll-area-viewport]]:scrollbar-none -mx-1 min-h-0 w-full flex-1 [&_[data-slot=scroll-area-scrollbar]]:hidden"
@@ -254,67 +358,14 @@ export function RssFeedWidget({
 			</ScrollArea>
 		) : null;
 
-	if (isHalfBanner) {
-		return (
-			<div className="flex size-full min-h-0 min-w-0 items-center gap-3 p-5">
-				{source}
-				{attribution}
-			</div>
-		);
-	}
-	if (isLandscape) {
-		return (
-			<div className="flex size-full min-h-0 min-w-0 gap-2 p-5">
-				<div className="flex min-h-0 w-1/2 min-w-0 flex-col justify-between gap-3">
-					{source}
-					{attribution}
-				</div>
-				<Separator
-					orientation="vertical"
-					className="mx-2 rounded-lg bg-border/50 data-vertical:my-14 data-vertical:w-[3px]"
-				/>
-				<div className="flex min-h-0 w-1/2 min-w-0">{articleList}</div>
-			</div>
-		);
-	}
-	if (isSquareLarge) {
-		return (
-			<div className="flex size-full min-h-0 min-w-0 flex-col items-center gap-3 p-5">
-				<div className="flex w-full flex-row items-center gap-2">
-					{source}
-					{attribution}
-				</div>
-				<Separator
-					orientation="horizontal"
-					className="w-6! rounded-lg bg-border/50 data-horizontal:h-[3px]"
-				/>
-				{articleList}
-			</div>
-		);
-	}
-	if (isPortrait) {
-		return (
-			<div className="flex size-full min-h-0 min-w-0 flex-col items-center gap-2 p-5">
-				<div className="flex w-full flex-row items-center justify-between">
-					{sourceIcon}
-					{attribution}
-				</div>
-				{titleArea}
-				<Separator
-					orientation="horizontal"
-					className="w-6! rounded-lg bg-border/50 data-horizontal:h-[3px]"
-				/>
-				{articleList}
-			</div>
-		);
-	}
+	const PresetWidget = rssPresetWidgets[widgetPreset];
 	return (
-		<div
-			className={`flex size-full min-h-0 min-w-0 flex-col gap-3 p-5 ${isSquareSmall ? "justify-between" : ""}`}
-		>
-			{source}
-			{articleList}
-			<div className="flex justify-end">{attribution}</div>
-		</div>
+		<PresetWidget
+			source={source}
+			sourceIcon={sourceIcon}
+			titleArea={titleArea}
+			attribution={attribution}
+			articleList={articleList}
+		/>
 	);
 }
