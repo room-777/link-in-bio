@@ -3,14 +3,14 @@
 import type { PageItemLinkMetadata } from "@grabbin/api";
 import { getPresetGeometry, type PresetName } from "@grabbin/bento-layout";
 import { Skeleton } from "@grabbin/ui/components/skeleton";
-import type { BentoItem } from "@/lib/bento/bento-types";
-import { normalizeHttpsUrl } from "@/lib/normalize-https-url";
-import { AdvancedWidgetPresetControls } from "../../advanced-widget-preset-controls";
-import { AdvancedWidgetPreviewFrame } from "../advanced-widget-preview-frame";
+import { AdvancedWidgetPresetControls } from "@/components/page/editor/advanced-widget-preset-controls";
+import { AdvancedWidgetPreviewFrame } from "@/components/page/editor/advanced-widgets/advanced-widget-preview-frame";
 import {
 	advancedWidgetPresets,
 	useAdvancedWidgetPreset,
-} from "../use-advanced-widget-preset";
+} from "@/components/page/editor/advanced-widgets/use-advanced-widget-preset";
+import type { BentoItem } from "@/lib/bento/bento-types";
+import { normalizeHttpsUrl } from "@/lib/normalize-https-url";
 import { SpotifyWidget } from "./spotify-widget";
 
 function SpotifyWidgetSkeleton({ preset }: { preset: PresetName }) {
