@@ -96,7 +96,7 @@ export default function Footer() {
 							<ul className="flex flex-col items-start gap-1">
 								<li>
 									<Link href="/changelog" className="hover:text-primary/80">
-										Updates
+										Changelog
 									</Link>
 								</li>
 								<li>
