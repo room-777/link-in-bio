@@ -12,7 +12,7 @@ import { PageOnboardingComplete } from "./page-onboarding-complete";
 export default function CreatePageForm({
 	presentation = "page",
 	onComplete,
-	onBack,
+	onBack: handleBack,
 }: {
 	presentation?: "page" | "dialog";
 	onComplete?: (handle: string) => void;
@@ -65,12 +65,12 @@ export default function CreatePageForm({
 						activity === "complete" && "pointer-events-none absolute inset-0",
 					)}
 				>
-					{isDialog && onBack && activity !== "complete" && (
+					{isDialog && handleBack && activity !== "complete" && (
 						<Button
 							variant="outline"
 							size="xl"
 							className="-ml-1 self-start rounded-md text-base"
-							onClick={onBack}
+							onClick={handleBack}
 						>
 							Cancel
 						</Button>

@@ -281,9 +281,9 @@ function MapItemExtraControls() {
 	const {
 		setLocationEditing,
 		disableLocationSearch,
-		zoomIn,
-		zoomOut,
-		locate,
+		zoomIn: handleZoomIn,
+		zoomOut: handleZoomOut,
+		locate: handleLocate,
 		selectLocation,
 	} = useMapItemInteraction();
 	const [searchOpen, setSearchOpen] = useState(false);
@@ -345,7 +345,7 @@ function MapItemExtraControls() {
 						variant="ghost"
 						aria-label="Zoom out"
 						title="Zoom out"
-						onClick={zoomOut}
+						onClick={handleZoomOut}
 						className="size-8 shrink-0 cursor-pointer! rounded-md text-white hover:bg-white/20 hover:text-white focus-visible:ring-2 focus-visible:ring-ring/60"
 					>
 						<Minus className="size-4 stroke-[2.5px]" aria-hidden="true" />
@@ -356,7 +356,7 @@ function MapItemExtraControls() {
 						variant="ghost"
 						aria-label="Zoom in"
 						title="Zoom in"
-						onClick={zoomIn}
+						onClick={handleZoomIn}
 						className="size-8 shrink-0 cursor-pointer! rounded-md text-white hover:bg-white/20 hover:text-white focus-visible:ring-2 focus-visible:ring-ring/60"
 					>
 						<Plus className="size-4 stroke-[2.5px]" aria-hidden="true" />
@@ -367,7 +367,7 @@ function MapItemExtraControls() {
 						variant="ghost"
 						aria-label="Use current location"
 						title="Use current location"
-						onClick={locate}
+						onClick={handleLocate}
 						className="size-8 shrink-0 cursor-pointer! rounded-md text-white hover:bg-white/20 hover:text-white focus-visible:ring-2 focus-visible:ring-ring/60"
 					>
 						<LocateFixed className="size-4 stroke-[2.5px]" aria-hidden="true" />
@@ -453,7 +453,7 @@ function TextStyleControls({
 
 	const updateStyle = (patch: BentoItem["style"]) =>
 		onCommand({ type: "update-style", itemId: item.id, patch });
-	const commitColor = () => {
+	const handleCommitColor = () => {
 		const color = normalizeHexColor(draftColor);
 		if (color && color !== backgroundColor)
 			updateStyle({ backgroundColor: color });
@@ -656,11 +656,11 @@ function TextStyleControls({
 							placeholder="#ffffff"
 							className="h-8 border-white/10 bg-background/10 px-2 font-mono text-primary-foreground text-xs shadow-none focus-visible:ring-white/20"
 							onChange={(event) => setDraftColor(event.target.value)}
-							onBlur={commitColor}
+							onBlur={handleCommitColor}
 							onKeyDown={(event) => {
 								if (event.key === "Enter") {
 									event.preventDefault();
-									commitColor();
+									handleCommitColor();
 								}
 								if (event.key === "Escape") setDraftColor(backgroundColor);
 							}}

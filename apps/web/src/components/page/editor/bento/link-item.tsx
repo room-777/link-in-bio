@@ -358,7 +358,7 @@ function LinkImageControls({
 	hasImage,
 	isAnyItemDragging,
 	onSelect,
-	onDelete,
+	onDelete: handleDelete,
 }: {
 	hasImage: boolean;
 	isAnyItemDragging: boolean;
@@ -384,7 +384,7 @@ function LinkImageControls({
 				>
 					<CircleFadingArrowUp className="size-5" aria-hidden="true" />
 				</Button>
-				{onDelete ? (
+				{handleDelete ? (
 					<Button
 						type="button"
 						size="icon-sm"
@@ -394,7 +394,7 @@ function LinkImageControls({
 						title="Remove link image"
 						data-bento-item-drag-cancel="true"
 						className="size-7 cursor-pointer! rounded-md text-white hover:bg-white/20 hover:text-white focus-visible:ring-2 focus-visible:ring-white/60 disabled:cursor-not-allowed! disabled:opacity-40 disabled:hover:bg-transparent"
-						onClick={onDelete}
+						onClick={handleDelete}
 					>
 						<Trash className="size-5" aria-hidden="true" />
 					</Button>

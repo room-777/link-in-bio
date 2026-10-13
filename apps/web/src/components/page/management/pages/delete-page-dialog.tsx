@@ -15,14 +15,14 @@ import { type MouseEvent, useState } from "react";
 export default function DeletePageDialog({
 	handle,
 	open,
-	close,
-	unmount,
+	onClose,
+	onUnmount,
 	onConfirm,
 }: {
 	handle: string;
 	open: boolean;
-	close: () => void;
-	unmount: () => void;
+	onClose: () => void;
+	onUnmount: () => void;
 	onConfirm: () => Promise<boolean>;
 }) {
 	const [isDeleting, setIsDeleting] = useState(false);
@@ -31,14 +31,14 @@ export default function DeletePageDialog({
 		setIsDeleting(true);
 		const deleted = await onConfirm();
 		setIsDeleting(false);
-		if (deleted) close();
+		if (deleted) onClose();
 	};
 
 	return (
 		<AlertDialog
 			open={open}
-			onOpenChange={(nextOpen) => !nextOpen && !isDeleting && close()}
-			onOpenChangeComplete={(nextOpen) => !nextOpen && unmount()}
+			onOpenChange={(nextOpen) => !nextOpen && !isDeleting && onClose()}
+			onOpenChangeComplete={(nextOpen) => !nextOpen && onUnmount()}
 		>
 			<AlertDialogContent
 				overlayProps={{ forceRender: true, className: "z-[60]" }}

@@ -15,8 +15,8 @@ export function ConnectDomainForm({
 	hostname,
 	isPending,
 	onHostnameChange,
-	onSubmit,
-	onUpgrade,
+	onSubmit: handleSubmit,
+	onUpgrade: handleUpgrade,
 }: {
 	isPro: boolean;
 	hostname: string;
@@ -29,7 +29,7 @@ export function ConnectDomainForm({
 		return (
 			<div className="flex flex-col items-start gap-2 rounded-lg bg-secondary p-3.5">
 				<p className="text-sm">Custom domains are available on Pro.</p>
-				<Button type="button" variant="outline" onClick={onUpgrade}>
+				<Button type="button" variant="outline" onClick={handleUpgrade}>
 					Upgrade to Pro
 				</Button>
 			</div>
@@ -37,7 +37,7 @@ export function ConnectDomainForm({
 	}
 
 	return (
-		<form className="mt-4 flex min-w-0 flex-col gap-3" onSubmit={onSubmit}>
+		<form className="mt-4 flex min-w-0 flex-col gap-3" onSubmit={handleSubmit}>
 			<InputGroup className="h-11">
 				<InputGroupInput
 					id="custom-domain"

@@ -112,8 +112,8 @@ export default function SettingDialog({
 				isTransitioning={tabsState.isTransitioning}
 				outgoingTab={tabsState.outgoingTab}
 				onChangeTab={tabsState.changeTab}
-				onTransitionEnd={tabsState.finishTransition}
-				getPageId={tabsState.getPageId}
+				onTransitionEnd={tabsState.handleFinishTransition}
+				onGetPageId={tabsState.getPageId}
 			/>
 		</div>
 	);

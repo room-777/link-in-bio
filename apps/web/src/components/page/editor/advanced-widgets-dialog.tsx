@@ -177,7 +177,7 @@ function AdvancedWidgetsOverlay({
 		if (reduceMotion) setActivePage("2");
 	};
 
-	const showCatalog = () => {
+	const handleShowCatalog = () => {
 		setIsDetailActivity(false);
 		setIsTransitioning(!reduceMotion);
 		if (reduceMotion) {
@@ -186,7 +186,9 @@ function AdvancedWidgetsOverlay({
 		}
 	};
 
-	const finishTransition = (event: React.TransitionEvent<HTMLElement>) => {
+	const handleFinishTransition = (
+		event: React.TransitionEvent<HTMLElement>,
+	) => {
 		if (
 			event.target === event.currentTarget &&
 			event.propertyName === "transform" &&
@@ -233,7 +235,7 @@ function AdvancedWidgetsOverlay({
 					data-page-id="1"
 					aria-hidden={isDetailActivity}
 					inert={isDetailActivity}
-					onTransitionEnd={finishTransition}
+					onTransitionEnd={handleFinishTransition}
 				>
 					<header
 						className={cn(
@@ -277,7 +279,7 @@ function AdvancedWidgetsOverlay({
 					data-page-id="2"
 					aria-hidden={!isDetailActivity}
 					inert={!isDetailActivity}
-					onTransitionEnd={finishTransition}
+					onTransitionEnd={handleFinishTransition}
 				>
 					<header
 						className={cn(
@@ -307,7 +309,7 @@ function AdvancedWidgetsOverlay({
 							)}
 							aria-label="Back to widgets"
 							title="Back to widgets"
-							onClick={showCatalog}
+							onClick={handleShowCatalog}
 						>
 							<ChevronLeft
 								className="size-5 stroke-[2.5] text-muted-foreground/80"

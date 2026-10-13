@@ -12,7 +12,7 @@ export function ConnectedDomainActions({
 	domain,
 	isChecking,
 	isDisconnecting,
-	onCheck,
+	onCheck: handleCheck,
 	onDisconnect,
 }: {
 	domain: Domain;
@@ -29,7 +29,7 @@ export function ConnectedDomainActions({
 				variant="outline"
 				size="xl"
 				disabled={isChecking || domain.status === "deleting"}
-				onClick={onCheck}
+				onClick={handleCheck}
 				aria-label={isChecking ? "Checking domain" : undefined}
 			>
 				<span className="relative inline-grid place-items-center">
@@ -51,8 +51,8 @@ export function ConnectedDomainActions({
 						<DisconnectDomainDialog
 							hostname={domain.hostname}
 							open={isOpen}
-							close={close}
-							unmount={unmount}
+							onClose={close}
+							onUnmount={unmount}
 							onDisconnect={onDisconnect}
 						/>
 					))

@@ -242,7 +242,7 @@ export function BentoItemShell({
 		return () => animation.stop();
 	}, [isEntering, item.id, onPopInComplete, reduceMotion]);
 
-	const openControls = () => {
+	const handleOpenControls = () => {
 		if (!showControls || isAnyItemDragging) return;
 		if (hideControlsTimer.current !== null) {
 			window.clearTimeout(hideControlsTimer.current);
@@ -358,7 +358,7 @@ export function BentoItemShell({
 			data-bento-item-id={item.id}
 			data-bento-item-type={item.type}
 			data-bento-item-preset={preset ?? "unsupported"}
-			onPointerEnter={openControls}
+			onPointerEnter={handleOpenControls}
 			onPointerLeave={(event) => {
 				if (
 					event.relatedTarget instanceof Node &&

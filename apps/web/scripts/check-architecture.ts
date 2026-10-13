@@ -1,3 +1,4 @@
+import { checkCallbackRules } from "./architecture/callback-rules";
 import { checkComponentRules } from "./architecture/component-rules";
 import type { ArchitectureContext } from "./architecture/context";
 import { createArchitectureContext } from "./architecture/context";
@@ -12,6 +13,7 @@ const checks = {
 	mutations: checkMutationRules,
 	"request-boundaries": checkRequestBoundaryRules,
 	components: checkComponentRules,
+	callbacks: checkCallbackRules,
 };
 const requestedCheck = process.argv[2] ?? "all";
 const selectedChecks: [string, ArchitectureCheck][] | null =

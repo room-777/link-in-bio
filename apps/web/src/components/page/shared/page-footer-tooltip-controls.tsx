@@ -47,7 +47,7 @@ export function getDiscordTooltipControl(): AnimatedTooltipControl {
 }
 
 export function getShareTooltipControl(
-	onClick: () => void,
+	handleClick: () => void,
 	isAutoSaving = false,
 ): AnimatedTooltipControl {
 	return {
@@ -59,7 +59,7 @@ export function getShareTooltipControl(
 				className="page-wide:inline-flex hidden text-muted-foreground/80"
 				aria-label={isAutoSaving ? "Saving..." : "Share page"}
 				disabled={isAutoSaving}
-				onClick={onClick}
+				onClick={handleClick}
 			>
 				{isAutoSaving ? (
 					<>

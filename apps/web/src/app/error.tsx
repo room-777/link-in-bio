@@ -5,7 +5,7 @@ import { useEffect } from "react";
 
 export default function RootError({
 	error,
-	reset,
+	reset: handleReset,
 }: {
 	error: Error & { digest?: string };
 	reset: () => void;
@@ -27,7 +27,7 @@ export default function RootError({
 					className="mt-6 text-muted-foreground"
 					variant="secondary"
 					size="default"
-					onClick={reset}
+					onClick={handleReset}
 				>
 					Try again
 				</Button>

@@ -24,7 +24,7 @@ type EmailOtpVerificationFormProps = {
 export default function EmailOtpVerificationForm({
 	email,
 	returnTo,
-	onUseDifferentEmail,
+	onUseDifferentEmail: handleUseDifferentEmail,
 }: EmailOtpVerificationFormProps) {
 	const [otp, setOtp] = useState("");
 	const [errorMessage, setErrorMessage] = useState("");
@@ -36,7 +36,7 @@ export default function EmailOtpVerificationForm({
 		setIsShown(true);
 	}, []);
 
-	const sendCode = async () => {
+	const handleSendCode = async () => {
 		setErrorMessage("");
 		setIsSending(true);
 		const { error } = await authClient.emailOtp.sendVerificationOtp({
@@ -53,7 +53,7 @@ export default function EmailOtpVerificationForm({
 		}
 	};
 
-	const verifyCode = async () => {
+	const handleVerifyCode = async () => {
 		setErrorMessage("");
 		setIsSigningIn(true);
 		const { error } = await authClient.signIn.emailOtp({
@@ -120,7 +120,7 @@ export default function EmailOtpVerificationForm({
 				<Button
 					variant="default"
 					disabled={isSigningIn || otp.length !== 6}
-					onClick={verifyCode}
+					onClick={handleVerifyCode}
 					className="h-12"
 				>
 					{isSigningIn ? <Loading /> : "Verify code"}
@@ -129,14 +129,14 @@ export default function EmailOtpVerificationForm({
 					<Button
 						variant="outline"
 						disabled={isSending}
-						onClick={sendCode}
+						onClick={handleSendCode}
 						className="h-12 w-full"
 					>
 						{isSending ? <Loading /> : "Resend code"}
 					</Button>
 					<Button
 						variant="link"
-						onClick={onUseDifferentEmail}
+						onClick={handleUseDifferentEmail}
 						className="min-h-9 px-2 font-normal text-muted-foreground/50 text-xs"
 					>
 						Use a different email

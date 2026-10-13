@@ -19,8 +19,8 @@ export function SettingsTabs({
 	isTransitioning,
 	outgoingTab,
 	onChangeTab,
-	onTransitionEnd,
-	getPageId,
+	onTransitionEnd: handleTransitionEnd,
+	onGetPageId,
 }: {
 	tabs: SettingsTab[];
 	activeTab: string;
@@ -29,7 +29,7 @@ export function SettingsTabs({
 	outgoingTab: string | null;
 	onChangeTab: (value: string | number) => void;
 	onTransitionEnd: (event: React.TransitionEvent<HTMLElement>) => void;
-	getPageId: (tab: string) => string;
+	onGetPageId: (tab: string) => string;
 }) {
 	const pageSlideRef = useRef<HTMLDivElement>(null);
 
@@ -79,8 +79,8 @@ export function SettingsTabs({
 									aria-hidden={!isActive}
 									inert={!isActive}
 									className={`t-page flex h-full flex-col overflow-y-auto ${tab.value === "custom-domain" ? "p-1" : ""}`}
-									data-page-id={getPageId(tab.value)}
-									onTransitionEnd={onTransitionEnd}
+									data-page-id={onGetPageId(tab.value)}
+									onTransitionEnd={handleTransitionEnd}
 								>
 									{tab.content}
 								</section>

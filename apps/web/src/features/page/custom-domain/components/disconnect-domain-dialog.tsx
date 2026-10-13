@@ -15,14 +15,14 @@ import { useState } from "react";
 export function DisconnectDomainDialog({
 	hostname,
 	open,
-	close,
-	unmount,
+	onClose,
+	onUnmount,
 	onDisconnect,
 }: {
 	hostname: string;
 	open: boolean;
-	close: () => void;
-	unmount: () => void;
+	onClose: () => void;
+	onUnmount: () => void;
 	onDisconnect: () => Promise<void>;
 }) {
 	const [isDisconnecting, setIsDisconnecting] = useState(false);
@@ -32,7 +32,7 @@ export function DisconnectDomainDialog({
 		setIsDisconnecting(true);
 		try {
 			await onDisconnect();
-			close();
+			onClose();
 		} catch {
 			// The mutation reports its error through the shared toast.
 		} finally {
@@ -43,8 +43,8 @@ export function DisconnectDomainDialog({
 	return (
 		<AlertDialog
 			open={open}
-			onOpenChange={(nextOpen) => !nextOpen && close()}
-			onOpenChangeComplete={(nextOpen) => !nextOpen && unmount()}
+			onOpenChange={(nextOpen) => !nextOpen && onClose()}
+			onOpenChangeComplete={(nextOpen) => !nextOpen && onUnmount()}
 		>
 			<AlertDialogContent
 				overlayProps={{ forceRender: true, className: "z-[60]" }}

@@ -1,0 +1,9 @@
+engine biome(1.0)
+language js(typescript, jsx)
+
+// shortcut: checks named JSX handler references, add inline-handler checks if policy expands.
+JsxAttribute() as $attribute where {
+	$attribute <: r"on(?:Click|Press|DoubleClick|MouseDown|MouseEnter|MouseLeave|MouseMove|MouseOut|MouseOver|MouseUp|PointerCancel|PointerDown|PointerEnter|PointerLeave|PointerMove|PointerOut|PointerOver|PointerUp|TouchCancel|TouchEnd|TouchMove|TouchStart|KeyDown|KeyPress|KeyUp|Submit|Change|Input|Focus|Blur|DragEnd|DragEnter|DragExit|DragLeave|DragOver|DragStart|Drop|Scroll|Wheel|ContextMenu|Copy|Cut|Paste|CompositionEnd|CompositionStart|CompositionUpdate|BeforeInput|Invalid|Reset|Load|Error|AnimationEnd|AnimationIteration|AnimationStart|TransitionEnd)(?:Capture)?=\{(?:[A-Za-z_$][A-Za-z0-9_$]*\.)?[A-Za-z_$][A-Za-z0-9_$]*\}",
+	not $attribute <: r"on(?:Click|Press|DoubleClick|MouseDown|MouseEnter|MouseLeave|MouseMove|MouseOut|MouseOver|MouseUp|PointerCancel|PointerDown|PointerEnter|PointerLeave|PointerMove|PointerOut|PointerOver|PointerUp|TouchCancel|TouchEnd|TouchMove|TouchStart|KeyDown|KeyPress|KeyUp|Submit|Change|Input|Focus|Blur|DragEnd|DragEnter|DragExit|DragLeave|DragOver|DragStart|Drop|Scroll|Wheel|ContextMenu|Copy|Cut|Paste|CompositionEnd|CompositionStart|CompositionUpdate|BeforeInput|Invalid|Reset|Load|Error|AnimationEnd|AnimationIteration|AnimationStart|TransitionEnd)(?:Capture)?=\{(?:[A-Za-z_$][A-Za-z0-9_$]*\.)?handle[A-Z][A-Za-z0-9_$]*\}",
+	register_diagnostic(span=$attribute, message="Name event handler functions with the handle prefix.")
+}

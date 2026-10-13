@@ -11,7 +11,7 @@ import { useClipboardCopy } from "@/hooks/use-clipboard-copy";
 
 export function PageOnboardingComplete({
 	page,
-	onGoToProfile,
+	onGoToProfile: handleGoToProfile,
 	actionLabel = "Go to profile",
 }: {
 	page: { handle: string };
@@ -90,7 +90,7 @@ export function PageOnboardingComplete({
 						variant={"brandBlack"}
 						size="xl"
 						className="smooth-shadow-xs mt-0 h-12 w-full text-base drop-shadow-md"
-						onClick={onGoToProfile}
+						onClick={handleGoToProfile}
 					>
 						{actionLabel}
 					</Button>

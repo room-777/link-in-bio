@@ -41,7 +41,7 @@ export default function CustomDomainTabContent({
 		}
 	};
 
-	const submitHostname = (event: FormEvent<HTMLFormElement>) => {
+	const handleSubmitHostname = (event: FormEvent<HTMLFormElement>) => {
 		event.preventDefault();
 		if (!isPro || !hostname.trim() || connectMutation.isPending) return;
 		connectMutation.mutate(hostname.trim(), {
@@ -109,7 +109,7 @@ export default function CustomDomainTabContent({
 				hostname={hostname}
 				isPending={connectMutation.isPending}
 				onHostnameChange={setHostname}
-				onSubmit={submitHostname}
+				onSubmit={handleSubmitHostname}
 				onUpgrade={onUpgrade}
 			/>,
 		);

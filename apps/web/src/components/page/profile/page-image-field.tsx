@@ -122,7 +122,7 @@ export default function PageImageField({
 	crop,
 	onCropChange,
 	onSelect,
-	onRemove,
+	onRemove: handleRemove,
 	onError,
 	isUploading = false,
 	breakpoint = "wide",
@@ -398,7 +398,7 @@ export default function PageImageField({
 							size="icon-sm"
 							aria-label="Remove profile image"
 							disabled={isUploading}
-							onClick={onRemove}
+							onClick={handleRemove}
 							className={`smooth-shadow-xs absolute z-30 inline-flex items-center justify-center rounded-full border-0! bg-background opacity-0 outline-depth transition-[opacity,transform,scale,background-color,color] duration-150 ease-[cubic-bezier(0.23,1,0.32,1)] focus-visible:scale-100 focus-visible:opacity-100 group-hover/image:scale-100 group-hover/image:opacity-100 ${isWide ? "page-wide:top-2 top-0 page-wide:right-2 right-0" : "top-0 right-0"}`}
 							style={{
 								width: profileImageControlSize,

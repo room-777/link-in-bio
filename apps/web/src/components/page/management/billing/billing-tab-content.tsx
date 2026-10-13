@@ -6,7 +6,7 @@ export function BillingTabContent({
 	isPro,
 	disabled,
 	isOpeningPortal,
-	onPlanAction,
+	onPlanAction: handlePlanAction,
 }: {
 	isPro: boolean;
 	disabled: boolean;
@@ -24,7 +24,7 @@ export function BillingTabContent({
 			<Button
 				variant="outline"
 				disabled={disabled || isOpeningPortal}
-				onClick={onPlanAction}
+				onClick={handlePlanAction}
 				className="rounded-md"
 			>
 				{isOpeningPortal ? "Opening…" : isPro ? "Manage plan" : "Upgrade"}

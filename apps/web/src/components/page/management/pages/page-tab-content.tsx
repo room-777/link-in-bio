@@ -93,8 +93,8 @@ export default function PageTabContent({
 			<DeletePageDialog
 				handle={handle}
 				open={isOpen}
-				close={close}
-				unmount={unmount}
+				onClose={close}
+				onUnmount={unmount}
 				onConfirm={() => confirmDeletePage(handle)}
 			/>
 		));
@@ -107,7 +107,7 @@ export default function PageTabContent({
 		}
 	};
 
-	const startAddingPage = () => {
+	const handleStartAddingPage = () => {
 		if (pagesQuery.data?.plan.hasAccess) {
 			setActivity("create");
 		} else {
@@ -240,7 +240,7 @@ export default function PageTabContent({
 											pagesQuery.data.pages.length >=
 												pagesQuery.data.plan.pageLimit)
 									}
-									onClick={startAddingPage}
+									onClick={handleStartAddingPage}
 								>
 									<Plus
 										aria-hidden="true"

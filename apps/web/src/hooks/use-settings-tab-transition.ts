@@ -36,7 +36,9 @@ export function useSettingsTabTransition(
 		if (reduceMotion) setOutgoingTab(null);
 	};
 
-	const finishTransition = (event: React.TransitionEvent<HTMLElement>) => {
+	const handleFinishTransition = (
+		event: React.TransitionEvent<HTMLElement>,
+	) => {
 		if (
 			event.target === event.currentTarget &&
 			event.propertyName === "transform" &&
@@ -57,7 +59,7 @@ export function useSettingsTabTransition(
 		activeTab,
 		activePage,
 		changeTab,
-		finishTransition,
+		handleFinishTransition,
 		getPageId,
 		isTransitioning,
 		outgoingTab,

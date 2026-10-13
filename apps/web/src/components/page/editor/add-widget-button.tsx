@@ -64,7 +64,7 @@ export default function AddWidgetButton({
 		setLinkError(false);
 		setLinkPopoverOpen(false);
 	};
-	const addLink = (event: React.FormEvent<HTMLFormElement>) => {
+	const handleAddLink = (event: React.FormEvent<HTMLFormElement>) => {
 		event.preventDefault();
 		commitLink(linkValue);
 	};
@@ -116,7 +116,7 @@ export default function AddWidgetButton({
 					className="smooth-shadow-ring-lg! smooth-ring-neutral-300/20! w-72 rounded-lg p-0.5"
 				>
 					<PopoverTitle className="sr-only">Add link widget</PopoverTitle>
-					<form onSubmit={addLink}>
+					<form onSubmit={handleAddLink}>
 						<InputGroup className="t-input h-10 rounded-lg bg-background font-medium text-base has-[[data-slot=input-group-control]:focus-visible]:ring-0">
 							<InputGroupInput
 								aria-label="Link URL"
@@ -166,7 +166,7 @@ export default function AddWidgetButton({
 function WidgetButton({
 	label,
 	children,
-	onClick,
+	onClick: handleClick,
 }: {
 	label: string;
 	children: React.ReactNode;
@@ -180,7 +180,7 @@ function WidgetButton({
 			className="size-9"
 			aria-label={`Add ${label.toLowerCase()}`}
 			title={label}
-			onClick={onClick}
+			onClick={handleClick}
 		>
 			{children}
 		</Button>

@@ -8,7 +8,7 @@ import { CalendlyConnectionContent } from "./calendly-connection-content";
 export function AccountTabContent({
 	email,
 	isPro,
-	onUpgrade,
+	onUpgrade: handleUpgrade,
 }: {
 	email?: string;
 	isPro: boolean;
@@ -45,7 +45,7 @@ export function AccountTabContent({
 								variant="link"
 								size="sm"
 								className="h-auto p-0 align-baseline"
-								onClick={onUpgrade}
+								onClick={handleUpgrade}
 							>
 								Upgrade to Pro
 							</Button>{" "}
