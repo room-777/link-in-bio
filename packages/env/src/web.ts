@@ -36,4 +36,6 @@ export const env = createEnv({
 		SENTRY_WEB_PROJECT: process.env.SENTRY_WEB_PROJECT,
 	},
 	emptyStringAsUndefined: true,
+	// 타입 생성(vinext typegen)처럼 실제 env 값이 필요 없는 작업에서만 검증을 건너뛴다.
+	skipValidation: process.env.SKIP_ENV_VALIDATION === "1",
 });
