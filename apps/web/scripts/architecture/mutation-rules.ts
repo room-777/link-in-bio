@@ -1,7 +1,6 @@
-import { readFileSync } from "node:fs";
-import { basename } from "node:path";
+import { existsSync, readFileSync } from "node:fs";
+import { basename, join, relative } from "node:path";
 import type { ArchitectureContext } from "./context";
-import { relativeToDomain } from "./context";
 
 function mutationHooks(source: string) {
 	return [
@@ -11,14 +10,15 @@ function mutationHooks(source: string) {
 
 export function checkMutationRules(context: ArchitectureContext) {
 	const errors: string[] = [];
+	if (existsSync(join(context.sourceDirectory, "mutation"))) {
+		errors.push(
+			"src/mutation is retired: put mutations in src/features/<domain>/<feature>/mutations.",
+		);
+	}
 
 	for (const path of context.mutationFiles) {
 		const source = readFileSync(path, "utf8");
-		const relativePath = relativeToDomain(
-			context,
-			path,
-			context.mutationDirectory,
-		);
+		const relativePath = relative(context.featureDirectory, path);
 		if (basename(path) === "mutation.ts") {
 			errors.push(`${relativePath}: use a behavior-specific filename.`);
 		}

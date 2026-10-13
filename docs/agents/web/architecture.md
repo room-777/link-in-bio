@@ -22,7 +22,6 @@ apps/web/
 ├── src/components/             # 아직 이전하지 않은 기능 UI와 공용 UI
 ├── src/hooks/                  # 아직 이전하지 않은 client 상태와 상호작용
 ├── src/query/                  # 아직 이전하지 않은 query
-├── src/mutation/               # 아직 이전하지 않은 mutation
 ├── src/lib/                    # 공용 함수·API client·서버 전용 helper
 │   └── server/                 # client import 금지, 서버에서만 import
 └── public/                     # 정적 파일
@@ -54,7 +53,7 @@ export default async function Page({ params }: { params: Promise<{ username: str
 
 새 기능에서 함께 바뀌는 화면·상태·요청 코드를 가까이 둡니다. query와 mutation은 기능 파일로 나누고, 서버 요청은 해당 파일 안에서 `apiClient`로 보냅니다. query key도 query 파일에서 정의합니다. 폴더를 기술 종류별로 앱 전체에 흩뜨리지 않습니다.
 
-### 기존 `src/components`, `src/hooks`, `src/query`, `src/mutation`
+### 기존 `src/components`, `src/hooks`, `src/query`
 
 기존 기능은 한 번에 옮기지 않습니다. 선택한 기능을 수정할 때 해당 범위 안에서 `src/features`로 옮기고, 남은 기존 폴더는 점진적으로 정리합니다. 공용 UI와 도메인에 속하지 않는 helper는 기존 공유 위치에 둡니다.
 

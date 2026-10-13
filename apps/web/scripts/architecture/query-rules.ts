@@ -57,7 +57,9 @@ export function checkQueryRules(context: ArchitectureContext) {
 			errors.push(`${relativePath}: define one query operation per file.`);
 		}
 		if (/useMutation\s*(?:,|\s*\})/.test(source)) {
-			errors.push(`${relativePath}: mutation hooks belong in src/mutation.`);
+			errors.push(
+				`${relativePath}: mutation hooks belong in feature mutation modules.`,
+			);
 		}
 		for (const key of queryKeyArrays(source)) {
 			const previous = queryKeys.get(key);

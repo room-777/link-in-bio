@@ -111,8 +111,6 @@
 			"includes": [
 				"apps/web/src/query/**/*.ts",
 				"apps/web/src/query/**/*.tsx",
-				"apps/web/src/mutation/**/*.ts",
-				"apps/web/src/mutation/**/*.tsx",
 				"apps/web/src/features/**/queries/**/*.ts",
 				"apps/web/src/features/**/queries/**/*.tsx",
 				"apps/web/src/features/**/mutations/**/*.ts",
