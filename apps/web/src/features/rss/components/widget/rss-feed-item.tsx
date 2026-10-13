@@ -1,6 +1,6 @@
 import type { PageItemResponse } from "@grabbin/api";
 import type { PresetName } from "@grabbin/bento-layout";
-import type { BentoCommand } from "@/lib/bento/bento-types";
+import type { BentoCommand } from "@/features/page/editor/state/bento-types";
 import { RssFeedWidget } from "./rss-feed-widget";
 
 type LinkItem = Extract<PageItemResponse, { type: "link" }>;

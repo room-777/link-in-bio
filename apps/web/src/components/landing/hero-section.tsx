@@ -5,7 +5,7 @@ import { motion, useReducedMotion } from "motion/react";
 import JoinForFreeButton from "@/components/landing/join-for-free-button";
 import { BentoItemShell } from "@/components/page/editor/bento/bento-item-shell";
 import { MapViewportGate } from "@/components/page/editor/bento/items/map-viewport-gate";
-import type { BentoItem } from "@/lib/bento/bento-types";
+import type { BentoItem } from "@/features/page/editor/state/bento-types";
 import { DEMO_PAGE_RESPONSE } from "@/lib/demo-page";
 
 const dummyCards = [

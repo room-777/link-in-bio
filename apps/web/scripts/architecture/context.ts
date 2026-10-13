@@ -1,9 +1,10 @@
-import { readdirSync } from "node:fs";
+import { existsSync, readdirSync } from "node:fs";
 import { join, relative, sep } from "node:path";
 import { fileURLToPath } from "node:url";
 
 export function filesUnder(directory: string) {
 	const files: string[] = [];
+	if (!existsSync(directory)) return files;
 	for (const entry of readdirSync(directory, { withFileTypes: true })) {
 		const path = join(directory, entry.name);
 		if (entry.isDirectory()) files.push(...filesUnder(path));

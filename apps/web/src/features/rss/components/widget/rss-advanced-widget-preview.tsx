@@ -6,7 +6,7 @@ import {
 	advancedWidgetPresets,
 	useAdvancedWidgetPreset,
 } from "@/components/page/editor/advanced-widgets/use-advanced-widget-preset";
-import type { BentoItem } from "@/lib/bento/bento-types";
+import type { BentoItem } from "@/features/page/editor/state/bento-types";
 import { RssFeedWidget } from "./rss-feed-widget";
 
 export default function RssAdvancedWidgetPreview({

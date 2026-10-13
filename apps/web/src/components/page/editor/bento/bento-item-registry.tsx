@@ -4,10 +4,13 @@ import type { PresetName } from "@grabbin/bento-layout";
 import dynamic from "next/dynamic";
 import type { ReactNode } from "react";
 import { CalendlyItem } from "@/features/calendly/components/widget/calendly-item";
+import type {
+	BentoCommand,
+	BentoItem,
+} from "@/features/page/editor/state/bento-types";
 import { RssFeedItem } from "@/features/rss/components/widget/rss-feed-item";
 import { SpotifyItem } from "@/features/spotify/components/widget/spotify-item";
 import { TweetItem } from "@/features/tweet/components/widget/tweet-item";
-import type { BentoCommand, BentoItem } from "@/lib/bento/bento-types";
 import { MediaItem } from "./items/media-item";
 import { SectionItem } from "./items/section-item";
 import { TextItem } from "./items/text-item";

@@ -27,7 +27,7 @@ export function checkRequestBoundaryRules(context: ArchitectureContext) {
 			context.featureDirectory,
 			"page/profile/mutations/upload-profile-image.ts",
 		),
-		join(context.mutationDirectory, "bento/upload-media.ts"),
+		join(context.featureDirectory, "page/editor/mutations/upload-media.ts"),
 	]);
 
 	for (const path of context.allFiles) {

@@ -35,8 +35,11 @@ import {
 	Unlink,
 } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
+import type {
+	BentoCommand,
+	BentoItem,
+} from "@/features/page/editor/state/bento-types";
 import { useEmailOtpShake } from "@/hooks/use-email-otp-shake";
-import type { BentoCommand, BentoItem } from "@/lib/bento/bento-types";
 import { normalizeHttpsUrl } from "@/lib/normalize-https-url";
 import BentoPresetIcon from "./bento-preset-icon";
 import { useMapItemInteraction } from "./items/map-item-interaction-provider";

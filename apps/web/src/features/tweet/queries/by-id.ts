@@ -1,4 +1,5 @@
-import { queryOptions, useQuery } from "@tanstack/react-query";
+import { queryOptions, useQuery, useQueryClient } from "@tanstack/react-query";
+import { useCallback } from "react";
 import type { Tweet as TweetResponse } from "react-tweet/api";
 
 async function getTweetById(tweetId: string, signal: AbortSignal) {
@@ -24,4 +25,12 @@ export function getTweetQueryOptions(tweetId: string) {
 
 export function useTweetQuery(tweetId: string, enabled: boolean) {
 	return useQuery({ ...getTweetQueryOptions(tweetId), enabled });
+}
+
+export function useLoadTweet() {
+	const queryClient = useQueryClient();
+	return useCallback(
+		(tweetId: string) => queryClient.fetchQuery(getTweetQueryOptions(tweetId)),
+		[queryClient],
+	);
 }

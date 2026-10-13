@@ -13,7 +13,10 @@ import MapboxMap, {
 import "mapbox-gl/dist/mapbox-gl.css";
 import { type ReactNode, useEffect, useMemo, useRef, useState } from "react";
 
-import type { BentoCommand, BentoItem } from "@/lib/bento/bento-types";
+import type {
+	BentoCommand,
+	BentoItem,
+} from "@/features/page/editor/state/bento-types";
 import {
 	MAP_ZOOM_MAX,
 	MAP_ZOOM_MIN,

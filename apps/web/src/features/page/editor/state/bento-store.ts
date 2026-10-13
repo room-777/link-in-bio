@@ -4,11 +4,11 @@ import type { PageItemBatchRequest, PageItemResponse } from "@grabbin/api";
 import { resolveLinkMetadata } from "@grabbin/page-link";
 import { toast } from "@grabbin/ui/components/toast";
 import { useCallback, useEffect, useRef, useState } from "react";
-import { useCancelBentoMediaUploadMutation } from "@/mutation/bento/cancel-media-upload";
-import { usePatchBentoItemsMutation } from "@/mutation/bento/patch-items";
-import { useRefreshBentoLinkMetadataMutation } from "@/mutation/bento/refresh-link-metadata";
-import { useUploadBentoMediaMutation } from "@/mutation/bento/upload-media";
-import { getErrorMessage } from "../error-message";
+import { useCancelBentoMediaUploadMutation } from "@/features/page/editor/mutations/cancel-media-upload";
+import { usePatchBentoItemsMutation } from "@/features/page/editor/mutations/patch-items";
+import { useRefreshBentoLinkMetadataMutation } from "@/features/page/editor/mutations/refresh-link-metadata";
+import { useUploadBentoMediaMutation } from "@/features/page/editor/mutations/upload-media";
+import { getErrorMessage } from "@/lib/error-message";
 import {
 	createBentoBatch,
 	hasBentoBatchChanges,

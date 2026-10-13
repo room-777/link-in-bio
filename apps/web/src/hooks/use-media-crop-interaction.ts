@@ -10,7 +10,7 @@ import {
 	useRef,
 	useState,
 } from "react";
-import { moveMediaCrop } from "@/lib/bento/media-crop";
+import { moveMediaCrop } from "@/features/page/editor/state/media-crop";
 
 type MediaSize = { width: number; height: number };
 
