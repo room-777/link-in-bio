@@ -147,7 +147,8 @@ export default function BentoItemShell({
 		!disableCardLink &&
 		item.type === "link" &&
 		!isRssFeedWidget &&
-		!isTweetWidget
+		!isTweetWidget &&
+		!isSpotifyWidget
 			? {
 					href: item.data.url,
 					title: item.data.metadata?.title?.trim() || item.data.url,
