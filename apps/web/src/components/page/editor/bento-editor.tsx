@@ -17,12 +17,12 @@ import dynamic from "next/dynamic";
 import { type CSSProperties, useCallback, useEffect, useRef } from "react";
 import type { Tweet as TweetResponse } from "react-tweet/api";
 import { useFetchBentoSpotifyPreviewMutation } from "@/features/spotify/mutations/preview";
+import { getTweetQueryOptions } from "@/features/tweet/queries/by-id";
+import { getTweetId } from "@/features/tweet/utils/tweet-url";
 import { useBentoStore } from "@/lib/bento/bento-store";
 import { getErrorMessage } from "@/lib/error-message";
 import { useFetchBentoRssMutation } from "@/mutation/bento/fetch-rss-preview";
-import { getTweetQueryOptions } from "@/query/tweet/by-id";
 import type { AddWidgetButtonProps } from "./add-widget-button";
-import { getTweetId } from "./advanced-widgets/tweet/tweet-url";
 import EditMobileShareLinkButton from "./mobile-share-link-button";
 
 const BentoSection = dynamic(() => import("./bento/bento-section"), {

@@ -7,8 +7,8 @@ import {
 } from "@grabbin/ui/components/input-group";
 import { Label } from "@grabbin/ui/components/label";
 import Loading from "@grabbin/ui/components/loading";
-import { useState } from "react";
-import { getTweetId } from "./tweet-url";
+import { type ChangeEvent, useState } from "react";
+import { getTweetId } from "../../utils/tweet-url";
 
 export default function TweetWidgetDetails({
 	onTweetAdd,
@@ -21,6 +21,30 @@ export default function TweetWidgetDetails({
 	const [isAdding, setIsAdding] = useState(false);
 	const [error, setError] = useState<string>();
 
+	function handleUrlChange(event: ChangeEvent<HTMLInputElement>) {
+		setUrl(event.target.value);
+		onInputChange?.(event.target.value);
+		setError(undefined);
+	}
+
+	async function handleAddTweet() {
+		if (!getTweetId(url)) {
+			setError("Enter a valid X post URL or ID.");
+			return;
+		}
+
+		setIsAdding(true);
+		try {
+			if (!(await onTweetAdd(url.trim()))) {
+				setError("Could not add this post. Check the URL or ID and try again.");
+			}
+		} catch {
+			setError("Could not add this post. Check the URL or ID and try again.");
+		} finally {
+			setIsAdding(false);
+		}
+	}
+
 	return (
 		<div className="flex h-full min-h-0 flex-col gap-3">
 			<div className="flex flex-col gap-2">
@@ -32,11 +56,7 @@ export default function TweetWidgetDetails({
 						placeholder="Paste an X post URL or enter its ID"
 						type="text"
 						value={url}
-						onChange={(event) => {
-							setUrl(event.target.value);
-							onInputChange?.(event.target.value);
-							setError(undefined);
-						}}
+						onChange={handleUrlChange}
 					/>
 				</InputGroup>
 			</div>
@@ -54,26 +74,7 @@ export default function TweetWidgetDetails({
 					aria-label={isAdding ? "Adding X post" : undefined}
 					disabled={!url.trim() || isAdding}
 					className="relative px-5 text-base"
-					onClick={async () => {
-						if (!getTweetId(url)) {
-							setError("Enter a valid X post URL or ID.");
-							return;
-						}
-						setIsAdding(true);
-						try {
-							if (!(await onTweetAdd(url.trim()))) {
-								setError(
-									"Could not add this post. Check the URL or ID and try again.",
-								);
-							}
-						} catch {
-							setError(
-								"Could not add this post. Check the URL or ID and try again.",
-							);
-						} finally {
-							setIsAdding(false);
-						}
-					}}
+					onClick={handleAddTweet}
 				>
 					<span className={isAdding ? "opacity-0" : ""}>Add</span>
 					{isAdding ? (

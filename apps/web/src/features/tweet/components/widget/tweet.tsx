@@ -5,8 +5,8 @@ import { Check, Link2 } from "lucide-react";
 import { useLayoutEffect, useRef, useState } from "react";
 import { type EnrichedTweet, enrichTweet } from "react-tweet";
 import type { Tweet as TweetResponse } from "react-tweet/api";
+import { useTweetQuery } from "@/features/tweet/queries/by-id";
 import { useClipboardCopy } from "@/hooks/use-clipboard-copy";
-import { useTweetQuery } from "@/query/tweet/by-id";
 import { TweetSkeleton } from "./tweet-skeleton";
 
 const VerifiedBadge = ({ className }: { className?: string }) => (

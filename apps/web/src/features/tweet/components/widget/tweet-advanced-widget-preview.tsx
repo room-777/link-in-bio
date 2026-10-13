@@ -1,35 +1,14 @@
 import { getPresetGeometry } from "@grabbin/bento-layout";
-import type { BentoItem } from "@/lib/bento/bento-types";
-import { AdvancedWidgetPresetControls } from "../../advanced-widget-preset-controls";
-import { AdvancedWidgetPreviewFrame } from "../advanced-widget-preview-frame";
+import { AdvancedWidgetPresetControls } from "@/components/page/editor/advanced-widget-preset-controls";
+import { AdvancedWidgetPreviewFrame } from "@/components/page/editor/advanced-widgets/advanced-widget-preview-frame";
 import {
 	advancedWidgetPresets,
 	useAdvancedWidgetPreset,
-} from "../use-advanced-widget-preset";
+} from "@/components/page/editor/advanced-widgets/use-advanced-widget-preset";
+import type { BentoItem } from "@/lib/bento/bento-types";
+import { getTweetId } from "../../utils/tweet-url";
 import { TweetSkeleton } from "./tweet-skeleton";
-import { getTweetId } from "./tweet-url";
 import { TweetWidget } from "./tweet-widget";
-
-const previewItem: Extract<BentoItem, { type: "link" }> = {
-	id: "advanced-widget-preview-tweet",
-	type: "link",
-	data: {
-		url: "https://x.com/i/status/1668408059125702661",
-		metadata: {
-			title: "X post",
-			faviconUrl: "/twitter.svg",
-			provider: "tweet",
-		},
-	},
-	style: {},
-	layouts: {
-		wide: getPresetGeometry("squareLarge", "wide"),
-		compact: getPresetGeometry("squareLarge", "compact"),
-	},
-	createdAt: "2026-10-09T00:00:00.000Z",
-	updatedAt: "2026-10-09T00:00:00.000Z",
-	preset: "squareLarge",
-};
 
 export default function TweetAdvancedWidgetPreview({
 	inputValue,
@@ -47,15 +26,19 @@ export default function TweetAdvancedWidgetPreview({
 
 	const previewUrl = debouncedTweetId
 		? `https://x.com/i/status/${debouncedTweetId}`
-		: previewItem.data.url;
+		: "https://x.com/";
 	const item: BentoItem = {
-		...previewItem,
-		data: { ...previewItem.data, url: previewUrl },
+		id: "advanced-widget-preview-tweet",
+		type: "link",
+		data: { url: previewUrl, metadata: { provider: "tweet" } },
+		style: {},
 		preset: visiblePreset,
 		layouts: {
 			wide: getPresetGeometry(visiblePreset, "wide"),
 			compact: getPresetGeometry(visiblePreset, "compact"),
 		},
+		createdAt: "2026-10-09T00:00:00.000Z",
+		updatedAt: "2026-10-09T00:00:00.000Z",
 	};
 	return (
 		<AdvancedWidgetPreviewFrame

@@ -3,7 +3,7 @@
 import type { PageItemResponse } from "@grabbin/api";
 import type { PresetName } from "@grabbin/bento-layout";
 import type { Tweet as TweetResponse } from "react-tweet/api";
-import { getTweetId } from "./tweet-url";
+import { getTweetId } from "../../utils/tweet-url";
 import { TweetWidget } from "./tweet-widget";
 
 export default function TweetItem({
