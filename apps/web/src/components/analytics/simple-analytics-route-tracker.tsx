@@ -10,6 +10,7 @@ import {
 
 const STATIC_SINGLE_SEGMENT_ROUTES = new Set([
 	"/create",
+	"/changelog",
 	"/privacy",
 	"/sign-in",
 	"/terms",
