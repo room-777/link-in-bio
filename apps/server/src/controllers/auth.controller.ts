@@ -8,6 +8,6 @@ type AuthHandler = (
 
 export function createAuthController(handleAuthRequest: AuthHandler) {
 	return new Hono<AppEnv>()
-		.get("/get-session", (c) => handleAuthRequest(c.req.raw, c.env))
+		.on(["GET"], "/get-session", (c) => handleAuthRequest(c.req.raw, c.env))
 		.on(["POST", "GET"], "/*", (c) => handleAuthRequest(c.req.raw, c.env));
 }
