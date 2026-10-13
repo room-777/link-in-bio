@@ -7,5 +7,13 @@ if [ -z "$staged_files" ]; then
 	exit 0
 fi
 
-bunx biome check --write --staged
-git diff --cached --name-only --diff-filter=ACMR -z | xargs -0 git add --
+staged_biome_files=$(printf '%s\n' "$staged_files" | grep -E '\.(cjs|cts|css|html|js|jsx|json|jsonc|mjs|mts|ts|tsx)$' || true)
+
+if [ -n "$staged_biome_files" ]; then
+	bunx biome check --write --unsafe --only=correctness/noUnusedImports --staged
+	bunx biome check --write --staged
+	git diff --cached --name-only --diff-filter=ACMR -z | xargs -0 git add --
+fi
+
+bun run --filter web check-types
+bun run --filter web lint
