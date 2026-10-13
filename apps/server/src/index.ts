@@ -12,6 +12,7 @@ import { prettyJSON } from "hono/pretty-json";
 import { timing } from "hono/timing";
 import { trimTrailingSlash } from "hono/trailing-slash";
 import { jsonApiError } from "./api-error";
+import { createAuthController } from "./controllers/auth.controller";
 import { billingController } from "./controllers/billing.controller";
 import { calendlyController } from "./controllers/calendly.controller";
 import { localMediaController } from "./controllers/local-media.controller";
@@ -96,8 +97,11 @@ const app = createFactory<AppEnv>({
 	})
 	.route("/", billingController)
 	.route("/", calendlyController)
-	.on(["POST", "GET"], "/auth/*", async (c) =>
-		(await authWithBillingSync(await createDb(), c.env)).handler(c.req.raw),
+	.route(
+		"/auth",
+		createAuthController(async (request, bindings) =>
+			(await authWithBillingSync(await createDb(), bindings)).handler(request),
+		),
 	)
 	.route("/", createRoutes)
 	.route("/pages", pagesController)

@@ -14,10 +14,9 @@ export function getCurrentSessionQueryOptions(cookie: string | null) {
 			if (!cookie) return null;
 			try {
 				const client = getServerApiClient() ?? apiClient;
-				const response = await client.auth["*"].$get(
-					{ param: { "*": "get-session" } },
-					{ headers: { cookie } },
-				);
+				const response = await client.auth["get-session"].$get(undefined, {
+					headers: { cookie },
+				});
 				if (!response.ok) return null;
 				return (await response.json()) as SessionWithPrimaryPage | null;
 			} catch {
