@@ -1,7 +1,7 @@
-import { useCheckCustomDomain } from "@/mutation/custom-domain/check";
-import { useConnectCustomDomain } from "@/mutation/custom-domain/connect";
-import { useDisconnectCustomDomain } from "@/mutation/custom-domain/disconnect";
-import { useCustomDomainQuery } from "@/query/custom-domain/domain";
+import { useCheckCustomDomain } from "../mutations/check";
+import { useConnectCustomDomain } from "../mutations/connect";
+import { useDisconnectCustomDomain } from "../mutations/disconnect";
+import { useCustomDomainQuery } from "../queries/domain";
 
 export function useCustomDomain(handle: string | undefined, active: boolean) {
 	const domainQuery = useCustomDomainQuery(handle, active);

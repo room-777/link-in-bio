@@ -4,30 +4,24 @@ import { useMutation, useQueryClient } from "@tanstack/react-query";
 import * as v from "valibot";
 import { apiClient, getApiErrorMessage } from "@/lib/api-client";
 import { getErrorMessage } from "@/lib/error-message";
-import { getCustomDomainQueryOptions } from "@/query/custom-domain/domain";
+import { getCustomDomainQueryOptions } from "../queries/domain";
 
-async function connectCustomDomain(handle: string, hostname: string) {
-	const response = await apiClient.pages[":handle"].domain.$post(
-		{ param: { handle } },
-		{
-			init: {
-				body: JSON.stringify({ hostname }),
-				headers: { "Content-Type": "application/json" },
-			},
-		},
-	);
+async function disconnectCustomDomain(handle: string) {
+	const response = await apiClient.pages[":handle"].domain.$delete({
+		param: { handle },
+	});
 	if (!response.ok) throw new Error(await getApiErrorMessage(response));
 	return v.parse(pageDomainResponseSchema, await response.json());
 }
 
-export function useConnectCustomDomain(handle: string | undefined) {
+export function useDisconnectCustomDomain(handle: string | undefined) {
 	const queryClient = useQueryClient();
 	const queryKey = getCustomDomainQueryOptions(handle).queryKey;
 
 	return useMutation({
-		mutationFn: (hostname: string) => {
+		mutationFn: () => {
 			if (!handle) throw new Error("Could not find this page.");
-			return connectCustomDomain(handle, hostname);
+			return disconnectCustomDomain(handle);
 		},
 		onSuccess: async (result) => {
 			queryClient.setQueryData(queryKey, result);
@@ -35,7 +29,7 @@ export function useConnectCustomDomain(handle: string | undefined) {
 		},
 		onError: (error) =>
 			toast({
-				message: getErrorMessage(error, "Could not connect this domain."),
+				message: getErrorMessage(error, "Could not disconnect this domain."),
 				state: "error",
 			}),
 	});
