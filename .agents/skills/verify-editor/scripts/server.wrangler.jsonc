@@ -1,0 +1,20 @@
+{
+	"name": "grabbin-server-local",
+	"main": "apps/server/src/index.ts",
+	"compatibility_date": "2026-09-01",
+	"compatibility_flags": ["nodejs_compat"],
+	"hyperdrive": [
+		{
+			"binding": "HYPERDRIVE",
+			"id": "local",
+			"localConnectionString": "postgres://postgres:postgres@127.0.0.1:54322/postgres"
+		}
+	],
+	"r2_buckets": [{ "binding": "R2_BUCKET", "bucket_name": "grabbin" }],
+	"vars": {
+		"R2_LOCAL_MODE": "true",
+		"R2_PUBLIC_URL": "http://127.0.0.1:3001",
+		"BETTER_AUTH_URL": "http://127.0.0.1:3001",
+		"SENTRY_DSN": ""
+	}
+}
