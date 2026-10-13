@@ -96,6 +96,8 @@ Never kill by process name. Leave Supabase running unless this run started it (`
 | `scripts/otp.sh <email>` | Print the newest sign-in OTP for an `@example.com` address from local Postgres. |
 | `scripts/drive-demo-add-text.mjs <dir>` | Prove `editor-add-item` on `/demo` (add text block, then delete it). |
 | `scripts/drive-sign-in.mjs <dir> [email]` | Drive email-OTP sign-in and check the post-sign-in landing page. |
+| `scripts/drive-editor-journeys.mjs <dir> [ids]` | Owner editor journeys on the real `/{handle}`: `media-upload`, `media-cancel`, `link-refresh`, `item-add`. Env: `RUN_DIR`, `GRABBIN_REPO`; optional `R2_CREDS_JSON` and `R2_PY` for bucket checks. |
+| `scripts/r2-objects.py ls|head|rm` | Check or delete test objects in the real bucket (S3 API, boto3). Never prints credentials; `rm` only under `users/`. |
 | `scripts/server.wrangler.jsonc` | Local API worker config used by `start-local.sh`. |
 
 ## Known gotchas (environment)
@@ -106,17 +108,19 @@ Never kill by process name. Leave Supabase running unless this run started it (`
 
 - `GRABBIN_REPO` stays exported in your shell; unset or re-export it before starting a different checkout, and check the `checkout:` line `start-local.sh` prints.
 - `RESEND_API_KEY` may be real: only ever use `@example.com` addresses (`dev@example.com`); read the OTP with `scripts/otp.sh`.
+- `apps/server/.env` (`--env-file`) overrides `vars` in `scripts/server.wrangler.jsonc`, but only for keys it defines. An empty key still overrides, as `R2_PUBLIC_URL=` does from `.env.example`. `R2_S3_CREDENTIALS` is no longer in `vars`, so it comes only from `.env`.
 - `GET /pages/{handle}/views` returns 500 locally ("Simple Analytics request failed"); the footer shows "Views on break". Expected without analytics access; ignore it.
 
-## Last verification run (Oct 13 2026)
+## Last verification run (Oct 14 2026, PR #1 `refactor/web-bento-data-layer` + `main` c80d21e)
 
 | Journey | Result | Note |
 |---|---|---|
-| doctor | OK | `main` c80d21e + this skill |
-| sign-in-email-otp | PASS | needs PR #5 (now on `main`) |
-| editor-add-item (`/demo`) | PASS | earlier run the same day |
-| editor-link-metadata | PASS | add + edit URL, title updated |
-| editor-tweet | PASS after local Pro grant | Free plan shows "Upgrade to Pro" |
-| editor-media-upload / cancel | blocked | no `R2_S3_CREDENTIALS` → 500 |
+| doctor | OK | |
+| sign-in-email-otp | PASS | needs PR #5 (on `main`) |
+| editor-add-item (owner) | PASS | text/section/link/map persisted; delete removed the row |
+| editor-media-upload | PASS | real dev bucket via the driver's PUT bridge; objects deleted afterwards |
+| editor-media-cancel | PASS | `upload/cancel` 204, `pending_delete`, no item, no object |
+| editor-link-metadata refresh | PASS (flaky upstream) | 4/6 runs; failures returned 200 with the old title |
+| editor-tweet | PASS after local Pro grant | Oct 13 run |
 
 After the stack changes (new routes, renamed buttons, new env vars), keep this skill honest with `/maintain-verification-skill`.

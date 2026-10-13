@@ -15,7 +15,6 @@
 		"R2_LOCAL_MODE": "true",
 		"R2_PUBLIC_URL": "http://127.0.0.1:3001",
 		"BETTER_AUTH_URL": "http://127.0.0.1:3001",
-		"R2_S3_CREDENTIALS": "",
 		"SENTRY_DSN": ""
 	}
 }
