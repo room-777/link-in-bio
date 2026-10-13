@@ -177,11 +177,11 @@
 		translate 0ms linear !important;
 }
 
-.bento-layout
+.bento-layout.is-edit-mode
 	.react-grid-item
 	[data-bento-item-type="section"]:hover
 	.bento-item-card,
-.bento-layout
+.bento-layout.is-edit-mode
 	.react-grid-item.react-draggable-dragging
 	[data-bento-item-type="section"]
 	.bento-item-card {

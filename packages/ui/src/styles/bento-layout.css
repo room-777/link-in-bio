@@ -84,12 +84,12 @@ html:has(.landing-page) body {
 	display: none;
 }
 
-.bento-text-input:hover,
-.bento-text-input:focus {
+.bento-layout.is-edit-mode .bento-text-input:hover,
+.bento-layout.is-edit-mode .bento-text-input:focus {
 	background-color: color-mix(in oklch, white 8%, transparent) !important;
 }
 
-.bento-text-input:is(:hover, :focus) {
+.bento-layout.is-edit-mode .bento-text-input:is(:hover, :focus) {
 	background-color: oklch(
 		from var(--text-card-background, var(--background)) calc(l - 0.04) c h
 	) !important;
