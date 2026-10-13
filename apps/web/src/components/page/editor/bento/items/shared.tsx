@@ -17,12 +17,12 @@ export function removeMapboxControls(map: { getContainer(): HTMLElement }) {
 }
 
 export const textSizeClassByPreset: Record<PresetName, string> = {
-	fullBanner: "text-lg font-medium leading-7",
-	halfBanner: "text-lg font-medium leading-8.5",
-	squareSmall: "text-lg font-medium leading-7",
-	landscape: "text-lg font-medium leading-7",
-	squareLarge: "text-lg font-medium leading-8",
-	portrait: "text-lg font-medium leading-8",
+	fullBanner: "text-xl font-normal leading-8",
+	halfBanner: "text-xl font-normal leading-10",
+	squareSmall: "text-xl font-normal leading-[35.5px]",
+	landscape: "text-xl font-normal leading-[35.5px]",
+	squareLarge: "text-xl font-normal leading-9",
+	portrait: "text-xl font-normal leading-9",
 };
 
 const mediaCaptionClassName =
