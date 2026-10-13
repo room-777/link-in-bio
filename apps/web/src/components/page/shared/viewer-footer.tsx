@@ -12,7 +12,7 @@ import { useIsMobile } from "@grabbin/ui/components/use-mobile";
 import { cn } from "@grabbin/ui/lib/utils";
 import Link from "next/link";
 import { useEffect, useState } from "react";
-import { usePublicViews } from "@/hooks/use-public-views";
+import { usePublicViewsTooltipControl } from "@/features/page/public-views";
 import { authClient } from "@/lib/auth-client";
 import { getSignInHref } from "@/lib/auth-redirect";
 import { openShareLinkDialog } from "../sharing/share-link-dialog";
@@ -20,7 +20,6 @@ import {
 	getDiscordTooltipControl,
 	getShareTooltipControl,
 } from "./page-footer-tooltip-controls";
-import { getPublicViewsTooltipControl } from "./public-views-tooltip";
 
 export default function ViewerFooter({
 	handle,
@@ -32,7 +31,7 @@ export default function ViewerFooter({
 	const { data: session, isPending } = authClient.useSession();
 	const isMobile = useIsMobile();
 	const [isHydrated, setIsHydrated] = useState(false);
-	const viewsTooltip = getPublicViewsTooltipControl(usePublicViews(handle));
+	const viewsTooltip = usePublicViewsTooltipControl(handle);
 
 	useEffect(() => setIsHydrated(true), []);
 

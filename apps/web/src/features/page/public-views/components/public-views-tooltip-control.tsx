@@ -1,10 +1,16 @@
 import type { AnimatedTooltipControl } from "@grabbin/ui/components/animated-tooltip";
 import { Button } from "@grabbin/ui/components/button";
 import { Skeleton } from "@grabbin/ui/components/skeleton";
-import type { usePublicViews } from "@/hooks/use-public-views";
-import SpinningCounter from "./spinning-counter";
+import SpinningCounter from "@/components/page/shared/spinning-counter";
+import type { usePublicViewsQuery } from "@/features/page/public-views/queries/public-views";
 
-type PublicViewsState = ReturnType<typeof usePublicViews>;
+type PublicViewsState = {
+	handle?: string;
+	timezone: string | null;
+	data: ReturnType<typeof usePublicViewsQuery>["data"];
+	isPending: boolean;
+	isError: boolean;
+};
 
 function getUnavailableTrigger() {
 	return (
@@ -43,8 +49,7 @@ export function getPublicViewsTooltipControl({
 	}
 	if (isError || !data) return getUnavailableControl();
 
-	const today = data.today;
-	const yesterday = data.yesterday;
+	const { today, yesterday } = data;
 
 	return {
 		id: "views",

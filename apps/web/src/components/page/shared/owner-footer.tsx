@@ -15,7 +15,7 @@ import { SlidersHorizontal } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { openChangeHandleDialog } from "@/features/page/management/pages";
-import { usePublicViews } from "@/hooks/use-public-views";
+import { usePublicViewsTooltipControl } from "@/features/page/public-views";
 import { authClient, getAuthErrorMessage } from "@/lib/auth-client";
 import { openDeleteAccountDialog } from "../management/account/open-delete-account-dialog";
 import { openSettingDialog } from "../management/settings/open-setting-dialog";
@@ -24,7 +24,6 @@ import {
 	getDiscordTooltipControl,
 	getShareTooltipControl,
 } from "./page-footer-tooltip-controls";
-import { getPublicViewsTooltipControl } from "./public-views-tooltip";
 
 export default function OwnerFooter({
 	handle,
@@ -41,7 +40,7 @@ export default function OwnerFooter({
 	const isMobile = useIsMobile();
 	const [isOpen, setIsOpen] = useState(false);
 	const [isSigningOut, setIsSigningOut] = useState(false);
-	const viewsTooltip = getPublicViewsTooltipControl(usePublicViews(handle));
+	const viewsTooltip = usePublicViewsTooltipControl(handle);
 
 	async function handleSignOut() {
 		setIsSigningOut(true);
