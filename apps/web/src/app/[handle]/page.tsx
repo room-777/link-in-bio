@@ -5,9 +5,9 @@ import { notFound } from "next/navigation";
 import { cache, Suspense } from "react";
 import { getCustomDomainHostname } from "@/lib/custom-domain-host";
 import { getPageImageUrl } from "@/lib/page-image-url";
-import { getPageQueryOptions } from "@/lib/page-query";
 import { makeQueryClient } from "@/lib/query-client";
 import { fetchPage } from "@/lib/server/page-query";
+import { getPageQueryOptions } from "@/query/page/query";
 import {
 	OwnerPageQueryView,
 	PublicPageQueryView,

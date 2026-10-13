@@ -1,7 +1,7 @@
 "use client";
 
 import { useSuspenseQuery } from "@tanstack/react-query";
-import { getPageQueryOptions } from "@/lib/page-query";
+import { getPageQueryOptions } from "@/query/page/query";
 import OwnerPage from "./editor/owner-page";
 import HandlePage from "./public/handle-page";
 

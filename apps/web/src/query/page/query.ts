@@ -1,7 +1,7 @@
 import { pageByHandleResponseSchema } from "@grabbin/api";
 import { queryOptions } from "@tanstack/react-query";
 import * as v from "valibot";
-import { apiClient, getApiErrorMessage } from "./api-client";
+import { apiClient, getApiErrorMessage } from "@/lib/api-client";
 
 export function getPageQueryOptions(handle: string) {
 	return queryOptions({
