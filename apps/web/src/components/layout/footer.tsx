@@ -95,7 +95,7 @@ export default function Footer() {
 							<h6 className="font-medium text-foreground text-sm">Resources</h6>
 							<ul className="flex flex-col items-start gap-1">
 								<li>
-									<Link href="/update" className="hover:text-primary/80">
+									<Link href="/changelog" className="hover:text-primary/80">
 										Updates
 									</Link>
 								</li>
