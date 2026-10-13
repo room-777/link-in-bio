@@ -6,7 +6,8 @@ Maintained recipes for the signed-in editor and sign-in, driven against the full
 
 - Stack launched with `scripts/start-local.sh` and `scripts/doctor.sh` prints `OK: stack healthy`.
 - Web at `http://127.0.0.1:3000`, API at `http://127.0.0.1:3001`, Postgres at `127.0.0.1:54322` with migrations applied.
-- Test identity: `dev@example.com` only. Never a deliverable address (Resend may be live).
+- Test identity: `dev@example.com` only. Never a deliverable address (`RESEND_API_KEY` may be real).
+- Owner journeys need the PR #5 session fix (on `main` since `c80d21e`). Tweet needs a local Pro grant (see editor-tweet); media needs `R2_S3_CREDENTIALS`.
 - Signed-in journeys need the `dev@example.com` account with a primary page (create one via `/create` on first run).
 
 ## Driving conventions

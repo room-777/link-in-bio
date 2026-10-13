@@ -5,7 +5,7 @@ An owner adds a photo/video from the toolbar; a placeholder appears immediately,
 ## Sub-features
 
 - `media-add` shows a local preview block right after the file is chosen.
-- `media-upload` stores the file (local R2 in this stack) and sets the item's `objectKey`.
+- `media-upload` gets a presigned PUT URL from the API, uploads the file to R2, and sets the item's `objectKey`.
 - `media-cancel` deleting during upload aborts it and removes the pending upload record.
 - `media-replace-link-image` replaces a link card image (`Replace link image`).
 
@@ -18,7 +18,8 @@ An owner adds a photo/video from the toolbar; a placeholder appears immediately,
 
 Preconditions:
 
-- Signed-in owner with a page (blocked today, see sign-in Gotchas). A small JPEG fixture, e.g. `$RUN_DIR/fixture.jpg`.
+- Signed-in owner with a page. A small image fixture (any real PNG/JPEG, e.g. a screenshot from an earlier run).
+- A valid `R2_S3_CREDENTIALS` in `apps/server/.env` (JSON: `endpoint`, `bucketName`, `region: "auto"`, `accessKeyId`, `secretAccessKey`). Without it this journey is **blocked**, not failed.
 
 - **Choose file.** `page.setInputFiles` on the toolbar's file input (the `button "Choose File"` inside `group "Page editor toolbar"`), or wait for the file chooser after clicking `Add media`. A new media block appears with a blurred preview.
 - **Upload completes.** Wait for the upload request to the API to finish (`/pages/.../media` 2xx). Reload; the block shows the stored image served from `http://127.0.0.1:3001`.
@@ -28,4 +29,6 @@ Preconditions:
 ## Gotchas
 
 - `/demo` keeps media local (`blob:` preview only); it cannot prove upload or cancel.
+- `R2_LOCAL_MODE=true` only makes the API serve reads from the local `R2_BUCKET` binding (`/media/*`). Creating an upload always presigns against `R2_S3_CREDENTIALS` (`services/media.service.ts`); if it is missing or invalid, `POST /pages/{handle}/items/upload` returns 500 and the server log shows `Error: R2 upload credentials are invalid.` (seen Oct 13 2026: the box `.env` intentionally has no R2 keys).
+- `media-cancel` needs an in-flight upload, so it is blocked whenever `media-upload` is.
 - Local R2 lives under the wrangler `--persist-to` dir in `$RUN_DIR`; cleanup removes stored files but not evidence.

@@ -27,3 +27,5 @@ Preconditions:
 
 - On `/demo` metadata is resolved locally without the API (`persistItems` off); it does not prove the server refresh path.
 - Sandboxed boxes may block outbound HTTP from workerd; then metadata stays empty. Report it as an environment block.
+- `Edit link URL` (and the other per-item controls) only show on hover; hover the card's `Link title` first, or the click times out.
+- Verified Oct 13 2026 (PR #1 run): add `https://github.com/honojs/hono` → title "GitHub - honojs/hono: Web framework built on Web Standards", then edit URL to `https://github.com/microsoft/playwright` → `/pages/{handle}/metadata` 200 and the new title in `page_items`. PASS.

@@ -100,8 +100,23 @@ Never kill by process name. Leave Supabase running unless this run started it (`
 
 ## Known gotchas (environment)
 
-- Use `127.0.0.1` everywhere. In some sandboxes `localhost` resolves to `::1` only, and `vinext dev` binds there while the API binds IPv4; mixing hosts also splits auth cookies between `localhost` and `127.0.0.1`.
+- Use `127.0.0.1` everywhere, never `localhost` (both in `.env` and when driving). In some sandboxes `localhost` resolves to `::1` only, and `vinext dev` binds there while the API binds IPv4; mixing hosts also splits auth cookies between `localhost` and `127.0.0.1`.
 - Exported shell variables (`NEXT_PUBLIC_SERVER_URL`, ...) override `.env`; `start-local.sh` unsets them. If the browser calls the wrong API origin, check `env`.
 - In Docker without systemd, start `dockerd` yourself; if containers cannot reach each other (Supabase start fails with `DbSetupError`), the host FORWARD policy is dropping bridge traffic.
+
+- `GRABBIN_REPO` stays exported in your shell; unset or re-export it before starting a different checkout, and check the `checkout:` line `start-local.sh` prints.
+- `RESEND_API_KEY` may be real: only ever use `@example.com` addresses (`dev@example.com`); read the OTP with `scripts/otp.sh`.
+- `GET /pages/{handle}/views` returns 500 locally ("Simple Analytics request failed"); the footer shows "Views on break". Expected without analytics access; ignore it.
+
+## Last verification run (Oct 13 2026)
+
+| Journey | Result | Note |
+|---|---|---|
+| doctor | OK | `main` c80d21e + this skill |
+| sign-in-email-otp | PASS | needs PR #5 (now on `main`) |
+| editor-add-item (`/demo`) | PASS | earlier run the same day |
+| editor-link-metadata | PASS | add + edit URL, title updated |
+| editor-tweet | PASS after local Pro grant | Free plan shows "Upgrade to Pro" |
+| editor-media-upload / cancel | blocked | no `R2_S3_CREDENTIALS` → 500 |
 
 After the stack changes (new routes, renamed buttons, new env vars), keep this skill honest with `/maintain-verification-skill`.
