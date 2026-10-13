@@ -1,6 +1,6 @@
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { apiClient, getApiErrorMessage } from "@/lib/api-client";
-import { OWNED_PAGES_QUERY_KEY } from "@/query/page/owned-pages";
+import { OWNED_PAGES_QUERY_KEY } from "../queries/owned-pages";
 
 async function changePrimaryPage(handle: string) {
 	const response = await apiClient.pages[":handle"].primary.$patch({

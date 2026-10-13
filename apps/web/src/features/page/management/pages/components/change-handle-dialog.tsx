@@ -1,7 +1,7 @@
 "use client";
 
 import { useRouter } from "next/navigation";
-import { useChangePageHandle } from "@/mutation/page/change-handle";
+import { useChangePageHandle } from "../mutations/change-handle";
 import { PageHandleForm } from "./page-handle-form";
 
 export default function ChangeHandleDialog({

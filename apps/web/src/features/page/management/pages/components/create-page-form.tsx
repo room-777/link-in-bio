@@ -5,7 +5,7 @@ import { cn } from "@grabbin/ui/lib/utils";
 import { motion, useReducedMotion } from "motion/react";
 import { useRouter } from "next/navigation";
 import { Activity, useState } from "react";
-import { useCreatePage } from "@/mutation/page/create";
+import { useCreatePage } from "../mutations/create";
 import { PageHandleForm } from "./page-handle-form";
 import { PageOnboardingComplete } from "./page-onboarding-complete";
 

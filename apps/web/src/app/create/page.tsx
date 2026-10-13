@@ -1,10 +1,10 @@
 import type { Metadata } from "next";
 import { headers } from "next/headers";
 import { redirect } from "next/navigation";
+import { CreatePageForm } from "@/features/page/management/pages";
 import { makeQueryClient } from "@/lib/query-client";
 import { getPrimaryPagePath } from "@/lib/server/session";
 import { getCurrentSessionQueryOptions } from "@/query/session/current";
-import CreatePageForm from "../../components/page/management/pages/create-page-form";
 
 export const metadata: Metadata = {
 	title: "Create your Grabbin page",

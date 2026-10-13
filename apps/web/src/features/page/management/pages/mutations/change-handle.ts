@@ -2,7 +2,7 @@ import { pageHandleResponseSchema } from "@grabbin/api";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import * as v from "valibot";
 import { apiClient, getApiErrorMessage } from "@/lib/api-client";
-import { PAGE_HANDLE_CHECK_QUERY_KEY_PREFIX } from "@/query/page-handle/check";
+import { PAGE_HANDLE_CHECK_QUERY_KEY_PREFIX } from "../queries/check-handle";
 
 async function changePageHandle(handle: string, nextHandle: string) {
 	const response = await apiClient.pages[":handle"].handle.$patch(

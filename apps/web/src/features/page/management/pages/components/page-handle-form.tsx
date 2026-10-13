@@ -21,7 +21,7 @@ import { Globe } from "lucide-react";
 import { CheckCircle } from "reicon-react/icons/CheckCircle";
 import { CloseCircle } from "reicon-react/icons/CloseCircle";
 import { Loader } from "reicon-react/icons/Loader";
-import { usePageHandleForm } from "@/hooks/use-page-handle-form";
+import { usePageHandleForm } from "../hooks/use-page-handle-form";
 
 const exampleHandles = [
 	"softsignal",

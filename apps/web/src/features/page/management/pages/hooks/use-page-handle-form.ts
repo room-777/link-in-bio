@@ -3,11 +3,45 @@
 import { pageHandleSchema } from "@grabbin/page-handle";
 import { type FormEvent, useState } from "react";
 import * as v from "valibot";
+import { useDebouncedValue } from "@/hooks/use-debounced-value";
 import { getErrorMessage } from "@/lib/error-message";
-import { usePageHandleCheckQuery } from "@/query/page-handle/check";
-import { useDebouncedValue } from "./use-debounced-value";
+import { usePageHandleCheckQuery } from "../queries/check-handle";
 
 type Availability = "idle" | "checking" | "available" | "taken" | "invalid";
+
+function getAvailability({
+	currentHandle,
+	debouncedHandle,
+	isInitialHandle,
+	isCheckError,
+	isFetching,
+	isPending,
+	handleCheck,
+}: {
+	currentHandle: string;
+	debouncedHandle: string;
+	isInitialHandle: boolean;
+	isCheckError: boolean;
+	isFetching: boolean;
+	isPending: boolean;
+	handleCheck?: { available: boolean; reason?: string | null };
+}): Availability {
+	if (!currentHandle) return "idle";
+	if (isInitialHandle) return "available";
+	if (currentHandle !== debouncedHandle || isPending || isFetching) {
+		return "checking";
+	}
+	if (isCheckError || handleCheck?.reason === "invalid") return "invalid";
+	return handleCheck?.available ? "available" : "taken";
+}
+
+const availabilityErrors: Record<Availability, string> = {
+	idle: "Please choose an available handle.",
+	checking: "Please wait until your handle is checked.",
+	available: "",
+	taken: "Please choose an available handle.",
+	invalid: "Please choose a valid handle.",
+};
 
 export function usePageHandleForm({
 	initialHandle = "",
@@ -32,21 +66,15 @@ export function usePageHandleForm({
 	const hasHandleChange =
 		currentHandle.toLowerCase() !== normalizedInitialHandle.toLowerCase();
 	const isInitialHandle = Boolean(normalizedInitialHandle) && !hasHandleChange;
-	const availability: Availability = !currentHandle
-		? "idle"
-		: isInitialHandle
-			? "available"
-			: currentHandle !== debouncedHandle ||
-					isHandleCheckPending ||
-					isHandleCheckFetching
-				? "checking"
-				: isHandleCheckError
-					? "invalid"
-					: handleCheck?.reason === "invalid"
-						? "invalid"
-						: handleCheck?.available
-							? "available"
-							: "taken";
+	const availability = getAvailability({
+		currentHandle,
+		debouncedHandle,
+		isInitialHandle,
+		isCheckError: isHandleCheckError,
+		isFetching: isHandleCheckFetching,
+		isPending: isHandleCheckPending,
+		handleCheck,
+	});
 
 	const onHandleChange = (nextHandle: string) => {
 		setHandle(nextHandle);
@@ -61,13 +89,7 @@ export function usePageHandleForm({
 			return;
 		}
 		if (availability !== "available") {
-			setError(
-				availability === "checking"
-					? "Please wait until your handle is checked."
-					: availability === "invalid"
-						? "Please choose a valid handle."
-						: "Please choose an available handle.",
-			);
+			setError(availabilityErrors[availability]);
 			return;
 		}
 

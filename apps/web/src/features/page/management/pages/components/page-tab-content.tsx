@@ -16,13 +16,13 @@ import { AnimatePresence, motion, useReducedMotion } from "motion/react";
 import { useRouter } from "next/navigation";
 import { overlay } from "overlay-kit";
 import { useEffect, useState } from "react";
+import { openPlanDialog } from "@/components/billing/plan-picker";
 import { Trash } from "@/components/trash";
 import { getErrorMessage } from "@/lib/error-message";
 import { getPageImageUrl } from "@/lib/page-image-url";
-import { useChangePrimaryPage } from "@/mutation/page/change-primary";
-import { useDeletePage } from "@/mutation/page/delete";
-import { useOwnedPagesQuery } from "@/query/page/owned-pages";
-import { openPlanDialog } from "../../../billing/plan-picker";
+import { useChangePrimaryPage } from "../mutations/change-primary";
+import { useDeletePage } from "../mutations/delete";
+import { useOwnedPagesQuery } from "../queries/owned-pages";
 import CreatePageForm from "./create-page-form";
 import DeletePageDialog from "./delete-page-dialog";
 

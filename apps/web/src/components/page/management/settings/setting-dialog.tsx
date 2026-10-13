@@ -17,6 +17,7 @@ import {
 import { useIsMobile } from "@grabbin/ui/components/use-mobile";
 import { useReducedMotion } from "motion/react";
 import { CustomDomainTabContent } from "@/features/page/custom-domain";
+import { PageTabContent } from "@/features/page/management/pages";
 import { useBillingPortal } from "@/hooks/use-billing-portal";
 import { useSettingsTabTransition } from "@/hooks/use-settings-tab-transition";
 import { authClient } from "@/lib/auth-client";
@@ -24,7 +25,6 @@ import { isMultiPageEnabled } from "@/lib/feature-flags";
 import { openPlanDialog } from "../../../billing/plan-picker";
 import { AccountTabContent } from "../account/account-tab-content";
 import { BillingTabContent } from "../billing/billing-tab-content";
-import PageTabContent from "../pages/page-tab-content";
 import { SettingsTabs } from "./settings-tabs";
 
 export default function SettingDialog({
