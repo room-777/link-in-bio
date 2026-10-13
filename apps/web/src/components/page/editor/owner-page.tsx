@@ -7,10 +7,13 @@ import {
 	getBentoWidth,
 } from "@grabbin/bento-layout";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import {
+	type AdvancedWidgetActions,
+	AdvancedWidgetActionsContext,
+} from "@/features/page/editor/contexts/advanced-widget-actions-context";
 import { PageProfileForm } from "@/features/page/profile";
 import { getPageImageUrl } from "@/lib/page-image-url";
 import PageFooter from "../shared/page-footer";
-import type { AddWidgetButtonProps } from "./add-widget-button";
 import BentoEditor from "./bento-editor";
 import PageEditorToolbar from "./page-editor-toolbar";
 
@@ -34,8 +37,8 @@ export default function OwnerPage({
 	const [viewportBreakpoint, setViewportBreakpoint] =
 		useState<BentoBreakpoint>("wide");
 	const [isViewportReady, setIsViewportReady] = useState(false);
-	const widgetActionsRef = useRef<AddWidgetButtonProps | null>(null);
-	const widgetActions = useMemo<AddWidgetButtonProps>(
+	const widgetActionsRef = useRef<AdvancedWidgetActions | null>(null);
+	const widgetActions = useMemo<AdvancedWidgetActions>(
 		() => ({
 			onItemAdd: (itemType, url) =>
 				widgetActionsRef.current?.onItemAdd(itemType, url),
@@ -57,7 +60,7 @@ export default function OwnerPage({
 		[],
 	);
 	const handleWidgetActionsChange = useCallback(
-		(actions: AddWidgetButtonProps) => {
+		(actions: AdvancedWidgetActions) => {
 			widgetActionsRef.current = actions;
 		},
 		[],
@@ -175,11 +178,12 @@ export default function OwnerPage({
 				{isViewportCompact && isViewportReady ? pageFooter : null}
 			</div>
 			{!isViewportCompact && isViewportReady ? pageFooter : null}
-			<PageEditorToolbar
-				value={layoutBreakpoint}
-				onChange={handleLayoutBreakpointChange}
-				widgetActions={widgetActions}
-			/>
+			<AdvancedWidgetActionsContext.Provider value={widgetActions}>
+				<PageEditorToolbar
+					value={layoutBreakpoint}
+					onChange={handleLayoutBreakpointChange}
+				/>
+			</AdvancedWidgetActionsContext.Provider>
 		</div>
 	);
 }

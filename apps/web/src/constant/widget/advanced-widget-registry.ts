@@ -1,38 +1,10 @@
-import type {
-	CalendlyEventType,
-	PageItemLinkMetadata,
-	RssFeedResponse,
-} from "@grabbin/api";
 import { providerDefinitions, providerIconUrl } from "@grabbin/page-link";
 import { type ComponentType, createElement } from "react";
-import { CalendlyAdvancedWidgetPreview } from "@/features/calendly/components/widget/calendly-advanced-widget-preview";
-import CalendlyWidgetDetails from "@/features/calendly/components/widget/calendly-widget-details";
-import { RssAdvancedWidgetPreview } from "@/features/rss/components/widget/rss-advanced-widget-preview";
-import RssFeedWidgetDetails from "@/features/rss/components/widget/rss-feed-widget-details";
-import { SpotifyAdvancedWidgetPreview } from "@/features/spotify/components/widget/spotify-advanced-widget-preview";
-import SpotifyWidgetDetails from "@/features/spotify/components/widget/spotify-widget-details";
-import { TweetAdvancedWidgetPreview } from "@/features/tweet/components/widget/tweet-advanced-widget-preview";
-import TweetWidgetDetails from "@/features/tweet/components/widget/tweet-widget-details";
-
-type AdvancedWidgetDetailsProps = {
-	onAdd: (event: CalendlyEventType) => Promise<void>;
-	onRssFeedAdd: (url: string) => Promise<boolean>;
-	onSpotifyAdd: (
-		url: string,
-		metadata: PageItemLinkMetadata,
-	) => Promise<boolean>;
-	spotifyPreview?: { url: string; metadata: PageItemLinkMetadata };
-	spotifyPreviewError?: boolean;
-	onTweetAdd: (url: string) => Promise<boolean>;
-	onInputChange?: (value: string) => void;
-	badges: AdvancedWidgetModule["badges"];
-};
-
-type AdvancedWidgetPreviewProps = {
-	inputValue?: string;
-	rssFeed?: RssFeedResponse;
-	spotifyPreview?: { url: string; metadata: PageItemLinkMetadata };
-};
+import CalendlyWidgetActivity from "@/features/calendly/components/widget/calendly-widget-activity";
+import type { AdvancedWidgetActivityProps } from "@/features/page/editor/types";
+import RssWidgetActivity from "@/features/rss/components/widget/rss-widget-activity";
+import SpotifyWidgetActivity from "@/features/spotify/components/widget/spotify-widget-activity";
+import TweetWidgetActivity from "@/features/tweet/components/widget/tweet-widget-activity";
 
 export type AdvancedWidgetModule = {
 	id: string;
@@ -41,8 +13,7 @@ export type AdvancedWidgetModule = {
 	iconFrame: boolean;
 	brandColor?: string;
 	badges: readonly { id: string; label: string; iconUrl: string }[];
-	details: ComponentType<AdvancedWidgetDetailsProps>;
-	preview: ComponentType<AdvancedWidgetPreviewProps>;
+	activity: ComponentType<AdvancedWidgetActivityProps>;
 };
 
 type ConfiguredProvider = (typeof providerDefinitions)[number];
@@ -52,7 +23,6 @@ type AdvancedWidgetProvider = Extract<
 >;
 type AdvancedWidgetId = AdvancedWidgetProvider["id"];
 
-const EmptyActivity = () => null;
 const ComingSoonActivity = () =>
 	createElement(
 		"div",
@@ -63,30 +33,17 @@ const ComingSoonActivity = () =>
 		"Sipping coffee while crafting a polished widget...",
 	);
 
-const advancedWidgetDetails: Record<
+const advancedWidgetActivities: Record<
 	AdvancedWidgetId,
-	ComponentType<AdvancedWidgetDetailsProps>
+	ComponentType<AdvancedWidgetActivityProps>
 > = {
-	calendly: CalendlyWidgetDetails,
-	"rss-feed": RssFeedWidgetDetails,
-	spotify: SpotifyWidgetDetails,
+	calendly: CalendlyWidgetActivity,
+	"rss-feed": RssWidgetActivity,
+	spotify: SpotifyWidgetActivity,
 	soundcloud: ComingSoonActivity,
 	"apple-music": ComingSoonActivity,
 	signature: ComingSoonActivity,
-	tweet: TweetWidgetDetails,
-};
-
-const advancedWidgetPreviews: Record<
-	AdvancedWidgetId,
-	ComponentType<AdvancedWidgetPreviewProps>
-> = {
-	calendly: CalendlyAdvancedWidgetPreview,
-	"rss-feed": RssAdvancedWidgetPreview,
-	spotify: SpotifyAdvancedWidgetPreview,
-	soundcloud: EmptyActivity,
-	"apple-music": EmptyActivity,
-	signature: EmptyActivity,
-	tweet: TweetAdvancedWidgetPreview,
+	tweet: TweetWidgetActivity,
 };
 
 const badgeProvider = (id: string) =>
@@ -121,7 +78,6 @@ export const advancedWidgetModules: readonly AdvancedWidgetModule[] =
 						iconUrl: badge?.faviconUrl ?? providerIconUrl(id),
 					};
 				}),
-				details: advancedWidgetDetails[id],
-				preview: advancedWidgetPreviews[id],
+				activity: advancedWidgetActivities[id],
 			};
 		});

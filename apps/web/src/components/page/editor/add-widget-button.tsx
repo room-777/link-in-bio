@@ -1,11 +1,5 @@
 "use client";
 
-import type {
-	CalendlyEventType,
-	ItemType,
-	PageItemLinkMetadata,
-	RssFeedResponse,
-} from "@grabbin/api";
 import { Button } from "@grabbin/ui/components/button";
 import {
 	InputGroup,
@@ -19,33 +13,12 @@ import {
 	PopoverTrigger,
 } from "@grabbin/ui/components/popover";
 import { useRef, useState } from "react";
+import { useAdvancedWidgetActions } from "@/features/page/editor/contexts/advanced-widget-actions-context";
 import { normalizeHttpsUrl } from "@/lib/normalize-https-url";
 import AdvancedWidgetsDialog from "./advanced-widgets-dialog";
 
-export type AddWidgetButtonProps = {
-	onItemAdd: (itemType: Exclude<ItemType, "calendly">, url?: string) => void;
-	onCalendlyAdd: (event: CalendlyEventType) => Promise<void>;
-	onRssFeedAdd: (url: string) => Promise<boolean>;
-	onRssFeedPreview: (url: string) => Promise<RssFeedResponse>;
-	onSpotifyPreview: (url: string) => Promise<PageItemLinkMetadata>;
-	onSpotifyAdd: (
-		url: string,
-		metadata: PageItemLinkMetadata,
-	) => Promise<boolean>;
-	onTweetAdd: (url: string) => Promise<boolean>;
-	onMediaSelect: (file: File) => void;
-};
-
-export default function AddWidgetButton({
-	onItemAdd,
-	onCalendlyAdd,
-	onRssFeedAdd,
-	onRssFeedPreview,
-	onSpotifyPreview,
-	onSpotifyAdd,
-	onTweetAdd,
-	onMediaSelect,
-}: AddWidgetButtonProps) {
+export default function AddWidgetButton() {
+	const actions = useAdvancedWidgetActions();
 	const fileInputRef = useRef<HTMLInputElement>(null);
 	const [linkPopoverOpen, setLinkPopoverOpen] = useState(false);
 	const [linkValue, setLinkValue] = useState("");
@@ -59,7 +32,7 @@ export default function AddWidgetButton({
 			return;
 		}
 
-		onItemAdd("link", url);
+		actions.onItemAdd("link", url);
 		setLinkValue("");
 		setLinkError(false);
 		setLinkPopoverOpen(false);
@@ -78,20 +51,23 @@ export default function AddWidgetButton({
 				className="sr-only"
 				onChange={(event) => {
 					const file = event.currentTarget.files?.[0];
-					if (file) onMediaSelect(file);
+					if (file) actions.onMediaSelect(file);
 					event.currentTarget.value = "";
 				}}
 			/>
 			<WidgetButton label="Media" onClick={() => fileInputRef.current?.click()}>
 				<span aria-hidden="true">🌄</span>
 			</WidgetButton>
-			<WidgetButton label="Map" onClick={() => onItemAdd("map")}>
+			<WidgetButton label="Map" onClick={() => actions.onItemAdd("map")}>
 				<span aria-hidden="true">🗺️</span>
 			</WidgetButton>
-			<WidgetButton label="Text" onClick={() => onItemAdd("text")}>
+			<WidgetButton label="Text" onClick={() => actions.onItemAdd("text")}>
 				<span aria-hidden="true">𝜜</span>
 			</WidgetButton>
-			<WidgetButton label="Section" onClick={() => onItemAdd("section")}>
+			<WidgetButton
+				label="Section"
+				onClick={() => actions.onItemAdd("section")}
+			>
 				<span aria-hidden="true">🍱</span>
 			</WidgetButton>
 			<Popover open={linkPopoverOpen} onOpenChange={setLinkPopoverOpen}>
@@ -151,14 +127,7 @@ export default function AddWidgetButton({
 					</form>
 				</PopoverContent>
 			</Popover>
-			<AdvancedWidgetsDialog
-				onCalendlyAdd={onCalendlyAdd}
-				onRssFeedAdd={onRssFeedAdd}
-				onRssFeedPreview={onRssFeedPreview}
-				onSpotifyPreview={onSpotifyPreview}
-				onSpotifyAdd={onSpotifyAdd}
-				onTweetAdd={onTweetAdd}
-			/>
+			<AdvancedWidgetsDialog />
 		</div>
 	);
 }

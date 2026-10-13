@@ -6,20 +6,16 @@ import { Tabs, TabsList, TabsTrigger } from "@grabbin/ui/components/tabs";
 import { Laptop, Smartphone } from "lucide-react";
 import { motion, useReducedMotion } from "motion/react";
 import { startTransition, useEffect, useState } from "react";
-import AddWidgetButton, {
-	type AddWidgetButtonProps,
-} from "./add-widget-button";
+import AddWidgetButton from "./add-widget-button";
 
 type PageEditorToolbarProps = {
 	value: BentoBreakpoint;
 	onChange: (breakpoint: BentoBreakpoint) => void;
-	widgetActions: AddWidgetButtonProps;
 };
 
 export default function PageEditorToolbar({
 	value,
 	onChange,
-	widgetActions,
 }: PageEditorToolbarProps) {
 	const reduceMotion = useReducedMotion();
 	const [activeBreakpoint, setActiveBreakpoint] = useState(value);
@@ -43,7 +39,7 @@ export default function PageEditorToolbar({
 		>
 			<fieldset className="pointer-events-auto flex items-center gap-1 p-1">
 				<legend className="sr-only">Page editor toolbar</legend>
-				<AddWidgetButton {...widgetActions} />
+				<AddWidgetButton />
 				<Separator
 					orientation="vertical"
 					className="mx-2 page-wide:block hidden rounded-lg bg-border/80 data-vertical:my-2.5 data-vertical:w-[2.5px]"

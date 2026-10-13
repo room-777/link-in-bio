@@ -15,13 +15,13 @@ import { useQueryClient } from "@tanstack/react-query";
 import dynamic from "next/dynamic";
 import { type CSSProperties, useCallback, useEffect, useRef } from "react";
 import type { Tweet as TweetResponse } from "react-tweet/api";
+import type { AdvancedWidgetActions } from "@/features/page/editor/contexts/advanced-widget-actions-context";
 import { useRssWidgetActions } from "@/features/rss/hooks/use-rss-widget-actions";
 import { useFetchBentoSpotifyPreviewMutation } from "@/features/spotify/mutations/preview";
 import { getTweetQueryOptions } from "@/features/tweet/queries/by-id";
 import { getTweetId } from "@/features/tweet/utils/tweet-url";
 import { useBentoStore } from "@/lib/bento/bento-store";
 import { getErrorMessage } from "@/lib/error-message";
-import type { AddWidgetButtonProps } from "./add-widget-button";
 import EditMobileShareLinkButton from "./mobile-share-link-button";
 
 const BentoSection = dynamic(() => import("./bento/bento-section"), {
@@ -51,7 +51,7 @@ export default function BentoEditor({
 	entryReady: boolean;
 	onReady?: () => void;
 	onGridSavingChange?: (isSaving: boolean) => void;
-	onWidgetActionsChange?: (actions: AddWidgetButtonProps) => void;
+	onWidgetActionsChange?: (actions: AdvancedWidgetActions) => void;
 }) {
 	const initialItemIdsRef = useRef({
 		handle,

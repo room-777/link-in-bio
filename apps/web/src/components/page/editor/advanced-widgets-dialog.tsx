@@ -1,10 +1,5 @@
 "use client";
 
-import type {
-	CalendlyEventType,
-	PageItemLinkMetadata,
-	RssFeedResponse,
-} from "@grabbin/api";
 import { Button } from "@grabbin/ui/components/button";
 import {
 	Dialog,
@@ -30,30 +25,18 @@ import { overlay } from "overlay-kit";
 import { Activity, useLayoutEffect, useRef, useState } from "react";
 import { openPlanDialog } from "@/components/billing/plan-picker";
 import { advancedWidgetModules } from "@/constant/widget/advanced-widget-registry";
+import {
+	AdvancedWidgetActionsContext,
+	useAdvancedWidgetActions,
+} from "@/features/page/editor/contexts/advanced-widget-actions-context";
 import { authClient } from "@/lib/auth-client";
 import AdvancedWidgetActivity from "./advanced-widget-activity";
 import { AdvancedWidgetIcon } from "./advanced-widget-icon";
 import AdvancedWidgetList from "./advanced-widget-list";
 
-export default function AdvancedWidgetsDialog({
-	onCalendlyAdd,
-	onRssFeedAdd,
-	onRssFeedPreview,
-	onSpotifyPreview,
-	onSpotifyAdd,
-	onTweetAdd,
-}: {
-	onCalendlyAdd: (event: CalendlyEventType) => Promise<void>;
-	onRssFeedAdd: (url: string) => Promise<boolean>;
-	onRssFeedPreview: (url: string) => Promise<RssFeedResponse>;
-	onSpotifyPreview: (url: string) => Promise<PageItemLinkMetadata>;
-	onSpotifyAdd: (
-		url: string,
-		metadata: PageItemLinkMetadata,
-	) => Promise<boolean>;
-	onTweetAdd: (url: string) => Promise<boolean>;
-}) {
+export default function AdvancedWidgetsDialog() {
 	const isMobile = useIsMobile();
+	const widgetActions = useAdvancedWidgetActions();
 	const {
 		data: session,
 		error,
@@ -74,19 +57,15 @@ export default function AdvancedWidgetsDialog({
 			onClick={() => {
 				if (isSessionUnavailable) return;
 				overlay.open(({ isOpen, close, unmount }) => (
-					<AdvancedWidgetsOverlay
-						isMobile={isMobile}
-						isPro={isPro}
-						open={isOpen}
-						onClose={close}
-						onExit={unmount}
-						onCalendlyAdd={onCalendlyAdd}
-						onRssFeedAdd={onRssFeedAdd}
-						onRssFeedPreview={onRssFeedPreview}
-						onSpotifyPreview={onSpotifyPreview}
-						onSpotifyAdd={onSpotifyAdd}
-						onTweetAdd={onTweetAdd}
-					/>
+					<AdvancedWidgetActionsContext.Provider value={widgetActions}>
+						<AdvancedWidgetsOverlay
+							isMobile={isMobile}
+							isPro={isPro}
+							open={isOpen}
+							onClose={close}
+							onExit={unmount}
+						/>
+					</AdvancedWidgetActionsContext.Provider>
 				));
 			}}
 		>
@@ -108,27 +87,12 @@ function AdvancedWidgetsOverlay({
 	open,
 	onClose,
 	onExit,
-	onCalendlyAdd,
-	onRssFeedAdd,
-	onRssFeedPreview,
-	onSpotifyPreview,
-	onSpotifyAdd,
-	onTweetAdd,
 }: {
 	isMobile: boolean;
 	isPro: boolean;
 	open: boolean;
 	onClose: () => void;
 	onExit: () => void;
-	onCalendlyAdd: (event: CalendlyEventType) => Promise<void>;
-	onRssFeedAdd: (url: string) => Promise<boolean>;
-	onRssFeedPreview: (url: string) => Promise<RssFeedResponse>;
-	onSpotifyPreview: (url: string) => Promise<PageItemLinkMetadata>;
-	onSpotifyAdd: (
-		url: string,
-		metadata: PageItemLinkMetadata,
-	) => Promise<boolean>;
-	onTweetAdd: (url: string) => Promise<boolean>;
 }) {
 	const reduceMotion = useReducedMotion() ?? false;
 	const [widgetId, setWidgetId] = useState<string | null>(null);
@@ -322,27 +286,7 @@ function AdvancedWidgetsOverlay({
 						<div className="min-h-0 flex-1">
 							<AdvancedWidgetActivity
 								widgetId={widgetId}
-								onCalendlyAdd={async (event) => {
-									await onCalendlyAdd(event);
-									handleOpenChange(false);
-								}}
-								onRssFeedAdd={async (url) => {
-									const added = await onRssFeedAdd(url);
-									if (added) handleOpenChange(false);
-									return added;
-								}}
-								onRssFeedPreview={onRssFeedPreview}
-								onSpotifyPreview={onSpotifyPreview}
-								onSpotifyAdd={async (url, metadata) => {
-									const added = await onSpotifyAdd(url, metadata);
-									if (added) handleOpenChange(false);
-									return added;
-								}}
-								onTweetAdd={async (url) => {
-									const added = await onTweetAdd(url);
-									if (added) handleOpenChange(false);
-									return added;
-								}}
+								onClose={() => handleOpenChange(false)}
 							/>
 						</div>
 					)}
