@@ -69,6 +69,49 @@
       "quoteStyle": "double"
     }
   },
+  "overrides": [
+    {
+      "includes": ["apps/web/src/**/*.ts", "apps/web/src/**/*.tsx"],
+      "linter": {
+        "rules": {
+          "style": {
+            "noRestrictedImports": {
+              "level": "error",
+              "options": {
+                "paths": {
+                  "@tanstack/react-query": {
+                    "importNames": [
+                      "queryOptions",
+                      "infiniteQueryOptions",
+                      "useQuery",
+                      "useSuspenseQuery",
+                      "useQueries",
+                      "useSuspenseQueries",
+                      "useInfiniteQuery",
+                      "useSuspenseInfiniteQuery",
+                      "usePrefetchQuery",
+                      "usePrefetchInfiniteQuery"
+                    ],
+                    "message": "Keep query definitions and hooks in apps/web/src/query."
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    {
+      "includes": ["apps/web/src/query/**/*.ts", "apps/web/src/query/**/*.tsx"],
+      "linter": {
+        "rules": {
+          "style": {
+            "noRestrictedImports": "off"
+          }
+        }
+      }
+    }
+  ],
   "css": {
     "parser": {
       "tailwindDirectives": true

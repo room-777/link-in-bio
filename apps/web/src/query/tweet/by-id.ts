@@ -1,9 +1,10 @@
+import { queryOptions, useQuery } from "@tanstack/react-query";
 import type { Tweet as TweetResponse } from "react-tweet/api";
 
-export function tweetQueryOptions(tweetId: string) {
-	return {
+export function getTweetQueryOptions(tweetId: string) {
+	return queryOptions({
 		queryKey: ["tweet", tweetId],
-		queryFn: async ({ signal }: { signal: AbortSignal }) => {
+		queryFn: async ({ signal }) => {
 			const response = await fetch(
 				`https://react-tweet.vercel.app/api/tweet/${tweetId}`,
 				{ signal },
@@ -16,5 +17,9 @@ export function tweetQueryOptions(tweetId: string) {
 			return result.data;
 		},
 		staleTime: Number.POSITIVE_INFINITY,
-	};
+	});
+}
+
+export function useTweetQuery(tweetId: string, enabled: boolean) {
+	return useQuery({ ...getTweetQueryOptions(tweetId), enabled });
 }

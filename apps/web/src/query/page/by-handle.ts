@@ -1,9 +1,9 @@
 import { pageByHandleResponseSchema } from "@grabbin/api";
-import { queryOptions } from "@tanstack/react-query";
+import { queryOptions, useSuspenseQuery } from "@tanstack/react-query";
 import * as v from "valibot";
 import { apiClient, getApiErrorMessage } from "@/lib/api-client";
 
-export function getPageQueryOptions(handle: string) {
+export function getPageByHandleQueryOptions(handle: string) {
 	return queryOptions({
 		queryKey: ["page-by-handle", handle] as const,
 		queryFn: async ({ signal }) => {
@@ -31,4 +31,10 @@ export function getPageQueryOptions(handle: string) {
 			return "page" in body ? v.parse(pageByHandleResponseSchema, body) : null;
 		},
 	});
+}
+
+export function useSuspensePageByHandleQuery(handle: string) {
+	const { data } = useSuspenseQuery(getPageByHandleQueryOptions(handle));
+	if (!data) throw new Error("Page data is unavailable.");
+	return data;
 }

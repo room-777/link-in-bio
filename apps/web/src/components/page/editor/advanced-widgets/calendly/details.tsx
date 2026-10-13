@@ -16,10 +16,8 @@ import { type CSSProperties, useEffect, useState } from "react";
 import { CalendlyConnectionError } from "@/api/calendly/api";
 import CalendlyConnectButton from "@/components/page/management/account/calendly-connect-button";
 import { authClient } from "@/lib/auth-client";
-import {
-	useCalendlyConnectionQuery,
-	useCalendlyEventsQuery,
-} from "@/query/calendly/query";
+import { useCalendlyConnectionQuery } from "@/query/calendly/connection";
+import { useCalendlyEventsQuery } from "@/query/calendly/events";
 
 const calendlyBrandColor = providerDefinitions.find(
 	(provider) => provider.id === "calendly",

@@ -7,7 +7,7 @@ import { getCustomDomainHostname } from "@/lib/custom-domain-host";
 import { getPageImageUrl } from "@/lib/page-image-url";
 import { makeQueryClient } from "@/lib/query-client";
 import { fetchPage } from "@/lib/server/page-query";
-import { getPageQueryOptions } from "@/query/page/query";
+import { getPageByHandleQueryOptions } from "@/query/page/by-handle";
 import {
 	OwnerPageQueryView,
 	PublicPageQueryView,
@@ -77,7 +77,7 @@ export default async function Page({ params }: PageProps<"/[handle]">) {
 	const requestHeaders = await headers();
 	if (getCustomDomainHostname(requestHeaders.get("host"))) notFound();
 	const queryClient = makeQueryClient();
-	const pageQueryOptions = getPageQueryOptions(handle);
+	const pageQueryOptions = getPageByHandleQueryOptions(handle);
 	const cookie = requestHeaders.get("cookie") ?? "";
 	const page = await queryClient.query({
 		...pageQueryOptions,

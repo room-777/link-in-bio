@@ -19,7 +19,7 @@ import type { Tweet as TweetResponse } from "react-tweet/api";
 import { fetchBentoRss, fetchBentoSpotifyPreview } from "@/lib/bento/bento-api";
 import { useBentoStore } from "@/lib/bento/bento-store";
 import { getErrorMessage } from "@/lib/error-message";
-import { tweetQueryOptions } from "@/lib/tweet-query";
+import { getTweetQueryOptions } from "@/query/tweet/by-id";
 import type { AddWidgetButtonProps } from "./add-widget-button";
 import { getTweetId } from "./advanced-widgets/tweet/tweet-url";
 import EditMobileShareLinkButton from "./edit-mobile-share-link-button";
@@ -182,7 +182,7 @@ export default function BentoEditor({
 			let tweetResponse: TweetResponse | undefined;
 			try {
 				tweetResponse = await queryClient.fetchQuery(
-					tweetQueryOptions(tweetId),
+					getTweetQueryOptions(tweetId),
 				);
 			} catch {
 				toast({

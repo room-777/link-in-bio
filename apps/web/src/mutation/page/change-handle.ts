@@ -1,6 +1,6 @@
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { changePageHandle } from "@/api/page/api";
-import { PAGE_HANDLE_CHECK_QUERY_KEY_PREFIX } from "@/query/page-handle/query";
+import { PAGE_HANDLE_CHECK_QUERY_KEY_PREFIX } from "@/query/page-handle/check";
 
 export function useChangePageHandle() {
 	const queryClient = useQueryClient();

@@ -4,7 +4,7 @@ import { pageHandleSchema } from "@grabbin/page-handle";
 import { type FormEvent, useState } from "react";
 import * as v from "valibot";
 import { getErrorMessage } from "@/lib/error-message";
-import { usePageHandleCheckQuery } from "@/query/page-handle/query";
+import { usePageHandleCheckQuery } from "@/query/page-handle/check";
 import { useDebouncedValue } from "./use-debounced-value";
 
 type Availability = "idle" | "checking" | "available" | "taken" | "invalid";

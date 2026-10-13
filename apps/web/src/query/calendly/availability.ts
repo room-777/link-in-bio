@@ -1,34 +1,5 @@
 import { queryOptions, useQuery } from "@tanstack/react-query";
-import {
-	getCalendlyAvailability,
-	getCalendlyConnection,
-	getCalendlyEvents,
-} from "@/api/calendly/api";
-
-export const calendlyConnectionQueryKey = ["calendly", "connection"] as const;
-
-export function getCalendlyConnectionQueryOptions() {
-	return queryOptions({
-		queryKey: calendlyConnectionQueryKey,
-		retry: false,
-		queryFn: ({ signal }) => getCalendlyConnection(signal),
-	});
-}
-
-export function getCalendlyEventsQueryOptions() {
-	return queryOptions({
-		queryKey: ["calendly", "events"] as const,
-		queryFn: ({ signal }) => getCalendlyEvents(signal),
-	});
-}
-
-export function useCalendlyConnectionQuery() {
-	return useQuery(getCalendlyConnectionQueryOptions());
-}
-
-export function useCalendlyEventsQuery(enabled: boolean) {
-	return useQuery({ ...getCalendlyEventsQueryOptions(), enabled });
-}
+import { getCalendlyAvailability } from "@/api/calendly/api";
 
 export function getCalendlyAvailabilityRange(date: Date) {
 	const now = new Date();

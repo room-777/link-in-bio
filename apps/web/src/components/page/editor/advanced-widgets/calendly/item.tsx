@@ -6,7 +6,7 @@ import { useState } from "react";
 import {
 	getCalendlyAvailabilityRange,
 	useCalendlyAvailabilityQuery,
-} from "@/query/calendly/query";
+} from "@/query/calendly/availability";
 import { calendlyPresetComponents } from "./widget";
 
 export function CalendlyItem({

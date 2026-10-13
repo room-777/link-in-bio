@@ -5,7 +5,8 @@
 	"scripts": {
 		"dev": "vinext dev --port 3000",
 		"build": "vinext build",
-		"check-types": "tsc --noEmit",
+		"check-types": "bun run check-architecture && tsc --noEmit",
+		"check-architecture": "bun scripts/check-query-architecture.ts",
 		"start": "wrangler dev --config dist/server/wrangler.json",
 		"dev:bare": "vinext dev --port 3000",
 		"dev:vinext": "vinext dev --port 3000",

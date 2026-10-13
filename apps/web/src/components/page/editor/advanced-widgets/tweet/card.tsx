@@ -1,13 +1,12 @@
 "use client";
 
 import { cn } from "@grabbin/ui/lib/utils";
-import { useQuery } from "@tanstack/react-query";
 import { Check, Link2 } from "lucide-react";
 import { useLayoutEffect, useRef, useState } from "react";
 import { type EnrichedTweet, enrichTweet } from "react-tweet";
 import type { Tweet as TweetResponse } from "react-tweet/api";
 import { useClipboardCopy } from "@/hooks/use-clipboard-copy";
-import { tweetQueryOptions } from "@/lib/tweet-query";
+import { useTweetQuery } from "@/query/tweet/by-id";
 
 const VerifiedBadge = ({ className }: { className?: string }) => (
 	<svg
@@ -495,7 +494,7 @@ export function Tweet({
 		data: fetchedTweet,
 		isLoading,
 		error,
-	} = useQuery({ ...tweetQueryOptions(id), enabled: shouldFetch });
+	} = useTweetQuery(id, shouldFetch);
 	const tweet = storedTweet ?? fetchedTweet;
 
 	if (isLoading) {

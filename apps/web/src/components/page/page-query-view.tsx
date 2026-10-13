@@ -1,18 +1,15 @@
 "use client";
 
-import { useSuspenseQuery } from "@tanstack/react-query";
-import { getPageQueryOptions } from "@/query/page/query";
+import { useSuspensePageByHandleQuery } from "@/query/page/by-handle";
 import OwnerPage from "./editor/owner-page";
 import HandlePage from "./public/handle-page";
 
 export function OwnerPageQueryView({ handle }: { handle: string }) {
-	const { data } = useSuspenseQuery(getPageQueryOptions(handle));
-	if (!data) throw new Error("Page data is unavailable.");
-	return <OwnerPage pageResponse={data} />;
+	const pageResponse = useSuspensePageByHandleQuery(handle);
+	return <OwnerPage pageResponse={pageResponse} />;
 }
 
 export function PublicPageQueryView({ handle }: { handle: string }) {
-	const { data } = useSuspenseQuery(getPageQueryOptions(handle));
-	if (!data) throw new Error("Page data is unavailable.");
-	return <HandlePage pageResponse={data} />;
+	const pageResponse = useSuspensePageByHandleQuery(handle);
+	return <HandlePage pageResponse={pageResponse} />;
 }

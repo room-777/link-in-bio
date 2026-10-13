@@ -21,7 +21,7 @@ import { getErrorMessage } from "@/lib/error-message";
 import {
 	calendlyConnectionQueryKey,
 	useCalendlyConnectionQuery,
-} from "@/query/calendly/query";
+} from "@/query/calendly/connection";
 
 const signInHref = getSignInHref();
 

@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { usePublicViewsQuery } from "@/query/page/public-views/query";
+import { usePublicViewsQuery } from "@/query/page/public-views";
 
 export function usePublicViews(handle?: string) {
 	const [timezone, setTimezone] = useState<string | null>(null);
