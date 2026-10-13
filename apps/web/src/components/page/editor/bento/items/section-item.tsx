@@ -35,31 +35,20 @@ export function SectionItem({
 	}, [autoFocus, onAutoFocus]);
 	return mode === "edit" ? (
 		<div className="flex size-full items-center overflow-hidden p-3">
-			<div
-				className="grid-action inline-grid h-full min-w-32 max-w-full overflow-hidden rounded-lg focus-within:bg-secondary hover:bg-secondary"
-				data-section-editable="true"
-			>
-				<span
-					aria-hidden="true"
-					className="invisible col-start-1 row-start-1 min-w-32 max-w-full overflow-hidden whitespace-pre font-semibold text-xl tracking-tight"
-				>
-					{item.data.title}
-				</span>
-				<input
-					ref={inputRef}
-					value={item.data.title}
-					placeholder="Add title..."
-					aria-label="Section title"
-					className="col-start-1 row-start-1 h-full w-full min-w-32 max-w-full truncate bg-transparent px-2 font-semibold text-xl tracking-tight outline-none placeholder:text-muted-foreground focus-visible:ring-2 focus-visible:ring-ring/60"
-					onChange={(event) =>
-						onCommand?.({
-							type: "update-data",
-							itemId: item.id,
-							data: { ...item.data, title: event.target.value },
-						})
-					}
-				/>
-			</div>
+			<input
+				ref={inputRef}
+				value={item.data.title}
+				placeholder="Add title..."
+				aria-label="Section title"
+				className="grid-action field-sizing-content h-full w-fit min-w-32 max-w-full overflow-hidden truncate rounded-lg bg-transparent px-2 font-semibold text-xl tracking-tight outline-none placeholder:text-muted-foreground hover:bg-secondary focus-visible:bg-secondary"
+				onChange={(event) =>
+					onCommand?.({
+						type: "update-data",
+						itemId: item.id,
+						data: { ...item.data, title: event.target.value },
+					})
+				}
+			/>
 		</div>
 	) : (
 		<div className="flex size-full items-center overflow-hidden p-3">
