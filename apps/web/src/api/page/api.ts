@@ -31,3 +31,25 @@ export async function changePageHandle(handle: string, nextHandle: string) {
 	if (!response.ok) throw new Error(await getApiErrorMessage(response));
 	return v.parse(pageHandleResponseSchema, await response.json()).page.handle;
 }
+
+export async function getOwnedPages() {
+	const response = await apiClient.pages.owned.$get();
+	if (!response.ok) throw new Error(await getApiErrorMessage(response));
+	const result = await response.json();
+	if (!("pages" in result)) throw new Error("Could not load your pages.");
+	return result;
+}
+
+export async function changePrimaryPage(handle: string) {
+	const response = await apiClient.pages[":handle"].primary.$patch({
+		param: { handle },
+	});
+	if (!response.ok) throw new Error(await getApiErrorMessage(response));
+}
+
+export async function deletePage(handle: string) {
+	const response = await apiClient.pages[":handle"].$delete({
+		param: { handle },
+	});
+	if (!response.ok) throw new Error(await getApiErrorMessage(response));
+}
