@@ -5,9 +5,8 @@ import {
 } from "@grabbin/ui/components/input-group";
 import { Label } from "@grabbin/ui/components/label";
 import Loading from "@grabbin/ui/components/loading";
-import { useState } from "react";
-import type { AdvancedWidgetModule } from "@/constant/widget/advanced-widget-registry";
-import { AdvancedWidgetBadges } from "../../advanced-widget-badges";
+import { type ChangeEvent, useState } from "react";
+import { AdvancedWidgetBadges } from "@/components/page/editor/advanced-widget-badges";
 
 export default function RssFeedWidgetDetails({
 	onRssFeedAdd,
@@ -16,11 +15,29 @@ export default function RssFeedWidgetDetails({
 }: {
 	onRssFeedAdd: (url: string) => Promise<boolean>;
 	onInputChange?: (value: string) => void;
-	badges: AdvancedWidgetModule["badges"];
+	badges: readonly { id: string; label: string; iconUrl: string }[];
 }) {
 	const [url, setUrl] = useState("");
 	const [isAdding, setIsAdding] = useState(false);
 	const [error, setError] = useState<string>();
+
+	function handleUrlChange(event: ChangeEvent<HTMLInputElement>) {
+		setUrl(event.target.value);
+		onInputChange?.(event.target.value);
+		setError(undefined);
+	}
+
+	async function handleAddFeed() {
+		setIsAdding(true);
+		try {
+			if (!(await onRssFeedAdd(url))) {
+				setError("Enter a supported RSS feed URL.");
+			}
+		} finally {
+			setIsAdding(false);
+		}
+	}
+
 	return (
 		<div className="flex h-full min-h-0 flex-col gap-3">
 			<div className="flex flex-col gap-2">
@@ -34,11 +51,7 @@ export default function RssFeedWidgetDetails({
 						placeholder="Paste a supported URL"
 						type="url"
 						value={url}
-						onChange={(event) => {
-							setUrl(event.target.value);
-							onInputChange?.(event.target.value);
-							setError(undefined);
-						}}
+						onChange={handleUrlChange}
 					/>
 				</InputGroup>
 				<div className="flex items-center justify-end gap-2 text-muted-foreground text-xs">
@@ -60,16 +73,7 @@ export default function RssFeedWidgetDetails({
 					aria-label={isAdding ? "Adding RSS feed" : undefined}
 					disabled={!url.trim() || isAdding}
 					className="relative px-5 text-base"
-					onClick={async () => {
-						setIsAdding(true);
-						try {
-							if (!(await onRssFeedAdd(url))) {
-								setError("Enter a supported RSS feed URL.");
-							}
-						} finally {
-							setIsAdding(false);
-						}
-					}}
+					onClick={handleAddFeed}
 				>
 					<span className={isAdding ? "opacity-0" : ""}>Add</span>
 					{isAdding ? (

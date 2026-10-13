@@ -4,7 +4,6 @@ import type {
 	ItemType,
 	PageByHandleResponse,
 	PageItemLinkMetadata,
-	RssFeedResponse,
 } from "@grabbin/api";
 import {
 	type BentoBreakpoint,
@@ -16,12 +15,12 @@ import { useQueryClient } from "@tanstack/react-query";
 import dynamic from "next/dynamic";
 import { type CSSProperties, useCallback, useEffect, useRef } from "react";
 import type { Tweet as TweetResponse } from "react-tweet/api";
+import { useRssWidgetActions } from "@/features/rss/hooks/use-rss-widget-actions";
 import { useFetchBentoSpotifyPreviewMutation } from "@/features/spotify/mutations/preview";
 import { getTweetQueryOptions } from "@/features/tweet/queries/by-id";
 import { getTweetId } from "@/features/tweet/utils/tweet-url";
 import { useBentoStore } from "@/lib/bento/bento-store";
 import { getErrorMessage } from "@/lib/error-message";
-import { useFetchBentoRssMutation } from "@/mutation/bento/fetch-rss-preview";
 import type { AddWidgetButtonProps } from "./add-widget-button";
 import EditMobileShareLinkButton from "./mobile-share-link-button";
 
@@ -69,37 +68,17 @@ export default function BentoEditor({
 		handle,
 		persistItems: !demoMode,
 	});
-	const rssFeedMutation = useFetchBentoRssMutation();
 	const spotifyPreviewMutation = useFetchBentoSpotifyPreviewMutation();
+	const { addRssFeed, previewRssFeed } = useRssWidgetActions(
+		handle,
+		store.dispatchCommand,
+	);
 	const queryClient = useQueryClient();
-	const rssFeedRequestRef = useRef<{
-		handle: string;
-		url: string;
-		promise: Promise<RssFeedResponse>;
-	} | null>(null);
 	const spotifyPreviewRequestRef = useRef<{
 		handle: string;
 		url: string;
 		promise: Promise<PageItemLinkMetadata>;
 	} | null>(null);
-	const getRssFeed = useCallback(
-		(url: string) => {
-			const cached = rssFeedRequestRef.current;
-			if (cached?.handle === handle && cached.url === url)
-				return cached.promise;
-
-			const request = rssFeedMutation
-				.mutateAsync({ handle, url })
-				.catch((error) => {
-					if (rssFeedRequestRef.current?.promise === request)
-						rssFeedRequestRef.current = null;
-					throw error;
-				});
-			rssFeedRequestRef.current = { handle, url, promise: request };
-			return request;
-		},
-		[handle, rssFeedMutation.mutateAsync],
-	);
 	useEffect(() => {
 		onGridSavingChange?.(store.status === "saving");
 	}, [onGridSavingChange, store.status]);
@@ -133,45 +112,6 @@ export default function BentoEditor({
 			await store.flushPendingChanges();
 		},
 		[store.dispatchCommand, store.flushPendingChanges],
-	);
-	const addRssFeed = useCallback(
-		async (url: string) => {
-			try {
-				const parsedUrl = new URL(url.trim());
-				if (parsedUrl.protocol !== "https:") {
-					throw new Error("Enter a supported RSS feed URL.");
-				}
-				const normalizedUrl = parsedUrl.toString();
-				const rss = await getRssFeed(normalizedUrl);
-				const addedItem = store.dispatchCommand({
-					type: "add-item",
-					itemType: "link",
-					url: normalizedUrl,
-				});
-				if (addedItem?.type !== "link") return false;
-				store.dispatchCommand({
-					type: "update-data",
-					itemId: addedItem.id,
-					data: {
-						...addedItem.data,
-						metadata: {
-							title: "RSS Feed",
-							faviconUrl: providerIconUrl("rss-feed"),
-							provider: "rss-feed",
-							rss,
-						},
-					},
-				});
-				return true;
-			} catch (error) {
-				toast({
-					message: getErrorMessage(error, "Enter a supported RSS feed URL."),
-					state: "error",
-				});
-				return false;
-			}
-		},
-		[getRssFeed, store.dispatchCommand],
 	);
 	const addTweet = useCallback(
 		async (url: string) => {
@@ -296,10 +236,6 @@ export default function BentoEditor({
 			return true;
 		},
 		[store.dispatchCommand],
-	);
-	const previewRssFeed = useCallback(
-		(url: string) => getRssFeed(url),
-		[getRssFeed],
 	);
 	const editorClassName =
 		breakpoint === "compact"

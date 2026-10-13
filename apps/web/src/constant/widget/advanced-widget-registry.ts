@@ -5,10 +5,10 @@ import type {
 } from "@grabbin/api";
 import { providerDefinitions, providerIconUrl } from "@grabbin/page-link";
 import { type ComponentType, createElement } from "react";
-import { RssAdvancedWidgetPreview } from "@/components/page/editor/advanced-widgets/rss-feed/rss-advanced-widget-preview";
-import RssFeedWidgetDetails from "@/components/page/editor/advanced-widgets/rss-feed/rss-feed-widget-details";
 import { CalendlyAdvancedWidgetPreview } from "@/features/calendly/components/widget/calendly-advanced-widget-preview";
 import CalendlyWidgetDetails from "@/features/calendly/components/widget/calendly-widget-details";
+import { RssAdvancedWidgetPreview } from "@/features/rss/components/widget/rss-advanced-widget-preview";
+import RssFeedWidgetDetails from "@/features/rss/components/widget/rss-feed-widget-details";
 import { SpotifyAdvancedWidgetPreview } from "@/features/spotify/components/widget/spotify-advanced-widget-preview";
 import SpotifyWidgetDetails from "@/features/spotify/components/widget/spotify-widget-details";
 import { TweetAdvancedWidgetPreview } from "@/features/tweet/components/widget/tweet-advanced-widget-preview";
