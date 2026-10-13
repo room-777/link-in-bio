@@ -6,11 +6,13 @@ import CtaSection from "@/components/landing/cta-section";
 import HeroSection from "@/components/landing/hero-section";
 import PlanSection from "@/components/landing/plan-section";
 import WelcomeSection from "@/components/landing/welcome-section";
-import HandlePage from "@/components/page/public/handle-page";
+import {
+	getPageByCustomDomainQueryOptions,
+	HandlePage,
+} from "@/features/page/view";
 import { getCustomDomainHostname } from "@/lib/custom-domain-host";
 import { getPageImageUrl } from "@/lib/page-image-url";
 import { makeQueryClient } from "@/lib/query-client";
-import { getPageByCustomDomainQueryOptions } from "@/query/page/by-custom-domain";
 
 export const revalidate = false;
 

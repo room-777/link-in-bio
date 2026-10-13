@@ -1,7 +1,7 @@
 "use client";
 
-import { useSuspensePageByHandleQuery } from "@/query/page/by-handle";
-import OwnerPage from "./editor/owner-page";
+import OwnerPage from "@/components/page/editor/owner-page";
+import { useSuspensePageByHandleQuery } from "../queries/by-handle";
 
 export function OwnerPageQueryView({ handle }: { handle: string }) {
 	const pageResponse = useSuspensePageByHandleQuery(handle);

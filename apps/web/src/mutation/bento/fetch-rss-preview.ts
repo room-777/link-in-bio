@@ -4,7 +4,7 @@ import { useMutation } from "@tanstack/react-query";
 import * as v from "valibot";
 import { apiClient, getApiErrorMessage } from "@/lib/api-client";
 
-export async function fetchBentoRss(handle: string, url: string) {
+export async function getBentoRssPreview(handle: string, url: string) {
 	const response = await apiClient.pages[":handle"].metadata.$post(
 		{ param: { handle } },
 		{
@@ -34,6 +34,6 @@ export async function fetchBentoRss(handle: string, url: string) {
 export function useFetchBentoRssMutation() {
 	return useMutation({
 		mutationFn: ({ handle, url }: { handle: string; url: string }) =>
-			fetchBentoRss(handle, url).then(({ rss }) => rss),
+			getBentoRssPreview(handle, url).then(({ rss }) => rss),
 	});
 }

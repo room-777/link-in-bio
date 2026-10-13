@@ -12,16 +12,18 @@ apps/web/
 │   ├── [username]/              # 공개 resume·writing route
 │   ├── write/                   # 작성 route
 │   └── setting/                 # 설정 route
-├── src/components/             # 화면 책임을 가진 기능별 UI
-│   ├── auth/                   # 로그인·프로필·인증 UI
-│   ├── layout/                 # header·loader·theme
-│   ├── landing/                # 홈 섹션
-│   ├── resume/                 # resume 표시·편집, 섹션별 하위 폴더
-│   ├── writing/                # 글 목록·에디터·발행
-│   ├── settings/               # 계정·결제·프로필 설정
-│   └── provider/               # React Query 등 전역 provider
-├── src/hooks/                  # client 상태와 반복되는 상호작용
-├── src/lib/                    # 순수 함수·API client·query·서버 전용 helper
+├── src/features/               # 새 기능의 UI·상태·요청을 함께 관리
+│   └── <domain>/<feature>/
+│       ├── components/
+│       ├── hooks/
+│       ├── state/
+│       ├── queries/            # query key와 apiClient 호출
+│       └── mutations/          # mutation별 apiClient 호출
+├── src/components/             # 아직 이전하지 않은 기능 UI와 공용 UI
+├── src/hooks/                  # 아직 이전하지 않은 client 상태와 상호작용
+├── src/query/                  # 아직 이전하지 않은 query
+├── src/mutation/               # 아직 이전하지 않은 mutation
+├── src/lib/                    # 공용 함수·API client·서버 전용 helper
 │   └── server/                 # client import 금지, 서버에서만 import
 └── public/                     # 정적 파일
 
@@ -36,11 +38,11 @@ packages/
 
 ### `src/app`
 
-URL과 route-level composition만 둡니다. 데이터 조회가 필요한 Server Component는 여기서 query를 호출하고, 복잡한 화면은 `components/<feature>`로 위임합니다. `loading.tsx`, `error.tsx`, `not-found.tsx`, metadata는 route의 실제 상태를 표현할 때 함께 둡니다.
+URL, route-level composition, metadata를 둡니다. 데이터 조회가 필요한 Server Component는 feature의 query를 호출하고, 화면은 `features/<domain>/<feature>`로 위임합니다. `loading.tsx`, `error.tsx`, `not-found.tsx`는 route 상태를 표현할 때 함께 둡니다.
 
 ```tsx
-import { ResumePage } from "@/components/resume/resume-page";
-import { getPublicResume } from "@/lib/queries/resume";
+import { ResumePage } from "@/features/resume/public/components/resume-page";
+import { getPublicResume } from "@/features/resume/public/queries/public-resume";
 
 export default async function Page({ params }: { params: Promise<{ username: string }> }) {
   const { username } = await params;
@@ -48,17 +50,21 @@ export default async function Page({ params }: { params: Promise<{ username: str
 }
 ```
 
-### `src/components/<feature>`
+### `src/features/<domain>/<feature>`
 
-한 기능의 화면·폼·상태 표시를 함께 둡니다. 큰 중앙 component에 모든 분기를 넣지 말고 `resume/profile`, `resume/contact`처럼 함께 바뀌는 파일을 가까이 둡니다. 기존 `@between-cv/ui` primitive를 먼저 확인합니다.
+새 기능에서 함께 바뀌는 화면·상태·요청 코드를 가까이 둡니다. query와 mutation은 기능 파일로 나누고, 서버 요청은 해당 파일 안에서 `apiClient`로 보냅니다. query key도 query 파일에서 정의합니다. 폴더를 기술 종류별로 앱 전체에 흩뜨리지 않습니다.
+
+### 기존 `src/components`, `src/hooks`, `src/query`, `src/mutation`
+
+기존 기능은 한 번에 옮기지 않습니다. 선택한 기능을 수정할 때 해당 범위 안에서 `src/features`로 옮기고, 남은 기존 폴더는 점진적으로 정리합니다. 공용 UI와 도메인에 속하지 않는 helper는 기존 공유 위치에 둡니다.
 
 ### `src/hooks`
 
-브라우저 이벤트·mutation·로컬 상태처럼 client에서만 필요한 반복 로직을 둡니다. 단 한 component에서만 쓰는 짧은 로직은 hook으로 포장하지 않습니다. 서버 데이터의 기준값은 React Query와 query 함수의 계약을 따릅니다.
+기존 client 상태와 상호작용 로직을 둡니다. 새 기능의 전용 상태와 hook은 해당 feature 안에 둡니다. 단 한 component에서만 쓰는 짧은 로직은 hook으로 포장하지 않습니다.
 
 ### `src/lib`
 
-순수 함수, API client, query 함수, 도메인 변환을 둡니다. `src/lib/server`는 서버 전용으로 유지하고 client component에서 import하지 않습니다. fetch 오류를 삼키지 말고 호출자가 loading/error 상태를 표현할 수 있게 합니다.
+공용 순수 함수, API client, 서버 전용 helper를 둡니다. `src/lib/server`는 서버 전용으로 유지하고 client component에서 import하지 않습니다. 기능별 API 요청과 query 정의는 feature의 `queries` 또는 `mutations`에 둡니다. fetch 오류를 삼키지 말고 호출자가 loading/error 상태를 표현할 수 있게 합니다.
 
 ### `packages/*`
 
@@ -68,7 +74,7 @@ export default async function Page({ params }: { params: Promise<{ username: str
 
 ```text
 Vinext route (Server Component)
-  → src/lib/queries 또는 server API client
+  → feature query 또는 server API client
   → Hono server
   → shared package 타입·schema
   → UI component

@@ -7,7 +7,7 @@
 - 서버 컴포넌트와 클라이언트 컴포넌트의 경계를 먼저 정하고, 필요한 파일에만 `use client`를 붙입니다.
 - `apps/web`에는 테스트 코드를 새로 작성하거나 기존 테스트를 수정하지 않습니다. 동작 확인은 타입 검사·빌드·브라우저 또는 실행 확인으로 남깁니다.
 - 코드 품질 판단이 필요한 웹 작업은 저장소의 Codex plugin [`plugins/frontend-fundamentals`](../../plugins/frontend-fundamentals)를 사용합니다. 먼저 [`skills/frontend-fundamentals/SKILL.md`](../../plugins/frontend-fundamentals/skills/frontend-fundamentals/SKILL.md)를 router로 읽고, 변경과 관련된 category skill과 하위 reference만 선택해서 읽습니다. 단순한 문구·오타 수정에는 관련 없는 기준을 억지로 읽지 않습니다.
-- route는 `src/app`, 화면 조각은 기능별 `src/components`, 재사용 상태는 `src/hooks`, 순수 함수와 API 조회는 `src/lib`에 둡니다.
+- route는 `src/app`에 둡니다. 새 기능은 `src/features/<domain>/<feature>` 아래에 화면·상태·query·mutation을 함께 둡니다. 기존 `src/components`, `src/hooks`, `src/query`, `src/mutation`은 관련 기능을 옮길 때까지 유지합니다.
 - 도메인 타입·검증은 공유 패키지를 먼저 확인하고, 서버 전용 코드가 브라우저 번들로 들어가지 않게 합니다.
 - 접근성, 로딩·오류·빈 상태, 모바일·키보드 동작을 기본 완료 조건으로 봅니다.
 

@@ -1,5 +1,6 @@
 import { readdir, readFile, writeFile } from "node:fs/promises";
 import { resolve } from "node:path";
+import { fileURLToPath } from "node:url";
 import { cloudflare } from "@cloudflare/vite-plugin";
 import mdx from "@mdx-js/rollup";
 import { sentryVitePlugin } from "@sentry/vite-plugin";
@@ -66,6 +67,20 @@ export default defineConfig(({ command }) => ({
 		},
 	},
 	plugins: [
+		{
+			name: "grabbin:client-cloudflare-env",
+			enforce: "pre",
+			resolveId(source) {
+				if (
+					source === "cloudflare:workers" &&
+					this.environment.name === "client"
+				) {
+					return fileURLToPath(
+						new URL("./src/lib/server/client-env.ts", import.meta.url),
+					);
+				}
+			},
+		},
 		{
 			...mdx({ remarkPlugins: [remarkFrontmatter, remarkMdxFrontmatter] }),
 			enforce: "pre",

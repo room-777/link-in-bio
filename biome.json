@@ -93,11 +93,11 @@
 											"usePrefetchInfiniteQuery",
 											"useMutation"
 										],
-										"message": "Keep React Query operations in apps/web/src/query or apps/web/src/mutation."
+										"message": "Keep React Query operations in query or mutation modules."
 									},
 									"@/lib/api-client": {
 										"importNames": ["apiClient"],
-										"message": "Call apiClient only from a query or mutation feature file."
+										"message": "Call apiClient only from query or mutation modules."
 									}
 								}
 							}
@@ -111,7 +111,11 @@
 				"apps/web/src/query/**/*.ts",
 				"apps/web/src/query/**/*.tsx",
 				"apps/web/src/mutation/**/*.ts",
-				"apps/web/src/mutation/**/*.tsx"
+				"apps/web/src/mutation/**/*.tsx",
+				"apps/web/src/features/**/queries/**/*.ts",
+				"apps/web/src/features/**/queries/**/*.tsx",
+				"apps/web/src/features/**/mutations/**/*.ts",
+				"apps/web/src/features/**/mutations/**/*.tsx"
 			],
 			"linter": {
 				"rules": {

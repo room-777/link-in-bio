@@ -3,7 +3,7 @@ import { queryOptions, useQuery } from "@tanstack/react-query";
 import * as v from "valibot";
 import { apiClient, getApiErrorMessage } from "@/lib/api-client";
 
-async function fetchCustomDomain(handle: string) {
+async function getCustomDomain(handle: string) {
 	const response = await apiClient.pages[":handle"].domain.$get({
 		param: { handle },
 	});
@@ -16,7 +16,7 @@ export function getCustomDomainQueryOptions(handle: string | undefined) {
 		queryKey: ["page-domain", handle] as const,
 		queryFn: () => {
 			if (!handle) throw new Error("Could not find this page.");
-			return fetchCustomDomain(handle);
+			return getCustomDomain(handle);
 		},
 		refetchInterval: (query) =>
 			query.state.data?.domain &&

@@ -1,7 +1,7 @@
 "use client";
 
-import { useSuspensePageByHandleQuery } from "@/query/page/by-handle";
-import HandlePage from "./public/handle-page";
+import { useSuspensePageByHandleQuery } from "../queries/by-handle";
+import HandlePage from "./handle-page";
 
 export function PublicPageQueryView({ handle }: { handle: string }) {
 	const pageResponse = useSuspensePageByHandleQuery(handle);

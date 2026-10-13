@@ -3,15 +3,18 @@ import type { Metadata } from "next";
 import { headers } from "next/headers";
 import { notFound } from "next/navigation";
 import { cache, Suspense } from "react";
+import {
+	getPageByHandle,
+	getPageByHandleQueryOptions,
+	OwnerPageQueryView,
+	PublicPageQueryView,
+} from "@/features/page/view";
 import { getCustomDomainHostname } from "@/lib/custom-domain-host";
 import { getPageImageUrl } from "@/lib/page-image-url";
 import { makeQueryClient } from "@/lib/query-client";
-import { fetchPage, getPageByHandleQueryOptions } from "@/query/page/by-handle";
-import { OwnerPageQueryView } from "../../components/page/owner-page-query-view";
-import { PublicPageQueryView } from "../../components/page/public-page-query-view";
 
 const getPageForRequest = cache((handle: string, cookie: string) =>
-	fetchPage(handle, { cookie }),
+	getPageByHandle(handle, { cookie }),
 );
 
 export async function generateMetadata({

@@ -12,17 +12,20 @@ import dynamic from "next/dynamic";
 import Image from "next/image";
 import type { CSSProperties } from "react";
 import { useEffect, useState } from "react";
+import { MadeWithGrabbinBadge } from "@/components/page/shared/made-with-grabbin-badge";
+import PageFooter from "@/components/page/shared/page-footer";
 import { toBentoItem } from "@/lib/bento/bento-batch";
 import { getMediaCropStyle } from "@/lib/bento/media-crop";
 import { getPageImageUrl } from "@/lib/page-image-url";
-import { MadeWithGrabbinBadge } from "../shared/made-with-grabbin-badge";
-import PageFooter from "../shared/page-footer";
 import PublicShareLinkButton from "./public-share-link-button";
 import SimpleAnalyticsTracker from "./simple-analytics-tracker";
 
-const BentoSection = dynamic(() => import("../editor/bento/bento-section"), {
-	ssr: false,
-});
+const BentoSection = dynamic(
+	() => import("@/components/page/editor/bento/bento-section"),
+	{
+		ssr: false,
+	},
+);
 const MotionImage = motion.create(Image);
 const PROFILE_ENTER_DURATION_SECONDS = 0.85;
 const PROFILE_IMAGE_ENTER_TRANSITION = {

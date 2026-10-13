@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import { readdirSync, readFileSync } from "node:fs";
-import { basename, join, relative } from "node:path";
+import { basename, join, relative, sep } from "node:path";
 import { fileURLToPath } from "node:url";
 
 function filesUnder(directory: string) {
@@ -78,6 +78,14 @@ function queryKeyArrays(source: string) {
 	].map(([, value]) => value.replace(/\s+/g, ""));
 }
 
+function fetchPrefixedFunctions(source: string) {
+	return [
+		...source.matchAll(
+			/\b(?:function\s+|(?:const|let|var)\s+)(fetch[\w$]*)\b/g,
+		),
+	].map(([, name]) => name);
+}
+
 assert.deepEqual(
 	[
 		...queryOperations(
@@ -94,11 +102,30 @@ assert.deepEqual(
 	["PageHeader"],
 );
 assert.equal(kebabCase("PageHeader"), "page-header");
+assert.deepEqual(
+	fetchPrefixedFunctions(
+		"export function fetchPage() {} const fetchDomain = async () => {};",
+	),
+	["fetchPage", "fetchDomain"],
+);
 
 const sourceDirectory = fileURLToPath(new URL("../src/", import.meta.url));
 const queryDirectory = join(sourceDirectory, "query");
 const mutationDirectory = join(sourceDirectory, "mutation");
 const componentDirectory = join(sourceDirectory, "components");
+const featureDirectory = join(sourceDirectory, "features");
+const featureFiles = filesUnder(featureDirectory);
+const featureQueryFiles = featureFiles.filter((path) =>
+	relative(featureDirectory, path).split(sep).includes("queries"),
+);
+const featureMutationFiles = featureFiles.filter((path) =>
+	relative(featureDirectory, path).split(sep).includes("mutations"),
+);
+const featureComponentFiles = featureFiles.filter((path) =>
+	relative(featureDirectory, path).split(sep).includes("components"),
+);
+const featureQueryFileSet = new Set(featureQueryFiles);
+const featureMutationFileSet = new Set(featureMutationFiles);
 const errors: string[] = [];
 const queryKeys = new Map<string, string>();
 const externalFetchFiles = new Set([
@@ -108,9 +135,11 @@ const externalFetchFiles = new Set([
 	join(mutationDirectory, "bento/upload-media.ts"),
 ]);
 
-for (const path of filesUnder(queryDirectory)) {
+for (const path of [...filesUnder(queryDirectory), ...featureQueryFiles]) {
 	const source = readFileSync(path, "utf8");
-	const relativePath = relative(queryDirectory, path);
+	const relativePath = path.startsWith(`${queryDirectory}${sep}`)
+		? relative(queryDirectory, path)
+		: relative(featureDirectory, path);
 	if (basename(path) === "query.ts") {
 		errors.push(`${relativePath}: use a behavior-specific filename.`);
 	}
@@ -128,9 +157,14 @@ for (const path of filesUnder(queryDirectory)) {
 	}
 }
 
-for (const path of filesUnder(mutationDirectory)) {
+for (const path of [
+	...filesUnder(mutationDirectory),
+	...featureMutationFiles,
+]) {
 	const source = readFileSync(path, "utf8");
-	const relativePath = relative(mutationDirectory, path);
+	const relativePath = path.startsWith(`${mutationDirectory}${sep}`)
+		? relative(mutationDirectory, path)
+		: relative(featureDirectory, path);
 	if (basename(path) === "mutation.ts") {
 		errors.push(`${relativePath}: use a behavior-specific filename.`);
 	}
@@ -154,8 +188,16 @@ for (const path of filesUnder(mutationDirectory)) {
 for (const path of filesUnder(sourceDirectory)) {
 	const source = readFileSync(path, "utf8");
 	const relativePath = relative(sourceDirectory, path);
-	const inQuery = path.startsWith(`${queryDirectory}/`);
-	const inMutation = path.startsWith(`${mutationDirectory}/`);
+	if (fetchPrefixedFunctions(source).length > 0) {
+		errors.push(
+			`${relativePath}: use a behavior-specific verb instead of a fetch-prefixed function name.`,
+		);
+	}
+	const inQuery =
+		path.startsWith(`${queryDirectory}${sep}`) || featureQueryFileSet.has(path);
+	const inMutation =
+		path.startsWith(`${mutationDirectory}${sep}`) ||
+		featureMutationFileSet.has(path);
 	if (/\bfetch\s*\(/.test(source) && !externalFetchFiles.has(path)) {
 		errors.push(
 			`${relativePath}: use apiClient for app-server requests; direct fetch is limited to external services and signed uploads.`,
@@ -169,6 +211,12 @@ for (const path of filesUnder(sourceDirectory)) {
 	if (!inMutation && /\buseMutation\s*\(/.test(source)) {
 		errors.push(`${relativePath}: mutation hooks belong in src/mutation.`);
 	}
+	if (
+		!inQuery &&
+		/\buse(?:Suspense)?(?:Infinite)?(?:Queries|Query)\s*\(/.test(source)
+	) {
+		errors.push(`${relativePath}: query hooks belong in a query module.`);
+	}
 	if (!inQuery && /queryKey\s*:\s*\[/.test(source)) {
 		errors.push(
 			`${relativePath}: define query keys in src/query and import them when shared.`,
@@ -181,10 +229,15 @@ for (const path of filesUnder(sourceDirectory)) {
 	}
 }
 
-for (const path of filesUnder(componentDirectory)) {
+for (const path of [
+	...filesUnder(componentDirectory),
+	...featureComponentFiles,
+]) {
 	const names = exportedComponents(readFileSync(path, "utf8"));
 	if (names.length === 0) continue;
-	const relativePath = relative(componentDirectory, path);
+	const relativePath = path.startsWith(`${componentDirectory}${sep}`)
+		? relative(componentDirectory, path)
+		: relative(featureDirectory, path);
 	const expectedName = kebabCase(names[0]);
 	const actualName = basename(path).replace(/\.tsx$/, "");
 	if (names.length !== 1) {
