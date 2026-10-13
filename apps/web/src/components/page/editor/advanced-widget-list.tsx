@@ -1,10 +1,8 @@
 import { Button } from "@grabbin/ui/components/button";
 import { ScrollArea } from "@grabbin/ui/components/scroll-area";
 import { advancedWidgetModules } from "@/constant/widget/advanced-widget-registry";
-import {
-	AdvancedWidgetBadges,
-	AdvancedWidgetIcon,
-} from "./advanced-widget-visuals";
+import { AdvancedWidgetBadges } from "./advanced-widget-badges";
+import { AdvancedWidgetIcon } from "./advanced-widget-icon";
 
 export default function AdvancedWidgetList({
 	onSelect,

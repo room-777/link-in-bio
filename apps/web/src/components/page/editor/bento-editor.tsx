@@ -12,17 +12,18 @@ import {
 } from "@grabbin/bento-layout";
 import { providerIconUrl, resolveLinkProvider } from "@grabbin/page-link";
 import { toast } from "@grabbin/ui/components/toast";
-import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { useQueryClient } from "@tanstack/react-query";
 import dynamic from "next/dynamic";
 import { type CSSProperties, useCallback, useEffect, useRef } from "react";
 import type { Tweet as TweetResponse } from "react-tweet/api";
-import { fetchBentoRss, fetchBentoSpotifyPreview } from "@/lib/bento/bento-api";
 import { useBentoStore } from "@/lib/bento/bento-store";
 import { getErrorMessage } from "@/lib/error-message";
+import { useFetchBentoRssMutation } from "@/mutation/bento/fetch-rss-preview";
+import { useFetchBentoSpotifyPreviewMutation } from "@/mutation/bento/fetch-spotify-preview";
 import { getTweetQueryOptions } from "@/query/tweet/by-id";
 import type { AddWidgetButtonProps } from "./add-widget-button";
 import { getTweetId } from "./advanced-widgets/tweet/tweet-url";
-import EditMobileShareLinkButton from "./edit-mobile-share-link-button";
+import EditMobileShareLinkButton from "./mobile-share-link-button";
 
 const BentoSection = dynamic(() => import("./bento/bento-section"), {
 	ssr: false,
@@ -68,10 +69,8 @@ export default function BentoEditor({
 		handle,
 		persistItems: !demoMode,
 	});
-	const rssFeedMutation = useMutation({
-		mutationFn: async ({ handle, url }: { handle: string; url: string }) =>
-			(await fetchBentoRss(handle, url)).rss,
-	});
+	const rssFeedMutation = useFetchBentoRssMutation();
+	const spotifyPreviewMutation = useFetchBentoSpotifyPreviewMutation();
 	const queryClient = useQueryClient();
 	const rssFeedRequestRef = useRef<{
 		handle: string;
@@ -243,15 +242,17 @@ export default function BentoEditor({
 			if (cached?.handle === handle && cached.url === url)
 				return cached.promise;
 
-			const request = fetchBentoSpotifyPreview(handle, url).catch((error) => {
-				if (spotifyPreviewRequestRef.current?.promise === request)
-					spotifyPreviewRequestRef.current = null;
-				throw error;
-			});
+			const request = spotifyPreviewMutation
+				.mutateAsync({ handle, url })
+				.catch((error) => {
+					if (spotifyPreviewRequestRef.current?.promise === request)
+						spotifyPreviewRequestRef.current = null;
+					throw error;
+				});
 			spotifyPreviewRequestRef.current = { handle, url, promise: request };
 			return request;
 		},
-		[handle],
+		[handle, spotifyPreviewMutation.mutateAsync],
 	);
 	const addSpotify = useCallback(
 		async (url: string, metadata: PageItemLinkMetadata) => {

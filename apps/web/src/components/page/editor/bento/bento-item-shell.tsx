@@ -19,9 +19,10 @@ import {
 import { Trash } from "@/components/trash";
 import type { BentoCommand, BentoItem } from "@/lib/bento/bento-types";
 import BentoItemControls from "./bento-item-controls";
-import { RuntimeFallback, renderItem } from "./bento-item-registry";
-import { MapItemInteractionProvider } from "./items/map-item-interaction-context";
-import { MediaCropProvider } from "./items/media-crop-context";
+import { renderItem } from "./bento-item-registry";
+import { MapItemInteractionProvider } from "./items/map-item-interaction-provider";
+import { MediaCropProvider } from "./items/media-crop-provider";
+import { RuntimeFallback } from "./runtime-fallback";
 
 function getBackgroundColor(value: string | undefined) {
 	if (!value) return undefined;

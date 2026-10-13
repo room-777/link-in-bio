@@ -1,12 +1,9 @@
 "use client";
 
 import type { PageImageCrop, UpdatePageDraft } from "@grabbin/api";
-import { updatePageDraftSchema } from "@grabbin/api";
 import { useCallback, useEffect, useRef, useState } from "react";
-import * as v from "valibot";
-
-import { apiClient, getApiErrorMessage } from "@/lib/api-client";
 import { getErrorMessage } from "@/lib/error-message";
+import { useUpdatePageDraftMutation } from "@/mutation/page/update-draft";
 
 export const PAGE_AUTO_SAVE_DELAY = 1500;
 
@@ -84,6 +81,7 @@ export function usePageAutoSave({
 	) => void;
 }) {
 	const initialDraft = toDraft(page);
+	const updatePageDraftMutation = useUpdatePageDraftMutation();
 	const [draft, setDraft] = useState(initialDraft);
 	const [status, setStatus] = useState<PageAutoSaveStatus>("saved");
 	const [error, setError] = useState<string | null>(null);
@@ -125,41 +123,13 @@ export function usePageAutoSave({
 			setStatus("saving");
 			setError(null);
 			try {
-				const response = await apiClient.pages[":handle"].$patch(
-					{ param: { handle } },
-					{
-						init: {
-							body: JSON.stringify(v.parse(updatePageDraftSchema, changes)),
-							headers: { "Content-Type": "application/json" },
-						},
-					},
-				);
-				if (!response.ok) throw new Error(await getApiErrorMessage(response));
-
-				const body = await response.json();
-				if (!("page" in body) || !body.page || typeof body.page !== "object") {
-					throw new Error("Could not save changes.");
-				}
+				const savedPage = await updatePageDraftMutation.mutateAsync({
+					handle,
+					changes,
+				});
 				if (pageHandleRef.current !== handle) return true;
 
-				savedRef.current = {
-					name:
-						"name" in body.page && typeof body.page.name === "string"
-							? body.page.name
-							: null,
-					bio:
-						"bio" in body.page && typeof body.page.bio === "string"
-							? body.page.bio
-							: null,
-					imageKey:
-						"imageKey" in body.page && typeof body.page.imageKey === "string"
-							? body.page.imageKey
-							: null,
-					imageCrop:
-						"imageCrop" in body.page && body.page.imageCrop
-							? (body.page.imageCrop as PageImageCrop)
-							: null,
-				};
+				savedRef.current = savedPage;
 				if (sentVersion === versionRef.current) {
 					const nextDraft = toDraft(savedRef.current);
 					draftRef.current = nextDraft;
@@ -192,7 +162,7 @@ export function usePageAutoSave({
 		})();
 		requestRef.current = request;
 		return request;
-	}, [enabled, handle, onSaveFailure]);
+	}, [enabled, handle, onSaveFailure, updatePageDraftMutation.mutateAsync]);
 
 	const scheduleSave = useCallback(() => {
 		if (!enabled) return;

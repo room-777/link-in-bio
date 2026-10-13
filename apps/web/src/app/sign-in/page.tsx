@@ -1,9 +1,12 @@
 import type { Metadata } from "next";
+import { headers } from "next/headers";
 import { redirect } from "next/navigation";
 
 import LoginForm from "@/components/auth/login-form";
 import { sanitizeAuthRedirect } from "@/lib/auth-redirect";
-import { getPrimaryPagePath, getServerSession } from "@/lib/server/session";
+import { makeQueryClient } from "@/lib/query-client";
+import { getPrimaryPagePath } from "@/lib/server/session";
+import { getCurrentSessionQueryOptions } from "@/query/session/current";
 
 export const metadata: Metadata = {
 	title: "Sign in to Grabbin",
@@ -19,7 +22,9 @@ export default async function LoginPage({
 		? params.returnTo[0]
 		: params?.returnTo;
 	const returnTo = sanitizeAuthRedirect(rawReturnTo);
-	const session = await getServerSession();
+	const session = await makeQueryClient().query(
+		getCurrentSessionQueryOptions((await headers()).get("cookie")),
+	);
 	if (session) redirect(returnTo ?? getPrimaryPagePath(session));
 
 	return (

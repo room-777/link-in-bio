@@ -22,7 +22,7 @@ import { getPageImageUrl } from "@/lib/page-image-url";
 import { useChangePrimaryPage } from "@/mutation/page/change-primary";
 import { useDeletePage } from "@/mutation/page/delete";
 import { useOwnedPagesQuery } from "@/query/page/owned-pages";
-import { openPlanDialog } from "../../../billing/plan-dialog";
+import { openPlanDialog } from "../../../billing/plan-picker";
 import CreatePageForm from "./create-page-form";
 import DeletePageDialog from "./delete-page-dialog";
 

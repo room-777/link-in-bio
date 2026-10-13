@@ -1,8 +1,23 @@
 import type { PublicViewsResponse } from "@grabbin/api";
+import { publicViewsResponseSchema } from "@grabbin/api";
 import { queryOptions, useQuery } from "@tanstack/react-query";
-import { getPublicViews } from "@/api/public-views/api";
+import * as v from "valibot";
+import { apiClient, getApiErrorMessage } from "@/lib/api-client";
 
 const VIEWS_CACHE_TTL_MS = 15 * 60 * 1000;
+
+async function getPublicViews(
+	handle: string,
+	timezone: string,
+	signal: AbortSignal,
+) {
+	const request = { param: { handle }, query: { timezone } };
+	const response = await apiClient.pages[":handle"].views.$get(request, {
+		init: { signal },
+	});
+	if (!response.ok) throw new Error(await getApiErrorMessage(response));
+	return v.parse(publicViewsResponseSchema, await response.json());
+}
 
 function formatViews(views: number) {
 	if (views >= 1_000_000)

@@ -1,7 +1,7 @@
 "use client";
 
 import { motion, useReducedMotion } from "motion/react";
-import { PlanPicker } from "@/components/billing/plan-dialog";
+import { PlanPicker } from "@/components/billing/plan-picker";
 import JoinForFreeButton from "@/components/landing/join-for-free-button";
 
 const freeFeatures = [

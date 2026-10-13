@@ -16,7 +16,9 @@ import {
 
 import type { BentoCommand, BentoItem } from "@/lib/bento/bento-types";
 import { getPageMediaUrl } from "@/lib/page-media-url";
-import { ExternalAction, getScrollTarget, MediaCaption } from "./shared";
+import { ExternalAction } from "./external-action";
+import { MediaCaption } from "./media-caption";
+import { getScrollTarget } from "./shared";
 import { useMediaCropEditor } from "./use-media-crop-editor";
 
 export function MediaItem({

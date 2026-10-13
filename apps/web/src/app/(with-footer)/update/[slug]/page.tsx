@@ -1,12 +1,9 @@
 import type { Metadata } from "next";
-import Image from "next/image";
 import { notFound } from "next/navigation";
 import CtaSection from "@/components/landing/cta-section";
 import MdxContent from "@/components/mdx/mdx-content";
-import {
-	UpdateAuthor,
-	UpdateMedia,
-} from "@/components/updates/update-components";
+import { UpdateAuthor } from "@/components/updates/update-author";
+import { UpdateMedia } from "@/components/updates/update-media";
 import { getUpdate, updates } from "@/lib/updates";
 
 export const revalidate = false;

@@ -9,8 +9,8 @@ import {
 import {
 	type CalendlyAvailability,
 	type CalendlyPreset,
-	calendlyPresetComponents,
-} from "@/components/page/editor/advanced-widgets/calendly/widget";
+	CalendlyWidget,
+} from "@/components/page/editor/advanced-widgets/calendly/calendly-widget";
 import { BentoItemShell } from "@/components/page/editor/bento/bento-item-shell";
 import {
 	calendlyDemoAvailabilityTimes,
@@ -69,7 +69,6 @@ export function CalendlyPresetGallery() {
 			}}
 		>
 			{calendlyPresets.map((preset) => {
-				const PresetWidget = calendlyPresetComponents[preset];
 				const { w, h } = getPresetGeometry(preset, "compact");
 				const [x, y] = gridPositions[preset];
 				const item: BentoItem = {
@@ -103,7 +102,8 @@ export function CalendlyPresetGallery() {
 							autoFocus={false}
 							disableCardLink
 						>
-							<PresetWidget
+							<CalendlyWidget
+								preset={preset}
 								event={calendlyDemoEvent}
 								timeZone={{ name: "Asia/Seoul", label: "GMT+9" }}
 								availability={availability}

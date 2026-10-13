@@ -11,7 +11,7 @@ import { providerIconUrl } from "@grabbin/page-link";
 import { motion, useReducedMotion } from "motion/react";
 import type { BentoItem } from "@/lib/bento/bento-types";
 import { BentoItemShell } from "./bento-item-shell";
-import { MapViewportGate } from "./items/shared";
+import { MapViewportGate } from "./items/map-viewport-gate";
 
 const PREVIEW_TIMESTAMP = "2026-01-01T00:00:00.000Z";
 const PREVIEW_GRID_ROWS = 6;

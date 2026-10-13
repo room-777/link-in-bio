@@ -23,26 +23,30 @@ export function openChangeHandleDialog(
 			onOpenChangeComplete: (nextOpen: boolean) => !nextOpen && unmount(),
 		};
 
-		return isMobile ? (
-			<Drawer {...overlayProps} showSwipeHandle>
-				<DrawerContent className="max-h-[calc(100dvh-2rem)]">
-					<DrawerHeader className="sr-only">
-						<DrawerTitle>Change your handle</DrawerTitle>
-						<DrawerDescription>
-							Choose a new handle for your page.
-						</DrawerDescription>
-					</DrawerHeader>
-					<div className="min-h-0 overflow-y-auto p-5 [&_h1]:font-heading [&_h1]:font-medium [&_h1]:text-base [&_p]:text-muted-foreground [&_p]:text-sm">
-						<ChangeHandleDialog
-							handle={handle}
-							onHandleChange={onHandleChange}
-							onClose={close}
-							compact={false}
-						/>
-					</div>
-				</DrawerContent>
-			</Drawer>
-		) : (
+		if (isMobile) {
+			return (
+				<Drawer {...overlayProps} showSwipeHandle>
+					<DrawerContent className="max-h-[calc(100dvh-2rem)]">
+						<DrawerHeader className="sr-only">
+							<DrawerTitle>Change your handle</DrawerTitle>
+							<DrawerDescription>
+								Choose a new handle for your page.
+							</DrawerDescription>
+						</DrawerHeader>
+						<div className="min-h-0 overflow-y-auto p-5 [&_h1]:font-heading [&_h1]:font-medium [&_h1]:text-base [&_p]:text-muted-foreground [&_p]:text-sm">
+							<ChangeHandleDialog
+								handle={handle}
+								onHandleChange={onHandleChange}
+								onClose={close}
+								compact={false}
+							/>
+						</div>
+					</DrawerContent>
+				</Drawer>
+			);
+		}
+
+		return (
 			<Dialog {...overlayProps}>
 				<DialogContent
 					showCloseButton={false}

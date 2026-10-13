@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import Image from "next/image";
 import Link from "next/link";
-import { UpdateMedia } from "@/components/updates/update-components";
+import { UpdateMedia } from "@/components/updates/update-media";
 import { updates } from "@/lib/updates";
 
 const description =

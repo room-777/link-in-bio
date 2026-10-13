@@ -28,12 +28,12 @@ import { ChevronLeft, Search, SlidersHorizontal, XIcon } from "lucide-react";
 import { useReducedMotion } from "motion/react";
 import { overlay } from "overlay-kit";
 import { Activity, useLayoutEffect, useRef, useState } from "react";
-import { openPlanDialog } from "@/components/billing/plan-dialog";
+import { openPlanDialog } from "@/components/billing/plan-picker";
 import { advancedWidgetModules } from "@/constant/widget/advanced-widget-registry";
 import { authClient } from "@/lib/auth-client";
 import AdvancedWidgetActivity from "./advanced-widget-activity";
+import { AdvancedWidgetIcon } from "./advanced-widget-icon";
 import AdvancedWidgetList from "./advanced-widget-list";
-import { AdvancedWidgetIcon } from "./advanced-widget-visuals";
 
 export default function AdvancedWidgetsDialog({
 	onCalendlyAdd,

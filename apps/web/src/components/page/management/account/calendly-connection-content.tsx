@@ -5,21 +5,19 @@ import { providerIconUrl } from "@grabbin/page-link";
 import { Button, buttonVariants } from "@grabbin/ui/components/button";
 import Loading from "@grabbin/ui/components/loading";
 import { Skeleton } from "@grabbin/ui/components/skeleton";
-import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { useEffect, useState } from "react";
 import { CheckCircle } from "reicon-react/icons/CheckCircle";
 import * as v from "valibot";
-import { CalendlyConnectionError } from "@/api/calendly/api";
 import CalendlyConnectButton from "@/components/page/management/account/calendly-connect-button";
 import {
 	calendlyConnectionErrorFallback,
 	calendlyConnectionErrorMessages,
 } from "@/constant/calendly-connection-errors";
-import { apiClient, getApiErrorMessage } from "@/lib/api-client";
 import { getSignInHref } from "@/lib/auth-redirect";
 import { getErrorMessage } from "@/lib/error-message";
+import { useDisconnectCalendlyMutation } from "@/mutation/calendly/disconnect";
 import {
-	calendlyConnectionQueryKey,
+	CalendlyConnectionError,
 	useCalendlyConnectionQuery,
 } from "@/query/calendly/connection";
 
@@ -31,22 +29,10 @@ function getDisconnectingLabel(isPending: boolean) {
 }
 
 export function CalendlyConnectionContent({ isPro }: { isPro: boolean }) {
-	const queryClient = useQueryClient();
 	const [connectionError, setConnectionError] = useState("");
 	const connectionQuery = useCalendlyConnectionQuery();
 	const connected = connectionQuery.data?.connected ?? false;
-	const disconnectMutation = useMutation({
-		mutationFn: async () => {
-			const response = await apiClient.auth.calendly.disconnect.$post();
-			if (!response.ok) throw new Error(await getApiErrorMessage(response));
-		},
-		onSuccess: () => {
-			queryClient.setQueryData(calendlyConnectionQueryKey, {
-				connected: false,
-			});
-			setConnectionError("");
-		},
-	});
+	const disconnectMutation = useDisconnectCalendlyMutation();
 
 	useEffect(() => {
 		const params = new URLSearchParams(window.location.search);
@@ -149,7 +135,11 @@ export function CalendlyConnectionContent({ isPro }: { isPro: boolean }) {
 						aria-busy={disconnectMutation.isPending}
 						aria-label={getDisconnectingLabel(disconnectMutation.isPending)}
 						className="relative"
-						onClick={() => disconnectMutation.mutate()}
+						onClick={() =>
+							disconnectMutation.mutate(undefined, {
+								onSuccess: () => setConnectionError(""),
+							})
+						}
 					>
 						<span
 							data-pending={disconnectMutation.isPending}

@@ -1,5 +1,30 @@
+import { calendlyWidgetResponseSchema } from "@grabbin/api";
 import { queryOptions, useQuery } from "@tanstack/react-query";
-import { getCalendlyAvailability } from "@/api/calendly/api";
+import * as v from "valibot";
+import { apiClient } from "@/lib/api-client";
+
+async function getCalendlyAvailability(
+	handle: string,
+	itemId: string,
+	startTime: string,
+	endTime: string,
+	signal: AbortSignal,
+) {
+	const request = {
+		param: { handle, itemId },
+		query: { start_time: startTime, end_time: endTime },
+	};
+	const response = await apiClient.pages[":handle"].items[
+		":itemId"
+	].calendly.$get(request, { init: { signal } });
+	if (!response.ok) throw new Error("Could not load Calendly availability.");
+	const result = v.safeParse(
+		calendlyWidgetResponseSchema,
+		await response.json(),
+	);
+	if (!result.success) throw new Error("Could not load Calendly availability.");
+	return result.output;
+}
 
 export function getCalendlyAvailabilityRange(date: Date) {
 	const now = new Date();

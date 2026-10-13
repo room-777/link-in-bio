@@ -7,11 +7,10 @@ import HeroSection from "@/components/landing/hero-section";
 import PlanSection from "@/components/landing/plan-section";
 import WelcomeSection from "@/components/landing/welcome-section";
 import HandlePage from "@/components/page/public/handle-page";
-import { apiClient, getApiErrorMessage } from "@/lib/api-client";
 import { getCustomDomainHostname } from "@/lib/custom-domain-host";
 import { getPageImageUrl } from "@/lib/page-image-url";
-import { getServerApiClient } from "@/lib/server/api-client";
-import { fetchPage } from "@/lib/server/page-query";
+import { makeQueryClient } from "@/lib/query-client";
+import { getPageByCustomDomainQueryOptions } from "@/query/page/by-custom-domain";
 
 export const revalidate = false;
 
@@ -39,20 +38,8 @@ const landingMetadata: Metadata = {
 };
 
 const getDomainPage = cache(async (hostname: string) => {
-	const client = getServerApiClient() ?? apiClient;
-	const response = await client.pages.domain[":hostname"].$get({
-		param: { hostname },
-	});
-
-	if (response.status === 404 || response.status === 422) return null;
-
-	if (!response.ok) throw new Error(await getApiErrorMessage(response));
-
-	const result = await response.json();
-
-	if (!("handle" in result)) throw new Error("Could not find this page.");
-
-	return fetchPage(result.handle);
+	const queryClient = makeQueryClient();
+	return queryClient.query(getPageByCustomDomainQueryOptions(hostname));
 });
 
 async function getRequestDomainPage() {

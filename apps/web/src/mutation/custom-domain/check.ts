@@ -1,8 +1,18 @@
+import { pageDomainResponseSchema } from "@grabbin/api";
 import { toast } from "@grabbin/ui/components/toast";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
-import { checkCustomDomain } from "@/api/custom-domain/api";
+import * as v from "valibot";
+import { apiClient, getApiErrorMessage } from "@/lib/api-client";
 import { getErrorMessage } from "@/lib/error-message";
 import { getCustomDomainQueryOptions } from "@/query/custom-domain/domain";
+
+async function checkCustomDomain(handle: string) {
+	const response = await apiClient.pages[":handle"].domain.check.$post({
+		param: { handle },
+	});
+	if (!response.ok) throw new Error(await getApiErrorMessage(response));
+	return v.parse(pageDomainResponseSchema, await response.json());
+}
 
 export function useCheckCustomDomain(handle: string | undefined) {
 	const queryClient = useQueryClient();

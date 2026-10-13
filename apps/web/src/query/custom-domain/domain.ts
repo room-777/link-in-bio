@@ -1,5 +1,15 @@
+import { pageDomainResponseSchema } from "@grabbin/api";
 import { queryOptions, useQuery } from "@tanstack/react-query";
-import { fetchCustomDomain } from "@/api/custom-domain/api";
+import * as v from "valibot";
+import { apiClient, getApiErrorMessage } from "@/lib/api-client";
+
+async function fetchCustomDomain(handle: string) {
+	const response = await apiClient.pages[":handle"].domain.$get({
+		param: { handle },
+	});
+	if (!response.ok) throw new Error(await getApiErrorMessage(response));
+	return v.parse(pageDomainResponseSchema, await response.json());
+}
 
 export function getCustomDomainQueryOptions(handle: string | undefined) {
 	return queryOptions({

@@ -6,12 +6,9 @@ import { cache, Suspense } from "react";
 import { getCustomDomainHostname } from "@/lib/custom-domain-host";
 import { getPageImageUrl } from "@/lib/page-image-url";
 import { makeQueryClient } from "@/lib/query-client";
-import { fetchPage } from "@/lib/server/page-query";
-import { getPageByHandleQueryOptions } from "@/query/page/by-handle";
-import {
-	OwnerPageQueryView,
-	PublicPageQueryView,
-} from "../../components/page/page-query-view";
+import { fetchPage, getPageByHandleQueryOptions } from "@/query/page/by-handle";
+import { OwnerPageQueryView } from "../../components/page/owner-page-query-view";
+import { PublicPageQueryView } from "../../components/page/public-page-query-view";
 
 const getPageForRequest = cache((handle: string, cookie: string) =>
 	fetchPage(handle, { cookie }),

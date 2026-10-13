@@ -2,26 +2,17 @@
 
 import { type PageData, pageImageUploadSchema } from "@grabbin/api";
 import { toast } from "@grabbin/ui/components/toast";
-import { useMutation } from "@tanstack/react-query";
 import { useCallback, useEffect, useRef, useState } from "react";
 import * as v from "valibot";
-import {
-	cleanupUploadedPageProfileImage,
-	uploadPageProfileImage,
-} from "@/api/page-profile-image/api";
 import { usePageAutoSave } from "@/hooks/use-page-auto-save";
 import { getErrorMessage } from "@/lib/error-message";
 import { getPageImageUrl } from "@/lib/page-image-url";
+import { useCleanupPageProfileImageMutation } from "@/mutation/page-profile-image/cleanup";
+import { useUploadPageProfileImageMutation } from "@/mutation/page-profile-image/upload";
 
 export function usePageProfileForm(page: PageData, demoMode: boolean) {
-	const uploadImageMutation = useMutation({
-		mutationFn: ({ handle, file }: { handle: string; file: File }) =>
-			uploadPageProfileImage(handle, file),
-	});
-	const cleanupImageMutation = useMutation({
-		mutationFn: ({ handle, key }: { handle: string; key: string }) =>
-			cleanupUploadedPageProfileImage(handle, key),
-	});
+	const uploadImageMutation = useUploadPageProfileImageMutation();
+	const cleanupImageMutation = useCleanupPageProfileImageMutation();
 	const cleanupUploadedImage = useCallback(
 		(key: string) =>
 			cleanupImageMutation.mutateAsync({ handle: page.handle, key }),

@@ -1,6 +1,9 @@
 import type { Metadata } from "next";
+import { headers } from "next/headers";
 import { redirect } from "next/navigation";
-import { getPrimaryPagePath, getServerSession } from "@/lib/server/session";
+import { makeQueryClient } from "@/lib/query-client";
+import { getPrimaryPagePath } from "@/lib/server/session";
+import { getCurrentSessionQueryOptions } from "@/query/session/current";
 import CreatePageForm from "../../components/page/management/pages/create-page-form";
 
 export const metadata: Metadata = {
@@ -10,7 +13,9 @@ export const metadata: Metadata = {
 };
 
 export default async function CreatePage() {
-	const session = await getServerSession();
+	const session = await makeQueryClient().query(
+		getCurrentSessionQueryOptions((await headers()).get("cookie")),
+	);
 	if (!session) redirect("/sign-in");
 	if (session.user.primaryPageHandle) {
 		redirect(getPrimaryPagePath(session));

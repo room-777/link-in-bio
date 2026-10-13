@@ -23,13 +23,11 @@ import {
 	sanitizeMapCamera,
 } from "@/lib/map-config";
 import type { MapSearchResult } from "@/lib/mapbox-geocoding";
-import { useMapItemInteraction } from "./map-item-interaction-context";
-import {
-	ExternalAction,
-	MapViewportGate,
-	MediaCaption,
-	removeMapboxControls,
-} from "./shared";
+import { ExternalAction } from "./external-action";
+import { useMapItemInteraction } from "./map-item-interaction-provider";
+import { MapViewportGate } from "./map-viewport-gate";
+import { MediaCaption } from "./media-caption";
+import { removeMapboxControls } from "./shared";
 
 type MapboxInteractionHandler = {
 	disable(): void;

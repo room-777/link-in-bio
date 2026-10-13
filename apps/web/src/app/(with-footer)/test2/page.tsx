@@ -19,8 +19,8 @@ import ReactGridLayout, {
 import { getCompactor } from "react-grid-layout/core";
 import {
 	type CalendlyAvailability,
-	calendlyPresetComponents,
-} from "@/components/page/editor/advanced-widgets/calendly/widget";
+	CalendlyWidget,
+} from "@/components/page/editor/advanced-widgets/calendly/calendly-widget";
 import { BentoItemShell } from "@/components/page/editor/bento/bento-item-shell";
 import {
 	calendlyDemoAvailabilityTimes,
@@ -507,7 +507,6 @@ export default function Test2Page() {
 	const [previewItems, setPreviewItems] = useState(() =>
 		items.map(({ item }) => item),
 	);
-	const CalendlySquareLarge = calendlyPresetComponents.squareLarge;
 	const selectedDate = new Date("2026-10-12T12:00:00.000Z");
 	const availability: CalendlyAvailability = {
 		loading: false,
@@ -612,7 +611,8 @@ export default function Test2Page() {
 										autoFocus={false}
 									>
 										{item.id === "preview-calendly" ? (
-											<CalendlySquareLarge
+											<CalendlyWidget
+												preset="squareLarge"
 												event={calendlyDemoEvent}
 												timeZone={{ name: "Asia/Seoul", label: "GMT+9" }}
 												availability={availability}

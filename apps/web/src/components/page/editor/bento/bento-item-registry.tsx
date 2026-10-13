@@ -1,19 +1,18 @@
 "use client";
 
-import type { PageItemResponse } from "@grabbin/api";
 import type { PresetName } from "@grabbin/bento-layout";
 import dynamic from "next/dynamic";
 import type { ReactNode } from "react";
 
 import type { BentoCommand, BentoItem } from "@/lib/bento/bento-types";
-import { CalendlyItem } from "../advanced-widgets/calendly/item";
-import { RssFeedItem } from "../advanced-widgets/rss-feed/item";
-import { SpotifyItem } from "../advanced-widgets/spotify/item";
-import { TweetItem } from "../advanced-widgets/tweet/widget";
-import { LinkItem } from "./bento-link";
+import { CalendlyItem } from "../advanced-widgets/calendly/calendly-item";
+import { RssFeedItem } from "../advanced-widgets/rss-feed/rss-feed-item";
+import { SpotifyItem } from "../advanced-widgets/spotify/spotify-item";
+import { TweetItem } from "../advanced-widgets/tweet/tweet-item";
 import { MediaItem } from "./items/media-item";
 import { SectionItem } from "./items/section-item";
 import { TextItem } from "./items/text-item";
+import { LinkItem } from "./link-item";
 
 const LazyMapItem = dynamic(
 	() => import("./items/map-item").then(({ MapItem }) => MapItem),
@@ -121,14 +120,6 @@ const itemRendererRegistry: Record<BentoItem["type"], ItemRenderer> = {
 	map: renderMap,
 	calendly: renderCalendly,
 };
-
-export function RuntimeFallback({ item }: { item: PageItemResponse }) {
-	return (
-		<div className="flex size-full items-center justify-center px-4 text-center text-muted-foreground text-sm">
-			Unsupported {item.type} item
-		</div>
-	);
-}
 
 export function renderItem(
 	item: BentoItem,

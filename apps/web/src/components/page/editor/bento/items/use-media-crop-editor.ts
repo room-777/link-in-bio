@@ -17,7 +17,7 @@ import {
 	isCropCompatible,
 	moveMediaCrop,
 } from "@/lib/bento/media-crop";
-import { useMediaCrop } from "./media-crop-context";
+import { useMediaCrop } from "./media-crop-provider";
 
 type MediaItem = Extract<BentoItem, { type: "media" }>;
 
