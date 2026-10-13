@@ -1,6 +1,6 @@
 // Drive owner-editor journeys on the real signed-in editor (not /demo) and write evidence per journey.
 // Usage (from $PW_DIR so `playwright` resolves):
-//   RUN_DIR=... GRABBIN_REPO=... [R2_CREDS_JSON=/path/600.json R2_PY=/path/venv/bin/python] \
+//   RUN_DIR=<scratch dir> [WEB_URL=http://localhost:3000 SERVER_URL=http://localhost:3001] \
 //   node $SKILL/scripts/drive-editor-journeys.mjs "$EVIDENCE_DIR" [media-upload,media-cancel,link-refresh,item-add]
 // Signs in as dev@example.com (OTP from local DB). Needs a page for that user (create via /create).
 
@@ -13,11 +13,12 @@ import { fileURLToPath } from "node:url";
 const { chromium } = createRequire(`${process.cwd()}/`)("playwright");
 const SCRIPTS = dirname(fileURLToPath(import.meta.url));
 const EMAIL = "dev@example.com";
+const WEB = process.env.WEB_URL || "http://localhost:3000";
 async function login() {
 	const b = await chromium.launch();
 	const ctx = await b.newContext({ viewport: { width: 1280, height: 900 } });
 	const p = await ctx.newPage();
-	await p.goto("http://127.0.0.1:3000/sign-in", {
+	await p.goto(`${WEB}/sign-in`, {
 		waitUntil: "networkidle",
 		timeout: 240000,
 	});
@@ -74,16 +75,14 @@ const count = (t) =>
 			`select count(*) from page_items where page_id='${PAGE}' and type='${t}'`,
 		),
 	);
-// Real-bucket checks via S3 API (boto3); skipped when R2_CREDS_JSON is unset.
-const r2 = (...a) =>
-	process.env.R2_CREDS_JSON
-		? execFileSync(process.env.R2_PY || "python3", [
-				`${SCRIPTS}/r2-objects.py`,
-				...a,
-			])
-				.toString()
-				.trim()
-		: "SKIPPED (no R2_CREDS_JSON)";
+// Local bucket check through the server's local media route (R2_LOCAL_MODE under alchemy dev).
+const SERVER = process.env.SERVER_URL || "http://localhost:3001";
+const localObject = async (key) => {
+	const r = await fetch(`${SERVER}/media/${key}`);
+	return r.ok
+		? `EXISTS ${(await r.arrayBuffer()).byteLength} ${r.headers.get("content-type")}`
+		: `MISSING ${r.status}`;
+};
 // 64x64 PNG fixture (153 bytes), written into RUN_DIR.
 const FIXTURE = `${RUN_DIR}/fixture-64.png`;
 writeFileSync(
@@ -114,63 +113,32 @@ p.on("requestfailed", (r) => {
 		`${r.method()} ${u.host}${u.pathname.slice(0, 120)} -> FAILED ${r.failure()?.errorText}\n`,
 	);
 });
-// R2 bridge: perform the signed PUT from Node (bucket CORS allows localhost:3000, box must use 127.0.0.1),
-// then mirror the same bytes into the local R2_BUCKET binding that /upload/complete HEADs (wrangler dev has no remote binding).
+// Uploads must stay local: under `alchemy dev` the presigned URL points at the server worker's
+// local S3 endpoint (`/cdn-cgi/local/r2/s3`). Any request to cloud R2 is recorded and fails the run.
+const cloudR2 = [];
+p.on("request", (r) => {
+	if (new URL(r.url()).hostname.endsWith(".r2.cloudflarestorage.com"))
+		cloudR2.push(`${r.method()} ${r.url().split("?")[0]}`);
+});
 let hold = null;
-const uploaded = [];
 await ctx.route(
-	(u) => u.hostname.endsWith(".r2.cloudflarestorage.com"),
+	(u) => u.pathname.includes("/cdn-cgi/local/r2/s3/"),
 	async (route) => {
 		const req = route.request();
-		if (req.method() !== "PUT") return route.continue();
-		const key = decodeURIComponent(
-			new URL(req.url()).pathname.split("/").slice(2).join("/"),
-		);
-		if (hold) {
-			const action = await hold(key);
-			if (action === "abort") {
-				appendFileSync(netlog, `BRIDGE aborted held PUT ${key}\n`);
+		if (req.method() === "PUT" && hold) {
+			const key = decodeURIComponent(
+				new URL(req.url()).pathname
+					.split("/cdn-cgi/local/r2/s3/")[1]
+					.split("/")
+					.slice(1)
+					.join("/"),
+			);
+			if ((await hold(key)) === "abort") {
+				appendFileSync(netlog, `held local PUT aborted ${key}\n`);
 				return route.abort();
 			}
 		}
-		const resp = await route.fetch();
-		const body = req.postDataBuffer();
-		const f = `${RUN_DIR}/bridge-${Date.now()}`;
-		writeFileSync(f, body);
-		if (resp.status() < 300) {
-			execFileSync(
-				`${REPO}/apps/web/node_modules/.bin/wrangler`,
-				[
-					"r2",
-					"object",
-					"put",
-					`grabbin/${key}`,
-					"--file",
-					f,
-					"--content-type",
-					req.headers()["content-type"] || "application/octet-stream",
-					"--local",
-					"--persist-to",
-					`${RUN_DIR}/wrangler-state`,
-					"--config",
-					`${RUN_DIR}/server.wrangler.jsonc`,
-				],
-				{ cwd: REPO, stdio: "ignore" },
-			);
-			uploaded.push(key);
-		}
-		appendFileSync(
-			netlog,
-			`BRIDGE PUT real R2 ${key} -> ${resp.status()} (${body.length} bytes), mirrored locally\n`,
-		);
-		await route.fulfill({
-			response: resp,
-			headers: {
-				...resp.headers(),
-				"access-control-allow-origin": "*",
-				"access-control-expose-headers": "etag",
-			},
-		});
+		return route.continue();
 	},
 );
 const results = [];
@@ -186,7 +154,7 @@ async function journey(id, fn) {
 		console.log(`[${id}] ${s}`);
 	};
 	try {
-		await p.goto(`http://127.0.0.1:3000/${HANDLE}`, {
+		await p.goto(`${WEB}/${HANDLE}`, {
 			waitUntil: "networkidle",
 			timeout: 240000,
 		});
@@ -254,7 +222,7 @@ await journey("media-upload", async (step, dir) => {
 	step(
 		`page_media_assets: ${sql(`select status from page_media_assets where object_key='${key}'`)}`,
 	);
-	step(`real R2 HEAD: ${r2("head", key)}`);
+	step(`local bucket object: ${await localObject(key)}`);
 	await reloadCheck(step, "media", before + 1);
 	const srcs = await p
 		.locator("img")
@@ -263,13 +231,15 @@ await journey("media-upload", async (step, dir) => {
 	const src = srcs.find((x) => x.includes(key.split("/").pop()));
 	step(`after reload img src: ${src}`);
 	if (!src) throw new Error("uploaded image not rendered after reload");
-	if (!r2("head", key).startsWith("EXISTS"))
-		throw new Error("object missing in R2");
+	if (!(await localObject(key)).startsWith("EXISTS"))
+		throw new Error("object missing in local bucket");
+	if (cloudR2.length)
+		throw new Error(`cloud R2 requests: ${cloudR2.join(", ")}`);
+	step("no request to *.r2.cloudflarestorage.com");
 });
 
 await journey("media-cancel", async (step, dir) => {
 	const beforeItems = items();
-	const beforeObjs = r2("ls", `users/${UID}/`);
 	let release;
 	let heldKey = null;
 	hold = (key) => {
@@ -293,7 +263,7 @@ await journey("media-cancel", async (step, dir) => {
 	step(`clicked Delete item on the uploading block (${n} of ${n})`);
 	await p.waitForTimeout(1000);
 	release("abort");
-	step("released the held PUT as aborted (never reached R2)");
+	step("released the held PUT as aborted (never reached the local bucket)");
 	const req = await cancelReq;
 	step(
 		`cancel request: ${req ? req.method() + " " + new URL(req.url()).pathname + " -> " + (await req.response())?.status() : "none"}`,
@@ -305,10 +275,13 @@ await journey("media-cancel", async (step, dir) => {
 	await p.reload({ waitUntil: "networkidle" });
 	if (items() !== beforeItems) throw new Error(`items changed: ${items()}`);
 	step("no page_items row added (checked after reload)");
-	const afterObjs = r2("ls", `users/${UID}/`);
-	step(`real R2 HEAD held key: ${r2("head", heldKey)}`);
-	if (afterObjs !== beforeObjs) throw new Error("R2 object set changed");
-	step("no new R2 object under the user prefix");
+	const held = await localObject(heldKey);
+	step(`local bucket object for held key: ${held}`);
+	if (held.startsWith("EXISTS"))
+		throw new Error("orphan object in local bucket");
+	if (cloudR2.length)
+		throw new Error(`cloud R2 requests: ${cloudR2.join(", ")}`);
+	step("no request to *.r2.cloudflarestorage.com");
 	if (!req) throw new Error("app sent no cancel request");
 });
 

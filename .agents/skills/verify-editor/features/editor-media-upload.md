@@ -18,23 +18,21 @@ An owner adds a photo/video from the toolbar; a placeholder appears immediately,
 
 Preconditions:
 
-- Signed-in owner with a page. `scripts/drive-editor-journeys.mjs` writes its own 64x64 PNG fixture (153 B).
-- A valid `R2_S3_CREDENTIALS` in `apps/server/.env` (JSON: `endpoint`, `bucketName`, `region: "auto"`, `accessKeyId`, `secretAccessKey`; endpoint `https://<account>.r2.cloudflarestorage.com`). Without it this journey is **blocked**, not failed. This is a **real bucket**: upload only tiny test images and delete them afterwards (`scripts/r2-objects.py`).
-- `R2_PUBLIC_URL=http://127.0.0.1:3001` in `apps/server/.env`. The `.env.example` ships `R2_PUBLIC_URL=` (empty), and `--env-file` overrides the wrangler `vars`, so the API returns no `mediaUrl` and the block renders without an `<img>` after reload.
+- Signed-in owner with a page. The stack runs with `bun run dev` (`alchemy dev`). That needs a Cloudflare profile (see SKILL.md Launch). No R2 keys go in `.env`.
+- Under `alchemy dev` the server's `R2_S3_CREDENTIALS` is alchemy's dev-only `r2_s3_credentials` binding. It points at the worker's own local S3 endpoint `{server url}/cdn-cgi/local/r2/s3` with fixed local credentials, and `R2_LOCAL_MODE=true` / `R2_PUBLIC_URL={server url}` are set by `packages/infra/alchemy.run.ts`. Uploads land in the local bucket; nothing reaches Cloudflare.
 
-- **Flow.** `POST /pages/{handle}/items/upload` (presigned URL, `page_media_assets` row `pending`) → browser `PUT` to `<account>.r2.cloudflarestorage.com` → `POST .../items/upload/complete` (API `HEAD`s the object through the `R2_BUCKET` binding) → `PATCH .../batch` saves the `media` item.
+- **Flow.** `POST /pages/{handle}/items/upload` (presigned URL, asset row `pending`) → browser `PUT {server}/cdn-cgi/local/r2/s3/<dev bucket>/<key>` → `POST .../items/upload/complete` (API `HEAD`s via `R2_BUCKET`) → `PATCH .../batch` saves the `media` item.
 - **Choose file.** Click toolbar `Add media` and answer the file chooser. A media block (`textbox "Media caption"`) appears.
-- **Upload completes.** `page_items` gets a `type='media'` row with `data->>'objectKey'`, the asset row becomes `attached`, the object exists in the bucket (`r2-objects.py head <key>`), and after reload the `<img>` src is `http://127.0.0.1:3001/media/<objectKey>`.
-- **Cancel.** Hold the `PUT` at the network (Playwright route), click `Delete item` on the uploading block, then let the `PUT` fail. The app sends `POST .../items/upload/cancel` (204), the asset row becomes `pending_delete` with `delete_after`, no `page_items` row is added, and no object is written.
-- **Scripted.** `RUN_DIR=... GRABBIN_REPO=... R2_CREDS_JSON=<600 json> R2_PY=<python with boto3> node scripts/drive-editor-journeys.mjs "$EVIDENCE_DIR" media-upload,media-cancel` from `$PW_DIR`.
-- **Proof.** `actions.md`, `network.txt`, before/after screenshots + ARIA, `img-srcs.txt`, and the DB/bucket lines in `actions.md`.
+- **Upload completes.** `page_items` gets a `type='media'` row with `data->>'objectKey'` and the asset row becomes `attached`. `GET {server}/media/<key>` returns the bytes, and after reload the `<img>` src is `{server}/media/<key>`.
+- **Cancel.** Hold the local `PUT` with a Playwright route, click `Delete item` on the uploading block, then abort the `PUT`. The app sends `POST .../items/upload/cancel` (204), the asset becomes `pending_delete`, no item is added, and `GET {server}/media/<key>` is 404.
+- **No cloud.** No request may go to `*.r2.cloudflarestorage.com`; the driver fails the journey if one does.
+- **Scripted.** `RUN_DIR=<scratch> [WEB_URL=http://localhost:3000 SERVER_URL=http://localhost:3001] node scripts/drive-editor-journeys.mjs "$EVIDENCE_DIR" media-upload,media-cancel` from `$PW_DIR`.
+- **Proof.** `actions.md`, `network.txt`, before/after screenshots + ARIA, `img-srcs.txt`.
 
 ## Gotchas
 
 - `/demo` keeps media local (`blob:` preview only); it cannot prove upload or cancel.
-- `R2_LOCAL_MODE=true` only makes the API serve reads from the local `R2_BUCKET` binding (`/media/*`). Creating an upload always presigns against `R2_S3_CREDENTIALS` (`services/media.service.ts`); if it is missing or invalid, `POST /pages/{handle}/items/upload` returns 500 and the server log shows `Error: R2 upload credentials are invalid.` (seen Oct 13 2026: the box `.env` intentionally has no R2 keys).
-- `media-cancel` needs an in-flight upload, so it is blocked whenever `media-upload` is.
-- Local `wrangler dev` has no remote R2 binding (no Cloudflare account login), so `upload/complete` would `HEAD` an empty local bucket and fail. The driver bridges this: it routes the browser `PUT`, performs it against the real bucket from Node, then mirrors the same bytes into the local bucket with `wrangler r2 object put --local --persist-to $RUN_DIR/wrangler-state`. Doing the `PUT` from Node also avoids the bucket CORS rule, which allows `http://localhost:3000` but not `http://127.0.0.1:3000`. Report this bridge with the result.
-- Cleanup: the app does not delete bucket objects synchronously. A canceled upload is only marked `pending_delete`. After a run, delete test objects with `R2_CREDS_JSON=... python scripts/r2-objects.py ls users/<userId>/` then `rm <key>`; the script refuses keys outside `users/`.
-- Verified Oct 14 2026 (PR #1 + `main`): upload PASS, cancel PASS. All test objects were deleted afterwards (bucket prefix count 0).
-- Local R2 lives under the wrangler `--persist-to` dir in `$RUN_DIR`; cleanup removes stored files but not evidence.
+- Never put real R2 keys in `apps/server/.env`. The only bucket in `alchemy.run.ts` (`grabbin`) is the production bucket. Plain `wrangler dev` with real S3 credentials uploads to production. That happened once on Oct 14 2026; the test objects were deleted.
+- `scripts/start-local.sh` (plain `wrangler dev`, no Cloudflare login) has no local S3 endpoint, so upload/cancel are **blocked** there (`POST .../items/upload` 500 "R2 upload credentials are invalid"). Use `bun run dev`.
+- `network.txt` may log the routed local `PUT` as `FAILED net::ERR_ABORTED` even when it succeeded. Trust `upload/complete` 200 and the `/media/<key>` check.
+- Verified Oct 14 2026 (PR #1 + `main`, `alchemy dev`): upload PASS, cancel PASS, no cloud R2 requests.

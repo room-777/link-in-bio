@@ -14,12 +14,10 @@ Commands below run from the repo root. To verify a different checkout (for examp
 Prerequisites (one-time per machine):
 
 - Docker running, Supabase CLI installed, `bun install` done at the repo root.
-- `apps/server/.env` and `apps/web/.env` exist (copy the `.env.example` files). For this stack they must use `127.0.0.1`, not `localhost`:
-  - server: `BETTER_AUTH_URL=http://127.0.0.1:3001`, `CORS_ORIGIN=http://127.0.0.1:3000`, `PAGE_DOMAIN=127.0.0.1:3000`, `DATABASE_URL(_LOCAL)=postgres://postgres:postgres@127.0.0.1:54322/postgres`
-  - web: `NEXT_PUBLIC_SERVER_URL=http://127.0.0.1:3001`, `NEXT_PUBLIC_PAGE_DOMAIN=127.0.0.1:3000`
-- Playwright with Chromium in any scratch directory (`$PW_DIR`): `mkdir -p "$PW_DIR" && cd "$PW_DIR" && bun add playwright && bunx playwright install chromium`. Drive scripts load Playwright from the current working directory, so run them from `$PW_DIR`.
-
-Why not `bun run dev`: the repo-standard command runs `alchemy dev`, which needs a Cloudflare profile (`Provider 'Cloudflare' is not configured in profile 'default'`) because Alchemy keeps state in Cloudflare. `scripts/start-local.sh` replaces it with plain `wrangler dev` for the API (local Hyperdrive to Postgres, local R2, `R2_LOCAL_MODE=true`, config in `scripts/server.wrangler.jsonc`) plus `vinext dev` for the web app. No Cloudflare account is touched.
+- `apps/server/.env` and `apps/web/.env` exist (copy the `.env.example` files, `localhost` URLs). Do **not** add R2 keys.
+- **Preferred launch (same as the Mac): `bun run dev`** (`alchemy dev`). It runs the server worker, cron, and `vinext dev` locally with alchemy's local R2 bucket and local S3 endpoint for presigned uploads. Web `http://localhost:3000`, API `http://localhost:3001`. It needs a Cloudflare profile because the stack state lives in Cloudflare (`Cloudflare.state()`). On a headless box or agent shell the interactive `alchemy profile edit` refuses to prompt, so register a token non-interactively:
+  `cd packages/infra && bun ./node_modules/.bin/alchemy profile edit --add Cloudflare --method stored --set apiToken=env:CLOUDFLARE_API_TOKEN --set accountId=<id> --no-input` (account id: `GET https://api.cloudflare.com/client/v4/accounts`). Use `bun`; alchemy's CLI needs node ≥ 22.15. Stop it by killing the process group you started.
+- Fallback without Cloudflare: `scripts/start-local.sh` (plain `wrangler dev`, `127.0.0.1` URLs in `.env`). Sign-in, item, link, and tweet journeys work; media upload/cancel are blocked (no local S3 endpoint).
 
 Steps:
 
@@ -90,25 +88,24 @@ Never kill by process name. Leave Supabase running unless this run started it (`
 
 | Script | Use |
 | --- | --- |
-| `scripts/start-local.sh <RUN_DIR>` | Start API + web on 127.0.0.1 without Cloudflare credentials; waits until usable. |
+| `scripts/start-local.sh <RUN_DIR>` | Fallback: API + web on 127.0.0.1 without Cloudflare credentials (no media upload). |
 | `scripts/stop-local.sh <RUN_DIR>` | Stop exactly what `start-local.sh` started. |
 | `scripts/doctor.sh [RUN_DIR]` | Read-only health/ownership check. |
 | `scripts/otp.sh <email>` | Print the newest sign-in OTP for an `@example.com` address from local Postgres. |
 | `scripts/drive-demo-add-text.mjs <dir>` | Prove `editor-add-item` on `/demo` (add text block, then delete it). |
 | `scripts/drive-sign-in.mjs <dir> [email]` | Drive email-OTP sign-in and check the post-sign-in landing page. |
-| `scripts/drive-editor-journeys.mjs <dir> [ids]` | Owner editor journeys on the real `/{handle}`: `media-upload`, `media-cancel`, `link-refresh`, `item-add`. Env: `RUN_DIR`, `GRABBIN_REPO`; optional `R2_CREDS_JSON` and `R2_PY` for bucket checks. |
-| `scripts/r2-objects.py ls|head|rm` | Check or delete test objects in the real bucket (S3 API, boto3). Never prints credentials; `rm` only under `users/`. |
+| `scripts/drive-editor-journeys.mjs <dir> [ids]` | Owner editor journeys on the real `/{handle}`: `media-upload`, `media-cancel`, `link-refresh`, `item-add`. Env: `RUN_DIR`, optional `WEB_URL`/`SERVER_URL` (default `localhost`). Fails on any cloud R2 request. |
 | `scripts/server.wrangler.jsonc` | Local API worker config used by `start-local.sh`. |
 
 ## Known gotchas (environment)
 
-- Use `127.0.0.1` everywhere, never `localhost` (both in `.env` and when driving). In some sandboxes `localhost` resolves to `::1` only, and `vinext dev` binds there while the API binds IPv4; mixing hosts also splits auth cookies between `localhost` and `127.0.0.1`.
+- With `start-local.sh`, use `127.0.0.1` everywhere (both in `.env` and when driving); with `bun run dev`, use the `localhost` URLs alchemy prints (Chromium resolves `localhost` to both `::1` and `127.0.0.1`). In some sandboxes `localhost` resolves to `::1` only, and `vinext dev` binds there while the API binds IPv4; mixing hosts also splits auth cookies between `localhost` and `127.0.0.1`.
 - Exported shell variables (`NEXT_PUBLIC_SERVER_URL`, ...) override `.env`; `start-local.sh` unsets them. If the browser calls the wrong API origin, check `env`.
 - In Docker without systemd, start `dockerd` yourself; if containers cannot reach each other (Supabase start fails with `DbSetupError`), the host FORWARD policy is dropping bridge traffic.
 
 - `GRABBIN_REPO` stays exported in your shell; unset or re-export it before starting a different checkout, and check the `checkout:` line `start-local.sh` prints.
 - `RESEND_API_KEY` may be real: only ever use `@example.com` addresses (`dev@example.com`); read the OTP with `scripts/otp.sh`.
-- `apps/server/.env` (`--env-file`) overrides `vars` in `scripts/server.wrangler.jsonc`, but only for keys it defines. An empty key still overrides, as `R2_PUBLIC_URL=` does from `.env.example`. `R2_S3_CREDENTIALS` is no longer in `vars`, so it comes only from `.env`.
+- `start-local.sh` only: `apps/server/.env` (`--env-file`) overrides `vars` in `scripts/server.wrangler.jsonc`, even with an empty value.
 - `GET /pages/{handle}/views` returns 500 locally ("Simple Analytics request failed"); the footer shows "Views on break". Expected without analytics access; ignore it.
 
 ## Last verification run (Oct 14 2026, PR #1 `refactor/web-bento-data-layer` + `main` c80d21e)
@@ -118,8 +115,8 @@ Never kill by process name. Leave Supabase running unless this run started it (`
 | doctor | OK | |
 | sign-in-email-otp | PASS | needs PR #5 (on `main`) |
 | editor-add-item (owner) | PASS | text/section/link/map persisted; delete removed the row |
-| editor-media-upload | PASS | real dev bucket via the driver's PUT bridge; objects deleted afterwards |
-| editor-media-cancel | PASS | `upload/cancel` 204, `pending_delete`, no item, no object |
+| editor-media-upload | PASS | `bun run dev`, local bucket via `/cdn-cgi/local/r2/s3`, no cloud R2 requests |
+| editor-media-cancel | PASS | `upload/cancel` 204, `pending_delete`, no item, no local object |
 | editor-link-metadata refresh | PASS (flaky upstream) | 4/6 runs; failures returned 200 with the old title |
 | editor-tweet | PASS after local Pro grant | Oct 13 run |
 
