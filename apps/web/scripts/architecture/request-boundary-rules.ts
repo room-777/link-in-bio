@@ -23,7 +23,10 @@ export function checkRequestBoundaryRules(context: ArchitectureContext) {
 	const externalFetchFiles = new Set([
 		join(context.queryDirectory, "tweet/by-id.ts"),
 		join(context.sourceDirectory, "lib/mapbox-geocoding.ts"),
-		join(context.mutationDirectory, "page-profile-image/upload.ts"),
+		join(
+			context.featureDirectory,
+			"page/profile/mutations/upload-profile-image.ts",
+		),
 		join(context.mutationDirectory, "bento/upload-media.ts"),
 	]);
 

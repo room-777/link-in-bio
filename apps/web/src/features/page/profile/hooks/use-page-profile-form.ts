@@ -4,11 +4,11 @@ import { type PageData, pageImageUploadSchema } from "@grabbin/api";
 import { toast } from "@grabbin/ui/components/toast";
 import { useCallback, useEffect, useRef, useState } from "react";
 import * as v from "valibot";
-import { usePageAutoSave } from "@/hooks/use-page-auto-save";
 import { getErrorMessage } from "@/lib/error-message";
 import { getPageImageUrl } from "@/lib/page-image-url";
-import { useCleanupPageProfileImageMutation } from "@/mutation/page-profile-image/cleanup";
-import { useUploadPageProfileImageMutation } from "@/mutation/page-profile-image/upload";
+import { useCleanupPageProfileImageMutation } from "../mutations/cleanup-profile-image";
+import { useUploadPageProfileImageMutation } from "../mutations/upload-profile-image";
+import { usePageAutoSave } from "./use-page-auto-save";
 
 export function usePageProfileForm(page: PageData, demoMode: boolean) {
 	const uploadImageMutation = useUploadPageProfileImageMutation();

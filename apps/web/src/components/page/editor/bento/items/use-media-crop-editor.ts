@@ -2,20 +2,18 @@
 
 import type { NormalizedCrop } from "@grabbin/api";
 import {
-	type PointerEvent as ReactPointerEvent,
 	type SyntheticEvent,
 	useCallback,
 	useEffect,
 	useRef,
 	useState,
 } from "react";
-
+import { useMediaCropInteraction } from "@/hooks/use-media-crop-interaction";
 import type { BentoCommand, BentoItem } from "@/lib/bento/bento-types";
 import {
 	getCenteredMediaCrop,
 	getMediaCropStyle,
 	isCropCompatible,
-	moveMediaCrop,
 } from "@/lib/bento/media-crop";
 import { useMediaCrop } from "./media-crop-provider";
 
@@ -34,18 +32,10 @@ export function useMediaCropEditor({
 	const frameRef = useRef<HTMLDivElement>(null);
 	const imageRef = useRef<HTMLImageElement>(null);
 	const videoRef = useRef<HTMLVideoElement>(null);
-	const dragRef = useRef<{
-		pointerId: number;
-		startX: number;
-		startY: number;
-		startCrop: NormalizedCrop;
-	} | null>(null);
 	const mediaSourceRef = useRef({
 		mediaUrl: item.data.mediaUrl,
 		mimeType: item.data.mimeType,
 	});
-	const [sourceSize, setSourceSize] = useState({ width: 0, height: 0 });
-	const [frameSize, setFrameSize] = useState({ width: 0, height: 0 });
 	const [draftCrop, setDraftCrop] = useState<NormalizedCrop | undefined>();
 	const currentBreakpoint = crop.breakpoint;
 	const isCropOpen = crop.isOpen;
@@ -54,6 +44,14 @@ export function useMediaCropEditor({
 	const setDragging = crop.setDragging;
 	const persistedCrop = item.data.crop?.[currentBreakpoint];
 	const previousBreakpointRef = useRef(currentBreakpoint);
+	const interaction = useMediaCropInteraction({
+		frameRef,
+		isCropOpen,
+		draftCrop,
+		onDraftCropChange: setDraftCrop,
+		onDraggingChange: setDragging,
+	});
+	const { sourceSize, frameSize } = interaction;
 
 	useEffect(() => {
 		if (previousBreakpointRef.current !== currentBreakpoint && isCropOpen) {
@@ -61,10 +59,6 @@ export function useMediaCropEditor({
 		}
 		previousBreakpointRef.current = currentBreakpoint;
 	}, [cancelCrop, currentBreakpoint, isCropOpen]);
-
-	useEffect(() => {
-		if (mode !== "edit" && isCropOpen) cancelCrop();
-	}, [cancelCrop, isCropOpen, mode]);
 
 	useEffect(() => {
 		const sourceChanged =
@@ -75,22 +69,18 @@ export function useMediaCropEditor({
 			mimeType: item.data.mimeType,
 		};
 		if (!sourceChanged) return;
-		setSourceSize({ width: 0, height: 0 });
-		dragRef.current = null;
-	}, [item.data.mediaUrl, item.data.mimeType]);
+		interaction.resetSourceSize();
+		interaction.resetDrag();
+	}, [
+		interaction.resetDrag,
+		interaction.resetSourceSize,
+		item.data.mediaUrl,
+		item.data.mimeType,
+	]);
 
 	useEffect(() => {
-		const frame = frameRef.current;
-		if (!frame) return;
-		const update = () => {
-			const rect = frame.getBoundingClientRect();
-			setFrameSize({ width: rect.width, height: rect.height });
-		};
-		update();
-		const observer = new ResizeObserver(update);
-		observer.observe(frame);
-		return () => observer.disconnect();
-	}, []);
+		if (mode !== "edit" && isCropOpen) cancelCrop();
+	}, [cancelCrop, isCropOpen, mode]);
 
 	const centeredCrop =
 		sourceSize.width > 0 && frameSize.width > 0 && frameSize.height > 0
@@ -133,7 +123,7 @@ export function useMediaCropEditor({
 				canApply,
 				onOpen: () => setDraftCrop(actionsRef.current.getInitialCrop()),
 				onCancel: () => {
-					dragRef.current = null;
+					interaction.resetDrag();
 					setDraftCrop(undefined);
 				},
 				onApply: () => {
@@ -155,93 +145,30 @@ export function useMediaCropEditor({
 							},
 						},
 					});
+					interaction.resetDrag();
 					setDraftCrop(undefined);
 				},
 			}),
-		[canApply, currentBreakpoint, registerActions],
+		[canApply, currentBreakpoint, interaction.resetDrag, registerActions],
 	);
-
-	const updateSourceSize = useCallback((width: number, height: number) => {
-		if (width > 0 && height > 0) setSourceSize({ width, height });
-	}, []);
 	const handleImageLoad = useCallback(
 		(event: SyntheticEvent<HTMLImageElement>) => {
-			updateSourceSize(
-				event.currentTarget.naturalWidth,
-				event.currentTarget.naturalHeight,
-			);
+			interaction.handleImageLoad(event.currentTarget);
 		},
-		[updateSourceSize],
+		[interaction.handleImageLoad],
 	);
-	const handleVideoLoadedMetadata = useCallback(
-		(event: SyntheticEvent<HTMLVideoElement>) => {
-			updateSourceSize(
-				event.currentTarget.videoWidth,
-				event.currentTarget.videoHeight,
-			);
-		},
-		[updateSourceSize],
-	);
+	const handleVideoLoadedMetadata = interaction.handleVideoLoadedMetadata;
 	useEffect(() => {
 		const image = imageRef.current;
 		if (image?.complete && image.naturalWidth > 0) {
-			updateSourceSize(image.naturalWidth, image.naturalHeight);
+			interaction.updateSourceSize(image.naturalWidth, image.naturalHeight);
 			return;
 		}
 		const video = videoRef.current;
 		if (video && video.readyState >= 1) {
-			updateSourceSize(video.videoWidth, video.videoHeight);
+			interaction.updateSourceSize(video.videoWidth, video.videoHeight);
 		}
-	}, [updateSourceSize]);
-
-	const handleCropPointerDown = useCallback(
-		(event: ReactPointerEvent<HTMLButtonElement>) => {
-			if (
-				!isCropOpen ||
-				!draftCrop ||
-				(event.pointerType === "mouse" && event.button !== 0)
-			)
-				return;
-			event.preventDefault();
-			event.currentTarget.setPointerCapture(event.pointerId);
-			dragRef.current = {
-				pointerId: event.pointerId,
-				startX: event.clientX,
-				startY: event.clientY,
-				startCrop: draftCrop,
-			};
-			setDragging(true);
-		},
-		[draftCrop, isCropOpen, setDragging],
-	);
-	const handleCropPointerMove = useCallback(
-		(event: ReactPointerEvent<HTMLButtonElement>) => {
-			const drag = dragRef.current;
-			if (!drag || !draftCrop || drag.pointerId !== event.pointerId) return;
-			event.preventDefault();
-			setDraftCrop(
-				moveMediaCrop(
-					drag.startCrop,
-					event.clientX - drag.startX,
-					event.clientY - drag.startY,
-					frameSize,
-				),
-			);
-		},
-		[draftCrop, frameSize],
-	);
-	const handleCropPointerEnd = useCallback(
-		(event: ReactPointerEvent<HTMLButtonElement>) => {
-			if (!dragRef.current || dragRef.current.pointerId !== event.pointerId)
-				return;
-			dragRef.current = null;
-			if (event.currentTarget.hasPointerCapture(event.pointerId)) {
-				event.currentTarget.releasePointerCapture(event.pointerId);
-			}
-			setDragging(false);
-		},
-		[setDragging],
-	);
+	}, [interaction.updateSourceSize]);
 
 	return {
 		frameRef,
@@ -254,8 +181,8 @@ export function useMediaCropEditor({
 		isDragging: crop.isDragging,
 		handleImageLoad,
 		handleVideoLoadedMetadata,
-		handleCropPointerDown,
-		handleCropPointerMove,
-		handleCropPointerEnd,
+		handleCropPointerDown: interaction.handlePointerDown,
+		handleCropPointerMove: interaction.handlePointerMove,
+		handleCropPointerEnd: interaction.handlePointerEnd,
 	};
 }

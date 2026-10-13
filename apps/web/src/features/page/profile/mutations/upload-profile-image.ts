@@ -1,6 +1,6 @@
 import { useMutation } from "@tanstack/react-query";
 import { apiClient, getApiErrorMessage } from "@/lib/api-client";
-import { cleanupUploadedPageProfileImage } from "./cleanup";
+import { cleanupUploadedPageProfileImage } from "./cleanup-profile-image";
 
 async function uploadPageProfileImage(handle: string, file: File) {
 	const response = await apiClient.pages[":handle"]["profile-image"][

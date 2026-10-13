@@ -10,10 +10,10 @@ import {
 import { toast } from "@grabbin/ui/components/toast";
 import { motion } from "motion/react";
 import { useEffect } from "react";
-import { usePageProfileEntryAnimation } from "@/hooks/use-page-profile-entry-animation";
-import { usePageProfileForm } from "@/hooks/use-page-profile-form";
-import { MadeWithGrabbinBadge } from "../shared/made-with-grabbin-badge";
-import PageImageField from "./page-image-field";
+import { MadeWithGrabbinBadge } from "@/components/page/shared/made-with-grabbin-badge";
+import { usePageProfileEntryAnimation } from "../hooks/use-page-profile-entry-animation";
+import { usePageProfileForm } from "../hooks/use-page-profile-form";
+import PageImageEditor from "./page-image-editor";
 
 export default function PageProfileForm({
 	page,
@@ -53,14 +53,13 @@ export default function PageProfileForm({
 					<FieldGroup className="gap-8">
 						<Field data-invalid={!!profile.error} className="gap-8">
 							<div className="flex w-full items-center page-wide:justify-start justify-between">
-								<PageImageField
+								<PageImageEditor
 									value={profile.imageUrl}
 									fallbackImageUrl={profile.previewImageUrl}
 									onImageLoaded={profile.onImageLoaded}
 									isUploading={profile.isImageUploading || isSaving}
 									onSelect={profile.onImageSelect}
 									onRemove={profile.onImageRemove}
-									onError={(message) => toast({ message, state: "error" })}
 									crop={profile.draft.imageCrop}
 									onCropChange={(crop) =>
 										profile.updateField("imageCrop", crop)

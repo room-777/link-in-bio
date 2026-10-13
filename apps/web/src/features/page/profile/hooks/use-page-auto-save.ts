@@ -3,7 +3,7 @@
 import type { PageImageCrop, UpdatePageDraft } from "@grabbin/api";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { getErrorMessage } from "@/lib/error-message";
-import { useUpdatePageDraftMutation } from "@/mutation/page/update-draft";
+import { useUpdatePageDraftMutation } from "../mutations/update-draft";
 
 export const PAGE_AUTO_SAVE_DELAY = 1500;
 

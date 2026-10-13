@@ -7,8 +7,8 @@ import {
 	getBentoWidth,
 } from "@grabbin/bento-layout";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { PageProfileForm } from "@/features/page/profile";
 import { getPageImageUrl } from "@/lib/page-image-url";
-import PageProfileForm from "../profile/page-profile-form";
 import PageFooter from "../shared/page-footer";
 import type { AddWidgetButtonProps } from "./add-widget-button";
 import BentoEditor from "./bento-editor";
