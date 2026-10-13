@@ -26,7 +26,7 @@ export default function TextItem({
 	const viewportRef = useRef<HTMLDivElement>(null);
 	const autoFocusHandledRef = useRef(false);
 	const verticalAlign =
-		item.style.verticalAlign ?? (preset === "halfBanner" ? "center" : "top");
+		preset === "halfBanner" ? "center" : (item.style.verticalAlign ?? "top");
 	const itemRadius = getBentoItemRadius(item.type, preset);
 	const textAreaRadius = itemRadius - 12;
 	useLayoutEffect(() => {
@@ -94,7 +94,7 @@ export default function TextItem({
 						placeholder={mode === "edit" ? "Add note..." : undefined}
 						aria-label="Text content"
 						readOnly={mode === "view"}
-						className={`bento-text-input grid-action h-full max-h-full min-h-0 w-full cursor-text! resize-none overflow-y-auto overscroll-contain whitespace-pre-wrap break-all border-0 bg-transparent px-2 py-1.5 text-current outline-none placeholder:text-current/45 focus-visible:ring-0 ${textSizeClassByPreset[preset]}`}
+						className={`bento-text-input grid-action h-full max-h-full min-h-0 w-full cursor-text! resize-none overflow-y-auto overscroll-contain whitespace-pre-wrap break-all border-0 bg-transparent px-2 py-0.5 text-current outline-none placeholder:text-current/45 focus-visible:ring-0 ${textSizeClassByPreset[preset]}`}
 						style={{
 							borderRadius: textAreaRadius,
 							textAlign: item.style.textAlign ?? "left",
