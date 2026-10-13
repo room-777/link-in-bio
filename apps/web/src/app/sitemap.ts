@@ -6,7 +6,7 @@ export const dynamic = "force-dynamic";
 
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
 	const profileHandles = await fetchSitemapHandles();
-	return ["/", "/privacy", "/terms", "/sign-in", "/demo", "/changelog"]
+	return ["/", "/privacy", "/terms", "/sign-in", "/demo", "/update"]
 		.map((path) => ({ url: new URL(path, "https://grabbin.me").toString() }))
 		.concat(
 			updates.map(({ slug, date }) => ({
