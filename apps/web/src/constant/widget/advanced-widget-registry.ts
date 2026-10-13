@@ -5,14 +5,14 @@ import type {
 } from "@grabbin/api";
 import { providerDefinitions, providerIconUrl } from "@grabbin/page-link";
 import { type ComponentType, createElement } from "react";
-import { CalendlyAdvancedWidgetPreview } from "@/components/page/editor/advanced-widgets/calendly/calendly-advanced-widget-preview";
-import CalendlyWidgetDetails from "@/components/page/editor/advanced-widgets/calendly/calendly-widget-details";
 import { RssAdvancedWidgetPreview } from "@/components/page/editor/advanced-widgets/rss-feed/rss-advanced-widget-preview";
 import RssFeedWidgetDetails from "@/components/page/editor/advanced-widgets/rss-feed/rss-feed-widget-details";
 import { SpotifyAdvancedWidgetPreview } from "@/components/page/editor/advanced-widgets/spotify/spotify-advanced-widget-preview";
 import SpotifyWidgetDetails from "@/components/page/editor/advanced-widgets/spotify/spotify-widget-details";
 import { TweetAdvancedWidgetPreview } from "@/components/page/editor/advanced-widgets/tweet/tweet-advanced-widget-preview";
 import TweetWidgetDetails from "@/components/page/editor/advanced-widgets/tweet/tweet-widget-details";
+import { CalendlyAdvancedWidgetPreview } from "@/features/calendly/components/widget/calendly-advanced-widget-preview";
+import CalendlyWidgetDetails from "@/features/calendly/components/widget/calendly-widget-details";
 
 type AdvancedWidgetDetailsProps = {
 	onAdd: (event: CalendlyEventType) => Promise<void>;

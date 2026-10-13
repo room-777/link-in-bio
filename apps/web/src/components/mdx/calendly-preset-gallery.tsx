@@ -6,17 +6,17 @@ import {
 	getColumns,
 	getPresetGeometry,
 } from "@grabbin/bento-layout";
-import {
-	type CalendlyAvailability,
-	type CalendlyPreset,
-	CalendlyWidget,
-} from "@/components/page/editor/advanced-widgets/calendly/calendly-widget";
 import { BentoItemShell } from "@/components/page/editor/bento/bento-item-shell";
 import {
 	calendlyDemoAvailabilityTimes,
 	calendlyDemoDateRange,
 	calendlyDemoEvent,
 } from "@/constant/widget/calendly";
+import {
+	type CalendlyAvailability,
+	type CalendlyPreset,
+	CalendlyWidget,
+} from "@/features/calendly/components/widget/calendly-widget";
 import type { BentoItem } from "@/lib/bento/bento-types";
 
 const calendlyPresets: CalendlyPreset[] = [

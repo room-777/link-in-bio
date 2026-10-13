@@ -3,9 +3,8 @@
 import type { PresetName } from "@grabbin/bento-layout";
 import dynamic from "next/dynamic";
 import type { ReactNode } from "react";
-
+import { CalendlyItem } from "@/features/calendly/components/widget/calendly-item";
 import type { BentoCommand, BentoItem } from "@/lib/bento/bento-types";
-import { CalendlyItem } from "../advanced-widgets/calendly/calendly-item";
 import { RssFeedItem } from "../advanced-widgets/rss-feed/rss-feed-item";
 import { SpotifyItem } from "../advanced-widgets/spotify/spotify-item";
 import { TweetItem } from "../advanced-widgets/tweet/tweet-item";

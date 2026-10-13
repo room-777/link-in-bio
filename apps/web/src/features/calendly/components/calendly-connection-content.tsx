@@ -8,18 +8,18 @@ import { Skeleton } from "@grabbin/ui/components/skeleton";
 import { useEffect, useState } from "react";
 import { CheckCircle } from "reicon-react/icons/CheckCircle";
 import * as v from "valibot";
-import CalendlyConnectButton from "@/components/page/management/account/calendly-connect-button";
+import { getSignInHref } from "@/lib/auth-redirect";
+import { getErrorMessage } from "@/lib/error-message";
 import {
 	calendlyConnectionErrorFallback,
 	calendlyConnectionErrorMessages,
-} from "@/constant/calendly-connection-errors";
-import { getSignInHref } from "@/lib/auth-redirect";
-import { getErrorMessage } from "@/lib/error-message";
-import { useDisconnectCalendlyMutation } from "@/mutation/calendly/disconnect";
+} from "../constants/connection-errors";
+import { useDisconnectCalendlyMutation } from "../mutations/disconnect";
 import {
 	CalendlyConnectionError,
 	useCalendlyConnectionQuery,
-} from "@/query/calendly/connection";
+} from "../queries/connection";
+import CalendlyConnectButton from "./calendly-connect-button";
 
 const signInHref = getSignInHref();
 

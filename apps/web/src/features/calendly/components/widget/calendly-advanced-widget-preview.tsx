@@ -1,12 +1,12 @@
 import type { CalendlyEventType } from "@grabbin/api";
 import { getPresetGeometry } from "@grabbin/bento-layout";
-import type { BentoItem } from "@/lib/bento/bento-types";
-import { AdvancedWidgetPresetControls } from "../../advanced-widget-preset-controls";
-import { AdvancedWidgetPreviewFrame } from "../advanced-widget-preview-frame";
+import { AdvancedWidgetPresetControls } from "@/components/page/editor/advanced-widget-preset-controls";
+import { AdvancedWidgetPreviewFrame } from "@/components/page/editor/advanced-widgets/advanced-widget-preview-frame";
 import {
 	advancedWidgetPresets,
 	useAdvancedWidgetPreset,
-} from "../use-advanced-widget-preset";
+} from "@/components/page/editor/advanced-widgets/use-advanced-widget-preset";
+import type { BentoItem } from "@/lib/bento/bento-types";
 import type { CalendlyAvailability } from "./calendly-widget";
 import { CalendlyWidget } from "./calendly-widget";
 

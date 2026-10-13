@@ -13,13 +13,13 @@ import Loading from "@grabbin/ui/components/loading";
 import { ScrollArea } from "@grabbin/ui/components/scroll-area";
 import { Skeleton } from "@grabbin/ui/components/skeleton";
 import { type CSSProperties, useEffect, useState } from "react";
-import CalendlyConnectButton from "@/components/page/management/account/calendly-connect-button";
 import { authClient } from "@/lib/auth-client";
 import {
 	CalendlyConnectionError,
 	useCalendlyConnectionQuery,
-} from "@/query/calendly/connection";
-import { useCalendlyEventsQuery } from "@/query/calendly/events";
+} from "../../queries/connection";
+import { useCalendlyEventsQuery } from "../../queries/events";
+import CalendlyConnectButton from "../calendly-connect-button";
 
 const calendlyBrandColor = providerDefinitions.find(
 	(provider) => provider.id === "calendly",
@@ -42,27 +42,6 @@ function formatTimeZoneOffset(timeZone: string) {
 	})
 		.formatToParts(new Date())
 		.find((part) => part.type === "timeZoneName")?.value;
-}
-
-function CalendlyEventContent({
-	event,
-	timeZone,
-	timeZoneOffset,
-}: {
-	event: { name: string; duration: number | null };
-	timeZone: string | null;
-	timeZoneOffset: string | undefined;
-}) {
-	return (
-		<ItemContent className="min-w-0 gap-0.5">
-			<ItemTitle className="max-w-full truncate">{event.name}</ItemTitle>
-			<ItemDescription className="truncate whitespace-normal text-xs">
-				{formatSessionDuration(event.duration)}
-				{timeZone ? ` · ${timeZone}` : ""}
-				{timeZoneOffset ? ` (${timeZoneOffset})` : ""}
-			</ItemDescription>
-		</ItemContent>
-	);
 }
 
 export default function CalendlyWidgetDetails({
@@ -167,11 +146,16 @@ export default function CalendlyWidgetDetails({
 											}
 											onClick={() => setSelectedEventUri(event.uri)}
 										>
-											<CalendlyEventContent
-												event={event}
-												timeZone={timeZone}
-												timeZoneOffset={timeZoneOffset}
-											/>
+											<ItemContent className="min-w-0 gap-0.5">
+												<ItemTitle className="max-w-full truncate">
+													{event.name}
+												</ItemTitle>
+												<ItemDescription className="truncate whitespace-normal text-xs">
+													{formatSessionDuration(event.duration)}
+													{timeZone ? ` · ${timeZone}` : ""}
+													{timeZoneOffset ? ` (${timeZoneOffset})` : ""}
+												</ItemDescription>
+											</ItemContent>
 										</Item>
 									</li>
 								);

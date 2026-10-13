@@ -17,16 +17,16 @@ import ReactGridLayout, {
 	type Layout as GridLayout,
 } from "react-grid-layout";
 import { getCompactor } from "react-grid-layout/core";
-import {
-	type CalendlyAvailability,
-	CalendlyWidget,
-} from "@/components/page/editor/advanced-widgets/calendly/calendly-widget";
 import { BentoItemShell } from "@/components/page/editor/bento/bento-item-shell";
 import {
 	calendlyDemoAvailabilityTimes,
 	calendlyDemoDateRange,
 	calendlyDemoEvent,
 } from "@/constant/widget/calendly";
+import {
+	type CalendlyAvailability,
+	CalendlyWidget,
+} from "@/features/calendly/components/widget/calendly-widget";
 import type { BentoItem } from "@/lib/bento/bento-types";
 
 const timestamp = "2026-10-10T00:00:00.000Z";

@@ -1,6 +1,6 @@
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { apiClient, getApiErrorMessage } from "@/lib/api-client";
-import { calendlyConnectionQueryKey } from "@/query/calendly/connection";
+import { calendlyConnectionQueryKey } from "../queries/connection";
 
 async function disconnectCalendly() {
 	const response = await apiClient.auth.calendly.disconnect.$post();
