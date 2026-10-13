@@ -1,16 +1,6 @@
 "use client";
 
 import {
-	AlertDialog,
-	AlertDialogAction,
-	AlertDialogCancel,
-	AlertDialogContent,
-	AlertDialogDescription,
-	AlertDialogFooter,
-	AlertDialogHeader,
-	AlertDialogTitle,
-} from "@grabbin/ui/components/alert-dialog";
-import {
 	Avatar,
 	AvatarFallback,
 	AvatarImage,
@@ -21,86 +11,22 @@ import { DialogHeader, DialogTitle } from "@grabbin/ui/components/dialog";
 import Loading from "@grabbin/ui/components/loading";
 import { toast } from "@grabbin/ui/components/toast";
 import { useIsMobile } from "@grabbin/ui/components/use-mobile";
-import { useQuery } from "@tanstack/react-query";
 import { Plus } from "lucide-react";
 import { AnimatePresence, motion, useReducedMotion } from "motion/react";
 import { useRouter } from "next/navigation";
 import { overlay } from "overlay-kit";
-import { type MouseEvent, useEffect, useState } from "react";
+import { useEffect, useState } from "react";
 import { Trash } from "@/components/trash";
-import { apiClient, getApiErrorMessage } from "@/lib/api-client";
 import { getErrorMessage } from "@/lib/error-message";
 import { getPageImageUrl } from "@/lib/page-image-url";
+import { useChangePrimaryPage } from "@/mutation/page/change-primary";
+import { useDeletePage } from "@/mutation/page/delete";
+import { useOwnedPagesQuery } from "@/query/page/owned-pages";
 import { openPlanDialog } from "../../../billing/plan-dialog";
 import CreatePageForm from "./create-page-form";
+import DeletePageDialog from "./delete-page-dialog";
 
 type Activity = "manage" | "create";
-
-function DeletePageDialog({
-	handle,
-	open,
-	close,
-	unmount,
-	onConfirm,
-}: {
-	handle: string;
-	open: boolean;
-	close: () => void;
-	unmount: () => void;
-	onConfirm: () => Promise<boolean>;
-}) {
-	const [isDeleting, setIsDeleting] = useState(false);
-	const confirm = async (event: MouseEvent) => {
-		event.preventDefault();
-		setIsDeleting(true);
-		const deleted = await onConfirm();
-		setIsDeleting(false);
-		if (deleted) close();
-	};
-
-	return (
-		<AlertDialog
-			open={open}
-			onOpenChange={(nextOpen) => !nextOpen && !isDeleting && close()}
-			onOpenChangeComplete={(nextOpen) => !nextOpen && unmount()}
-		>
-			<AlertDialogContent
-				overlayProps={{ forceRender: true, className: "z-[60]" }}
-				className="z-[70] gap-0 overflow-hidden p-5"
-			>
-				<div className="flex h-full w-full min-w-0 flex-col gap-4">
-					<AlertDialogHeader>
-						<AlertDialogTitle>Delete this page?</AlertDialogTitle>
-						<AlertDialogDescription>
-							This will permanently delete{" "}
-							<span className="font-medium text-primary">/{handle}</span> and
-							its content. This action can&apos;t be undone.
-						</AlertDialogDescription>
-					</AlertDialogHeader>
-					<AlertDialogFooter className="mx-0 mt-auto w-full! flex-col-reverse! items-end rounded-b-xl border-0 bg-transparent px-0 sm:justify-end">
-						<AlertDialogCancel
-							className="w-full min-w-0 whitespace-nowrap sm:max-w-36"
-							size="xl"
-							variant="outline"
-							disabled={isDeleting}
-						>
-							Cancel
-						</AlertDialogCancel>
-						<AlertDialogAction
-							variant="destructive"
-							size="xl"
-							disabled={isDeleting}
-							onClick={(event) => void confirm(event)}
-							className="relative w-full min-w-0 overflow-hidden whitespace-nowrap bg-destructive text-white hover:bg-destructive/80 motion-safe:active:scale-100 sm:max-w-36"
-						>
-							{isDeleting ? "Deleting…" : "Delete page"}
-						</AlertDialogAction>
-					</AlertDialogFooter>
-				</div>
-			</AlertDialogContent>
-		</AlertDialog>
-	);
-}
 
 export default function PageTabContent({
 	active,
@@ -114,21 +40,13 @@ export default function PageTabContent({
 	const reduceMotion = useReducedMotion() ?? false;
 	const [activity, setActivity] = useState<Activity>("manage");
 	const [busyHandle, setBusyHandle] = useState<string | null>(null);
+	const pagesQuery = useOwnedPagesQuery(active);
+	const changePrimaryMutation = useChangePrimaryPage();
+	const deletePageMutation = useDeletePage();
 	useEffect(() => {
 		if (active) return;
 		setActivity("manage");
 	}, [active]);
-	const pagesQuery = useQuery({
-		queryKey: ["owned-pages"],
-		queryFn: async () => {
-			const response = await apiClient.pages.owned.$get();
-			if (!response.ok) throw new Error(await getApiErrorMessage(response));
-			const result = await response.json();
-			if (!("pages" in result)) throw new Error("Could not load your pages.");
-			return result;
-		},
-		enabled: active,
-	});
 
 	const backToManage = () => {
 		setActivity("manage");
@@ -143,11 +61,7 @@ export default function PageTabContent({
 	const changePrimary = async (handle: string) => {
 		setBusyHandle(handle);
 		try {
-			const response = await apiClient.pages[":handle"].primary.$patch({
-				param: { handle },
-			});
-			if (!response.ok) throw new Error(await getApiErrorMessage(response));
-			await pagesQuery.refetch();
+			await changePrimaryMutation.mutateAsync(handle);
 		} catch (error) {
 			toast({
 				message: getErrorMessage(error, "Please try again."),
@@ -161,11 +75,7 @@ export default function PageTabContent({
 	const confirmDeletePage = async (handle: string) => {
 		setBusyHandle(handle);
 		try {
-			const response = await apiClient.pages[":handle"].$delete({
-				param: { handle },
-			});
-			if (!response.ok) throw new Error(await getApiErrorMessage(response));
-			await pagesQuery.refetch();
+			await deletePageMutation.mutateAsync(handle);
 			return true;
 		} catch (error) {
 			toast({
@@ -205,7 +115,7 @@ export default function PageTabContent({
 		}
 	};
 
-	const content = (
+	return (
 		<div className="flex h-full min-h-0 min-w-0 flex-col p-1">
 			<AnimatePresence initial={false} mode="wait">
 				<motion.div
@@ -352,6 +262,4 @@ export default function PageTabContent({
 			</AnimatePresence>
 		</div>
 	);
-
-	return <>{content}</>;
 }
