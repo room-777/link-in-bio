@@ -3,7 +3,7 @@
 import { useEffect, useRef } from "react";
 import type { BentoCommand, BentoItem } from "@/lib/bento/bento-types";
 
-export function SectionItem({
+export default function SectionItem({
 	item,
 	mode,
 	autoFocus,
@@ -58,3 +58,5 @@ export function SectionItem({
 		</div>
 	);
 }
+
+export { SectionItem };

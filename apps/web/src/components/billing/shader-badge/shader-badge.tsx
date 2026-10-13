@@ -4,7 +4,7 @@ import { type ReactNode, useEffect, useRef } from "react";
 import { registerBadge } from "./badge-renderer";
 import { type BadgePreset, fallbackBackgrounds } from "./badge-shaders";
 
-export function ShaderBadge({
+export default function ShaderBadge({
 	preset,
 	tag,
 	children,
@@ -41,3 +41,5 @@ export function ShaderBadge({
 		</span>
 	);
 }
+
+export { ShaderBadge };

@@ -31,7 +31,7 @@ type MediaCropContextValue = {
 
 const MediaCropContext = createContext<MediaCropContextValue | null>(null);
 
-export function MediaCropProvider({
+export default function MediaCropProvider({
 	children,
 	containerRef,
 	breakpoint,
@@ -132,3 +132,5 @@ export function useMediaCrop() {
 		throw new Error("useMediaCrop must be used inside MediaCropProvider");
 	return context;
 }
+
+export { MediaCropProvider };

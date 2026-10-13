@@ -2,6 +2,7 @@ import { checkCallbackRules } from "./architecture/callback-rules";
 import { checkComponentRules } from "./architecture/component-rules";
 import type { ArchitectureContext } from "./architecture/context";
 import { createArchitectureContext } from "./architecture/context";
+import { checkFileNameRules } from "./architecture/file-name-rules";
 import { checkMutationRules } from "./architecture/mutation-rules";
 import { checkQueryRules } from "./architecture/query-rules";
 import { checkRequestBoundaryRules } from "./architecture/request-boundary-rules";
@@ -13,6 +14,7 @@ const checks = {
 	mutations: checkMutationRules,
 	"request-boundaries": checkRequestBoundaryRules,
 	components: checkComponentRules,
+	"file-names": checkFileNameRules,
 	callbacks: checkCallbackRules,
 };
 const requestedCheck = process.argv[2] ?? "all";

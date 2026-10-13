@@ -21,7 +21,7 @@ import { MediaCaption } from "./media-caption";
 import { getScrollTarget } from "./shared";
 import { useMediaCropEditor } from "./use-media-crop-editor";
 
-export function MediaItem({
+export default function MediaItem({
 	item,
 	preset,
 	mode,
@@ -313,3 +313,5 @@ export function MediaItem({
 		</div>
 	);
 }
+
+export { MediaItem };

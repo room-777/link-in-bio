@@ -9,7 +9,7 @@ import { CheckCircle } from "reicon-react/icons/CheckCircle";
 import { CopyStateIcon } from "@/components/copy-state-icon";
 import { useClipboardCopy } from "@/hooks/use-clipboard-copy";
 
-export function PageOnboardingComplete({
+export default function PageOnboardingComplete({
 	page,
 	onGoToProfile: handleGoToProfile,
 	actionLabel = "Go to profile",
@@ -99,3 +99,5 @@ export function PageOnboardingComplete({
 		</>
 	);
 }
+
+export { PageOnboardingComplete };

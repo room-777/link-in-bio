@@ -64,7 +64,7 @@ function SpotifyWidgetSkeleton({ preset }: { preset: PresetName }) {
 	);
 }
 
-export function SpotifyAdvancedWidgetPreview({
+export default function SpotifyAdvancedWidgetPreview({
 	inputValue,
 	spotifyPreview,
 }: {
@@ -117,3 +117,5 @@ export function SpotifyAdvancedWidgetPreview({
 		</AdvancedWidgetPreviewFrame>
 	);
 }
+
+export { SpotifyAdvancedWidgetPreview };

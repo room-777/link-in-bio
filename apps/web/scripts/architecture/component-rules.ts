@@ -35,17 +35,27 @@ function kebabCase(name: string) {
 	return name.replace(/([a-z0-9])([A-Z])/g, "$1-$2").toLowerCase();
 }
 
+function hasDefaultExport(source: string) {
+	return (
+		/\bexport\s+default\b/.test(source) ||
+		/\bexport\s*\{[^}]*\bas\s+default\b[^}]*\}/.test(source)
+	);
+}
+
 assert.deepEqual(
 	exportedComponents("export default function PageHeader() {}"),
 	["PageHeader"],
 );
 assert.equal(kebabCase("PageHeader"), "page-header");
+assert.equal(hasDefaultExport("export default function PageHeader() {}"), true);
+assert.equal(hasDefaultExport("export function PageHeader() {}"), false);
 
 export function checkComponentRules(context: ArchitectureContext) {
 	const errors: string[] = [];
 
 	for (const path of context.componentFiles) {
-		const names = exportedComponents(readFileSync(path, "utf8"));
+		const source = readFileSync(path, "utf8");
+		const names = exportedComponents(source);
 		if (names.length === 0) continue;
 		const relativePath = relativeToDomain(
 			context,
@@ -54,8 +64,8 @@ export function checkComponentRules(context: ArchitectureContext) {
 		);
 		const expectedName = kebabCase(names[0]);
 		const actualName = basename(path).replace(/\.tsx$/, "");
-		if (names.length !== 1) {
-			errors.push(`${relativePath}: export one component per file.`);
+		if (!hasDefaultExport(source)) {
+			errors.push(`${relativePath}: export a component as default.`);
 		}
 		if (names.length === 1 && actualName !== expectedName) {
 			errors.push(

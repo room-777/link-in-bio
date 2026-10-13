@@ -5,7 +5,7 @@ import { RssFeedWidget } from "./rss-feed-widget";
 
 type LinkItem = Extract<PageItemResponse, { type: "link" }>;
 
-export function RssFeedItem({
+export default function RssFeedItem({
 	item,
 	preset,
 	mode,
@@ -46,3 +46,5 @@ export function RssFeedItem({
 		/>
 	);
 }
+
+export { RssFeedItem };

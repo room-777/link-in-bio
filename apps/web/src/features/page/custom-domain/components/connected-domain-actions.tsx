@@ -8,7 +8,7 @@ import { DisconnectDomainDialog } from "./disconnect-domain-dialog";
 
 type Domain = NonNullable<PageDomainResponse["domain"]>;
 
-export function ConnectedDomainActions({
+export default function ConnectedDomainActions({
 	domain,
 	isChecking,
 	isDisconnecting,
@@ -64,3 +64,5 @@ export function ConnectedDomainActions({
 		</div>
 	);
 }
+
+export { ConnectedDomainActions };

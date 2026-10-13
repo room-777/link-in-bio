@@ -77,7 +77,7 @@ function getForegroundColor(value: string | undefined) {
 	return luminance > 0.45 ? "#000" : "#fff";
 }
 
-export function BentoItemShell({
+export default function BentoItemShell({
 	item,
 	children,
 	handle,
@@ -405,3 +405,5 @@ export function BentoItemShell({
 		</motion.div>
 	);
 }
+
+export { BentoItemShell };

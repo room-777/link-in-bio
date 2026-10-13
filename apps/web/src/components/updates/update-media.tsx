@@ -2,7 +2,7 @@ import { cn } from "@grabbin/ui/lib/utils";
 import Image from "next/image";
 import type { UpdateFrontmatter } from "@/lib/updates";
 
-export function UpdateMedia({
+export default function UpdateMedia({
 	thumbnail,
 	className = "",
 	controls = false,
@@ -47,3 +47,5 @@ export function UpdateMedia({
 		/>
 	);
 }
+
+export { UpdateMedia };

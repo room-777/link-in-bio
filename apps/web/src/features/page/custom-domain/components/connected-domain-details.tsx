@@ -9,7 +9,7 @@ import { DomainStatus } from "./domain-status";
 
 type Domain = NonNullable<PageDomainResponse["domain"]>;
 
-export function ConnectedDomainDetails({
+export default function ConnectedDomainDetails({
 	domain,
 	copiedKey,
 	onCopy,
@@ -114,3 +114,5 @@ export function ConnectedDomainDetails({
 		</div>
 	);
 }
+
+export { ConnectedDomainDetails };

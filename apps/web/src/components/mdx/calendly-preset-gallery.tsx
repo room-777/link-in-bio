@@ -27,7 +27,7 @@ const calendlyPresets: CalendlyPreset[] = [
 	"squareLarge",
 ];
 
-export function CalendlyPresetGallery() {
+export default function CalendlyPresetGallery() {
 	const today = new Date(calendlyDemoDateRange.today);
 	const selectedDate = new Date(calendlyDemoDateRange.selectedDate);
 	const lastDay = new Date(calendlyDemoDateRange.lastDay);
@@ -118,3 +118,5 @@ export function CalendlyPresetGallery() {
 		</div>
 	);
 }
+
+export { CalendlyPresetGallery };

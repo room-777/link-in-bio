@@ -26,7 +26,7 @@ const previewItem: BentoItem = {
 	preset: "squareLarge",
 };
 
-export function RssAdvancedWidgetPreview({
+export default function RssAdvancedWidgetPreview({
 	inputValue,
 	rssFeed,
 }: {
@@ -72,3 +72,5 @@ export function RssAdvancedWidgetPreview({
 		</AdvancedWidgetPreviewFrame>
 	);
 }
+
+export { RssAdvancedWidgetPreview };

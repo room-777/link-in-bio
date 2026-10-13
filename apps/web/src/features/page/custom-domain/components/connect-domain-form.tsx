@@ -10,7 +10,7 @@ import {
 import Loading from "@grabbin/ui/components/loading";
 import type { FormEvent } from "react";
 
-export function ConnectDomainForm({
+export default function ConnectDomainForm({
 	isPro,
 	hostname,
 	isPending,
@@ -70,3 +70,5 @@ export function ConnectDomainForm({
 		</form>
 	);
 }
+
+export { ConnectDomainForm };

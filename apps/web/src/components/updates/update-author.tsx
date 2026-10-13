@@ -1,7 +1,7 @@
 import Image from "next/image";
 import type { UpdateFrontmatter } from "@/lib/updates";
 
-export function UpdateAuthor({
+export default function UpdateAuthor({
 	author,
 }: {
 	author: UpdateFrontmatter["author"];
@@ -29,3 +29,5 @@ export function UpdateAuthor({
 		</div>
 	);
 }
+
+export { UpdateAuthor };

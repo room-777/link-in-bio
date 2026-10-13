@@ -7,7 +7,7 @@ import type { BentoCommand, BentoItem } from "@/lib/bento/bento-types";
 import { ExternalAction } from "./external-action";
 import { textSizeClassByPreset } from "./shared";
 
-export function TextItem({
+export default function TextItem({
 	item,
 	preset,
 	mode,
@@ -117,3 +117,5 @@ export function TextItem({
 		</div>
 	);
 }
+
+export { TextItem };

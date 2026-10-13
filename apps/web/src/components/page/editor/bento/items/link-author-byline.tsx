@@ -5,7 +5,7 @@ import {
 } from "@grabbin/ui/components/avatar";
 import { cn } from "@grabbin/ui/lib/utils";
 
-export function LinkAuthorByline({
+export default function LinkAuthorByline({
 	name,
 	imageUrl,
 	showName = true,
@@ -48,3 +48,5 @@ export function LinkAuthorByline({
 		</div>
 	);
 }
+
+export { LinkAuthorByline };

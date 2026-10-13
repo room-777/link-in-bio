@@ -3,7 +3,7 @@ import { Input } from "@grabbin/ui/components/input";
 const mediaCaptionClassName =
 	"field-sizing-content h-8 w-fit min-w-24 max-w-full rounded-md bg-background px-2 py-0 font-medium text-foreground text-sm outline-solid! outline-1! outline-black/10!";
 
-export function MediaCaption({
+export default function MediaCaption({
 	value,
 	mode = "view",
 	className,
@@ -35,3 +35,5 @@ export function MediaCaption({
 		</p>
 	) : null;
 }
+
+export { MediaCaption };

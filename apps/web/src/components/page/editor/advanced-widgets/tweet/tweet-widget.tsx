@@ -5,7 +5,7 @@ import type { Tweet as TweetResponse } from "react-tweet/api";
 import { Tweet } from "./tweet";
 import { getTweetId } from "./tweet-url";
 
-export function TweetWidget({
+export default function TweetWidget({
 	url,
 	className,
 	preset,
@@ -41,3 +41,5 @@ export function TweetWidget({
 		/>
 	);
 }
+
+export { TweetWidget };

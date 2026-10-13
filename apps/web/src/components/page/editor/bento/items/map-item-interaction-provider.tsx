@@ -32,7 +32,7 @@ type MapItemInteractionContextValue = {
 const MapItemInteractionContext =
 	createContext<MapItemInteractionContextValue | null>(null);
 
-export function MapItemInteractionProvider({
+export default function MapItemInteractionProvider({
 	children,
 	disableLocationSearch = false,
 }: {
@@ -96,3 +96,5 @@ export function useMapItemInteraction() {
 export function useOptionalMapItemInteraction() {
 	return useContext(MapItemInteractionContext);
 }
+
+export { MapItemInteractionProvider };

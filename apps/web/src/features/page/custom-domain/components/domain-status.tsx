@@ -12,7 +12,7 @@ const statusLabels = {
 	expired: "Pro plan ended",
 } as const;
 
-export function DomainStatus({
+export default function DomainStatus({
 	status,
 }: {
 	status: keyof typeof statusLabels;
@@ -39,3 +39,5 @@ export function DomainStatus({
 		</>
 	);
 }
+
+export { DomainStatus };

@@ -1,7 +1,7 @@
 import { cn } from "@grabbin/ui/lib/utils";
 import type { AdvancedWidgetModule } from "@/constant/widget/advanced-widget-registry";
 
-export function AdvancedWidgetIcon({
+export default function AdvancedWidgetIcon({
 	widget,
 	className,
 }: {
@@ -33,3 +33,5 @@ export function AdvancedWidgetIcon({
 		</span>
 	);
 }
+
+export { AdvancedWidgetIcon };

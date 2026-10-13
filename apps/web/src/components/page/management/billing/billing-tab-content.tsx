@@ -2,7 +2,7 @@
 
 import { Button } from "@grabbin/ui/components/button";
 
-export function BillingTabContent({
+export default function BillingTabContent({
 	isPro,
 	disabled,
 	isOpeningPortal,
@@ -32,3 +32,5 @@ export function BillingTabContent({
 		</section>
 	);
 }
+
+export { BillingTabContent };

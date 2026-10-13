@@ -20,7 +20,7 @@ import {
 	type PlanCardVariant,
 } from "./plan-card";
 
-export function PlanPicker({
+export default function PlanPicker({
 	variant = "default",
 	className,
 	isAuthenticated,
@@ -166,3 +166,5 @@ export function openPlanDialog() {
 		/>
 	));
 }
+
+export { PlanPicker };

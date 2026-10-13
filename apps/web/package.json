@@ -12,6 +12,7 @@
 		"check-architecture:mutations": "bun scripts/check-architecture.ts mutations",
 		"check-architecture:request-boundaries": "bun scripts/check-architecture.ts request-boundaries",
 		"check-architecture:components": "bun scripts/check-architecture.ts components",
+		"check-architecture:file-names": "bun scripts/check-architecture.ts file-names",
 		"start": "wrangler dev --config dist/server/wrangler.json",
 		"dev:bare": "vinext dev --port 3000",
 		"dev:vinext": "vinext dev --port 3000",

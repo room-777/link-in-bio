@@ -186,7 +186,7 @@ const rssPresetWidgets: Record<
 	squareLarge: RssSquareLargeWidget,
 };
 
-export function RssFeedWidget({
+export default function RssFeedWidget({
 	url,
 	feed,
 	title,
@@ -369,3 +369,5 @@ export function RssFeedWidget({
 		/>
 	);
 }
+
+export { RssFeedWidget };

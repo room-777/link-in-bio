@@ -1,6 +1,6 @@
 import { CircleArrowRightUp } from "reicon-react";
 
-export function ExternalAction({
+export default function ExternalAction({
 	href,
 	label,
 }: {
@@ -24,3 +24,5 @@ export function ExternalAction({
 		</a>
 	);
 }
+
+export { ExternalAction };

@@ -3,7 +3,7 @@
 import { Check, Copy } from "lucide-react";
 import { AnimatePresence, motion } from "motion/react";
 
-export function CopyStateIcon({
+export default function CopyStateIcon({
 	copied,
 	reduceMotion,
 }: {
@@ -34,3 +34,5 @@ export function CopyStateIcon({
 		</span>
 	);
 }
+
+export { CopyStateIcon };

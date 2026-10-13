@@ -14,8 +14,28 @@ export function filesUnder(directory: string) {
 	return files;
 }
 
+function sourceFilesUnder(directory: string): string[] {
+	return readdirSync(directory, { withFileTypes: true }).flatMap((entry) => {
+		if (
+			entry.name.startsWith(".") ||
+			["dist", "node_modules"].includes(entry.name)
+		) {
+			return [];
+		}
+		const path = join(directory, entry.name);
+		return entry.isDirectory()
+			? sourceFilesUnder(path)
+			: /\.(?:cjs|cts|css|html|js|jsx|mdx|mjs|mts|scss|ts|tsx)$/.test(
+						entry.name,
+					)
+				? [path]
+				: [];
+	});
+}
+
 export function createArchitectureContext() {
 	const sourceDirectory = fileURLToPath(new URL("../../src/", import.meta.url));
+	const repositoryRoot = join(sourceDirectory, "../../..");
 	const queryDirectory = join(sourceDirectory, "query");
 	const mutationDirectory = join(sourceDirectory, "mutation");
 	const componentDirectory = join(sourceDirectory, "components");
@@ -39,14 +59,19 @@ export function createArchitectureContext() {
 		...filesUnder(componentDirectory),
 		...featureComponentFiles,
 	];
+	const fileNameFiles = ["apps/web", "packages"].flatMap((directory) =>
+		sourceFilesUnder(join(repositoryRoot, directory)),
+	);
 
 	return {
+		repositoryRoot,
 		sourceDirectory,
 		queryDirectory,
 		mutationDirectory,
 		componentDirectory,
 		featureDirectory,
 		allFiles: filesUnder(sourceDirectory),
+		fileNameFiles,
 		queryFiles,
 		mutationFiles,
 		componentFiles,

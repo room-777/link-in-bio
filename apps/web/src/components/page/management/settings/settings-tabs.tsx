@@ -12,7 +12,7 @@ export type SettingsTab = {
 	content: React.ReactNode;
 };
 
-export function SettingsTabs({
+export default function SettingsTabs({
 	tabs,
 	activeTab,
 	activePage,
@@ -92,3 +92,5 @@ export function SettingsTabs({
 		</Tabs>
 	);
 }
+
+export { SettingsTabs };

@@ -6,7 +6,7 @@ import type { Tweet as TweetResponse } from "react-tweet/api";
 import { getTweetId } from "./tweet-url";
 import { TweetWidget } from "./tweet-widget";
 
-export function TweetItem({
+export default function TweetItem({
 	item,
 	mode,
 	preset,
@@ -52,3 +52,5 @@ export function TweetItem({
 		</div>
 	);
 }
+
+export { TweetItem };

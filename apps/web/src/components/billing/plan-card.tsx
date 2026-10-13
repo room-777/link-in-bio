@@ -22,7 +22,7 @@ type PlanFeature = {
 	color?: string;
 };
 
-export function PlanCard({
+export default function PlanCard({
 	variant = "default",
 	className,
 	loading = false,
@@ -269,3 +269,5 @@ export function PlanCard({
 		</Container>
 	);
 }
+
+export { PlanCard };

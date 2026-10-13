@@ -2,7 +2,7 @@
 
 import { authClient } from "@/lib/auth-client";
 
-export function MadeWithGrabbinBadge({
+export default function MadeWithGrabbinBadge({
 	hasProAccess,
 }: {
 	hasProAccess?: boolean;
@@ -18,3 +18,5 @@ export function MadeWithGrabbinBadge({
 		</span>
 	);
 }
+
+export { MadeWithGrabbinBadge };

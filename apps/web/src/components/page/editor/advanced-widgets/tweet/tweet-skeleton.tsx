@@ -56,3 +56,5 @@ export const TweetSkeleton = ({
 		</div>
 	</div>
 );
+
+export default TweetSkeleton;

@@ -1,7 +1,7 @@
 import { Button } from "@grabbin/ui/components/button";
 import { openPlanDialog as handleOpenPlanDialog } from "./plan-picker";
 
-export function PlanDialogButton({
+export default function PlanDialogButton({
 	children = "Get Pro",
 	...buttonProps
 }: React.ComponentProps<typeof Button>) {
@@ -11,3 +11,5 @@ export function PlanDialogButton({
 		</Button>
 	);
 }
+
+export { PlanDialogButton };

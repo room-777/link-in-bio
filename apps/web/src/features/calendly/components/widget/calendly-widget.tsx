@@ -540,7 +540,7 @@ function CalendlySquareLarge(props: CalendlyPresetWidgetProps) {
 	);
 }
 
-export function CalendlyWidget({
+export default function CalendlyWidget({
 	preset,
 	...props
 }: CalendlyPresetWidgetProps & { preset: CalendlyPreset }) {
@@ -553,3 +553,5 @@ export function CalendlyWidget({
 	}[preset];
 	return <Component {...props} />;
 }
+
+export { CalendlyWidget };

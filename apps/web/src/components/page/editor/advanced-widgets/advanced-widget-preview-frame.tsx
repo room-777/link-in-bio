@@ -24,7 +24,7 @@ function getLayoutSize(item: BentoItem) {
 	};
 }
 
-export function AdvancedWidgetPreviewFrame({
+export default function AdvancedWidgetPreviewFrame({
 	item,
 	children,
 	controls,
@@ -106,3 +106,5 @@ export function AdvancedWidgetPreviewFrame({
 		</div>
 	);
 }
+
+export { AdvancedWidgetPreviewFrame };

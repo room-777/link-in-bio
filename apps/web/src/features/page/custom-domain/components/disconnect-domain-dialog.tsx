@@ -12,7 +12,7 @@ import {
 } from "@grabbin/ui/components/alert-dialog";
 import { useState } from "react";
 
-export function DisconnectDomainDialog({
+export default function DisconnectDomainDialog({
 	hostname,
 	open,
 	onClose,
@@ -83,3 +83,5 @@ export function DisconnectDomainDialog({
 		</AlertDialog>
 	);
 }
+
+export { DisconnectDomainDialog };

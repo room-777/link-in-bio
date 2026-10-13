@@ -670,7 +670,7 @@ const spotifyPresetWidgets: Record<
 	squareLarge: SpotifySquareLarge,
 };
 
-export function SpotifyWidget({
+export default function SpotifyWidget({
 	item,
 	preset,
 }: {
@@ -718,3 +718,5 @@ export function SpotifyWidget({
 		/>
 	);
 }
+
+export { SpotifyWidget };

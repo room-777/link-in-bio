@@ -7,7 +7,7 @@ import { getScrollTarget } from "./shared";
 const MAP_SCROLL_IDLE_DELAY = 160;
 const MAP_IDLE_TIMEOUT = 1000;
 
-export function MapViewportGate({
+export default function MapViewportGate({
 	children,
 	placeholder,
 	forceMount = false,
@@ -126,3 +126,5 @@ export function MapViewportGate({
 		</div>
 	);
 }
+
+export { MapViewportGate };

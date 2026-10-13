@@ -590,7 +590,7 @@ function LinkTitle({
 	);
 }
 
-export function LinkItem({
+export default function LinkItem({
 	item,
 	preset,
 	mode = "view",
@@ -895,3 +895,5 @@ export function LinkItem({
 		</AnimatePresence>
 	);
 }
+
+export { LinkItem };

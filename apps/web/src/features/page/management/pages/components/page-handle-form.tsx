@@ -49,7 +49,7 @@ type PageHandleFormProps = {
 	onSubmit: (handle: string) => Promise<void>;
 };
 
-export function PageHandleForm({
+export default function PageHandleForm({
 	initialHandle = "",
 	title,
 	description,
@@ -218,3 +218,5 @@ export function PageHandleForm({
 		</div>
 	);
 }
+
+export { PageHandleForm };

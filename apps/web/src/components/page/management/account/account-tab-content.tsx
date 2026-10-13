@@ -5,7 +5,7 @@ import { CheckCircle } from "reicon-react/icons/CheckCircle";
 import { Verified } from "reicon-react/icons/Verified";
 import { CalendlyConnectionContent } from "@/features/calendly/components/calendly-connection-content";
 
-export function AccountTabContent({
+export default function AccountTabContent({
 	email,
 	isPro,
 	onUpgrade: handleUpgrade,
@@ -58,3 +58,5 @@ export function AccountTabContent({
 		</>
 	);
 }
+
+export { AccountTabContent };

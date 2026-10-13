@@ -1,6 +1,6 @@
 import type { AdvancedWidgetModule } from "@/constant/widget/advanced-widget-registry";
 
-export function AdvancedWidgetBadges({
+export default function AdvancedWidgetBadges({
 	badges,
 	sizeClassName,
 }: {
@@ -26,3 +26,5 @@ export function AdvancedWidgetBadges({
 		</span>
 	);
 }
+
+export { AdvancedWidgetBadges };

@@ -42,7 +42,7 @@ function getResultLabel(result: MapSearchResult) {
 	return result.address ? `${result.name} · ${result.address}` : result.name;
 }
 
-export function MapLocationSearch({
+export default function MapLocationSearch({
 	accessToken,
 	language,
 	disabled = false,
@@ -276,3 +276,5 @@ export function MapLocationSearch({
 		</div>
 	);
 }
+
+export { MapLocationSearch };

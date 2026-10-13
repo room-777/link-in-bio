@@ -37,7 +37,7 @@ const previewItem: BentoItem = {
 	preset: "landscape",
 };
 
-export function CalendlyAdvancedWidgetPreview() {
+export default function CalendlyAdvancedWidgetPreview() {
 	const {
 		preset,
 		visiblePreset,
@@ -98,3 +98,5 @@ export function CalendlyAdvancedWidgetPreview() {
 		</AdvancedWidgetPreviewFrame>
 	);
 }
+
+export { CalendlyAdvancedWidgetPreview };

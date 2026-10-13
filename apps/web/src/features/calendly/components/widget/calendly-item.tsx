@@ -9,7 +9,7 @@ import {
 } from "../../queries/availability";
 import { CalendlyWidget } from "./calendly-widget";
 
-export function CalendlyItem({
+export default function CalendlyItem({
 	item,
 	preset,
 	handle,
@@ -70,3 +70,5 @@ export function CalendlyItem({
 		/>
 	);
 }
+
+export { CalendlyItem };

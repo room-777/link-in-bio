@@ -11,7 +11,7 @@ const presetLabels: Record<PresetName, string> = {
 	portrait: "Portrait",
 };
 
-export function AdvancedWidgetPresetControls({
+export default function AdvancedWidgetPresetControls({
 	presets,
 	preset,
 	onPresetChange,
@@ -41,3 +41,5 @@ export function AdvancedWidgetPresetControls({
 		</fieldset>
 	);
 }
+
+export { AdvancedWidgetPresetControls };

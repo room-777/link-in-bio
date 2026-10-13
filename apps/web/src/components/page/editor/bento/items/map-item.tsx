@@ -219,7 +219,7 @@ function setMapInteractions(map: MapboxMapWithHandlers, enabled: boolean) {
 	map.touchZoomRotate?.disableRotation();
 }
 
-export function MapItem({
+export default function MapItem({
 	item,
 	preset,
 	mode,
@@ -582,3 +582,5 @@ export function MapItem({
 		</div>
 	);
 }
+
+export { MapItem };

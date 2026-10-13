@@ -422,7 +422,7 @@ interface TweetProps {
 	fetchOnMissing?: boolean;
 }
 
-export function Tweet({
+export default function Tweet({
 	id,
 	className,
 	author,
@@ -494,3 +494,5 @@ export function Tweet({
 		/>
 	);
 }
+
+export { Tweet };

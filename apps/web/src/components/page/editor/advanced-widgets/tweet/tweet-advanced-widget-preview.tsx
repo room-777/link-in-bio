@@ -31,7 +31,7 @@ const previewItem: Extract<BentoItem, { type: "link" }> = {
 	preset: "squareLarge",
 };
 
-export function TweetAdvancedWidgetPreview({
+export default function TweetAdvancedWidgetPreview({
 	inputValue,
 }: {
 	inputValue?: string;
@@ -82,3 +82,5 @@ export function TweetAdvancedWidgetPreview({
 		</AdvancedWidgetPreviewFrame>
 	);
 }
+
+export { TweetAdvancedWidgetPreview };

@@ -56,7 +56,7 @@ function MapAtmosphere() {
 	);
 }
 
-export function MapWidgetPreview() {
+export default function MapWidgetPreview() {
 	const accessToken = env.NEXT_PUBLIC_MAPBOX_ACCESS_TOKEN?.trim();
 	const [isMapLoaded, setIsMapLoaded] = useState(false);
 
@@ -91,3 +91,5 @@ export function MapWidgetPreview() {
 		</div>
 	);
 }
+
+export { MapWidgetPreview };
