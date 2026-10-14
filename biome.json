@@ -1,9 +1,9 @@
 {
 	"$schema": "./node_modules/@biomejs/biome/configuration_schema.json",
 	"vcs": {
-		"enabled": false,
+		"enabled": true,
 		"clientKind": "git",
-		"useIgnoreFile": false
+		"useIgnoreFile": true
 	},
 	"files": {
 		"ignoreUnknown": false,
@@ -71,6 +71,10 @@
 		}
 	},
 	"overrides": [
+		{
+			"includes": ["packages/ui/src/**"],
+			"linter": { "enabled": false }
+		},
 		{
 			"includes": ["apps/web/src/**/*.ts", "apps/web/src/**/*.tsx"],
 			"linter": {

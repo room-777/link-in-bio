@@ -1,19 +1,26 @@
 #!/bin/sh
+# Runs the same checks as CI (`bun run verify`). Installed by `bun install`
+# through the root "prepare" script. Skipping it locally does not skip CI:
+# the `verify` job is a required status check on main.
 set -eu
 
 staged_files=$(git diff --cached --name-only --diff-filter=ACMR)
+[ -z "$staged_files" ] && exit 0
 
-if [ -z "$staged_files" ]; then
-	exit 0
+# The checks read the working tree. Refuse partly staged files so what is
+# checked is exactly what is committed.
+partial=$(git diff --name-only -- $staged_files)
+if [ -n "$partial" ]; then
+	echo "pre-commit: these files have unstaged changes; stage or stash them first:" >&2
+	printf '  %s\n' $partial >&2
+	exit 1
 fi
 
-staged_biome_files=$(printf '%s\n' "$staged_files" | grep -E '\.(cjs|cts|css|html|js|jsx|json|jsonc|mjs|mts|ts|tsx)$' || true)
-
-if [ -n "$staged_biome_files" ]; then
-	bunx biome check --write --unsafe --only=correctness/noUnusedImports --staged
-	bunx biome check --write --staged
+# Convenience autofix on staged files only (does not decide pass/fail).
+if printf '%s\n' "$staged_files" | grep -qE '\.(cjs|cts|css|html|js|jsx|json|jsonc|mjs|mts|ts|tsx)$'; then
+	bunx biome check --write --unsafe --only=correctness/noUnusedImports --staged --no-errors-on-unmatched >/dev/null 2>&1 || true
+	bunx biome check --write --staged --no-errors-on-unmatched >/dev/null 2>&1 || true
 	git diff --cached --name-only --diff-filter=ACMR -z | xargs -0 git add --
 fi
 
-bun run --filter web check-types
-bun run --filter web lint
+exec bun run verify

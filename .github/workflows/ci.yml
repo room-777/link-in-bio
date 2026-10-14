@@ -6,17 +6,17 @@ on:
   pull_request:
 
 jobs:
-  web:
+  verify:
+    name: verify
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
         with:
-          node-version: 22
+          node-version-file: .node-version
       - uses: oven-sh/setup-bun@v2
         with:
-          bun-version: 1.4.0
+          bun-version-file: package.json
       - run: bun install --frozen-lockfile
-      - run: bun run --filter web check-types
-      - run: bun run --filter web lint
-      - run: bun run check:plan-boundary
+      # The same entry point as the pre-commit hook (scripts/verify.ts).
+      - run: bun run verify
