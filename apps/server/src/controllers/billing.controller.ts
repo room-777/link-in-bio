@@ -1,4 +1,3 @@
-import { reconcileUserPageLifecycle } from "@grabbin/application/page-lifecycle";
 import { createCreemClient } from "@grabbin/auth/creem-server";
 import { Hono } from "hono";
 import { jsonApiError } from "../api-error";
@@ -105,11 +104,6 @@ export const billingController = new Hono<AppEnv>()
 					code: "SUBSCRIPTION_NOT_ACTIVE",
 					detail: "There is no active subscription to cancel.",
 				});
-			await reconcileUserPageLifecycle({
-				db: c.var.db,
-				userId: session.user.id,
-				proProductIds: proProductIds(c.env),
-			});
 			return c.json({ success: true });
 		} catch {
 			return jsonApiError(c, {

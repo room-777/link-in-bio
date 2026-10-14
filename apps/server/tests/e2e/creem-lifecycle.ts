@@ -1,15 +1,11 @@
 import assert from "node:assert/strict";
 import { spawn } from "node:child_process";
 import { setTimeout as sleep } from "node:timers/promises";
+import { getAccountPlan } from "@grabbin/application/billing";
 import { reconcileExpiredSubscriptions } from "@grabbin/application/billing-reconciliation";
-import { deleteExpiredPages } from "@grabbin/application/page-lifecycle";
-import { drizzle, eq, inArray } from "@grabbin/db/drizzle";
+import { drizzle, eq } from "@grabbin/db/drizzle";
 import * as schema from "@grabbin/db/schema/index";
-import {
-	creemSubscription,
-	pageMediaAssets,
-	pages,
-} from "@grabbin/db/schema/index";
+import { creemSubscription, pages } from "@grabbin/db/schema/index";
 import { betterAuth } from "better-auth";
 import { drizzleAdapter } from "better-auth/adapters/drizzle";
 import { testUtils } from "better-auth/plugins";
@@ -57,11 +53,6 @@ async function waitFor<T>(
 	throw new Error(
 		`Timed out waiting for ${label}. Check the ngrok webhook delivery.`,
 	);
-}
-
-function memoryBucket() {
-	const keys = new Set<string>();
-	return keys;
 }
 
 async function main() {
@@ -251,7 +242,7 @@ async function main() {
 			409,
 			"CREEM-E2E-003",
 		)) as { code?: string };
-		assert.equal(freeError.code, "PAGE_LIMIT_REACHED");
+		assert.equal(freeError.code, "PAGE_ALREADY_EXISTS");
 		pass("CREEM-E2E-003", {
 			freePageCount: 1,
 			extraPageStatus: freeExtraPage.status,
@@ -304,28 +295,19 @@ async function main() {
 			subscriptionId,
 		});
 
-		const addedPages = await Promise.all(
-			["two", "three"].map((suffix) =>
-				api("/pages", {
-					method: "POST",
-					body: JSON.stringify({ handle: `${handle}-${suffix}` }),
-				}),
-			),
-		);
-		for (const response of addedPages)
-			await expectStatus(response, 201, "CREEM-E2E-005");
-		const overLimit = await api("/pages", {
+		const secondPage = await api("/pages", {
 			method: "POST",
-			body: JSON.stringify({ handle: `${handle}-four` }),
+			body: JSON.stringify({ handle: `${handle}-two` }),
 		});
-		const proError = (await expectStatus(overLimit, 409, "CREEM-E2E-005")) as {
+		const pageError = (await expectStatus(
+			secondPage,
+			409,
+			"CREEM-E2E-005",
+		)) as {
 			code?: string;
 		};
-		assert.equal(proError.code, "PAGE_LIMIT_REACHED");
-		pass("CREEM-E2E-005", {
-			proPageCount: 3,
-			fourthPageStatus: overLimit.status,
-		});
+		assert.equal(pageError.code, "PAGE_ALREADY_EXISTS");
+		pass("CREEM-E2E-005", { secondPageStatus: secondPage.status });
 
 		const cancelResponse = await api("/auth/creem/cancel-subscription", {
 			method: "POST",
@@ -339,46 +321,24 @@ async function main() {
 			return row?.cancelAtPeriodEnd ? row : null;
 		}, "the scheduled cancellation webhook");
 		assert.ok(canceledAtPeriodEnd.periodEnd);
-		const pageRows = await db.query.pages.findMany({
-			where: eq(pages.userId, user.id),
+		const proIds = [monthlyProductId, yearlyProductId];
+		const midPeriod = await getAccountPlan({
+			db,
+			userId: user.id,
+			proProductIds: proIds,
 		});
-		const scheduledExtras = pageRows.filter((page) => page.handle !== handle);
-		assert.equal(scheduledExtras.length, 2);
-		for (const page of scheduledExtras) {
-			assert.equal(
-				page.deletionScheduledAt?.toISOString(),
-				new Date(
-					canceledAtPeriodEnd.periodEnd.getTime() + 7 * 24 * 60 * 60 * 1000,
-				).toISOString(),
-			);
-		}
+		assert.equal(midPeriod.hasAccess, true);
 		pass("CREEM-E2E-006", {
 			status: canceledAtPeriodEnd.status,
 			periodEnd: canceledAtPeriodEnd.periodEnd.toISOString(),
-			deleteAt: scheduledExtras[0]?.deletionScheduledAt?.toISOString(),
 		});
 
-		const mediaKeys = scheduledExtras.map(
-			(page) => `users/${user.id}/pages/${page.id}/test-image.png`,
+		const afterPeriod = new Date(
+			canceledAtPeriodEnd.periodEnd.getTime() + 24 * 60 * 60 * 1000,
 		);
-		const media = memoryBucket();
-		for (const key of mediaKeys) media.add(key);
-		const cleanupTime = new Date(
-			canceledAtPeriodEnd.periodEnd.getTime() + 8 * 24 * 60 * 60 * 1000,
-		);
-		await db.insert(pageMediaAssets).values(
-			scheduledExtras.map((page, index) => ({
-				objectKey: mediaKeys[index] as string,
-				userId: user.id,
-				pageId: page.id,
-				status: "attached" as const,
-				deleteAfter: null,
-				uploadExpiresAt: cleanupTime,
-			})),
-		);
-		const skippedUsers = await reconcileExpiredSubscriptions({
+		await reconcileExpiredSubscriptions({
 			db,
-			now: cleanupTime,
+			now: afterPeriod,
 			env: {
 				CREEM_API_KEY: process.env.CREEM_API_KEY,
 				CREEM_TEST_MODE: "true",
@@ -386,12 +346,13 @@ async function main() {
 				CREEM_PRO_YEARLY_PRODUCT_ID: yearlyProductId,
 			},
 		});
-		await deleteExpiredPages({
+		const ended = await getAccountPlan({
 			db,
-			now: cleanupTime,
-			proProductIds: [monthlyProductId, yearlyProductId],
-			skipUserIds: skippedUsers,
+			userId: user.id,
+			proProductIds: proIds,
+			now: afterPeriod,
 		});
+		assert.equal(ended.tier, "free");
 		const remainingPages = await db.query.pages.findMany({
 			where: eq(pages.userId, user.id),
 		});
@@ -399,19 +360,7 @@ async function main() {
 			remainingPages.map((page) => page.handle),
 			[handle],
 		);
-		assert.equal(media.size, 2);
-		const queuedMedia = await db
-			.select({ status: pageMediaAssets.status })
-			.from(pageMediaAssets)
-			.where(inArray(pageMediaAssets.objectKey, mediaKeys));
-		assert.deepEqual(
-			queuedMedia.map(({ status }) => status),
-			["pending_delete", "pending_delete"],
-		);
-		pass("CREEM-E2E-007", {
-			remainingPages: remainingPages.length,
-			queuedMediaKeys: queuedMedia.length,
-		});
+		pass("CREEM-E2E-007", { tier: ended.tier, pages: remainingPages.length });
 
 		console.log(
 			"CREEM lifecycle e2e passed. Cleaning up the sandbox user and subscription.",

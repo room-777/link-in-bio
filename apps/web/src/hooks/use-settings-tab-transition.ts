@@ -1,16 +1,11 @@
 import { useEffect, useState } from "react";
 
-export function useSettingsTabTransition(
-	hasPageTab: boolean,
-	reduceMotion: boolean,
-) {
+export function useSettingsTabTransition(reduceMotion: boolean) {
 	const [activeTab, setActiveTab] = useState("account");
 	const [outgoingTab, setOutgoingTab] = useState<string | null>(null);
 	const [isTransitioning, setIsTransitioning] = useState(false);
 	const [activePage, setActivePage] = useState("1");
-	const tabOrder = hasPageTab
-		? ["account", "page", "billing", "custom-domain"]
-		: ["account", "billing", "custom-domain"];
+	const tabOrder = ["account", "billing", "custom-domain"];
 	const isMovingForward =
 		tabOrder.indexOf(activeTab) > tabOrder.indexOf(outgoingTab ?? "account");
 	const incomingPage = isMovingForward ? "2" : "1";

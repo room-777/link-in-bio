@@ -1,5 +1,4 @@
 import { createBoundPageDomainService } from "@grabbin/application/page-domain";
-import { reconcileUserPageLifecycle } from "@grabbin/application/page-lifecycle";
 import { createAuth } from "@grabbin/auth";
 import { createDb } from "@grabbin/db";
 import { env } from "@grabbin/env/server";
@@ -23,27 +22,6 @@ import { providerIconsController } from "./controllers/provider-icons.controller
 import { createApiCors } from "./middlewares/cors.middleware";
 import { requiredSession } from "./middlewares/session.middleware";
 import type { AppEnv } from "./types";
-
-function proProductIds(bindings: AppEnv["Bindings"]) {
-	return [
-		bindings.CREEM_PRO_MONTHLY_PRODUCT_ID,
-		bindings.CREEM_PRO_YEARLY_PRODUCT_ID,
-	].filter(Boolean);
-}
-
-function authWithBillingSync(
-	db: Awaited<ReturnType<typeof createDb>>,
-	bindings: AppEnv["Bindings"],
-) {
-	return createAuth(db, {
-		onSubscriptionChange: (userId) =>
-			reconcileUserPageLifecycle({
-				db,
-				userId,
-				proProductIds: proProductIds(bindings),
-			}),
-	});
-}
 
 initLogger({ env: { service: "grabbin-server" }, pretty: true });
 
@@ -99,8 +77,8 @@ const app = createFactory<AppEnv>({
 	.route("/", calendlyController)
 	.route(
 		"/auth",
-		createAuthController(async (request, bindings) =>
-			(await authWithBillingSync(await createDb(), bindings)).handler(request),
+		createAuthController(async (request) =>
+			(await createAuth(await createDb())).handler(request),
 		),
 	)
 	.route("/", createRoutes)

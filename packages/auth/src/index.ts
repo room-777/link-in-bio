@@ -156,11 +156,6 @@ const authOptions = {
 				}),
 		},
 		additionalFields: {
-			primaryPageHandle: {
-				type: "string",
-				required: false,
-				input: false,
-			},
 			role: {
 				type: "string",
 				required: true,
@@ -188,6 +183,10 @@ const authOptions = {
 				}),
 		}),
 		customSession(async ({ user, session }, context) => {
+			const ownPage = (await context.context.adapter.findOne({
+				model: "pages",
+				where: [{ field: "userId", value: user.id }],
+			})) as { handle: string } | null;
 			const subscriptions = (await context.context.adapter.findMany({
 				model: "creem_subscription",
 				where: [{ field: "referenceId", value: user.id }],
@@ -214,11 +213,10 @@ const authOptions = {
 				].filter(Boolean),
 			);
 			return {
-				user,
+				user: { ...user, pageHandle: ownPage?.handle ?? null },
 				session,
 				plan: {
 					tier: access.tier,
-					pageLimit: access.pageLimit,
 					hasAccess: access.hasAccess,
 					status: access.status,
 					periodEnd: access.periodEnd?.toISOString() ?? null,

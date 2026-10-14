@@ -8,9 +8,9 @@ import type { CronBindings } from "../src/jobs/types";
 describe("daily maintenance", () => {
 	/** Case ID: DOMAIN-JOB-003
 	 * Given: no Pro product or SaaS configuration. When: the original daily job runs.
-	 * Then: keep the existing expired-page scan. Evidence: page query count and empty skipped-user set. Result: Pass | Fail | Blocked | Not Run
+	 * Then: no page-deletion scan runs (multi-page cleanup was removed). Evidence: zero page reads and empty skipped-user set. Result: Pass | Fail | Blocked | Not Run
 	 */
-	it("DOMAIN-JOB-003 preserves the daily page cleanup", async () => {
+	it("DOMAIN-JOB-003 does not scan pages for deletion", async () => {
 		let pageReads = 0;
 		const db = {
 			query: {
@@ -37,12 +37,12 @@ describe("daily maintenance", () => {
 			} as CronBindings,
 			date: new Date(),
 		});
-		assert.equal(pageReads, 1);
+		assert.equal(pageReads, 0);
 		assert.equal(result.size, 0);
 	});
 	/** Case ID: DOMAIN-JOB-004
 	 * Given: SaaS and Pro are configured, with no expired records. When: daily maintenance runs.
-	 * Then: refresh billing and clean pages before deciding domain expiration.
+	 * Then: refresh billing before deciding domain expiration.
 	 * Evidence: ordered model calls and a DB-only expiration batch of 100. Result: Pass | Fail | Blocked | Not Run
 	 */
 	it("DOMAIN-JOB-004 decides expiration after billing refresh and retries deletions", async () => {
@@ -92,7 +92,6 @@ describe("daily maintenance", () => {
 		await runDailyMaintenance({ db, bindings, date: new Date() });
 		assert.deepEqual(events, [
 			"billing",
-			"pages",
 			"domains-expiry",
 			"domains-delete-retry",
 		]);

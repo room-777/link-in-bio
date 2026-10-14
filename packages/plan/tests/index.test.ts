@@ -65,23 +65,26 @@ describe("plan decisions", () => {
 		);
 	});
 
-	it("PLAN-005 access exposes page limit and lifecycle facts", () => {
-		const plan = getPlanAccess(
-			[
-				{
-					productId: "pro",
-					status: "scheduled_cancel",
-					periodEnd: later,
-					cancelAtPeriodEnd: true,
-				},
-			],
-			["pro"],
-			now,
-		);
-		assert.equal(plan.pageLimit, 3);
-		assert.equal(plan.cancellationScheduled, true);
-		assert.equal(plan.periodEnded, false);
-		assert.equal(plan.lapsedFromPro, false);
+	it("PLAN-005 pay, cancel mid-period, then period end", () => {
+		const sub = (status: SubscriptionStatus, at: Date) =>
+			getPlanAccess(
+				[
+					{
+						productId: "pro",
+						status,
+						periodEnd: later,
+						cancelAtPeriodEnd: status === "scheduled_cancel",
+					},
+				],
+				["pro"],
+				at,
+			);
+		assert.equal(sub("active", now).tier, "pro");
+		assert.equal(sub("scheduled_cancel", now).tier, "pro");
+		assert.equal(sub("canceled", now).tier, "pro");
+		const afterEnd = new Date(later.getTime() + 1);
+		assert.equal(sub("scheduled_cancel", afterEnd).tier, "free");
+		assert.equal(sub("canceled", afterEnd).lapsedFromPro, true);
 	});
 
 	it("PLAN-006 payment failure or pause keeps Pro until the paid periodEnd", () => {
@@ -95,7 +98,6 @@ describe("plan decisions", () => {
 	it("PLAN-007 scheduled_cancel without periodEnd keeps Pro", () => {
 		const plan = access("scheduled_cancel", null);
 		assert.equal(plan.hasAccess, true);
-		assert.equal(plan.periodEnded, false);
 		assert.equal(access("canceled", null).hasAccess, false);
 		assert.equal(access("expired", null).hasAccess, false);
 	});

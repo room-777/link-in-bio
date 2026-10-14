@@ -5,7 +5,6 @@ import type { DatabaseClient } from "@grabbin/db";
 import { pageMediaAssets } from "@grabbin/db/schema/index";
 
 import {
-	assertPageWritable,
 	completePage,
 	createPage,
 	getOwnedPage,
@@ -14,15 +13,11 @@ import {
 	updatePageHandle,
 } from "../../src/services/page.service";
 
-function withPrimaryFreePlan(
-	input: unknown,
-	primaryPageHandle = "jane",
-): DatabaseClient {
+function withFreePlan(input: unknown): DatabaseClient {
 	const mock = input as { query?: Record<string, unknown> };
 	mock.query = {
 		...mock.query,
 		creemSubscription: { findMany: async () => [] },
-		user: { findFirst: async () => ({ primaryPageHandle }) },
 	};
 	const writable = mock as typeof mock & Record<string, unknown>;
 	if (!writable.transaction) {
@@ -114,7 +109,7 @@ describe("page service", () => {
 	 */
 	it("PAGE-SERVICE-009 finds only the signed-in owner's normalized handle", async () => {
 		let receivedWhere: unknown;
-		const db = withPrimaryFreePlan({
+		const db = withFreePlan({
 			query: {
 				pages: {
 					findFirst: async (input: { where: unknown }) => {
@@ -221,30 +216,16 @@ describe("page service", () => {
 
 	/**
 	 * Case ID: PAGE-SERVICE-003
-	 * Given: a user without a page submits an available handle.
+	 * Given: the account has no page yet.
 	 * When: createPage inserts the page.
-	 * Then: the user's primary page handle is saved in the same transaction.
-	 * Evidence: captured user update values contain the created page handle.
+	 * Then: only the page row is written.
+	 * Evidence: insert returns the page and no update call happens.
 	 * Result: Pass | Fail | Blocked | Not Run
 	 */
-	it("PAGE-SERVICE-003 stores the created handle as the primary page handle", async () => {
-		let userValues: Record<string, unknown> | undefined;
-		const userUpdate = {
-			set(nextValues: Record<string, unknown>) {
-				userValues = nextValues;
-				return userUpdate;
-			},
-			where() {
-				return userUpdate;
-			},
-		};
+	it("PAGE-SERVICE-003 creates the account's only page", async () => {
 		const tx = {
 			execute: async () => undefined,
-			query: {
-				pages: { findMany: async () => [] },
-				creemSubscription: { findMany: async () => [] },
-				user: { findFirst: async () => null },
-			},
+			query: { pages: { findFirst: async () => undefined } },
 			insert() {
 				return {
 					values() {
@@ -254,49 +235,37 @@ describe("page service", () => {
 					},
 				};
 			},
-			update: () => userUpdate,
+			update() {
+				throw new Error("user should not be updated");
+			},
 		};
 		const db = {
-			query: {
-				pages: {
-					findFirst: async () => undefined,
-				},
-				creemSubscription: {
-					findMany: async () => [],
-				},
-			},
+			query: { pages: { findFirst: async () => undefined } },
 			transaction: async (callback: (value: typeof tx) => unknown) =>
 				callback(tx),
 		} as unknown as DatabaseClient;
 
-		await createPage({ db, userId: "user-1", rawHandle: "Jane" });
+		const page = await createPage({ db, userId: "user-1", rawHandle: "Jane" });
 
-		assert.deepEqual(userValues, { primaryPageHandle: "jane" });
+		assert.equal(page.handle, "jane");
 	});
 
 	/**
 	 * Case ID: PAGE-SERVICE-010
-	 * Given: a free account already owns one page.
+	 * Given: an account (free or Pro) already owns a page.
 	 * When: it tries to create another page.
 	 * Then: creation is rejected before a second page is inserted.
-	 * Evidence: PAGE_LIMIT_REACHED error and no insert call.
+	 * Evidence: PAGE_ALREADY_EXISTS error and no insert call.
 	 * Result: Pass | Fail | Blocked | Not Run
 	 */
-	it("PAGE-SERVICE-010 blocks a second page for a free account", async () => {
+	it("PAGE-SERVICE-010 allows only one page per account", async () => {
 		let insertCalled = false;
 		const tx = {
 			execute: async () => undefined,
-			query: {
-				pages: { findMany: async () => [{ id: "page-1" }] },
-				creemSubscription: { findMany: async () => [] },
-				user: { findFirst: async () => ({ primaryPageHandle: "page-1" }) },
-			},
+			query: { pages: { findFirst: async () => ({ id: "page-1" }) } },
 			insert() {
 				insertCalled = true;
 				throw new Error("insert should not run");
-			},
-			update() {
-				throw new Error("user should not be updated");
 			},
 		};
 		const db = {
@@ -311,44 +280,12 @@ describe("page service", () => {
 				typeof error === "object" &&
 				error !== null &&
 				"code" in error &&
-				error.code === "PAGE_LIMIT_REACHED",
+				error.code === "PAGE_ALREADY_EXISTS",
 		);
 		assert.equal(insertCalled, false);
 	});
 
-	/**
-	 * Case ID: PAGE-SERVICE-012
-	 * Given: a free owner edits a non-primary page.
-	 * When: the server checks write access.
-	 * Then: it rejects the change as read-only.
-	 * Evidence: PAGE_READ_ONLY and unchanged data.
-	 * Result: Pass | Fail | Blocked | Not Run
-	 */
-	it("PAGE-SERVICE-012 keeps extra pages read-only after Pro access ends", async () => {
-		const db = withPrimaryFreePlan(
-			{
-				query: {
-					creemSubscription: { findMany: async () => [] },
-				},
-			},
-			"primary",
-		);
-
-		await assert.rejects(
-			assertPageWritable({
-				db,
-				userId: "user-1",
-				page: { id: "extra", handle: "extra" },
-			}),
-			(error: unknown) =>
-				typeof error === "object" &&
-				error !== null &&
-				"code" in error &&
-				error.code === "PAGE_READ_ONLY",
-		);
-	});
-
-	it("updates the page and primary user handle together", async () => {
+	it("updates only the page handle", async () => {
 		let pageValues: Record<string, unknown> | undefined;
 		let userValues: Record<string, unknown> | undefined;
 		let pageQueryCount = 0;
@@ -372,14 +309,12 @@ describe("page service", () => {
 			},
 		};
 		const tx = {
-			query: {
-				user: { findFirst: async () => ({ primaryPageHandle: "jane" }) },
-			},
+			query: {},
 			update() {
 				return pageValues ? userUpdate : pageUpdate;
 			},
 		};
-		const db = withPrimaryFreePlan({
+		const db = withFreePlan({
 			query: {
 				pages: {
 					findFirst: async () => {
@@ -402,7 +337,7 @@ describe("page service", () => {
 		});
 
 		assert.deepEqual(pageValues, { handle: "new-handle" });
-		assert.deepEqual(userValues, { primaryPageHandle: "new-handle" });
+		assert.equal(userValues, undefined);
 	});
 
 	/**
@@ -433,7 +368,7 @@ describe("page service", () => {
 			},
 			returning: async () => [updatedPage],
 		};
-		const db = withPrimaryFreePlan({
+		const db = withFreePlan({
 			query: {
 				pages: {
 					findFirst: async () => ({ id: "page-1", imageKey: null }),
@@ -482,7 +417,7 @@ describe("page service", () => {
 			},
 			returning: async () => [{ id: "page-1", name: "Jane" }],
 		};
-		const db = withPrimaryFreePlan({
+		const db = withFreePlan({
 			query: {
 				pages: {
 					findFirst: async () => ({ id: "page-1", imageKey: null }),
@@ -529,7 +464,7 @@ describe("page service", () => {
 			},
 			returning: async () => [{ id: "page-1", imageKey, name: "Jane" }],
 		};
-		const db = withPrimaryFreePlan({
+		const db = withFreePlan({
 			query: {
 				pages: {
 					findFirst: async () => ({ id: "page-1", imageKey: null }),
@@ -570,7 +505,7 @@ describe("page service", () => {
 			},
 			returning: async () => [{ id: "page-1", name: "Jane", bio: "Hello" }],
 		};
-		const db = withPrimaryFreePlan({
+		const db = withFreePlan({
 			query: {
 				pages: {
 					findFirst: async () => ({ id: "page-1", imageKey: null }),
@@ -603,7 +538,7 @@ describe("page service", () => {
 			},
 			returning: async () => [{ id: "page-1", name: null, bio: null }],
 		};
-		const db = withPrimaryFreePlan({
+		const db = withFreePlan({
 			query: {
 				pages: {
 					findFirst: async () => ({ id: "page-1", imageKey: null }),
@@ -638,7 +573,7 @@ describe("page service", () => {
 			returning: async () => [{ id: "page-1", imageKey, name: "Jane" }],
 		};
 		const deletedKeys: string[] = [];
-		const db = withPrimaryFreePlan({
+		const db = withFreePlan({
 			query: {
 				pages: {
 					findFirst: async () => ({ id: "page-1", imageKey: oldImageKey }),
@@ -685,7 +620,7 @@ describe("page service", () => {
 			},
 			returning: async () => [{ id: "page-1", imageCrop: null }],
 		};
-		const db = withPrimaryFreePlan({
+		const db = withFreePlan({
 			query: {
 				pages: {
 					findFirst: async () => ({

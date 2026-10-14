@@ -7,13 +7,10 @@ import {
 	attachPageMedia,
 	queuePageMediaDeletion,
 } from "@grabbin/application/media-assets";
-import {
-	assertPageWritable,
-	PageServiceError,
-} from "@grabbin/application/page-lifecycle";
+import { PageServiceError } from "@grabbin/application/page-lifecycle";
 import type { DatabaseClient } from "@grabbin/db";
 import { and, eq, inArray, sql } from "@grabbin/db/drizzle";
-import { creemSubscription, pages, user } from "@grabbin/db/schema/index";
+import { creemSubscription, pages } from "@grabbin/db/schema/index";
 import {
 	type HandleAvailabilityResponse,
 	normalizePageHandle,
@@ -108,12 +105,10 @@ export async function createPage({
 	db,
 	userId,
 	rawHandle,
-	proProductIds = [],
 }: {
 	db: DatabaseClient;
 	userId: string;
 	rawHandle: string;
-	proProductIds?: readonly string[];
 }) {
 	const availability = await checkPageHandle({ db, rawHandle });
 	if (!availability.available) throw getHandleError(availability);
@@ -124,32 +119,11 @@ export async function createPage({
 			await tx.execute(
 				sql`select id from "user" where id = ${userId} for update`,
 			);
-			const [ownedPages, subscriptions, currentUser] = await Promise.all([
-				tx.query.pages.findMany({
-					where: eq(pages.userId, userId),
-					columns: { id: true },
-				}),
-				tx.query.creemSubscription.findMany({
-					where: eq(creemSubscription.referenceId, userId),
-				}),
-				tx.query.user.findFirst({
-					where: eq(user.id, userId),
-					columns: { primaryPageHandle: true },
-				}),
-			]);
-			const plan = getPlanAccess(
-				subscriptions.map((subscription) => ({
-					productId: subscription.productId,
-					status: subscription.status,
-					periodEnd: subscription.periodEnd,
-					cancelAtPeriodEnd: subscription.cancelAtPeriodEnd,
-				})),
-				proProductIds,
-			);
-			const limit = plan.pageLimit;
-			if (ownedPages.length >= limit) {
-				throw new PageServiceError("PAGE_LIMIT_REACHED");
-			}
+			const ownedPage = await tx.query.pages.findFirst({
+				where: eq(pages.userId, userId),
+				columns: { id: true },
+			});
+			if (ownedPage) throw new PageServiceError("PAGE_ALREADY_EXISTS");
 
 			const [page] = await tx
 				.insert(pages)
@@ -157,12 +131,6 @@ export async function createPage({
 				.returning();
 			if (!page) throw new Error("PAGE_CREATE_FAILED");
 
-			if (!currentUser?.primaryPageHandle) {
-				await tx
-					.update(user)
-					.set({ primaryPageHandle: page.handle })
-					.where(eq(user.id, userId));
-			}
 			return page;
 		});
 	} catch (error) {
@@ -178,13 +146,11 @@ export async function updatePageHandle({
 	userId,
 	handle: rawCurrentHandle,
 	rawHandle,
-	proProductIds = [],
 }: {
 	db: DatabaseClient;
 	userId: string;
 	handle: string;
 	rawHandle: string;
-	proProductIds?: readonly string[];
 }) {
 	const currentHandle = normalizePageHandle(rawCurrentHandle);
 	const existingPage = await db.query.pages.findFirst({
@@ -192,7 +158,6 @@ export async function updatePageHandle({
 		columns: { id: true, handle: true },
 	});
 	if (!existingPage) throw new PageServiceError("PAGE_NOT_FOUND");
-	await assertPageWritable({ db, userId, page: existingPage, proProductIds });
 
 	const availability = await checkPageHandle({ db, rawHandle });
 	if (!availability.available && availability.handle !== existingPage.handle) {
@@ -208,17 +173,6 @@ export async function updatePageHandle({
 				.where(and(eq(pages.id, existingPage.id), eq(pages.userId, userId)))
 				.returning();
 			if (!page) throw new PageServiceError("PAGE_NOT_FOUND");
-
-			const currentUser = await tx.query.user.findFirst({
-				where: eq(user.id, userId),
-				columns: { primaryPageHandle: true },
-			});
-			if (currentUser?.primaryPageHandle === existingPage.handle) {
-				await tx
-					.update(user)
-					.set({ primaryPageHandle: page.handle })
-					.where(eq(user.id, userId));
-			}
 
 			return page;
 		});
@@ -236,14 +190,12 @@ export async function completePage({
 	userId,
 	handle: rawHandle,
 	profile,
-	proProductIds = [],
 }: {
 	db: DatabaseClient;
 	bucket: R2Bucket;
 	userId: string;
 	handle: string;
 	profile: PageProfile;
-	proProductIds?: readonly string[];
 }) {
 	const handle = normalizePageHandle(rawHandle);
 	const existingPage = await db.query.pages.findFirst({
@@ -251,12 +203,6 @@ export async function completePage({
 		columns: { id: true, imageKey: true, imageSource: true, imageCrop: true },
 	});
 	if (!existingPage) throw new PageServiceError("PAGE_NOT_FOUND");
-	await assertPageWritable({
-		db,
-		userId,
-		page: { ...existingPage, handle },
-		proProductIds,
-	});
 
 	const imageKey = profile.imageKey?.trim() || null;
 	if (
@@ -313,14 +259,12 @@ export async function updatePageDraft({
 	userId,
 	handle: rawHandle,
 	draft,
-	proProductIds = [],
 }: {
 	db: DatabaseClient;
 	bucket: R2Bucket;
 	userId: string;
 	handle: string;
 	draft: UpdatePageDraft;
-	proProductIds?: readonly string[];
 }) {
 	const handle = normalizePageHandle(rawHandle);
 	const existingPage = await db.query.pages.findFirst({
@@ -328,12 +272,6 @@ export async function updatePageDraft({
 		columns: { id: true, imageKey: true, imageSource: true, imageCrop: true },
 	});
 	if (!existingPage) throw new PageServiceError("PAGE_NOT_FOUND");
-	await assertPageWritable({
-		db,
-		userId,
-		page: { ...existingPage, handle },
-		proProductIds,
-	});
 
 	const imageKey = draft.imageKey?.trim() || null;
 	if (
@@ -466,5 +404,3 @@ export async function getPublicPageWithPlan(
 		hasProAccess: getPlanAccess(subscriptions, proProductIds).hasAccess,
 	};
 }
-
-export { assertPageWritable } from "@grabbin/application/page-lifecycle";

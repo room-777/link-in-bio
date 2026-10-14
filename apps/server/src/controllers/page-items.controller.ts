@@ -14,10 +14,6 @@ import {
 	pageItemUploadRequestSchema,
 } from "@grabbin/api";
 import { registerPendingPageMedia } from "@grabbin/application/media-assets";
-import {
-	assertPageWritable,
-	PageServiceError,
-} from "@grabbin/application/page-lifecycle";
 import type { DatabaseClient } from "@grabbin/db";
 import type { Context, MiddlewareHandler } from "hono";
 import { Hono } from "hono";
@@ -116,34 +112,6 @@ type PreviewSpotifyMetadata = (input: {
 
 async function readJson(c: Context<AppEnv>) {
 	return c.req.json().catch(() => null);
-}
-
-async function pageWriteError(
-	c: Context<AppEnv>,
-	userId: string,
-	page: { id: string; handle?: string },
-) {
-	try {
-		await assertPageWritable({
-			db: c.var.db,
-			userId,
-			page,
-			proProductIds: [
-				c.env.CREEM_PRO_MONTHLY_PRODUCT_ID,
-				c.env.CREEM_PRO_YEARLY_PRODUCT_ID,
-			].filter(Boolean),
-		});
-		return null;
-	} catch (error) {
-		if (error instanceof PageServiceError) {
-			return jsonApiError(c, {
-				status: 403,
-				code: "PAGE_READ_ONLY",
-				detail: "This page is read-only.",
-			});
-		}
-		throw error;
-	}
 }
 
 async function rssFeedResponse(
@@ -254,9 +222,6 @@ export function createPageItemsController({
 				});
 			}
 
-			const writeError = await pageWriteError(c, session.user.id, page);
-			if (writeError) return writeError;
-
 			try {
 				return c.json({
 					item: await enrichMetadata({
@@ -305,8 +270,6 @@ export function createPageItemsController({
 			if (!page) {
 				return jsonApiError(c, { status: 404, detail: "Page not found." });
 			}
-			const writeError = await pageWriteError(c, session.user.id, page);
-			if (writeError) return writeError;
 
 			try {
 				const upload = await createItemMediaUpload({
@@ -358,8 +321,6 @@ export function createPageItemsController({
 			if (!page) {
 				return jsonApiError(c, { status: 404, detail: "Page not found." });
 			}
-			const writeError = await pageWriteError(c, session.user.id, page);
-			if (writeError) return writeError;
 
 			try {
 				return c.json(
@@ -407,8 +368,6 @@ export function createPageItemsController({
 			if (!page) {
 				return jsonApiError(c, { status: 404, detail: "Page not found." });
 			}
-			const writeError = await pageWriteError(c, session.user.id, page);
-			if (writeError) return writeError;
 
 			try {
 				await cancelItemMediaUpload({
@@ -450,8 +409,6 @@ export function createPageItemsController({
 			});
 			if (!page)
 				return jsonApiError(c, { status: 404, detail: "Page not found." });
-			const writeError = await pageWriteError(c, session.user.id, page);
-			if (writeError) return writeError;
 
 			try {
 				return c.json(

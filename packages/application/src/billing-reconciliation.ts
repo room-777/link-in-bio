@@ -6,7 +6,6 @@ import {
 	parseSubscriptionStatus,
 } from "@grabbin/plan";
 import { and, eq, inArray, isNull, lte } from "drizzle-orm";
-import { reconcileUserPageLifecycle } from "./page-lifecycle";
 
 type BillingBindings = {
 	CREEM_API_KEY: string;
@@ -67,12 +66,6 @@ export async function reconcileExpiredSubscriptions({
 							: isNull(creemSubscription.lastWebhookId),
 					),
 				);
-			await reconcileUserPageLifecycle({
-				db,
-				userId: candidate.referenceId,
-				proProductIds,
-				now,
-			});
 		} catch {
 			console.warn("[creem] subscription reconciliation will retry", {
 				subscriptionId: candidate.creemSubscriptionId,

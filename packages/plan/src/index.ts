@@ -2,8 +2,6 @@ import type { SubscriptionStatus } from "@creem_io/webhook-types";
 
 export type { SubscriptionStatus };
 
-export const FREE_PAGE_LIMIT = 1;
-export const PRO_PAGE_LIMIT = 3;
 export const PAGE_GRACE_PERIOD_MS = 7 * 24 * 60 * 60 * 1000;
 
 const SUBSCRIPTION_STATUSES = {
@@ -160,13 +158,9 @@ export function getPlanAccess(
 
 	return {
 		tier: hasAccess ? ("pro" as const) : ("free" as const),
-		pageLimit: hasAccess ? PRO_PAGE_LIMIT : FREE_PAGE_LIMIT,
 		hasAccess,
 		/** Had a Pro subscription that no longer grants access. */
 		lapsedFromPro: !!subscription && !hasAccess,
-		cancellationScheduled:
-			!!subscription && isCancellationScheduled(subscription),
-		periodEnded: !!subscription && isPeriodEnded(subscription, now),
 		status: subscription?.status ?? null,
 		subscriptionId: subscription?.subscriptionId ?? null,
 		productId: subscription?.productId ?? null,
