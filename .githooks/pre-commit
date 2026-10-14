@@ -7,14 +7,9 @@ set -eu
 staged_files=$(git diff --cached --name-only --diff-filter=ACMR)
 [ -z "$staged_files" ] && exit 0
 
-# The checks read the working tree. Refuse partly staged files so what is
-# checked is exactly what is committed.
-partial=$(git diff --name-only -- $staged_files)
-if [ -n "$partial" ]; then
-	echo "pre-commit: these files have unstaged changes; stage or stash them first:" >&2
-	printf '  %s\n' $partial >&2
-	exit 1
-fi
+# The checks read the working tree, so it must equal the commit: no unstaged
+# changes in any file and no untracked files (names with spaces are safe).
+bun scripts/check-worktree.ts
 
 # Convenience autofix on staged files only (does not decide pass/fail).
 if printf '%s\n' "$staged_files" | grep -qE '\.(cjs|cts|css|html|js|jsx|json|jsonc|mjs|mts|ts|tsx)$'; then

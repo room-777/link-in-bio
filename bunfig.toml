@@ -1,0 +1,3 @@
+[test]
+# Typecheck (`tsc -b`) emits compiled copies of tests into dist/. Only run sources.
+pathIgnorePatterns = ["**/dist/**", "**/node_modules/**"]

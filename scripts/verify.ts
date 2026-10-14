@@ -5,8 +5,9 @@
  */
 import { spawnSync } from "node:child_process";
 import { readFileSync } from "node:fs";
+import { dirFromModuleUrl } from "./lib/paths";
 
-const root = new URL("..", import.meta.url).pathname;
+const root = dirFromModuleUrl(import.meta.url, "..");
 
 function fail(message: string): never {
 	console.error(`\n✖ verify: ${message}`);
