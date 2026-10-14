@@ -26,8 +26,8 @@ import { useIsMobile } from "@grabbin/ui/components/use-mobile";
 import { cn } from "@grabbin/ui/lib/utils";
 import { Activity } from "react";
 import { CheckCircle } from "reicon-react/icons/CheckCircle";
-import { useDeleteAccount } from "@/hooks/use-delete-account";
 import { authClient } from "@/lib/auth-client";
+import { useDeleteAccount } from "../hooks/use-delete-account";
 
 type DeleteAccountDialogProps = {
 	onOpenChange: (open: boolean) => void;
