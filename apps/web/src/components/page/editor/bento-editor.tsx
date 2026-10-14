@@ -1,25 +1,24 @@
 "use client";
 
 import type {
+	CalendlyEventType,
 	ItemType,
 	PageByHandleResponse,
-	PageItemLinkMetadata,
+	WidgetPreview,
 } from "@grabbin/api";
 import {
 	type BentoBreakpoint,
 	getBentoGridHeight,
 } from "@grabbin/bento-layout";
-import { providerIconUrl, resolveLinkProvider } from "@grabbin/page-link";
+import { getTweetId, type WidgetType } from "@grabbin/page-link";
 import { toast } from "@grabbin/ui/components/toast";
 import dynamic from "next/dynamic";
 import { type CSSProperties, useCallback, useEffect, useRef } from "react";
-import type { Tweet as TweetResponse } from "react-tweet/api";
 import type { AdvancedWidgetActions } from "@/features/page/editor/contexts/advanced-widget-actions-context";
 import { useBentoStore } from "@/features/page/editor/state/bento-store";
 import { useRssWidgetActions } from "@/features/rss/hooks/use-rss-widget-actions";
-import { useFetchBentoSpotifyPreviewMutation } from "@/features/spotify/mutations/preview";
+import { useSpotifyWidgetPreviewMutation } from "@/features/spotify/mutations/preview";
 import { useLoadTweet } from "@/features/tweet/queries/by-id";
-import { getTweetId } from "@/features/tweet/utils/tweet-url";
 import { getErrorMessage } from "@/lib/error-message";
 import EditMobileShareLinkButton from "./mobile-share-link-button";
 
@@ -67,23 +66,21 @@ export default function BentoEditor({
 		handle,
 		persistItems: !demoMode,
 	});
-	const spotifyPreviewMutation = useFetchBentoSpotifyPreviewMutation();
+	const spotifyPreviewMutation = useSpotifyWidgetPreviewMutation();
 	const { addRssFeed, previewRssFeed } = useRssWidgetActions(
-		handle,
 		store.dispatchCommand,
 	);
 	const loadTweet = useLoadTweet();
 	const spotifyPreviewRequestRef = useRef<{
-		handle: string;
 		url: string;
-		promise: Promise<PageItemLinkMetadata>;
+		promise: Promise<WidgetPreview<"spotify">>;
 	} | null>(null);
 	useEffect(() => {
 		onGridSavingChange?.(store.status === "saving");
 	}, [onGridSavingChange, store.status]);
 
 	const addItem = useCallback(
-		(itemType: Exclude<ItemType, "calendly">, url?: string) => {
+		(itemType: Exclude<ItemType, WidgetType>, url?: string) => {
 			if (itemType === "link") {
 				try {
 					if (new URL(url?.trim() ?? "").protocol !== "https:") {
@@ -106,8 +103,17 @@ export default function BentoEditor({
 		[store.dispatchCommand, store.refreshLinkMetadata],
 	);
 	const addCalendlyItem = useCallback(
-		async (event: import("@grabbin/api").CalendlyEventType) => {
-			store.dispatchCommand({ type: "add-calendly-item", event });
+		async (event: CalendlyEventType) => {
+			store.dispatchCommand({
+				type: "add-widget",
+				widget: {
+					type: "calendly",
+					data: {
+						eventTypeUri: event.uri,
+						schedulingUrl: event.schedulingUrl,
+					},
+				},
+			});
 			await store.flushPendingChanges();
 		},
 		[store.dispatchCommand, store.flushPendingChanges],
@@ -116,10 +122,16 @@ export default function BentoEditor({
 		async (url: string) => {
 			const tweetId = getTweetId(url);
 			if (!tweetId) return false;
-			const normalizedUrl = `https://x.com/i/status/${tweetId}`;
-			let tweetResponse: TweetResponse | undefined;
 			try {
-				tweetResponse = await loadTweet(tweetId);
+				const tweet = await loadTweet(tweetId);
+				store.dispatchCommand({
+					type: "add-widget",
+					widget: {
+						type: "tweet",
+						data: { url: `https://x.com/i/status/${tweetId}`, tweet },
+					},
+				});
+				return true;
 			} catch {
 				toast({
 					message: "Unable to load this Tweet. Try again.",
@@ -127,108 +139,31 @@ export default function BentoEditor({
 				});
 				return false;
 			}
-			if (!tweetResponse || tweetResponse.id_str !== tweetId) {
-				toast({
-					message: "Unable to load this Tweet. Try again.",
-					state: "error",
-				});
-				return false;
-			}
-
-			const addedItem = store.dispatchCommand({
-				type: "add-item",
-				itemType: "link",
-				url: normalizedUrl,
-			});
-			if (addedItem?.type !== "link") return false;
-
-			store.dispatchCommand({
-				type: "update-data",
-				itemId: addedItem.id,
-				data: {
-					...addedItem.data,
-					metadata: {
-						title: "X post",
-						faviconUrl: providerIconUrl("tweet"),
-						provider: "tweet",
-						providerData: {
-							tweet: { response: tweetResponse },
-						},
-					},
-				},
-			});
-			store.dispatchCommand({
-				type: "apply-preset",
-				itemId: addedItem.id,
-				breakpoint: "wide",
-				preset: "squareLarge",
-			});
-			store.dispatchCommand({
-				type: "apply-preset",
-				itemId: addedItem.id,
-				breakpoint: "compact",
-				preset: "squareLarge",
-			});
-			return true;
 		},
 		[loadTweet, store.dispatchCommand],
 	);
 	const previewSpotify = useCallback(
 		(url: string) => {
 			const cached = spotifyPreviewRequestRef.current;
-			if (cached?.handle === handle && cached.url === url)
-				return cached.promise;
+			if (cached?.url === url) return cached.promise;
 
 			const request = spotifyPreviewMutation
-				.mutateAsync({ handle, url })
+				.mutateAsync({ url })
 				.catch((error) => {
 					if (spotifyPreviewRequestRef.current?.promise === request)
 						spotifyPreviewRequestRef.current = null;
 					throw error;
 				});
-			spotifyPreviewRequestRef.current = { handle, url, promise: request };
+			spotifyPreviewRequestRef.current = { url, promise: request };
 			return request;
 		},
-		[handle, spotifyPreviewMutation.mutateAsync],
+		[spotifyPreviewMutation.mutateAsync],
 	);
 	const addSpotify = useCallback(
-		async (url: string, metadata: PageItemLinkMetadata) => {
-			let parsedUrl: URL;
-			try {
-				parsedUrl = new URL(url.trim());
-			} catch {
-				return false;
-			}
-			const resolved = resolveLinkProvider(parsedUrl);
-			if (
-				parsedUrl.protocol !== "https:" ||
-				resolved.id !== "spotify" ||
-				!resolved.target ||
-				metadata.provider !== "spotify" ||
-				!metadata.title ||
-				!metadata.providerData?.spotify
-			)
-				return false;
-
-			const normalizedUrl = parsedUrl.toString();
-			const addedItem = store.dispatchCommand({
-				type: "add-item",
-				itemType: "link",
-				url: normalizedUrl,
-			});
-			if (addedItem?.type !== "link") return false;
-
+		async (preview: WidgetPreview<"spotify">) => {
 			store.dispatchCommand({
-				type: "update-data",
-				itemId: addedItem.id,
-				data: {
-					...addedItem.data,
-					metadata: {
-						...metadata,
-						faviconUrl: metadata.faviconUrl ?? providerIconUrl("spotify"),
-						widget: "spotify",
-					},
-				},
+				type: "add-widget",
+				widget: { type: "spotify", data: preview },
 			});
 			return true;
 		},

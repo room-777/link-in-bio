@@ -1,6 +1,6 @@
 "use client";
 
-import type { PageItemLinkMetadata } from "@grabbin/api";
+import type { WidgetPreview } from "@grabbin/api";
 import { resolveLinkProvider } from "@grabbin/page-link";
 import { useEffect, useState } from "react";
 import { useAdvancedWidgetActions } from "@/features/page/editor/contexts/advanced-widget-actions-context";
@@ -16,10 +16,8 @@ export default function SpotifyWidgetActivity({
 	const actions = useAdvancedWidgetActions();
 	const [inputValue, setInputValue] = useState("");
 	const debouncedInput = useDebouncedValue(inputValue);
-	const [spotifyPreview, setSpotifyPreview] = useState<{
-		url: string;
-		metadata: PageItemLinkMetadata;
-	}>();
+	const [spotifyPreview, setSpotifyPreview] =
+		useState<WidgetPreview<"spotify">>();
 	const [spotifyPreviewError, setSpotifyPreviewError] = useState(false);
 	const spotifyPreviewUrl = normalizeHttpsUrl(debouncedInput);
 	const spotifyProvider = spotifyPreviewUrl
@@ -41,8 +39,8 @@ export default function SpotifyWidgetActivity({
 		setSpotifyPreviewError(false);
 		void actions
 			.onSpotifyPreview(spotifyPreviewUrl)
-			.then((metadata) => {
-				if (isCurrent) setSpotifyPreview({ url: spotifyPreviewUrl, metadata });
+			.then((preview) => {
+				if (isCurrent) setSpotifyPreview(preview);
 			})
 			.catch(() => {
 				if (isCurrent) setSpotifyPreviewError(true);
@@ -57,8 +55,8 @@ export default function SpotifyWidgetActivity({
 		setSpotifyPreviewError(false);
 	}
 
-	async function handleSpotifyAdd(url: string, metadata: PageItemLinkMetadata) {
-		const added = await actions.onSpotifyAdd(url, metadata);
+	async function handleSpotifyAdd(preview: WidgetPreview<"spotify">) {
+		const added = await actions.onSpotifyAdd(preview);
 		if (added) onClose();
 		return added;
 	}

@@ -1,8 +1,4 @@
-import {
-	type CalendlyEventType,
-	createInitialLinkMetadata,
-	type ItemType,
-} from "@grabbin/api";
+import { createInitialLinkMetadata, type ItemType } from "@grabbin/api";
 import {
 	type BentoBreakpoint,
 	getColumns,
@@ -10,7 +6,7 @@ import {
 	getPresetGeometry,
 	placeAtFirstAvailable,
 } from "@grabbin/bento-layout";
-import type { BentoItem } from "./bento-types";
+import type { BentoItem, WidgetContent } from "./bento-types";
 
 const breakpoints: BentoBreakpoint[] = ["wide", "compact"];
 
@@ -49,13 +45,13 @@ export function createBentoItem({
 	itemType,
 	url,
 	media,
-	calendlyEvent,
+	widget,
 }: {
 	items: readonly BentoItem[];
 	itemType: ItemType;
 	url?: string;
 	media?: { mimeType: string; previewUrl: string };
-	calendlyEvent?: CalendlyEventType;
+	widget?: WidgetContent;
 }): BentoItem {
 	const id = createBentoItemId();
 	const preset = getDefaultPreset(itemType);
@@ -79,6 +75,8 @@ export function createBentoItem({
 		preset,
 	};
 
+	if (widget) return { ...base, ...widget };
+
 	switch (itemType) {
 		case "text":
 			return { ...base, type: itemType, data: { text: "" } };
@@ -101,17 +99,11 @@ export function createBentoItem({
 				},
 			};
 		}
-		case "calendly": {
-			if (!calendlyEvent) throw new Error("Calendly event required.");
-			return {
-				...base,
-				type: itemType,
-				data: {
-					eventTypeUri: calendlyEvent.uri,
-					schedulingUrl: calendlyEvent.schedulingUrl,
-				},
-			};
-		}
+		case "calendly":
+		case "rss":
+		case "tweet":
+		case "spotify":
+			throw new Error("Widget data required.");
 		case "media":
 			return {
 				...base,

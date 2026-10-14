@@ -1,5 +1,6 @@
 "use client";
 
+import { getTweetId } from "@grabbin/page-link";
 import { Button } from "@grabbin/ui/components/button";
 import {
 	InputGroup,
@@ -8,7 +9,6 @@ import {
 import { Label } from "@grabbin/ui/components/label";
 import Loading from "@grabbin/ui/components/loading";
 import { type ChangeEvent, useState } from "react";
-import { getTweetId } from "../../utils/tweet-url";
 
 export default function TweetWidgetDetails({
 	onTweetAdd,

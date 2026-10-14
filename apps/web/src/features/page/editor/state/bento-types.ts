@@ -1,5 +1,4 @@
 import type {
-	CalendlyEventType,
 	ItemType,
 	PageItemResponse,
 	PageItemStyle,
@@ -10,14 +9,23 @@ import type {
 	BentoLayoutMap,
 	PresetName,
 } from "@grabbin/bento-layout";
+import type { WidgetType } from "@grabbin/page-link";
 
 export type BentoItem = PageItemResponse & {
 	preset: PresetName | null;
 };
 
+/** A widget item to add, with the data it saves. */
+export type WidgetContent = {
+	[T in WidgetType]: Pick<
+		Extract<PageItemResponse, { type: T }>,
+		"type" | "data"
+	>;
+}[WidgetType];
+
 export type BentoCommand =
-	| { type: "add-item"; itemType: Exclude<ItemType, "calendly">; url?: string }
-	| { type: "add-calendly-item"; event: CalendlyEventType }
+	| { type: "add-item"; itemType: Exclude<ItemType, WidgetType>; url?: string }
+	| { type: "add-widget"; widget: WidgetContent }
 	| {
 			type: "replace-layout";
 			breakpoint: BentoBreakpoint;

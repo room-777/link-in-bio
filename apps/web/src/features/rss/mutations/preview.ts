@@ -1,30 +1,29 @@
-import { pageItemRssResponseSchema } from "@grabbin/api";
+import { widgetPreviewResponseSchema } from "@grabbin/api";
 import { providerIconUrl } from "@grabbin/page-link";
 import { useMutation } from "@tanstack/react-query";
 import * as v from "valibot";
 import { apiClient, getApiErrorMessage } from "@/lib/api-client";
 
-async function getRssFeedPreview(handle: string, url: string) {
-	const response = await apiClient.pages[":handle"].metadata.$post(
-		{ param: { handle } },
-		{
-			init: {
-				body: JSON.stringify({ kind: "rss", url }),
-				headers: { "Content-Type": "application/json" },
-			},
+async function getRssFeedPreview(url: string) {
+	const response = await apiClient.widgets.preview.$post(undefined, {
+		init: {
+			body: JSON.stringify({ kind: "rss", url }),
+			headers: { "Content-Type": "application/json" },
 		},
-	);
+	});
 	if (!response.ok) throw new Error(await getApiErrorMessage(response));
-	const result = v.parse(pageItemRssResponseSchema, await response.json());
+	const result = v.parse(widgetPreviewResponseSchema, await response.json());
+	if (result.kind !== "rss") throw new Error("Unexpected widget preview.");
+	const { feed } = result.data;
 	return {
-		...result,
-		rss: {
-			...result.rss,
+		...result.data,
+		feed: {
+			...feed,
 			source: {
-				...result.rss.source,
+				...feed.source,
 				iconUrl: providerIconUrl(
-					result.rss.source.platform,
-					result.rss.source.platform === "ghost" ? "webp" : "svg",
+					feed.source.platform,
+					feed.source.platform === "ghost" ? "webp" : "svg",
 				),
 			},
 		},
@@ -33,7 +32,6 @@ async function getRssFeedPreview(handle: string, url: string) {
 
 export function useRssFeedPreviewMutation() {
 	return useMutation({
-		mutationFn: ({ handle, url }: { handle: string; url: string }) =>
-			getRssFeedPreview(handle, url).then(({ rss }) => rss),
+		mutationFn: ({ url }: { url: string }) => getRssFeedPreview(url),
 	});
 }

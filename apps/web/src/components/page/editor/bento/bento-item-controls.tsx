@@ -1,8 +1,11 @@
 "use client";
 
-import { inferPresetFromLayout, type PresetName } from "@grabbin/bento-layout";
+import {
+	getAllowedPresets,
+	inferPresetFromLayout,
+	type PresetName,
+} from "@grabbin/bento-layout";
 import { env } from "@grabbin/env/web";
-import { getItemPresets, getWidgetKind, widgetRules } from "@grabbin/page-link";
 import { Button } from "@grabbin/ui/components/button";
 import { Input } from "@grabbin/ui/components/input";
 import {
@@ -693,7 +696,6 @@ export default function BentoItemControls({
 }) {
 	const [isRefreshing, setIsRefreshing] = useState(false);
 	const linkValue = getLinkValue(item);
-	const widgetKind = getWidgetKind(item);
 	const currentPreset = inferPresetFromLayout(
 		item.type,
 		item.layouts[breakpoint],
@@ -774,7 +776,7 @@ export default function BentoItemControls({
 			data-bento-item-drag-cancel="true"
 			className="pointer-events-none absolute top-full left-1/2 z-[100002] mt-2 flex h-10 w-max -translate-x-1/2 -translate-y-1/2 items-center justify-center gap-1 rounded-lg bg-foreground/95 p-1 opacity-0 shadow-lg backdrop-blur-sm transition-opacity duration-150 focus-within:pointer-events-auto focus-within:opacity-100 group-hover/bento-item:pointer-events-auto group-hover/bento-item:opacity-100 group-has-[button[aria-expanded=true]]/bento-item:pointer-events-auto group-has-[button[aria-expanded=true]]/bento-item:opacity-100 motion-reduce:transition-none"
 		>
-			{getItemPresets(item).map((preset) => (
+			{getAllowedPresets(item.type).map((preset) => (
 				<Button
 					key={preset}
 					type="button"
@@ -806,9 +808,7 @@ export default function BentoItemControls({
 					onManageLink={commitLink}
 				/>
 			) : null}
-			{item.type !== "text" &&
-			linkValue !== null &&
-			(widgetKind === null || widgetRules[widgetKind].editableUrl) ? (
+			{item.type !== "text" && linkValue !== null ? (
 				<LinkControl
 					value={linkValue}
 					onCommit={commitLink}

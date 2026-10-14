@@ -14,7 +14,7 @@ import { Pause3 } from "reicon-react/icons/Pause3";
 import { Play } from "reicon-react/icons/Play";
 import { useSpotifyPlayer } from "@/hooks/use-audio-player";
 
-type SpotifyLinkItem = Extract<PageItemResponse, { type: "link" }>;
+type SpotifyItem = Extract<PageItemResponse, { type: "spotify" }>;
 type SpotifyTrack = NonNullable<
 	NonNullable<ProviderData["spotify"]>["tracks"]
 >[number];
@@ -674,12 +674,11 @@ export default function SpotifyWidget({
 	item,
 	preset,
 }: {
-	item: SpotifyLinkItem;
+	item: SpotifyItem;
 	preset: PresetName | null;
 }) {
-	const metadata = item.data.metadata;
-	const spotify = metadata?.providerData?.spotify;
-	const title = metadata?.title ?? spotify?.track ?? "Spotify";
+	const { spotify } = item.data;
+	const title = item.data.title ?? spotify?.track ?? "Spotify";
 	const heading = title;
 	const tracks = spotify?.tracks ?? [];
 	const { currentTrackIndex, isPlaying, progress, playTrack, togglePlayback } =
@@ -698,7 +697,7 @@ export default function SpotifyWidget({
 	return (
 		<PresetWidget
 			spotifyUrl={item.data.url}
-			imageUrl={metadata?.imageUrl}
+			imageUrl={item.data.imageUrl}
 			heading={heading}
 			artist={spotify?.artist}
 			type={spotify?.type}

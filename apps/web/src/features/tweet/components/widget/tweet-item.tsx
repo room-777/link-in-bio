@@ -2,9 +2,8 @@
 
 import type { PageItemResponse } from "@grabbin/api";
 import type { PresetName } from "@grabbin/bento-layout";
-import { getWidgetKind } from "@grabbin/page-link";
+import { getTweetId } from "@grabbin/page-link";
 import type { Tweet as TweetResponse } from "react-tweet/api";
-import { getTweetId } from "../../utils/tweet-url";
 import { TweetWidget } from "./tweet-widget";
 
 export default function TweetItem({
@@ -12,15 +11,11 @@ export default function TweetItem({
 	mode,
 	preset,
 }: {
-	item: Extract<PageItemResponse, { type: "link" }>;
+	item: Extract<PageItemResponse, { type: "tweet" }>;
 	mode: "view" | "edit";
 	preset: PresetName;
 }) {
-	const authorData =
-		getWidgetKind(item) === "tweet"
-			? item.data.metadata?.providerData?.tweet
-			: undefined;
-	const response = authorData?.response;
+	const response = item.data.tweet;
 	const storedTweet =
 		typeof response === "object" &&
 		response !== null &&
@@ -28,7 +23,7 @@ export default function TweetItem({
 		response.id_str === getTweetId(item.data.url)
 			? (response as TweetResponse)
 			: undefined;
-	const authorHandle = authorData?.authorProfileUrl?.match(
+	const authorHandle = item.data.authorProfileUrl?.match(
 		/(?:x|twitter)\.com\/([^/?#]+)/i,
 	)?.[1];
 
@@ -42,9 +37,9 @@ export default function TweetItem({
 				url={item.data.url}
 				preset={preset}
 				author={{
-					name: authorData?.authorName ?? undefined,
+					name: item.data.authorName ?? undefined,
 					handle: authorHandle,
-					imageUrl: authorData?.authorProfileImageUrl ?? undefined,
+					imageUrl: item.data.authorProfileImageUrl ?? undefined,
 				}}
 				storedTweet={storedTweet}
 				fetchOnMissing={false}

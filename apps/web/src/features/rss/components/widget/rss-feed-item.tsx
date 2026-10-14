@@ -3,7 +3,7 @@ import type { PresetName } from "@grabbin/bento-layout";
 import type { BentoCommand } from "@/features/page/editor/state/bento-types";
 import { RssFeedWidget } from "./rss-feed-widget";
 
-type LinkItem = Extract<PageItemResponse, { type: "link" }>;
+type RssItem = Extract<PageItemResponse, { type: "rss" }>;
 
 export default function RssFeedItem({
 	item,
@@ -11,26 +11,19 @@ export default function RssFeedItem({
 	mode,
 	onCommand,
 }: {
-	item: LinkItem;
+	item: RssItem;
 	preset: PresetName;
 	mode: "view" | "edit";
 	onCommand?: (command: BentoCommand) => void;
 }) {
-	const feed = item.data.metadata?.rss;
-	const title =
-		(item.data.metadata?.title !== "RSS Feed" &&
-			item.data.metadata?.title?.trim()) ||
-		feed?.source.title ||
-		"RSS Feed";
+	const { feed } = item.data;
+	const title = item.data.title?.trim() || feed?.source.title || "RSS Feed";
 	const commitTitle = (nextTitle: string) => {
-		if (nextTitle !== item.data.metadata?.title) {
+		if (nextTitle !== item.data.title) {
 			onCommand?.({
 				type: "update-data",
 				itemId: item.id,
-				data: {
-					...item.data,
-					metadata: { ...item.data.metadata, title: nextTitle },
-				},
+				data: { ...item.data, title: nextTitle },
 			});
 		}
 	};

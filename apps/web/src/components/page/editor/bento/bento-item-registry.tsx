@@ -1,7 +1,6 @@
 "use client";
 
 import type { PresetName } from "@grabbin/bento-layout";
-import { getWidgetKind } from "@grabbin/page-link";
 import dynamic from "next/dynamic";
 import type { ReactNode } from "react";
 import { CalendlyItem } from "@/features/calendly/components/widget/calendly-item";
@@ -74,23 +73,6 @@ function renderSection({ item, options }: Parameters<ItemRenderer>[0]) {
 
 function renderLink({ item, preset, options }: Parameters<ItemRenderer>[0]) {
 	if (item.type !== "link") return null;
-	const kind = getWidgetKind(item);
-	if (kind === "rss") {
-		return (
-			<RssFeedItem
-				item={item}
-				preset={preset}
-				mode={options.mode}
-				onCommand={options.onCommand}
-			/>
-		);
-	}
-	if (kind === "tweet") {
-		return <TweetItem item={item} mode={options.mode} preset={preset} />;
-	}
-	if (kind === "spotify") {
-		return <SpotifyItem item={item} preset={preset} />;
-	}
 	return (
 		<LinkItem
 			item={item}
@@ -116,6 +98,28 @@ function renderCalendly({
 	return <CalendlyItem item={item} preset={preset} handle={options.handle} />;
 }
 
+function renderRss({ item, preset, options }: Parameters<ItemRenderer>[0]) {
+	if (item.type !== "rss") return null;
+	return (
+		<RssFeedItem
+			item={item}
+			preset={preset}
+			mode={options.mode}
+			onCommand={options.onCommand}
+		/>
+	);
+}
+
+function renderTweet({ item, preset, options }: Parameters<ItemRenderer>[0]) {
+	if (item.type !== "tweet") return null;
+	return <TweetItem item={item} mode={options.mode} preset={preset} />;
+}
+
+function renderSpotify({ item, preset }: Parameters<ItemRenderer>[0]) {
+	if (item.type !== "spotify") return null;
+	return <SpotifyItem item={item} preset={preset} />;
+}
+
 const itemRendererRegistry: Record<BentoItem["type"], ItemRenderer> = {
 	text: renderText,
 	section: renderSection,
@@ -123,6 +127,9 @@ const itemRendererRegistry: Record<BentoItem["type"], ItemRenderer> = {
 	media: renderMedia,
 	map: renderMap,
 	calendly: renderCalendly,
+	rss: renderRss,
+	tweet: renderTweet,
+	spotify: renderSpotify,
 };
 
 export function renderItem(
