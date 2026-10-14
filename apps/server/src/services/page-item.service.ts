@@ -4,7 +4,6 @@ import {
 	type PageItemResponse,
 	pageItemBatchRequestSchema,
 	pageItemBatchResponseSchema,
-	pageItemLinkDataSchema,
 	pageItemResponseSchema,
 } from "@grabbin/api";
 import { getAccountPlan } from "@grabbin/application/billing";
@@ -15,18 +14,14 @@ import {
 import {
 	type BentoBreakpoint,
 	bentoColumnCounts,
+	getAllowedPresets,
 	hasValidBentoLayouts,
 	inferPresetFromLayout,
 } from "@grabbin/bento-layout";
 import type { DatabaseClient } from "@grabbin/db";
 import { and, eq, inArray, sql } from "@grabbin/db/drizzle";
 import { pageItems } from "@grabbin/db/schema/index";
-import {
-	getItemPresets,
-	getWidgetKind,
-	requiresProPlan,
-	resolveLinkMetadata,
-} from "@grabbin/page-link";
+import { requiresProPlan, resolveLinkMetadata } from "@grabbin/page-link";
 import * as v from "valibot";
 import { PageItemServiceError } from "../exceptions/page-item.exception";
 import {
@@ -34,7 +29,7 @@ import {
 	isOwnedPageLinkImageKey,
 	isOwnedPageMediaKey,
 } from "./media.service";
-import { getOwnedPage, getPage } from "./page.service";
+import { getOwnedPage } from "./page.service";
 
 type PageItemLayouts = PageItemBatchRequest["upserts"][number]["layouts"];
 
@@ -119,7 +114,7 @@ function assertValidItemPayload(
 	userId: string,
 	pageId: string,
 ) {
-	const allowedPresets = getItemPresets(item);
+	const allowedPresets = getAllowedPresets(item.type);
 	for (const [breakpoint, layout] of Object.entries(item.layouts) as Array<
 		[BentoBreakpoint, PageItemLayouts[BentoBreakpoint]]
 	>) {
@@ -189,31 +184,6 @@ export async function listPageItems({
 	return items.map((item) => mapPageItemResponse(item, publicBaseUrl));
 }
 
-export async function getPageItemRssUrl({
-	db,
-	handle,
-	itemId,
-}: {
-	db: DatabaseClient;
-	handle: string;
-	itemId: string;
-}) {
-	const page = await getPage(db, handle);
-	if (!page) return undefined;
-
-	const item = await db.query.pageItems.findFirst({
-		where: and(eq(pageItems.id, itemId), eq(pageItems.pageId, page.id)),
-		columns: { type: true, data: true },
-	});
-	if (item?.type !== "link") return undefined;
-
-	const parsed = v.safeParse(pageItemLinkDataSchema, item.data);
-	return parsed.success &&
-		getWidgetKind({ type: "link", data: parsed.output }) === "rss"
-		? parsed.output.url
-		: undefined;
-}
-
 export async function persistPageItemBatch({
 	db,
 	handle,
@@ -274,7 +244,12 @@ export async function persistPageItemBatch({
 		const existingById = new Map(existing.map((item) => [item.id, item]));
 		if (
 			upserts.some(
-				(item) => !existingById.has(item.id) && requiresProPlan(item),
+				(item) =>
+					!existingById.has(item.id) &&
+					requiresProPlan(
+						item.type,
+						item.type === "link" ? item.data.metadata?.provider : undefined,
+					),
 			) &&
 			!(
 				await getAccountPlan({

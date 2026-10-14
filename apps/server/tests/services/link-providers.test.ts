@@ -1080,30 +1080,12 @@ describe("link provider metadata", () => {
 		);
 	});
 
-	/**
-	 * Case ID: RSS-LINK-001
-	 * Given: an RSS widget uses a Substack feed URL.
-	 * When: saved link metadata is resolved for the response.
-	 * Then: provider stays rss-feed while the presentation identifies Substack.
-	 * Evidence: resolved provider and presentation provider.
-	 * Result: Pass | Fail | Blocked | Not Run
-	 */
-	it("RSS-LINK-001 preserves RSS widget identity after resolving its URL", () => {
-		const metadata = resolveLinkMetadata("https://braggb.substack.com/feed", {
-			provider: "rss-feed",
-		});
-
-		assert.equal(metadata.provider, "rss-feed");
-		assert.equal(metadata.presentation.provider, "substack");
-	});
-
-	it("preserves Tweet widget identity after resolving its X URL", () => {
+	it("resolves a link to its URL provider even if a widget provider was stored", () => {
 		const metadata = resolveLinkMetadata("https://x.com/i/status/123", {
 			provider: "tweet",
 		});
 
-		assert.equal(metadata.provider, "tweet");
-		assert.equal(metadata.presentation.provider, "x");
+		assert.equal(metadata.provider, "x");
 	});
 
 	it("enriches Pinterest profiles, boards, and Pins", async () => {

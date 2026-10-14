@@ -95,11 +95,8 @@ describe("page item service", () => {
 					upserts: [
 						{
 							id: "spotify-1",
-							type: "link",
-							data: {
-								url: "https://open.spotify.com/track/123",
-								metadata: { provider: "spotify", widget: "spotify" },
-							},
+							type: "spotify",
+							data: { url: "https://open.spotify.com/track/123" },
 							style: {},
 							layouts: { wide: layout, compact: layout },
 						},
@@ -121,7 +118,7 @@ describe("page item service", () => {
 	 * Evidence: persistence reaches the insert step instead of returning PRO_REQUIRED.
 	 * Result: Pass | Fail | Blocked | Not Run
 	 */
-	it("PAGE-ITEM-SERVICE-014 allows Spotify links without the widget marker", async () => {
+	it("PAGE-ITEM-SERVICE-014 allows Spotify URLs saved as plain links", async () => {
 		const reachedInsert = new Error("insert reached");
 		const tx = {
 			query: {
@@ -595,7 +592,7 @@ describe("page item service", () => {
 
 	/**
 	 * Case ID: PAGE-ITEM-SERVICE-011
-	 * Given: a Tweet link uses a preset outside its supported sizes.
+	 * Given: a Tweet widget uses a preset outside its supported sizes.
 	 * When: persistPageItemBatch validates the item payload.
 	 * Then: it rejects the layout before writing.
 	 * Evidence: PageItemServiceError.code=INVALID_ITEM_LAYOUT.
@@ -634,16 +631,8 @@ describe("page item service", () => {
 					upserts: [
 						{
 							id: "tweet-1",
-							type: "link",
-							data: {
-								url: "https://x.com/i/status/123",
-								metadata: {
-									title: "X post",
-									faviconUrl:
-										"https://cdn.grabbin.me/provider-icons/v1/tweet.svg?v=3",
-									provider: "tweet",
-								},
-							},
+							type: "tweet",
+							data: { url: "https://x.com/i/status/123" },
 							style: {},
 							layouts: {
 								wide: { x: 0, y: 0, w: 1, h: 2 },
@@ -662,13 +651,13 @@ describe("page item service", () => {
 
 	/**
 	 * Case ID: PAGE-ITEM-SERVICE-015
-	 * Given: a Pro account saves a Tweet link in its allowed tall sizes.
+	 * Given: a Pro account saves a Tweet widget in its allowed tall sizes.
 	 * When: persistPageItemBatch validates the item payload.
 	 * Then: the layout passes and the batch reaches the insert step.
 	 * Evidence: the insert stub is reached instead of INVALID_ITEM_LAYOUT.
 	 * Result: Pass | Fail | Blocked | Not Run
 	 */
-	it("PAGE-ITEM-SERVICE-015 accepts Tweet sizes from the widget rules", async () => {
+	it("PAGE-ITEM-SERVICE-015 accepts the Tweet sizes", async () => {
 		const reachedInsert = new Error("insert reached");
 		const tx = {
 			query: {
@@ -705,11 +694,8 @@ describe("page item service", () => {
 					upserts: [
 						{
 							id: "tweet-1",
-							type: "link",
-							data: {
-								url: "https://x.com/i/status/123",
-								metadata: { provider: "tweet" },
-							},
+							type: "tweet",
+							data: { url: "https://x.com/i/status/123" },
 							style: {},
 							layouts: {
 								wide: getPresetGeometry("squareLarge", "wide"),

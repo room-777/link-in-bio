@@ -19,6 +19,7 @@ import { createPageDomainsController } from "./controllers/page-domains.controll
 import { pageItemsController } from "./controllers/page-items.route";
 import { pagesController } from "./controllers/pages.controller";
 import { providerIconsController } from "./controllers/provider-icons.controller";
+import { widgetsController } from "./controllers/widgets.route";
 import { createApiCors } from "./middlewares/cors.middleware";
 import { requiredSession } from "./middlewares/session.middleware";
 import type { AppEnv } from "./types";
@@ -84,6 +85,7 @@ const app = createFactory<AppEnv>({
 	.route("/", createRoutes)
 	.route("/pages", pagesController)
 	.route("/pages", pageItemsController)
+	.route("/widgets", widgetsController)
 	.route("/media", localMediaController)
 	.route("/provider-icons", providerIconsController)
 	.route(

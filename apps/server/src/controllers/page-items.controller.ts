@@ -1,10 +1,8 @@
 import type {
 	PageItemBatchRequest,
 	PageItemBatchResponse,
-	PageItemLinkMetadata,
 	PageItemMetadataRequest,
 	PageItemResponse,
-	RssFeedResponse,
 } from "@grabbin/api";
 import {
 	pageItemBatchRequestSchema,
@@ -20,7 +18,6 @@ import { Hono } from "hono";
 import * as v from "valibot";
 import { jsonApiError } from "../api-error";
 import { PageItemServiceError } from "../exceptions/page-item.exception";
-import { optionalSession } from "../middlewares/session.middleware";
 import type { LinkProviderEnvironment } from "../services/link-providers";
 import {
 	cancelItemMediaUpload,
@@ -28,8 +25,6 @@ import {
 	createItemMediaUpload,
 } from "../services/media.service";
 import { getOwnedPage } from "../services/page.service";
-import { getPageItemRssUrl } from "../services/page-item.service";
-import { RssServiceError } from "../services/rss/rss.service";
 import type { AppEnv } from "../types";
 
 const pageItemErrorDetails = {
@@ -50,12 +45,8 @@ const pageItemErrorDetails = {
 	INVALID_LINK_METADATA: "Invalid link metadata request.",
 	UPSTREAM_RATE_LIMITED:
 		"The linked site is temporarily rate limiting requests.",
-	UNSUPPORTED_RSS_URL: "This address is not a supported RSS source.",
-	RSS_FEED_UNAVAILABLE: "The RSS feed could not be loaded.",
-	INVALID_RSS_FEED: "The RSS feed returned invalid data.",
 	ITEM_NOT_LINK: "The item is not a link.",
 	STALE_LINK_METADATA: "The link URL changed before metadata completed.",
-	SPOTIFY_PREVIEW_UNAVAILABLE: "Spotify data could not be loaded. Try again.",
 } as const;
 
 function pageItemErrorResponse(
@@ -74,9 +65,7 @@ function pageItemErrorResponse(
 						? 409
 						: error.code === "STALE_LINK_METADATA"
 							? 409
-							: error.code === "SPOTIFY_PREVIEW_UNAVAILABLE"
-								? 502
-								: 422;
+							: 422;
 	return jsonApiError(c, {
 		status,
 		code: error.code,
@@ -104,69 +93,22 @@ type EnrichPageItemMetadata = (input: {
 	env?: LinkProviderEnvironment;
 }) => Promise<PageItemResponse>;
 
-type PreviewSpotifyMetadata = (input: {
-	url: PageItemMetadataRequest["url"];
-	fetch: typeof fetch;
-	env?: LinkProviderEnvironment;
-}) => Promise<PageItemLinkMetadata>;
-
 async function readJson(c: Context<AppEnv>) {
 	return c.req.json().catch(() => null);
-}
-
-async function rssFeedResponse(
-	c: Context<AppEnv>,
-	fetchRss: NonNullable<PageItemsControllerOptions["fetchRss"]>,
-	url: string,
-) {
-	try {
-		return c.json({
-			rss: await fetchRss({
-				url,
-				fetch: (input, init) => fetch(input, init),
-			}),
-		});
-	} catch (error) {
-		if (!(error instanceof RssServiceError)) throw error;
-		return jsonApiError(c, {
-			status: error.code === "UNSUPPORTED_RSS_URL" ? 422 : 502,
-			code: error.code,
-			detail: pageItemErrorDetails[error.code],
-		});
-	}
 }
 
 export type PageItemsControllerOptions = {
 	sessionMiddleware: MiddlewareHandler<AppEnv>;
 	persist: PersistPageItemBatch;
 	enrichMetadata: EnrichPageItemMetadata;
-	previewSpotify: PreviewSpotifyMetadata;
-	fetchRss?: (input: {
-		url: string;
-		fetch: typeof fetch;
-	}) => Promise<RssFeedResponse>;
 };
 
 export function createPageItemsController({
 	sessionMiddleware,
 	persist,
 	enrichMetadata,
-	previewSpotify,
-	fetchRss = async () => {
-		throw new RssServiceError("RSS_FEED_UNAVAILABLE");
-	},
 }: PageItemsControllerOptions) {
 	return new Hono<AppEnv>()
-		.get("/:handle/items/:itemId/rss", optionalSession, async (c) => {
-			const url = await getPageItemRssUrl({
-				db: c.var.db,
-				handle: c.req.param("handle"),
-				itemId: c.req.param("itemId"),
-			});
-			if (!url) return jsonApiError(c, { status: 404, code: "NOT_FOUND" });
-
-			return rssFeedResponse(c, fetchRss, url);
-		})
 		.post("/:handle/metadata", sessionMiddleware, async (c) => {
 			const session = c.var.session;
 			if (!session) {
@@ -193,34 +135,6 @@ export function createPageItemsController({
 			});
 			if (!page)
 				return jsonApiError(c, { status: 404, detail: "Page not found." });
-
-			if ("kind" in parsed.output && parsed.output.kind === "rss") {
-				return rssFeedResponse(c, fetchRss, parsed.output.url);
-			}
-
-			if ("kind" in parsed.output && parsed.output.kind === "spotify") {
-				try {
-					return c.json({
-						metadata: await previewSpotify({
-							url: parsed.output.url,
-							fetch: (input, init) => fetch(input, init),
-							env: c.env,
-						}),
-					});
-				} catch (error) {
-					if (error instanceof PageItemServiceError)
-						return pageItemErrorResponse(c, error);
-					throw error;
-				}
-			}
-
-			if (!("itemId" in parsed.output)) {
-				return jsonApiError(c, {
-					status: 422,
-					code: "INVALID_LINK_METADATA",
-					detail: pageItemErrorDetails.INVALID_LINK_METADATA,
-				});
-			}
 
 			try {
 				return c.json({

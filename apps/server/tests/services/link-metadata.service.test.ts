@@ -5,10 +5,7 @@ import type { DatabaseClient } from "@grabbin/db";
 import { resolveLinkMetadata } from "@grabbin/page-link";
 
 import { PageItemServiceError } from "../../src/exceptions/page-item.exception";
-import {
-	enrichPageItemMetadata,
-	previewSpotifyLinkMetadata,
-} from "../../src/services/link-metadata.service";
+import { enrichPageItemMetadata } from "../../src/services/link-metadata.service";
 import { LINK_METADATA_USER_AGENTS } from "../../src/services/link-providers/runtime";
 
 const layout = { x: 0, y: 0, w: 1, h: 2 };
@@ -45,31 +42,6 @@ function createDatabase(url = "https://example.com") {
 }
 
 describe("link metadata service", () => {
-	/**
-	 * Case ID: LINK-METADATA-SPOTIFY-002
-	 * Given: a preview request targets a non-Spotify host.
-	 * When: Spotify preview metadata is requested.
-	 * Then: it rejects the URL before making an outbound request.
-	 * Evidence: INVALID_LINK_METADATA and fetch call count=0.
-	 * Result: Pass | Fail | Blocked | Not Run
-	 */
-	it("rejects non-Spotify preview URLs before fetching", async () => {
-		let fetchCalls = 0;
-		await assert.rejects(
-			previewSpotifyLinkMetadata({
-				url: "https://example.com/track/123",
-				fetch: async () => {
-					fetchCalls += 1;
-					return new Response();
-				},
-			}),
-			(error: unknown) =>
-				error instanceof PageItemServiceError &&
-				error.code === "INVALID_LINK_METADATA",
-		);
-		assert.equal(fetchCalls, 0);
-	});
-
 	/**
 	 * Case ID: LINK-METADATA-SPOTIFY-001
 	 * Given: Spotify embed metadata is available.

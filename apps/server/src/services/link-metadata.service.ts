@@ -1,6 +1,5 @@
 import {
 	normalizeProviderData,
-	type PageItemLinkMetadata,
 	type PageItemResponse,
 	pageItemLinkDataSchema,
 	pageItemLinkUrlSchema,
@@ -8,7 +7,7 @@ import {
 import type { DatabaseClient } from "@grabbin/db";
 import { and, eq } from "@grabbin/db/drizzle";
 import { pageItems } from "@grabbin/db/schema/index";
-import { providerIconUrl, resolveLinkProvider } from "@grabbin/page-link";
+import { resolveLinkProvider } from "@grabbin/page-link";
 import * as v from "valibot";
 
 import { PageItemServiceError } from "../exceptions/page-item.exception";
@@ -262,36 +261,4 @@ export async function enrichPageItemMetadata({
 	});
 	if (!updated) throw new PageItemServiceError("ITEM_NOT_FOUND");
 	return mapPageItemResponse(updated, publicBaseUrl);
-}
-
-export async function previewSpotifyLinkMetadata({
-	url,
-	fetch,
-	env,
-}: {
-	url: string;
-	fetch: LinkMetadataFetch;
-	env?: LinkProviderEnvironment;
-}): Promise<PageItemLinkMetadata> {
-	const parsedUrl = v.safeParse(pageItemLinkUrlSchema, url);
-	if (!parsedUrl.success)
-		throw new PageItemServiceError("INVALID_LINK_METADATA");
-
-	const spotifyUrl = new URL(parsedUrl.output);
-	const resolved = resolveLinkProvider(spotifyUrl);
-	if (resolved.id !== "spotify" || !resolved.target)
-		throw new PageItemServiceError("INVALID_LINK_METADATA");
-
-	const metadata = await enrichLinkProvider(spotifyUrl, {
-		fetch,
-		fetchOptional: fetch,
-		env,
-	});
-	if (!metadata.title || !metadata.providerData?.spotify)
-		throw new PageItemServiceError("SPOTIFY_PREVIEW_UNAVAILABLE");
-
-	return {
-		...metadata,
-		faviconUrl: providerIconUrl("spotify"),
-	};
 }
