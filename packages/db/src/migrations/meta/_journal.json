@@ -120,6 +120,13 @@
 			"when": 1791980280997,
 			"tag": "0016_ga_analytics_events",
 			"breakpoints": true
+		},
+		{
+			"idx": 17,
+			"version": "7",
+			"when": 1791986852000,
+			"tag": "0017_secure_analytics_events",
+			"breakpoints": true
 		}
 	]
 }
