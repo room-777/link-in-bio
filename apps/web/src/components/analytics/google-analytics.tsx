@@ -13,7 +13,7 @@ export default function GoogleAnalytics() {
 	const [enabled, setEnabled] = useState(false);
 
 	useEffect(() => {
-		if (!isGoogleAnalyticsEnabled(window.location.hostname)) return;
+		if (!isGoogleAnalyticsEnabled()) return;
 		initGoogleAnalytics();
 		setEnabled(true);
 	}, []);
