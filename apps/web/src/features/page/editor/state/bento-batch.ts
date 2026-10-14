@@ -17,7 +17,7 @@ export function toBentoItem(item: PageItemResponse): BentoItem {
 	return { ...item, preset: null };
 }
 
-export function toBatchItem(item: BentoItem): BentoBatchItem {
+function toBatchItem(item: BentoItem): BentoBatchItem {
 	const base = {
 		id: item.id,
 		style: item.style,

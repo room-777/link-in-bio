@@ -750,15 +750,3 @@ export const providerByHostname: Array<[string, string]> = (
 export const providerLabels: Record<string, string> = Object.fromEntries(
 	providerDefinitionList.map(({ id, label }) => [id, label]),
 );
-
-export const providerTheme: Record<string, ProviderTheme> = Object.fromEntries(
-	providerDefinitionList.flatMap(({ id, theme }) =>
-		theme ? [[id, theme]] : [],
-	),
-);
-
-export const providerCountKeys: Record<string, string> = Object.fromEntries(
-	providerDefinitionList.flatMap(({ id, countKey }) =>
-		countKey ? [[id, countKey]] : [],
-	),
-);

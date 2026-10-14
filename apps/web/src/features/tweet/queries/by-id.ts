@@ -15,7 +15,7 @@ async function getTweetById(tweetId: string, signal: AbortSignal) {
 	return result.data;
 }
 
-export function getTweetQueryOptions(tweetId: string) {
+function getTweetQueryOptions(tweetId: string) {
 	return queryOptions({
 		queryKey: ["tweet", tweetId],
 		queryFn: ({ signal }) => getTweetById(tweetId, signal),

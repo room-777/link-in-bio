@@ -3,7 +3,7 @@ import { useMutation } from "@tanstack/react-query";
 import * as v from "valibot";
 import { apiClient, getApiErrorMessage } from "@/lib/api-client";
 
-export async function refreshBentoLinkMetadata(
+async function refreshBentoLinkMetadata(
 	handle: string,
 	input: { itemId: string; url: string },
 ) {

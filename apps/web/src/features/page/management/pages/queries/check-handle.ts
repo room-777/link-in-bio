@@ -16,7 +16,7 @@ async function checkPageHandle(handle: string, signal?: AbortSignal) {
 	return v.parse(handleAvailabilityResponseSchema, await response.json());
 }
 
-export function getPageHandleCheckQueryOptions(handle: string) {
+function getPageHandleCheckQueryOptions(handle: string) {
 	return queryOptions({
 		queryKey: [...PAGE_HANDLE_CHECK_QUERY_KEY_PREFIX, handle] as const,
 		queryFn: ({ signal }) => checkPageHandle(handle, signal),

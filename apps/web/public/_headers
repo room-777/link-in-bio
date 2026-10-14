@@ -13,9 +13,6 @@
 /images/landing/welcome-bento-*.webp
 	Cache-Control: public, max-age=31556952, immutable
 
-/images/test2/*
-	Cache-Control: public, max-age=31556952, immutable
-
 /images/kofi-support-*.webp
 	Cache-Control: public, max-age=31556952, immutable
 

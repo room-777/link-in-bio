@@ -1,7 +1,7 @@
 import { getApiErrorMessage as getApiErrorDetail } from "@grabbin/api";
 import { env } from "@grabbin/env/web";
 import type { InferRequestType, InferResponseType } from "hono/client";
-import { hc, parseResponse } from "hono/client";
+import { hc } from "hono/client";
 import type { AppType } from "server";
 
 export const apiClient = hc<AppType>(env.NEXT_PUBLIC_SERVER_URL, {
@@ -21,4 +21,3 @@ export async function getApiErrorMessage(response: {
 }
 
 export type { InferRequestType, InferResponseType };
-export { parseResponse };

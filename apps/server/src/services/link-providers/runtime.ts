@@ -8,10 +8,10 @@ import uniqueRandomArray from "unique-random-array";
 import type { LinkProviderContext } from "./types";
 
 export const PROVIDER_FETCH_TIMEOUT_MS = 2500;
-export const MAX_PROVIDER_HTML_BYTES = 2 * 1024 * 1024;
-export const MAX_PROVIDER_JSON_BYTES = 512 * 1024;
+const MAX_PROVIDER_HTML_BYTES = 2 * 1024 * 1024;
+const MAX_PROVIDER_JSON_BYTES = 512 * 1024;
 export const MAX_LINK_METADATA_HTML_BYTES = 1024 * 1024;
-export const INSTAGRAM_PUBLIC_HEADERS = {
+const INSTAGRAM_PUBLIC_HEADERS = {
 	Accept: "*/*",
 	"Accept-Language": "en-US,en;q=0.9",
 	Referer: "https://www.instagram.com/",
@@ -22,7 +22,7 @@ export const INSTAGRAM_PUBLIC_HEADERS = {
 	"X-Requested-With": "XMLHttpRequest",
 } as const;
 
-export function getInstagramHeaders(sessionId?: string) {
+function getInstagramHeaders(sessionId?: string) {
 	const safeSessionId = sessionId?.trim();
 	return {
 		...INSTAGRAM_PUBLIC_HEADERS,
@@ -174,7 +174,7 @@ export function getAttributeValue(tag: string, name: string) {
 	return match?.[1]?.trim() || match?.[2]?.trim() || undefined;
 }
 
-export function getMetaContent(html: string, names: readonly string[]) {
+function getMetaContent(html: string, names: readonly string[]) {
 	for (const match of html.matchAll(/<meta\b([^>]+)>/gi)) {
 		const attributes = match[1] ?? "";
 		const key =
@@ -187,14 +187,14 @@ export function getMetaContent(html: string, names: readonly string[]) {
 	return undefined;
 }
 
-export function getPageTitle(html: string) {
+function getPageTitle(html: string) {
 	const title = html.match(/<title\b[^>]*>([\s\S]*?)<\/title>/i)?.[1];
 	return title
 		? decodeHtmlEntities(title.replace(/<[^>]+>/g, "")).trim() || undefined
 		: undefined;
 }
 
-export function limitText(value: string | undefined, maxLength: number) {
+function limitText(value: string | undefined, maxLength: number) {
 	const text = value?.trim();
 	return text ? text.slice(0, maxLength) : undefined;
 }

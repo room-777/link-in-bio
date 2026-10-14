@@ -80,5 +80,3 @@ export default function SpotifyWidgetActivity({
 		</div>
 	);
 }
-
-export { SpotifyWidgetActivity };

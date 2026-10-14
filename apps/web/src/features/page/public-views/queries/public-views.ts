@@ -37,7 +37,7 @@ function selectPublicViews({
 	};
 }
 
-export function getPublicViewsQueryOptions(handle: string, timezone: string) {
+function getPublicViewsQueryOptions(handle: string, timezone: string) {
 	return queryOptions({
 		queryKey: ["public-views", handle, timezone] as const,
 		queryFn: ({ signal }) => getPublicViews(handle, timezone, signal),

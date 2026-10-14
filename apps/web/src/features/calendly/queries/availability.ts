@@ -44,7 +44,7 @@ export function getCalendlyAvailabilityRange(date: Date) {
 	return { startTime: start.toISOString(), endTime: end.toISOString() };
 }
 
-export function getCalendlyAvailabilityQueryOptions(
+function getCalendlyAvailabilityQueryOptions(
 	handle: string | undefined,
 	itemId: string,
 	selectedDate: Date,

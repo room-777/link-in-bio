@@ -5,7 +5,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { getErrorMessage } from "@/lib/error-message";
 import { useUpdatePageDraftMutation } from "../mutations/update-draft";
 
-export const PAGE_AUTO_SAVE_DELAY = 1500;
+const PAGE_AUTO_SAVE_DELAY = 1500;
 
 export type PageAutoSaveStatus = "saved" | "dirty" | "saving" | "error";
 

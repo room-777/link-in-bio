@@ -1,6 +1,6 @@
 import { env } from "cloudflare:workers";
 import type { InferRequestType, InferResponseType } from "hono/client";
-import { hc, parseResponse } from "hono/client";
+import { hc } from "hono/client";
 import type { AppType } from "server";
 
 export function getServerApiClient() {
@@ -13,4 +13,3 @@ export function getServerApiClient() {
 }
 
 export type { InferRequestType, InferResponseType };
-export { parseResponse };

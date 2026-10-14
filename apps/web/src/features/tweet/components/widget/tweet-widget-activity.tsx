@@ -32,5 +32,3 @@ export default function TweetWidgetActivity({
 		</div>
 	);
 }
-
-export { TweetWidgetActivity };

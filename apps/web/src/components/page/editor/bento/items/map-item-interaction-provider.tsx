@@ -93,7 +93,7 @@ export function useMapItemInteraction() {
 	return context;
 }
 
-export function useOptionalMapItemInteraction() {
+function useOptionalMapItemInteraction() {
 	return useContext(MapItemInteractionContext);
 }
 

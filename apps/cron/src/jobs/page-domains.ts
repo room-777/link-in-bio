@@ -2,7 +2,7 @@ import { createBoundPageDomainService } from "@grabbin/application/page-domain";
 import type { DatabaseClient } from "@grabbin/db";
 import type { CronBindings } from "./types";
 
-export function arePageDomainsConfigured(bindings: CronBindings) {
+function arePageDomainsConfigured(bindings: CronBindings) {
 	return Boolean(
 		bindings.CLOUDFLARE_SAAS_ZONE_ID && bindings.CLOUDFLARE_SAAS_API_TOKEN,
 	);
