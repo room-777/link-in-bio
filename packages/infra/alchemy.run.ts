@@ -201,6 +201,18 @@ export const server = Cloudflare.Worker("server", {
 		PAGE_DOMAIN: Config.String("PAGE_DOMAIN").pipe(
 			Config.withDefault("grabbin.me"),
 		),
+		GA_MEASUREMENT_ID: Config.String("GA_MEASUREMENT_ID").pipe(
+			Config.withDefault(""),
+		),
+		GA_MEASUREMENT_PROTOCOL_API_SECRET: Config.Redacted(
+			"GA_MEASUREMENT_PROTOCOL_API_SECRET",
+		).pipe(Config.withDefault("")),
+		// Real GA hits only from the production deploy; anything else is
+		// sent to GA's validation endpoint.
+		GA_MEASUREMENT_PROTOCOL_MODE:
+			!isAlchemyDev && process.env.NODE_ENV === "production"
+				? "collect"
+				: "validate",
 	},
 	dev: {
 		port: 3001,

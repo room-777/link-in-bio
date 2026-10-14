@@ -27,6 +27,8 @@ import {
 	syncCreemRefund,
 	syncCreemWebhook,
 } from "./creem-webhook";
+import { serverEvents } from "./server-events";
+import { createSignInDatabaseHooks } from "./sign-in-method";
 
 type CreemEventData = {
 	webhookId: string;
@@ -295,6 +297,8 @@ export async function createAuth(
 			planSession(() => resolvedDatabase),
 			createCreemPlugin(resolvedDatabase, options?.onSubscriptionChange),
 		],
+		// GA sign_up for a new account, login for an existing one.
+		databaseHooks: createSignInDatabaseHooks(serverEvents),
 		database: drizzleAdapter(resolvedDatabase, {
 			provider: "pg",
 			schema: {

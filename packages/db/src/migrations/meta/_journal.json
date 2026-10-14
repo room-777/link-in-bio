@@ -113,6 +113,13 @@
 			"when": 1791965100067,
 			"tag": "0015_widget_item_types",
 			"breakpoints": true
+		},
+		{
+			"idx": 16,
+			"version": "7",
+			"when": 1791980280997,
+			"tag": "0016_ga_analytics_events",
+			"breakpoints": true
 		}
 	]
 }

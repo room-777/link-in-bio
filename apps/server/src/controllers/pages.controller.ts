@@ -14,6 +14,8 @@ import {
 	listSitemapHandles,
 	PageServiceError,
 } from "@grabbin/application/page-lifecycle";
+import { readTimeSinceSignup } from "@grabbin/auth/google-analytics";
+import { serverEvents } from "@grabbin/auth/server-events";
 import { createDb } from "@grabbin/db";
 import type { Context } from "hono";
 import { Hono } from "hono";
@@ -252,6 +254,14 @@ export const pagesController = new Hono<AppEnv>()
 				db: c.var.db,
 				userId: session.user.id,
 				rawHandle: parsed.output.handle,
+			});
+			const userId = session.user.id;
+			serverEvents.track({
+				name: "page_created",
+				once: "page_created",
+				userId,
+				headers: c.req.raw.headers,
+				params: (db) => readTimeSinceSignup(db, userId),
 			});
 			return c.json({ page }, 201);
 		} catch (error) {
