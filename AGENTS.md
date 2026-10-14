@@ -24,3 +24,15 @@
 | UI | 관련된 로컬 UI 스킬만 선택 | [`packages/ui/AGENTS.md`](packages/ui/AGENTS.md) |
 
 상세 구조와 테스트 기준은 해당 작업에 필요할 때만 `docs/agents/`에서 읽습니다.
+
+## Cursor Cloud
+
+Cloud Agent 부팅 스크립트는 로컬 Postgres, API, 웹을 띄운다. 이미 떠 있으면 다시 띄우지 않는다.
+
+- 웹: `http://127.0.0.1:3000`
+- API: `http://127.0.0.1:3001` (`GET /` 는 `"OK"`)
+- Postgres: `postgres://postgres:postgres@127.0.0.1:54322/postgres`
+
+브라우저, `apps/web/.env`, `apps/server/.env`는 `127.0.0.1`을 쓴다. `localhost`와 섞으면 쿠키가 나뉜다.
+
+`bun run dev`(Alchemy)는 `CLOUDFLARE_API_TOKEN`이 있을 때만 쓴다. 토큰이 없으면 부팅된 `vinext`와 `wrangler`를 쓴다. 미디어 업로드는 Alchemy의 로컬 R2가 필요해서, 이 기본 스택에서는 동작하지 않는다.
