@@ -4,6 +4,7 @@ import { jsonApiError } from "../api-error";
 import { requiredSession } from "../middlewares/session.middleware";
 import {
 	createOrResumeProCheckout,
+	resumeProCancellation,
 	scheduleProCancellation,
 } from "../services/billing.service";
 import type { AppEnv } from "../types";
@@ -111,6 +112,37 @@ export const billingController = new Hono<AppEnv>()
 				code: "SUBSCRIPTION_CANCELLATION_FAILED",
 				detail:
 					"Could not schedule subscription cancellation. Please try again.",
+			});
+		}
+	})
+	.post("/billing/resume-subscription", requiredSession, async (c) => {
+		const session = c.var.session;
+		if (!session)
+			return jsonApiError(c, {
+				status: 401,
+				detail: "Authentication required.",
+			});
+		try {
+			const resumed = await resumeProCancellation({
+				db: c.var.db,
+				creem: createCreemClient({
+					apiKey: c.env.CREEM_API_KEY,
+					testMode: c.env.CREEM_TEST_MODE === "true",
+				}),
+				userId: session.user.id,
+			});
+			if (!resumed)
+				return jsonApiError(c, {
+					status: 409,
+					code: "SUBSCRIPTION_NOT_RESUMABLE",
+					detail: "There is no scheduled cancellation to undo.",
+				});
+			return c.json({ success: true });
+		} catch {
+			return jsonApiError(c, {
+				status: 503,
+				code: "SUBSCRIPTION_RESUME_FAILED",
+				detail: "Could not undo the cancellation. Please try again.",
 			});
 		}
 	});

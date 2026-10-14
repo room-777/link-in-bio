@@ -6,6 +6,7 @@ import { eq, sql } from "@grabbin/db/drizzle";
 import { creemSubscription } from "@grabbin/db/schema/index";
 import {
 	blocksNewCheckout,
+	canResumeCancellation,
 	canScheduleCancellation,
 	isCancellationScheduled,
 	isOpenCheckout,
@@ -195,6 +196,43 @@ export async function scheduleProCancellation({
 			cancelAtPeriodEnd: true,
 			periodStart: canceled.currentPeriodStartDate ?? subscription.periodStart,
 			periodEnd: canceled.currentPeriodEndDate ?? subscription.periodEnd,
+		})
+		.where(eq(creemSubscription.id, subscription.id));
+	return true;
+}
+
+/** Undo a scheduled cancel before the paid period ends (Creem resume API). */
+export async function resumeProCancellation({
+	db,
+	creem,
+	userId,
+	now = new Date(),
+}: {
+	db: DatabaseClient;
+	creem: CreemClient;
+	userId: string;
+	now?: Date;
+}) {
+	const subscription = await db.query.creemSubscription.findFirst({
+		where: eq(creemSubscription.referenceId, userId),
+	});
+	if (!subscription?.creemSubscriptionId) return false;
+	if (!canResumeCancellation(subscription, now)) return false;
+
+	const resumed = await creem.subscriptions.resume(
+		subscription.creemSubscriptionId,
+	);
+	const status = parseSubscriptionStatus(resumed.status);
+	if (isCancellationScheduled({ status }))
+		throw new Error("Creem did not resume the subscription.");
+
+	await db
+		.update(creemSubscription)
+		.set({
+			status,
+			cancelAtPeriodEnd: false,
+			periodStart: resumed.currentPeriodStartDate ?? subscription.periodStart,
+			periodEnd: resumed.currentPeriodEndDate ?? subscription.periodEnd,
 		})
 		.where(eq(creemSubscription.id, subscription.id));
 	return true;

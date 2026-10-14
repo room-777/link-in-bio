@@ -50,12 +50,16 @@ export async function reconcileExpiredSubscriptions({
 				candidate.creemSubscriptionId,
 			);
 			const status = parseSubscriptionStatus(current.status);
+			// Never erase a stored period with an empty API value.
+			const periodStart =
+				current.currentPeriodStartDate ?? candidate.periodStart;
+			const periodEnd = current.currentPeriodEndDate ?? candidate.periodEnd;
 			await db
 				.update(creemSubscription)
 				.set({
 					status,
-					periodStart: current.currentPeriodStartDate,
-					periodEnd: current.currentPeriodEndDate,
+					periodStart,
+					periodEnd,
 					cancelAtPeriodEnd: deriveCancelAtPeriodEnd(status),
 				})
 				.where(

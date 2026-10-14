@@ -89,18 +89,42 @@ export function isPeriodEnded(
 	);
 }
 
+function warnInvalid(subscription: StatusFields, problem: string) {
+	// Log only the id, never other subscription or customer data.
+	console.warn(`[plan] ${problem}`, {
+		subscriptionId: subscription.subscriptionId ?? null,
+	});
+}
+
 /** Pro access to Creem's subscription is what Creem still bills or honors. */
 export function grantsProAccess(subscription: StatusFields, now = new Date()) {
 	const { status } = subscription;
-	if (!status || !PRO_SUBSCRIPTION_STATUSES.has(status)) return false;
-	if (PERIOD_END_REQUIRED_STATUSES.has(status) && !subscription.periodEnd) {
-		// Invalid state: log only the id, never other subscription data.
-		console.warn(
-			`[plan] ${status} subscription without periodEnd; denying Pro`,
-			{ subscriptionId: subscription.subscriptionId ?? null },
+	if (!status) return false;
+	if (!Object.hasOwn(SUBSCRIPTION_STATUSES, status)) {
+		warnInvalid(subscription, `unknown status ${String(status)}; denying Pro`);
+		return false;
+	}
+	if (!PRO_SUBSCRIPTION_STATUSES.has(status)) return false;
+	if (
+		subscription.periodEnd &&
+		Number.isNaN(subscription.periodEnd.getTime())
+	) {
+		warnInvalid(
+			subscription,
+			`${status} with an invalid periodEnd; denying Pro`,
 		);
 		return false;
 	}
+	if (PERIOD_END_REQUIRED_STATUSES.has(status) && !subscription.periodEnd) {
+		warnInvalid(
+			subscription,
+			`${status} subscription without periodEnd; denying Pro`,
+		);
+		return false;
+	}
+	// A paying subscription missing its period is suspicious but still paid.
+	if (!subscription.periodEnd && (status === "active" || status === "trialing"))
+		warnInvalid(subscription, `${status} subscription without periodEnd`);
 	return !isPeriodEnded(subscription, now);
 }
 
@@ -121,7 +145,8 @@ export function blocksNewCheckout(
 			subscription.status === "trialing" ||
 			subscription.status === "scheduled_cancel" ||
 			subscription.status === "past_due" ||
-			subscription.status === "unpaid") &&
+			subscription.status === "unpaid" ||
+			(subscription.status === "paused" && !!subscription.periodEnd)) &&
 		periodOpen
 	);
 }
@@ -143,6 +168,46 @@ export function canScheduleCancellation(
 	subscription: Pick<StatusFields, "status">,
 ) {
 	return subscription.status === "active" || subscription.status === "trialing";
+}
+
+/** Undo a scheduled cancel: only while the paid period is still running. */
+export function canResumeCancellation(
+	subscription: Pick<
+		StatusFields,
+		"status" | "periodEnd" | "cancelAtPeriodEnd"
+	>,
+	now = new Date(),
+) {
+	return (
+		isCancellationScheduled(subscription) &&
+		(subscription.status === "scheduled_cancel" ||
+			subscription.status === "active" ||
+			subscription.status === "trialing") &&
+		!!subscription.periodEnd &&
+		subscription.periodEnd > now
+	);
+}
+
+/** Anything Creem could still charge must be canceled before the account goes. */
+export function needsCancelOnAccountDeletion(
+	subscription: Pick<StatusFields, "status">,
+) {
+	return (
+		subscription.status !== null &&
+		subscription.status !== "canceled" &&
+		subscription.status !== "expired"
+	);
+}
+
+/** Only a full refund ends access; a partial refund is a goodwill credit. */
+export function refundRevokesAccess(refund: {
+	status: string;
+	refundedAmount?: number | null;
+	amountPaid?: number | null;
+}) {
+	if (refund.status !== "succeeded") return false;
+	if (refund.refundedAmount == null || refund.amountPaid == null) return true;
+	return refund.refundedAmount >= refund.amountPaid;
 }
 
 export function graceEndsAt(
