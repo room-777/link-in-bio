@@ -1,5 +1,5 @@
 import type { DatabaseClient } from "@grabbin/db";
-import { creemSubscription, user } from "@grabbin/db/schema/index";
+import { creemRefund, creemSubscription, user } from "@grabbin/db/schema/index";
 import {
 	deriveCancelAtPeriodEnd,
 	parseSubscriptionStatus,
@@ -253,9 +253,13 @@ async function revokeForPaymentReversal(
 	});
 	if (!subscription) return null;
 
+	// A reversal always wins, even when its webhook is older than the last
+	// one applied (e.g. an earlier partial refund delivered late).
+	const eventTime = toWebhookDate(event.webhookCreatedAt).getTime();
+	const lastTime = subscription.lastWebhookCreatedAt?.getTime() ?? 0;
 	return syncCreemWebhook(db, {
 		webhookId: event.webhookId,
-		webhookCreatedAt: event.webhookCreatedAt,
+		webhookCreatedAt: Math.max(eventTime, lastTime + 1),
 		id: subscriptionId,
 		status: "expired",
 		product: { id: subscription.productId },
@@ -269,25 +273,79 @@ async function revokeForPaymentReversal(
 	});
 }
 
+type RefundTransaction = {
+	id?: string | null;
+	amount_paid?: number | null;
+	refunded_amount?: number | null;
+};
+
+/**
+ * Records a succeeded refund once (keyed by refund id) and returns the total
+ * refunded so far on its transaction. Each statement commits on its own, so
+ * two partial refunds landing at once still see each other in the sum.
+ */
+async function recordRefund(
+	db: DatabaseClient,
+	refund: {
+		id: string;
+		transactionId: string;
+		subscriptionId: string | null;
+		amount: number;
+	},
+) {
+	await db
+		.insert(creemRefund)
+		.values({
+			id: refund.id,
+			transactionId: refund.transactionId,
+			creemSubscriptionId: refund.subscriptionId,
+			amount: refund.amount,
+		})
+		.onConflictDoNothing({ target: creemRefund.id });
+	const [row] = await db
+		.select({ total: sql<string>`coalesce(sum(${creemRefund.amount}), 0)` })
+		.from(creemRefund)
+		.where(eq(creemRefund.transactionId, refund.transactionId));
+	return Number(row?.total ?? 0);
+}
+
 export async function syncCreemRefund(
 	db: DatabaseClient,
 	event: RevokingEvent & {
+		id?: string | null;
 		status: string;
 		refund_amount?: number | null;
-		transaction?:
-			| { amount_paid?: number | null; refunded_amount?: number | null }
-			| string
-			| null;
+		transaction?: RefundTransaction | string | null;
 	},
 ) {
+	if (event.status !== "succeeded") return null;
 	const transaction =
 		typeof event.transaction === "object" ? event.transaction : null;
+	const transactionId =
+		typeof event.transaction === "string"
+			? event.transaction
+			: (transaction?.id ?? null);
 	const amountPaid = transaction?.amount_paid;
+	// Creem's embedded transaction is a snapshot from before this refund, so
+	// refunded_amount may be null or stale; our ledger is the running total.
+	let refundedAmount = transaction?.refunded_amount ?? event.refund_amount;
+	if (event.id && transactionId && event.refund_amount != null) {
+		const subscriptionId =
+			typeof event.subscription === "string"
+				? event.subscription
+				: (event.subscription?.id ?? null);
+		const total = await recordRefund(db, {
+			id: event.id,
+			transactionId,
+			subscriptionId,
+			amount: event.refund_amount,
+		});
+		refundedAmount = Math.max(total, transaction?.refunded_amount ?? 0);
+	}
 	if (
 		!refundRevokesAccess({
 			status: event.status,
-			// The transaction total covers earlier partial refunds too.
-			refundedAmount: transaction?.refunded_amount ?? event.refund_amount,
+			refundedAmount,
 			amountPaid,
 		})
 	)

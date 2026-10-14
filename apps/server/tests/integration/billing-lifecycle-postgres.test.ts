@@ -115,6 +115,7 @@ describe("billing lifecycle against local Postgres", { skip: !local }, () => {
 		await client?.end();
 	});
 	beforeEach(async () => {
+		await db.delete(schema.creemRefund);
 		await db.delete(user);
 		await db.insert(user).values({
 			id: "user-1",
@@ -514,5 +515,71 @@ describe("billing lifecycle against local Postgres", { skip: !local }, () => {
 			}),
 		);
 		assert.equal((await row()).status, "scheduled_cancel");
+	});
+
+	it("S-INT-030 즉시 해지: 결제사가 원래 끝나는 날을 주면 그날까지 Pro, 새 결제는 막음", async () => {
+		await syncCreemWebhook(db, event("canceled", at(5), at(30)));
+		assert.equal((await plan(at(10))).hasAccess, true);
+		assert.equal(blocksNewCheckout(await row(), at(10)), true);
+		assert.equal((await plan(at(31))).hasAccess, false);
+		assert.equal(blocksNewCheckout(await row(), at(31)), false);
+	});
+
+	function refund(id: string, amount: number, createdAt: Date) {
+		return {
+			id,
+			status: "succeeded",
+			subscription: { id: "sub_1" },
+			refund_amount: amount,
+			// Real Creem sends the transaction as it was before this refund.
+			transaction: { id: "tran_1", amount_paid: 1000, refunded_amount: null },
+			webhookId: `evt_${id}`,
+			webhookCreatedAt: createdAt.getTime(),
+		};
+	}
+
+	it("S-INT-031 일부 환불 한 번: Pro 유지, 환불액 기록", async () => {
+		assert.equal(await syncCreemRefund(db, refund("ref_a", 300, at(5))), null);
+		assert.equal((await plan(at(6))).hasAccess, true);
+		const rows = await db.select().from(schema.creemRefund);
+		assert.equal(rows.length, 1);
+		assert.equal(rows[0]?.amount, 300);
+	});
+
+	it("S-INT-032 일부 환불 두 번이 합쳐 전액: 즉시 Free", async () => {
+		assert.equal(await syncCreemRefund(db, refund("ref_a", 400, at(5))), null);
+		assert.equal((await plan(at(6))).hasAccess, true);
+		const r = await syncCreemRefund(db, refund("ref_b", 600, at(7)));
+		assert.equal(r?.accepted, true);
+		assert.equal((await plan(at(8))).hasAccess, false);
+	});
+
+	it("S-INT-033 같은 환불 알림 두 번: 한 번만 셈(Pro 유지)", async () => {
+		await syncCreemRefund(db, refund("ref_a", 500, at(5)));
+		assert.equal(await syncCreemRefund(db, refund("ref_a", 500, at(5))), null);
+		assert.equal((await plan(at(6))).hasAccess, true);
+		const rows = await db.select().from(schema.creemRefund);
+		assert.equal(rows.length, 1);
+	});
+
+	it("S-INT-034 환불 알림 순서 뒤바뀜: 옛 환불이 늦게 와도 합계로 Free", async () => {
+		// A newer subscription event lands first, then the newer refund,
+		// then the older refund that completes the total.
+		await syncCreemWebhook(db, event("active", at(9), at(30)));
+		assert.equal(await syncCreemRefund(db, refund("ref_b", 600, at(8))), null);
+		const r = await syncCreemRefund(db, refund("ref_a", 400, at(6)));
+		assert.equal(r?.accepted, true);
+		assert.equal((await plan(at(10))).hasAccess, false);
+		assert.equal((await row()).status, "expired");
+	});
+
+	it("S-INT-035 다른 결제 건의 환불은 합치지 않음", async () => {
+		await syncCreemRefund(db, refund("ref_a", 600, at(5)));
+		const other = {
+			...refund("ref_b", 600, at(6)),
+			transaction: { id: "tran_2", amount_paid: 1000, refunded_amount: null },
+		};
+		assert.equal(await syncCreemRefund(db, other), null);
+		assert.equal((await plan(at(7))).hasAccess, true);
 	});
 });
