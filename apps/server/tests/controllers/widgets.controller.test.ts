@@ -49,7 +49,15 @@ const unused: Preview = async () => {
 };
 
 describe("widgets controller", () => {
-	it("returns the preview for the requested kind", async () => {
+	/**
+	 * Case ID: WIDGET-API-001
+	 * Given: a signed-in owner asks for a Spotify preview.
+	 * When: POST /widgets/preview with kind=spotify.
+	 * Then: 200 with the preview service answer; the service gets the parsed request.
+	 * Evidence: HTTP status, captured service requests, JSON body.
+	 * Result: Pass | Fail | Blocked | Not Run
+	 */
+	it("WIDGET-API-001 returns the preview for the requested kind", async () => {
 		const requests: unknown[] = [];
 		const response = await post(
 			{ kind: "spotify", url: "https://open.spotify.com/album/1" },
@@ -80,7 +88,15 @@ describe("widgets controller", () => {
 		});
 	});
 
-	it("requires a session", async () => {
+	/**
+	 * Case ID: WIDGET-API-002
+	 * Given: no session.
+	 * When: POST /widgets/preview with a Tweet URL.
+	 * Then: 401 and the preview service is not called.
+	 * Evidence: HTTP status=401; unused preview stub would throw if called.
+	 * Result: Pass | Fail | Blocked | Not Run
+	 */
+	it("WIDGET-API-002 requires a session", async () => {
 		const response = await post(
 			{ kind: "tweet", url: "https://x.com/jack/status/20" },
 			unused,
@@ -89,7 +105,15 @@ describe("widgets controller", () => {
 		assert.equal(response.status, 401);
 	});
 
-	it("rejects unknown kinds and non-HTTPS URLs", async () => {
+	/**
+	 * Case ID: WIDGET-API-003
+	 * Given: bodies with kind=calendly, an http URL, or no kind.
+	 * When: POST /widgets/preview with each body.
+	 * Then: 422 INVALID_WIDGET_PREVIEW and the preview service is not called.
+	 * Evidence: HTTP status and problem code per body.
+	 * Result: Pass | Fail | Blocked | Not Run
+	 */
+	it("WIDGET-API-003 rejects unknown kinds and non-HTTPS URLs", async () => {
 		for (const body of [
 			{ kind: "calendly", url: "https://calendly.com/a" },
 			{ kind: "rss", url: "http://example.com/feed" },
@@ -104,7 +128,15 @@ describe("widgets controller", () => {
 		}
 	});
 
-	it("maps preview failures to problem responses", async () => {
+	/**
+	 * Case ID: WIDGET-API-004
+	 * Given: the preview service throws each RSS and widget preview error.
+	 * When: POST /widgets/preview.
+	 * Then: each error maps to its HTTP status and code.
+	 * Evidence: HTTP status and problem code per error.
+	 * Result: Pass | Fail | Blocked | Not Run
+	 */
+	it("WIDGET-API-004 maps preview failures to problem responses", async () => {
 		const cases = [
 			[new RssServiceError("UNSUPPORTED_RSS_URL"), 422, "UNSUPPORTED_RSS_URL"],
 			[

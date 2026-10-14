@@ -277,6 +277,14 @@ describe("page items controller", () => {
 		assert.deepEqual(body.item, item);
 	});
 
+	/**
+	 * Case ID: PAGE-ITEM-API-010
+	 * Given: a signed-in owner sends a widget preview body (kind=rss or spotify).
+	 * When: POST /pages/:handle/metadata receives it.
+	 * Then: 422, because widget previews moved to POST /widgets/preview.
+	 * Evidence: HTTP status=422 for each kind; the metadata stub would throw if called.
+	 * Result: Pass | Fail | Blocked | Not Run
+	 */
 	it("PAGE-ITEM-API-010 no longer serves widget previews from /metadata", async () => {
 		const app = createTestApp(async () => ({ items: [] }));
 

@@ -1080,7 +1080,15 @@ describe("link provider metadata", () => {
 		);
 	});
 
-	it("resolves a link to its URL provider even if a widget provider was stored", () => {
+	/**
+	 * Case ID: LINK-PROVIDERS-009
+	 * Given: link metadata still holds the old widget provider "tweet".
+	 * When: resolveLinkMetadata resolves an x.com status URL.
+	 * Then: a link reports its URL provider, not a widget provider.
+	 * Evidence: metadata.provider="x".
+	 * Result: Pass | Fail | Blocked | Not Run
+	 */
+	it("LINK-PROVIDERS-009 resolves a link to its URL provider even if a widget provider was stored", () => {
 		const metadata = resolveLinkMetadata("https://x.com/i/status/123", {
 			provider: "tweet",
 		});
