@@ -8,7 +8,7 @@ describe("billing reconciliation service", () => {
 	 * Case ID: BILLING-RECONCILE-001
 	 * Given: a Pro subscription row is past its period end but Creem reports it active with a new end date.
 	 * When: the daily reconciliation runs.
-	 * Then: the local row is refreshed and the user's page lifecycle is renewed.
+	 * Then: the local row is refreshed.
 	 * Evidence: Creem was queried with the stored ID and the refreshed status and period were saved.
 	 * Result: Pass | Fail | Blocked | Not Run
 	 */
@@ -26,7 +26,6 @@ describe("billing reconciliation service", () => {
 		const tx = {
 			execute: async () => undefined,
 			query: {
-				user: { findFirst: async () => ({ primaryPageHandle: "main" }) },
 				creemSubscription: {
 					findMany: async () => [
 						{
@@ -84,14 +83,14 @@ describe("billing reconciliation service", () => {
 		assert.deepEqual(skipped, new Set());
 		assert.equal(writes[0]?.status, "active");
 		assert.equal(writes[0]?.periodEnd, periodEnd);
-		assert.deepEqual(writes[1], { deletionScheduledAt: null });
+		assert.equal(writes.length, 1);
 	});
 
 	/**
 	 * Case ID: BILLING-RECONCILE-002
-	 * Given: Creem cannot be reached while a page deletion is due.
+	 * Given: Creem cannot be reached.
 	 * When: the daily reconciliation runs.
-	 * Then: the account is marked to skip page deletion until Creem can be checked.
+	 * Then: the account is skipped by later cleanup (custom-domain expiry) until Creem can be checked.
 	 * Evidence: the returned skip set contains the account whose provider lookup failed.
 	 * Result: Pass | Fail | Blocked | Not Run
 	 */

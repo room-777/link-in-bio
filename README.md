@@ -153,7 +153,13 @@ Pushes to `main` create GitHub releases and `vX.Y.Z` tags from Conventional Comm
 
 The first qualifying commit creates `v1.0.0`.
 
-The release tag identifies the source revision. It does not confirm that revision has been deployed; production deployment remains `bun run deploy:production`.
+The release tag identifies the source revision. After the Release workflow succeeds on `main`, the Deploy workflow (`.github/workflows/deploy.yml`) runs `bun run deploy:production` in the `production` environment. It can also be started manually (workflow_dispatch). It does not run database migrations.
+
+Deploy workflow secrets (environment `production`):
+
+- `CLOUDFLARE_API_TOKEN`, `CLOUDFLARE_ACCOUNT_ID`
+- `WEB_ENV_PRODUCTION`: full contents of `apps/web/.env.production`
+- `SERVER_ENV_PRODUCTION`: full contents of `apps/server/.env.production` (include `SENTRY_AUTH_TOKEN`, `SENTRY_*_ORG`, `SENTRY_*_PROJECT` in one of these files)
 
 ### Production origins
 

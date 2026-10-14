@@ -11,10 +11,6 @@ import {
 	registerPendingPageMedia,
 } from "@grabbin/application/media-assets";
 import {
-	assertPageWritable,
-	changePrimaryPage,
-	deleteOwnedPage,
-	listOwnedPages,
 	listSitemapHandles,
 	PageServiceError,
 } from "@grabbin/application/page-lifecycle";
@@ -51,11 +47,6 @@ const pageErrorDetails = {
 	HANDLE_RESERVED: "That handle is reserved.",
 	HANDLE_TAKEN: "That handle is already taken.",
 	PAGE_ALREADY_EXISTS: "You already have a page.",
-	PAGE_LIMIT_REACHED: "Upgrade to Pro to create more pages.",
-	PRO_REQUIRED: "A Pro plan is required for this action.",
-	PAGE_READ_ONLY: "This page is read-only.",
-	PRIMARY_PAGE_CANNOT_DELETE:
-		"Choose another primary page before deleting this page.",
 	PAGE_NOT_FOUND: "Page not found.",
 	PAGE_IMAGE_INVALID: "The uploaded image is invalid.",
 	UNIQUE_CONFLICT: "That handle is already taken.",
@@ -69,9 +60,7 @@ function pageErrorResponse(c: Context, error: PageServiceError) {
 				? 422
 				: error.code === "PAGE_NOT_FOUND"
 					? 404
-					: error.code === "PRO_REQUIRED" || error.code === "PAGE_READ_ONLY"
-						? 403
-						: 409;
+					: 409;
 	return jsonApiError(c, {
 		status,
 		code: error.code,
@@ -86,47 +75,11 @@ function proProductIds(c: Context<AppEnv>) {
 	].filter(Boolean);
 }
 
-async function pageWriteError(
-	c: Context<AppEnv>,
-	userId: string,
-	page: { id: string; handle?: string },
-) {
-	try {
-		await assertPageWritable({
-			db: c.var.db,
-			userId,
-			page,
-			proProductIds: proProductIds(c),
-		});
-		return null;
-	} catch (error) {
-		if (error instanceof PageServiceError) return pageErrorResponse(c, error);
-		throw error;
-	}
-}
-
 export const pagesController = new Hono<AppEnv>()
 	.route(
 		"/sitemap",
 		createSitemapController(async () => listSitemapHandles(await createDb())),
 	)
-	.get("/owned", requiredSession, async (c) => {
-		const session = c.var.session;
-		if (!session) {
-			return jsonApiError(c, {
-				status: 401,
-				detail: "Authentication required.",
-			});
-		}
-		c.header("Cache-Control", "private, no-store");
-		return c.json(
-			await listOwnedPages({
-				db: c.var.db,
-				userId: session.user.id,
-				proProductIds: proProductIds(c),
-			}),
-		);
-	})
 	.get("/check", async (c) => {
 		return c.json(
 			await checkPageHandle({
@@ -160,9 +113,7 @@ export const pagesController = new Hono<AppEnv>()
 
 		const { userId, ...publicPage } = page;
 		const isOwner = c.var.session?.user.id === userId;
-		const canEdit = isOwner
-			? !(await pageWriteError(c, c.var.session?.user.id ?? "", page))
-			: false;
+		const canEdit = isOwner;
 		const hasCookie = Boolean(c.req.header("cookie"));
 		c.header(
 			"Cache-Control",
@@ -210,8 +161,6 @@ export const pagesController = new Hono<AppEnv>()
 		if (!page || page.userId !== session.user.id) {
 			return jsonApiError(c, { status: 404, detail: "Page not found." });
 		}
-		const writeError = await pageWriteError(c, session.user.id, page);
-		if (writeError) return writeError;
 
 		const key = createPageImageKey({
 			userId: session.user.id,
@@ -260,8 +209,6 @@ export const pagesController = new Hono<AppEnv>()
 		if (!page || page.userId !== session.user.id) {
 			return jsonApiError(c, { status: 404, detail: "Page not found." });
 		}
-		const writeError = await pageWriteError(c, session.user.id, page);
-		if (writeError) return writeError;
 		if (
 			!isOwnedPageMediaKey({
 				key: parsed.output.key,
@@ -305,50 +252,8 @@ export const pagesController = new Hono<AppEnv>()
 				db: c.var.db,
 				userId: session.user.id,
 				rawHandle: parsed.output.handle,
-				proProductIds: proProductIds(c),
 			});
 			return c.json({ page }, 201);
-		} catch (error) {
-			if (error instanceof PageServiceError) return pageErrorResponse(c, error);
-			throw error;
-		}
-	})
-	.patch("/:handle/primary", requiredSession, async (c) => {
-		const session = c.var.session;
-		if (!session) {
-			return jsonApiError(c, {
-				status: 401,
-				detail: "Authentication required.",
-			});
-		}
-		try {
-			const page = await changePrimaryPage({
-				db: c.var.db,
-				userId: session.user.id,
-				handle: c.req.param("handle"),
-				proProductIds: proProductIds(c),
-			});
-			return c.json({ page });
-		} catch (error) {
-			if (error instanceof PageServiceError) return pageErrorResponse(c, error);
-			throw error;
-		}
-	})
-	.delete("/:handle", requiredSession, async (c) => {
-		const session = c.var.session;
-		if (!session) {
-			return jsonApiError(c, {
-				status: 401,
-				detail: "Authentication required.",
-			});
-		}
-		try {
-			await deleteOwnedPage({
-				db: c.var.db,
-				userId: session.user.id,
-				handle: c.req.param("handle"),
-			});
-			return c.body(null, 204);
 		} catch (error) {
 			if (error instanceof PageServiceError) return pageErrorResponse(c, error);
 			throw error;
@@ -379,7 +284,6 @@ export const pagesController = new Hono<AppEnv>()
 				userId: session.user.id,
 				handle: c.req.param("handle"),
 				rawHandle: parsed.output.handle,
-				proProductIds: proProductIds(c),
 			});
 			return c.json({ page });
 		} catch (error) {
@@ -413,7 +317,6 @@ export const pagesController = new Hono<AppEnv>()
 				userId: session.user.id,
 				handle: c.req.param("handle"),
 				draft: parsed.output,
-				proProductIds: proProductIds(c),
 			});
 			return c.json({ page });
 		} catch (error) {
@@ -447,7 +350,6 @@ export const pagesController = new Hono<AppEnv>()
 				userId: session.user.id,
 				handle: c.req.param("handle"),
 				profile: parsed.output,
-				proProductIds: proProductIds(c),
 			});
 			return c.json({ page });
 		} catch (error) {

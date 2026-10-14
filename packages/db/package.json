@@ -15,6 +15,7 @@
 	},
 	"dependencies": {
 		"@grabbin/env": "workspace:*",
+		"@grabbin/plan": "workspace:*",
 		"dotenv": "catalog:runtime",
 		"drizzle-orm": "^0.45.2",
 		"pg": "^8.16.3"

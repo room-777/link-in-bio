@@ -1,0 +1,1 @@
+ALTER TABLE "creem_subscription" ALTER COLUMN "status" DROP DEFAULT;

@@ -5,7 +5,7 @@ import { redirect } from "next/navigation";
 import LoginForm from "@/components/auth/login-form";
 import { sanitizeAuthRedirect } from "@/lib/auth-redirect";
 import { makeQueryClient } from "@/lib/query-client";
-import { getPrimaryPagePath } from "@/lib/server/session";
+import { getOwnPagePath } from "@/lib/server/session";
 import { getCurrentSessionQueryOptions } from "@/query/session/current";
 
 export const metadata: Metadata = {
@@ -25,7 +25,7 @@ export default async function LoginPage({
 	const session = await makeQueryClient().query(
 		getCurrentSessionQueryOptions((await headers()).get("cookie")),
 	);
-	if (session) redirect(returnTo ?? getPrimaryPagePath(session));
+	if (session) redirect(returnTo ?? getOwnPagePath(session));
 
 	return (
 		<main className="relative grid min-h-svh w-full place-items-center">

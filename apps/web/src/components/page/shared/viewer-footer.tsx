@@ -65,9 +65,9 @@ export default function ViewerFooter({
 	}
 
 	const name = session.user.name || session.user.email;
-	const primaryPageHandle = session.user.primaryPageHandle;
-	const pageHref = primaryPageHandle
-		? `/${encodeURIComponent(primaryPageHandle)}`
+	const pageHandle = session.user.pageHandle;
+	const pageHref = pageHandle
+		? `/${encodeURIComponent(pageHandle)}`
 		: "/create";
 
 	return (

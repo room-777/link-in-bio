@@ -16,12 +16,13 @@ import { makeQueryClient } from "@/lib/query-client";
 
 export const revalidate = false;
 
-const title = "A visual personal website for your work | Grabbin";
+const title = "Grabbin: Visual Link in Bio & Personal Website on Your Domain";
 const description =
-	"Build a visual personal website and link-in-bio page for your work, with photos, videos, text, links, and places in one flexible layout.";
+	"Grabbin is a free link in bio that works like a personal website. Arrange links, photos, videos, and places in one bento-style page and use your own domain.";
 
 const landingMetadata: Metadata = {
 	title,
+	description,
 	alternates: { canonical: "/" },
 	openGraph: {
 		title,

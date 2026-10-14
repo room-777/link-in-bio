@@ -1,5 +1,4 @@
 import { createBoundPageDomainService } from "@grabbin/application/page-domain";
-import { reconcileUserPageLifecycle } from "@grabbin/application/page-lifecycle";
 import { createAuth } from "@grabbin/auth";
 import { createDb } from "@grabbin/db";
 import { env } from "@grabbin/env/server";
@@ -12,6 +11,7 @@ import { prettyJSON } from "hono/pretty-json";
 import { timing } from "hono/timing";
 import { trimTrailingSlash } from "hono/trailing-slash";
 import { jsonApiError } from "./api-error";
+import { createAuthController } from "./controllers/auth.controller";
 import { billingController } from "./controllers/billing.controller";
 import { calendlyController } from "./controllers/calendly.controller";
 import { localMediaController } from "./controllers/local-media.controller";
@@ -22,27 +22,6 @@ import { providerIconsController } from "./controllers/provider-icons.controller
 import { createApiCors } from "./middlewares/cors.middleware";
 import { requiredSession } from "./middlewares/session.middleware";
 import type { AppEnv } from "./types";
-
-function proProductIds(bindings: AppEnv["Bindings"]) {
-	return [
-		bindings.CREEM_PRO_MONTHLY_PRODUCT_ID,
-		bindings.CREEM_PRO_YEARLY_PRODUCT_ID,
-	].filter(Boolean);
-}
-
-function authWithBillingSync(
-	db: Awaited<ReturnType<typeof createDb>>,
-	bindings: AppEnv["Bindings"],
-) {
-	return createAuth(db, {
-		onSubscriptionChange: (userId) =>
-			reconcileUserPageLifecycle({
-				db,
-				userId,
-				proProductIds: proProductIds(bindings),
-			}),
-	});
-}
 
 initLogger({ env: { service: "grabbin-server" }, pretty: true });
 
@@ -96,8 +75,11 @@ const app = createFactory<AppEnv>({
 	})
 	.route("/", billingController)
 	.route("/", calendlyController)
-	.on(["POST", "GET"], "/auth/*", async (c) =>
-		(await authWithBillingSync(await createDb(), c.env)).handler(c.req.raw),
+	.route(
+		"/auth",
+		createAuthController(async (request) =>
+			(await createAuth(await createDb())).handler(request),
+		),
 	)
 	.route("/", createRoutes)
 	.route("/pages", pagesController)

@@ -3,7 +3,7 @@ import { headers } from "next/headers";
 import { redirect } from "next/navigation";
 import { CreatePageForm } from "@/features/page/management/pages";
 import { makeQueryClient } from "@/lib/query-client";
-import { getPrimaryPagePath } from "@/lib/server/session";
+import { getOwnPagePath } from "@/lib/server/session";
 import { getCurrentSessionQueryOptions } from "@/query/session/current";
 
 export const metadata: Metadata = {
@@ -17,8 +17,8 @@ export default async function CreatePage() {
 		getCurrentSessionQueryOptions((await headers()).get("cookie")),
 	);
 	if (!session) redirect("/sign-in");
-	if (session.user.primaryPageHandle) {
-		redirect(getPrimaryPagePath(session));
+	if (session.user.pageHandle) {
+		redirect(getOwnPagePath(session));
 	}
 
 	return (

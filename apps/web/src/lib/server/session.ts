@@ -1,11 +1,11 @@
 import type { Session } from "@grabbin/auth";
 
-export type SessionWithPrimaryPage = Session & {
-	user: Session["user"] & { primaryPageHandle?: string | null };
+export type SessionWithPage = Session & {
+	user: Session["user"] & { pageHandle?: string | null };
 };
 
-export function getPrimaryPagePath(session: SessionWithPrimaryPage | null) {
-	return session?.user.primaryPageHandle
-		? `/${encodeURIComponent(session.user.primaryPageHandle)}`
+export function getOwnPagePath(session: SessionWithPage | null) {
+	return session?.user.pageHandle
+		? `/${encodeURIComponent(session.user.pageHandle)}`
 		: "/create";
 }

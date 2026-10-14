@@ -6,7 +6,7 @@ import {
 	sendVerificationOTP as sendVerificationOTPEmail,
 } from "@grabbin/email";
 import { env } from "@grabbin/env/server";
-import { getPlanAccess } from "@grabbin/plan";
+import { getPlanAccess, type SubscriptionStatus } from "@grabbin/plan";
 import {
 	type BetterAuthOptions,
 	type BetterAuthPlugin,
@@ -14,7 +14,8 @@ import {
 } from "better-auth";
 import { drizzleAdapter } from "better-auth/adapters/drizzle";
 import { customSession, emailOTP } from "better-auth/plugins";
-
+import { eq } from "drizzle-orm";
+import { cancelSubscriptionsBeforeAccountDeletion } from "./account-deletion";
 import {
 	getCookieAttributes,
 	shouldEnableCrossSubDomainCookies,
@@ -22,6 +23,7 @@ import {
 import { createCreemClient, retrieveSubscription } from "./creem-server";
 import {
 	syncCreemCheckout,
+	syncCreemDispute,
 	syncCreemRefund,
 	syncCreemWebhook,
 } from "./creem-webhook";
@@ -56,6 +58,10 @@ function createCreemPlugin(
 		persistSubscriptions: true,
 		onRefundCreated: async (data) => {
 			const result = await syncCreemRefund(db, data);
+			if (result) await onSubscriptionChange?.(result.userId);
+		},
+		onDisputeCreated: async (data) => {
+			const result = await syncCreemDispute(db, data);
 			if (result) await onSubscriptionChange?.(result.userId);
 		},
 		onCheckoutCompleted: async (data) => {
@@ -140,6 +146,56 @@ const socialProviders: BetterAuthOptions["socialProviders"] = {
 		: {}),
 };
 
+/** Session shape: the user's page handle and plan, read on every get-session. */
+function planSession(
+	getDatabase: () => DatabaseClient | Promise<DatabaseClient>,
+) {
+	return customSession(async ({ user, session }, context) => {
+		// "pages" is not a Better Auth model, so the adapter cannot read it.
+		const db = await getDatabase();
+		const ownPage = await db.query.pages.findFirst({
+			where: eq(schema.pages.userId, user.id),
+			columns: { handle: true },
+		});
+		const subscriptions = (await context.context.adapter.findMany({
+			model: "creem_subscription",
+			where: [{ field: "referenceId", value: user.id }],
+		})) as Array<{
+			creemSubscriptionId: string | null;
+			productId: string;
+			status: SubscriptionStatus | null;
+			periodEnd: Date | null;
+			cancelAtPeriodEnd: boolean | null;
+		}>;
+		const access = getPlanAccess(
+			subscriptions.map((subscription) => ({
+				subscriptionId: subscription.creemSubscriptionId,
+				productId: subscription.productId,
+				status: subscription.status,
+				periodEnd: subscription.periodEnd
+					? new Date(subscription.periodEnd)
+					: null,
+				cancelAtPeriodEnd: subscription.cancelAtPeriodEnd,
+			})),
+			[
+				env.CREEM_PRO_MONTHLY_PRODUCT_ID,
+				env.CREEM_PRO_YEARLY_PRODUCT_ID,
+			].filter(Boolean),
+		);
+		return {
+			user: { ...user, pageHandle: ownPage?.handle ?? null },
+			session,
+			plan: {
+				tier: access.tier,
+				hasAccess: access.hasAccess,
+				status: access.status,
+				periodEnd: access.periodEnd?.toISOString() ?? null,
+				cancelAtPeriodEnd: access.cancelAtPeriodEnd,
+			},
+		};
+	});
+}
+
 const authOptions = {
 	basePath: "/auth",
 	trustedOrigins: [env.CORS_ORIGIN],
@@ -156,11 +212,6 @@ const authOptions = {
 				}),
 		},
 		additionalFields: {
-			primaryPageHandle: {
-				type: "string",
-				required: false,
-				input: false,
-			},
 			role: {
 				type: "string",
 				required: true,
@@ -187,45 +238,7 @@ const authOptions = {
 					otp,
 				}),
 		}),
-		customSession(async ({ user, session }, context) => {
-			const subscriptions = (await context.context.adapter.findMany({
-				model: "creem_subscription",
-				where: [{ field: "referenceId", value: user.id }],
-			})) as Array<{
-				creemSubscriptionId: string | null;
-				productId: string;
-				status: string | null;
-				periodEnd: Date | null;
-				cancelAtPeriodEnd: boolean | null;
-			}>;
-			const access = getPlanAccess(
-				subscriptions.map((subscription) => ({
-					subscriptionId: subscription.creemSubscriptionId,
-					productId: subscription.productId,
-					status: subscription.status,
-					periodEnd: subscription.periodEnd
-						? new Date(subscription.periodEnd)
-						: null,
-					cancelAtPeriodEnd: subscription.cancelAtPeriodEnd,
-				})),
-				[
-					env.CREEM_PRO_MONTHLY_PRODUCT_ID,
-					env.CREEM_PRO_YEARLY_PRODUCT_ID,
-				].filter(Boolean),
-			);
-			return {
-				user,
-				session,
-				plan: {
-					tier: access.tier,
-					pageLimit: access.pageLimit,
-					hasAccess: access.hasAccess,
-					status: access.status,
-					periodEnd: access.periodEnd?.toISOString() ?? null,
-					cancelAtPeriodEnd: access.cancelAtPeriodEnd,
-				},
-			};
-		}),
+		planSession(createDb),
 	],
 	// uncomment cookieCache setting when ready to deploy to Cloudflare using *.workers.dev domains
 	session: {
@@ -260,8 +273,26 @@ export async function createAuth(
 	const resolvedDatabase = database ?? (await createDb());
 	return betterAuth({
 		...authOptions,
+		user: {
+			...authOptions.user,
+			deleteUser: {
+				...authOptions.user.deleteUser,
+				// Stop billing first; if Creem fails, the account is kept so nobody
+				// is charged for an account that no longer exists.
+				beforeDelete: (deleted) =>
+					cancelSubscriptionsBeforeAccountDeletion(
+						resolvedDatabase,
+						deleted.id,
+						{
+							apiKey: env.CREEM_API_KEY,
+							testMode: env.CREEM_TEST_MODE === "true",
+						},
+					),
+			},
+		},
 		plugins: [
-			...(authOptions.plugins ?? []),
+			...authOptions.plugins.filter((plugin) => plugin.id !== "custom-session"),
+			planSession(() => resolvedDatabase),
 			createCreemPlugin(resolvedDatabase, options?.onSubscriptionChange),
 		],
 		database: drizzleAdapter(resolvedDatabase, {
