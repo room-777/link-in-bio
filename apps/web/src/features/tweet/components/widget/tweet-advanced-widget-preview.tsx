@@ -5,7 +5,7 @@ import {
 	advancedWidgetPresets,
 	useAdvancedWidgetPreset,
 } from "@/components/page/editor/advanced-widgets/use-advanced-widget-preset";
-import type { BentoItem } from "@/lib/bento/bento-types";
+import type { BentoItem } from "@/features/page/editor/state/bento-types";
 import { getTweetId } from "../../utils/tweet-url";
 import { TweetSkeleton } from "./tweet-skeleton";
 import { TweetWidget } from "./tweet-widget";

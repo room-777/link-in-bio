@@ -9,7 +9,7 @@ import {
 } from "@grabbin/bento-layout";
 import { providerIconUrl } from "@grabbin/page-link";
 import { motion, useReducedMotion } from "motion/react";
-import type { BentoItem } from "@/lib/bento/bento-types";
+import type { BentoItem } from "@/features/page/editor/state/bento-types";
 import { BentoItemShell } from "./bento-item-shell";
 import { MapViewportGate } from "./items/map-viewport-gate";
 

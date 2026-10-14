@@ -15,8 +15,8 @@ import {
 } from "react";
 import { Like2 } from "reicon-react/icons/Like2";
 import { Trash } from "@/components/trash";
+import type { BentoCommand } from "@/features/page/editor/state/bento-types";
 import { useBentoLineHeight } from "@/hooks/use-bento-line-height";
-import type { BentoCommand } from "@/lib/bento/bento-types";
 import { getPageImageUrl } from "@/lib/page-image-url";
 import {
 	getPageImagePlaceholderUrl,

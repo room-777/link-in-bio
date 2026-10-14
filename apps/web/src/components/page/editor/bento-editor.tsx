@@ -11,16 +11,15 @@ import {
 } from "@grabbin/bento-layout";
 import { providerIconUrl, resolveLinkProvider } from "@grabbin/page-link";
 import { toast } from "@grabbin/ui/components/toast";
-import { useQueryClient } from "@tanstack/react-query";
 import dynamic from "next/dynamic";
 import { type CSSProperties, useCallback, useEffect, useRef } from "react";
 import type { Tweet as TweetResponse } from "react-tweet/api";
 import type { AdvancedWidgetActions } from "@/features/page/editor/contexts/advanced-widget-actions-context";
+import { useBentoStore } from "@/features/page/editor/state/bento-store";
 import { useRssWidgetActions } from "@/features/rss/hooks/use-rss-widget-actions";
 import { useFetchBentoSpotifyPreviewMutation } from "@/features/spotify/mutations/preview";
-import { getTweetQueryOptions } from "@/features/tweet/queries/by-id";
+import { useLoadTweet } from "@/features/tweet/queries/by-id";
 import { getTweetId } from "@/features/tweet/utils/tweet-url";
-import { useBentoStore } from "@/lib/bento/bento-store";
 import { getErrorMessage } from "@/lib/error-message";
 import EditMobileShareLinkButton from "./mobile-share-link-button";
 
@@ -73,7 +72,7 @@ export default function BentoEditor({
 		handle,
 		store.dispatchCommand,
 	);
-	const queryClient = useQueryClient();
+	const loadTweet = useLoadTweet();
 	const spotifyPreviewRequestRef = useRef<{
 		handle: string;
 		url: string;
@@ -120,9 +119,7 @@ export default function BentoEditor({
 			const normalizedUrl = `https://x.com/i/status/${tweetId}`;
 			let tweetResponse: TweetResponse | undefined;
 			try {
-				tweetResponse = await queryClient.fetchQuery(
-					getTweetQueryOptions(tweetId),
-				);
+				tweetResponse = await loadTweet(tweetId);
 			} catch {
 				toast({
 					message: "Unable to load this Tweet. Try again.",
@@ -174,7 +171,7 @@ export default function BentoEditor({
 			});
 			return true;
 		},
-		[queryClient, store.dispatchCommand],
+		[loadTweet, store.dispatchCommand],
 	);
 	const previewSpotify = useCallback(
 		(url: string) => {

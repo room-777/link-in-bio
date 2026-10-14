@@ -1,11 +1,11 @@
 import type { PageImageCrop } from "@grabbin/api";
 import { useCallback, useEffect, useRef, useState } from "react";
-import { useMediaCropInteraction } from "@/hooks/use-media-crop-interaction";
 import {
 	getCenteredMediaCrop,
 	getMediaCropStyle,
 	isCropCompatible,
-} from "@/lib/bento/media-crop";
+} from "@/features/page/editor/state/media-crop";
+import { useMediaCropInteraction } from "@/hooks/use-media-crop-interaction";
 
 export function usePageImageCrop({
 	value,

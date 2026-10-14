@@ -2,7 +2,7 @@ import type { RssFeedResponse } from "@grabbin/api";
 import { providerIconUrl } from "@grabbin/page-link";
 import { toast } from "@grabbin/ui/components/toast";
 import { useCallback, useRef } from "react";
-import type { useBentoStore } from "@/lib/bento/bento-store";
+import type { useBentoStore } from "@/features/page/editor/state/bento-store";
 import { getErrorMessage } from "@/lib/error-message";
 import { useRssFeedPreviewMutation } from "../mutations/preview";
 

@@ -8,13 +8,16 @@ import {
 	useRef,
 	useState,
 } from "react";
-import { useMediaCropInteraction } from "@/hooks/use-media-crop-interaction";
-import type { BentoCommand, BentoItem } from "@/lib/bento/bento-types";
+import type {
+	BentoCommand,
+	BentoItem,
+} from "@/features/page/editor/state/bento-types";
 import {
 	getCenteredMediaCrop,
 	getMediaCropStyle,
 	isCropCompatible,
-} from "@/lib/bento/media-crop";
+} from "@/features/page/editor/state/media-crop";
+import { useMediaCropInteraction } from "@/hooks/use-media-crop-interaction";
 import { useMediaCrop } from "./media-crop-provider";
 
 type MediaItem = Extract<BentoItem, { type: "media" }>;

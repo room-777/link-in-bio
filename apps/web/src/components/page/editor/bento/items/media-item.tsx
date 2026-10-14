@@ -14,7 +14,10 @@ import {
 	useState,
 } from "react";
 
-import type { BentoCommand, BentoItem } from "@/lib/bento/bento-types";
+import type {
+	BentoCommand,
+	BentoItem,
+} from "@/features/page/editor/state/bento-types";
 import { getPageMediaUrl } from "@/lib/page-media-url";
 import { ExternalAction } from "./external-action";
 import { MediaCaption } from "./media-caption";

@@ -37,7 +37,6 @@ export function createArchitectureContext() {
 	const sourceDirectory = fileURLToPath(new URL("../../src/", import.meta.url));
 	const repositoryRoot = join(sourceDirectory, "../../..");
 	const queryDirectory = join(sourceDirectory, "query");
-	const mutationDirectory = join(sourceDirectory, "mutation");
 	const componentDirectory = join(sourceDirectory, "components");
 	const featureDirectory = join(sourceDirectory, "features");
 	const featureFiles = filesUnder(featureDirectory);
@@ -51,10 +50,7 @@ export function createArchitectureContext() {
 		relative(featureDirectory, path).split(sep).includes("components"),
 	);
 	const queryFiles = [...filesUnder(queryDirectory), ...featureQueryFiles];
-	const mutationFiles = [
-		...filesUnder(mutationDirectory),
-		...featureMutationFiles,
-	];
+	const mutationFiles = featureMutationFiles;
 	const componentFiles = [
 		...filesUnder(componentDirectory),
 		...featureComponentFiles,
@@ -67,7 +63,6 @@ export function createArchitectureContext() {
 		repositoryRoot,
 		sourceDirectory,
 		queryDirectory,
-		mutationDirectory,
 		componentDirectory,
 		featureDirectory,
 		allFiles: filesUnder(sourceDirectory),

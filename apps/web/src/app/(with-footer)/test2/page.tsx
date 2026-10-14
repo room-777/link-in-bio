@@ -27,7 +27,7 @@ import {
 	type CalendlyAvailability,
 	CalendlyWidget,
 } from "@/features/calendly/components/widget/calendly-widget";
-import type { BentoItem } from "@/lib/bento/bento-types";
+import type { BentoItem } from "@/features/page/editor/state/bento-types";
 
 const timestamp = "2026-10-10T00:00:00.000Z";
 const previewToday = new Date("2026-10-10T12:00:00.000Z");
