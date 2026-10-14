@@ -58,5 +58,3 @@ export default function AccountTabContent({
 		</>
 	);
 }
-
-export { AccountTabContent };

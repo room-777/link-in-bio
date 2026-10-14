@@ -14,10 +14,10 @@ import { useIsMobile } from "@grabbin/ui/components/use-mobile";
 import { SlidersHorizontal } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
+import { openDeleteAccountDialog } from "@/features/account";
 import { openChangeHandleDialog } from "@/features/page/management/pages";
 import { usePublicViewsTooltipControl } from "@/features/page/public-views";
 import { authClient, getAuthErrorMessage } from "@/lib/auth-client";
-import { openDeleteAccountDialog } from "../management/account/open-delete-account-dialog";
 import { openSettingDialog } from "../management/settings/open-setting-dialog";
 import { openShareLinkDialog } from "../sharing/share-link-dialog";
 import {
