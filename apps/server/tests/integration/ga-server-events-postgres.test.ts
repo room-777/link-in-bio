@@ -289,4 +289,60 @@ describe("GA server events against local Postgres", { skip: !local }, () => {
 		assert.equal(logs[0]?.[0], "ga server event failed");
 		assert.ok(!JSON.stringify(logs).includes(config.apiSecret));
 	});
+
+	/**
+	 * Case ID: GA-SRV-005
+	 * Given: GA fails (network error, then a 500) for a once-only event.
+	 * When: the event is tracked again after each failure.
+	 * Then: failures release the claim, so the next attempt sends it; once it
+	 *   is delivered, later attempts are skipped.
+	 * Evidence: tracker results, fetch count and analytics_events rows.
+	 * Result: Pass | Fail | Blocked | Not Run
+	 */
+	it("GA-SRV-005 keeps a failed once-only event retryable", async () => {
+		await insertUser("retry");
+		const responses: Array<() => Response> = [
+			() => {
+				throw new Error("network down");
+			},
+			() => new Response("server error", { status: 500 }),
+			() => new Response("", { status: 204 }),
+		];
+		let fetches = 0;
+		const tracker = createServerEventTracker({
+			config: { ...config, mode: "collect" },
+			createDb: async () => sharedDb(),
+			waitUntil: () => undefined,
+			fetch: (async () => {
+				fetches += 1;
+				return (responses.shift() ?? responses[0])?.() ?? new Response("");
+			}) as typeof fetch,
+			log: () => undefined,
+		});
+		const firstLink = () =>
+			tracker.track({
+				name: "first_link_added",
+				once: "first_link_added",
+				userId: "retry",
+				params: { item_type: "link" },
+			});
+		const rows = async () =>
+			(
+				await client.query(
+					`select count(*)::int as n from analytics_events where user_id = 'retry'`,
+				)
+			).rows[0]?.n;
+
+		assert.deepEqual(await firstLink(), { sent: false, reason: "error" });
+		assert.equal(await rows(), 0);
+		assert.deepEqual(await firstLink(), { sent: false, reason: "error" });
+		assert.equal(await rows(), 0);
+		assert.equal((await firstLink()).sent, true);
+		assert.equal(await rows(), 1);
+		assert.deepEqual(await firstLink(), {
+			sent: false,
+			reason: "already_sent",
+		});
+		assert.equal(fetches, 3);
+	});
 });

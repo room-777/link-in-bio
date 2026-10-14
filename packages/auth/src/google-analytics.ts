@@ -1,6 +1,6 @@
 import type { DatabaseClient } from "@grabbin/db";
 import { analyticsEvents, user } from "@grabbin/db/schema/index";
-import { eq } from "drizzle-orm";
+import { and, eq } from "drizzle-orm";
 
 /** GA4 events sent from the server with the Measurement Protocol. */
 export type ServerEventName =
@@ -175,37 +175,57 @@ export function createServerEventTracker(deps: ServerEventTrackerDeps) {
 			input.headers,
 			config.measurementId,
 		);
-		let params: Record<string, string | number> | undefined;
-		if (input.once || typeof input.params === "function") {
-			const db = await deps.createDb();
-			try {
-				if (
-					input.once &&
-					!(await claimAnalyticsEvent(db, input.userId, input.once))
-				) {
+		const db =
+			input.once || typeof input.params === "function"
+				? await deps.createDb()
+				: null;
+		let claimed = false;
+		try {
+			if (db && input.once) {
+				claimed = await claimAnalyticsEvent(db, input.userId, input.once);
+				if (!claimed) {
 					log("ga server event skipped", {
 						event: input.name,
 						reason: "already_sent",
 					});
 					return { sent: false, reason: "already_sent" as const };
 				}
-				params =
-					typeof input.params === "function"
-						? await input.params(db)
-						: input.params;
-			} finally {
-				await db.$client.end().catch(() => undefined);
 			}
-		} else {
-			params = input.params;
+			const params =
+				typeof input.params === "function" && db
+					? await input.params(db)
+					: (input.params as Record<string, string | number> | undefined);
+			const result = await sendMeasurementProtocolEvent(
+				config,
+				{ name: input.name, userId: input.userId, browser, params },
+				deps.fetch,
+			);
+			if (result.status < 200 || result.status >= 300) {
+				throw new Error(`GA responded with ${result.status}`);
+			}
+			logSent(input.name, config, browser, result);
+			return { sent: true as const, ...result };
+		} catch (error) {
+			// Delivery failed: release the claim so a later attempt can send it.
+			if (db && claimed && input.once) {
+				await releaseAnalyticsEvent(db, input.userId, input.once).catch(
+					() => undefined,
+				);
+			}
+			throw error;
+		} finally {
+			await db?.$client.end().catch(() => undefined);
 		}
-		const result = await sendMeasurementProtocolEvent(
-			config,
-			{ name: input.name, userId: input.userId, browser, params },
-			deps.fetch,
-		);
+	}
+
+	function logSent(
+		name: ServerEventName,
+		config: GoogleAnalyticsConfig,
+		browser: BrowserAnalyticsContext,
+		result: Awaited<ReturnType<typeof sendMeasurementProtocolEvent>>,
+	) {
 		log("ga server event", {
-			event: input.name,
+			event: name,
 			mode: config.mode,
 			status: result.status,
 			hasClientId: Boolean(browser.clientId),
@@ -218,7 +238,6 @@ export function createServerEventTracker(deps: ServerEventTrackerDeps) {
 					}
 				: {}),
 		});
-		return { sent: true, ...result };
 	}
 
 	function track(input: TrackServerEventInput) {
@@ -261,6 +280,22 @@ export function createServerEventTracker(deps: ServerEventTrackerDeps) {
 	}
 
 	return { track, trackSignIn, run };
+}
+
+/** Forgets a claim whose event could not be delivered. */
+export async function releaseAnalyticsEvent(
+	db: DatabaseClient,
+	userId: string,
+	eventName: OnceEventName,
+) {
+	await db
+		.delete(analyticsEvents)
+		.where(
+			and(
+				eq(analyticsEvents.userId, userId),
+				eq(analyticsEvents.eventName, eventName),
+			),
+		);
 }
 
 /** Seconds between account creation and now, for page_created. */

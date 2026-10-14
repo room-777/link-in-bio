@@ -358,7 +358,7 @@ describe("page items controller GA events", () => {
 	 *   batch with only deletes.
 	 * When: PATCH /pages/jane/batch succeeds.
 	 * Then: first_link_added is queued once (the database decides if it is
-	 *   the first) with item_type text; a delete-only batch queues nothing.
+	 *   the first) with item_type text; a delete-only batch and a blank text item queue nothing.
 	 * Evidence: HTTP 200 and the recorded tracker calls.
 	 * Result: Pass | Fail | Blocked | Not Run
 	 */

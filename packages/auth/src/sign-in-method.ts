@@ -1,3 +1,6 @@
+import type { GenericEndpointContext } from "better-auth";
+import type { ServerEventTracker } from "./google-analytics";
+
 type SignInContext = {
 	path?: string;
 	params?: Record<string, string | undefined>;
@@ -19,4 +22,31 @@ export function getSignInMethod(context: SignInContext) {
 		return typeof provider === "string" ? provider : null;
 	}
 	return null;
+}
+
+/**
+ * Better Auth database hooks that report each sign-in to GA: sign_up for a
+ * new account, login for an existing one. Other new sessions are ignored.
+ */
+export function createSignInDatabaseHooks(
+	tracker: Pick<ServerEventTracker, "trackSignIn">,
+) {
+	return {
+		session: {
+			create: {
+				after: async (
+					session: { userId: string },
+					context: GenericEndpointContext | null,
+				) => {
+					const method = getSignInMethod(context);
+					if (!method) return;
+					tracker.trackSignIn({
+						userId: session.userId,
+						headers: context?.headers ?? context?.request?.headers,
+						method,
+					});
+				},
+			},
+		},
+	};
 }

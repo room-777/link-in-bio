@@ -5,6 +5,7 @@ import type {
 	PageItemResponse,
 } from "@grabbin/api";
 import {
+	hasPageItemContent,
 	pageItemBatchRequestSchema,
 	pageItemMetadataRequestSchema,
 	pageItemUploadCancelRequestSchema,
@@ -340,7 +341,8 @@ export function createPageItemsController({
 					].filter(Boolean),
 					publicBaseUrl: c.env?.R2_PUBLIC_URL,
 				});
-				const firstItem = parsed.output.upserts[0];
+				// Only items that are actually saved: blank text is dropped.
+				const firstItem = parsed.output.upserts.find(hasPageItemContent);
 				if (firstItem) {
 					serverEvents?.track({
 						name: "first_link_added",
