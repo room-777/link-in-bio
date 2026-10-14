@@ -24,7 +24,22 @@ export function parseSubscriptionStatus(value: string): SubscriptionStatus {
 }
 
 export const PRO_SUBSCRIPTION_STATUSES: ReadonlySet<SubscriptionStatus> =
-	new Set(["active", "trialing", "scheduled_cancel", "canceled"]);
+	new Set([
+		"active",
+		"trialing",
+		"scheduled_cancel",
+		"canceled",
+		"past_due",
+		"unpaid",
+		"paused",
+	]);
+
+/** Payment problems keep Pro only through a period that was already paid. */
+const PAID_PERIOD_ONLY_STATUSES: ReadonlySet<SubscriptionStatus> = new Set([
+	"past_due",
+	"unpaid",
+	"paused",
+]);
 
 export type PlanTier = "free" | "pro";
 
@@ -59,26 +74,25 @@ export function isCancellationScheduled(
 	);
 }
 
-/** Without a period end, only ending statuses count as ended. */
+/** Without a period end, only canceled and expired count as ended. */
 export function isPeriodEnded(
 	subscription: Pick<StatusFields, "status" | "periodEnd">,
 	now = new Date(),
 ) {
 	if (subscription.periodEnd) return subscription.periodEnd <= now;
 	return (
-		subscription.status === "canceled" ||
-		subscription.status === "scheduled_cancel" ||
-		subscription.status === "expired"
+		subscription.status === "canceled" || subscription.status === "expired"
 	);
 }
 
 /** Pro access to Creem's subscription is what Creem still bills or honors. */
 export function grantsProAccess(subscription: StatusFields, now = new Date()) {
-	return (
-		!!subscription.status &&
-		PRO_SUBSCRIPTION_STATUSES.has(subscription.status) &&
-		!isPeriodEnded(subscription, now)
-	);
+	const { status } = subscription;
+	if (!status || !PRO_SUBSCRIPTION_STATUSES.has(status)) return false;
+	// No paid period on record means nothing to honor for a payment problem.
+	if (PAID_PERIOD_ONLY_STATUSES.has(status) && !subscription.periodEnd)
+		return false;
+	return !isPeriodEnded(subscription, now);
 }
 
 /**

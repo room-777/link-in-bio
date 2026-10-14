@@ -7,10 +7,19 @@ import {
 	isCancellationScheduled,
 	isPeriodEnded,
 	parseSubscriptionStatus,
+	type SubscriptionStatus,
 } from "../src/index";
 
 const now = new Date("2026-10-14T00:00:00.000Z");
 const later = new Date("2026-11-14T00:00:00.000Z");
+
+function access(status: SubscriptionStatus, periodEnd: Date | null) {
+	return getPlanAccess(
+		[{ productId: "pro", status, periodEnd, cancelAtPeriodEnd: false }],
+		["pro"],
+		now,
+	);
+}
 
 describe("plan decisions", () => {
 	it("PLAN-001 rejects statuses outside Creem's type", () => {
@@ -19,23 +28,15 @@ describe("plan decisions", () => {
 		assert.throws(() => parseSubscriptionStatus("toString"), /Unknown/);
 	});
 
-	it("PLAN-002 period ended uses one rule with or without periodEnd", () => {
-		assert.equal(
-			isPeriodEnded({ status: "active", periodEnd: now }, now),
-			true,
-		);
-		assert.equal(
-			isPeriodEnded({ status: "canceled", periodEnd: later }, now),
-			false,
-		);
-		assert.equal(
-			isPeriodEnded({ status: "scheduled_cancel", periodEnd: null }, now),
-			true,
-		);
-		assert.equal(
-			isPeriodEnded({ status: "active", periodEnd: null }, now),
-			false,
-		);
+	it("PLAN-002 only canceled and expired end without a periodEnd", () => {
+		const ended = (status: SubscriptionStatus, periodEnd: Date | null) =>
+			isPeriodEnded({ status, periodEnd }, now);
+		assert.equal(ended("active", now), true);
+		assert.equal(ended("canceled", later), false);
+		assert.equal(ended("canceled", null), true);
+		assert.equal(ended("expired", null), true);
+		assert.equal(ended("scheduled_cancel", null), false);
+		assert.equal(ended("active", null), false);
 	});
 
 	it("PLAN-003 cancellation scheduled from flag or status", () => {
@@ -48,24 +49,16 @@ describe("plan decisions", () => {
 		assert.equal(canScheduleCancellation({ status: "past_due" }), false);
 	});
 
-	it("PLAN-004 duplicate checkout is blocked by unpaid but Pro is not granted", () => {
-		const unpaid = {
+	it("PLAN-004 duplicate checkout ignores rows without a Creem subscription", () => {
+		const row = {
 			status: "unpaid" as const,
 			periodEnd: later,
 			creemSubscriptionId: "s",
 		};
-		assert.equal(blocksNewCheckout(unpaid, now), true);
-		assert.equal(
-			getPlanAccess(
-				[{ ...unpaid, productId: "pro", cancelAtPeriodEnd: false }],
-				["pro"],
-				now,
-			).hasAccess,
-			false,
-		);
+		assert.equal(blocksNewCheckout(row, now), true);
 		assert.equal(
 			blocksNewCheckout(
-				{ ...unpaid, status: "active", creemSubscriptionId: null },
+				{ ...row, status: "active", creemSubscriptionId: null },
 				now,
 			),
 			false,
@@ -89,5 +82,21 @@ describe("plan decisions", () => {
 		assert.equal(plan.cancellationScheduled, true);
 		assert.equal(plan.periodEnded, false);
 		assert.equal(plan.lapsedFromPro, false);
+	});
+
+	it("PLAN-006 payment failure or pause keeps Pro until the paid periodEnd", () => {
+		for (const status of ["past_due", "unpaid", "paused"] as const) {
+			assert.equal(access(status, later).hasAccess, true, `${status} before`);
+			assert.equal(access(status, now).hasAccess, false, `${status} at end`);
+			assert.equal(access(status, null).hasAccess, false, `${status} no end`);
+		}
+	});
+
+	it("PLAN-007 scheduled_cancel without periodEnd keeps Pro", () => {
+		const plan = access("scheduled_cancel", null);
+		assert.equal(plan.hasAccess, true);
+		assert.equal(plan.periodEnded, false);
+		assert.equal(access("canceled", null).hasAccess, false);
+		assert.equal(access("expired", null).hasAccess, false);
 	});
 });
