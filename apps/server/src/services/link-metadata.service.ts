@@ -11,6 +11,7 @@ import { resolveLinkProvider } from "@grabbin/page-link";
 import * as v from "valibot";
 
 import { PageItemServiceError } from "../exceptions/page-item.exception";
+import { readStoredPageItem } from "../models/stored-page-item";
 import {
 	enrichLinkProvider,
 	type LinkProviderEnvironment,
@@ -152,9 +153,10 @@ export async function enrichPageItemMetadata({
 	const page = await getOwnedPage(db, { handle, userId });
 	if (!page) throw new PageItemServiceError("PAGE_NOT_FOUND");
 
-	const current = await db.query.pageItems.findFirst({
+	const row = await db.query.pageItems.findFirst({
 		where: and(eq(pageItems.id, itemId), eq(pageItems.pageId, page.id)),
 	});
+	const current = row && readStoredPageItem(row);
 	if (!current) throw new PageItemServiceError("ITEM_NOT_FOUND");
 	if (current.type !== "link") throw new PageItemServiceError("ITEM_NOT_LINK");
 

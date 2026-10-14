@@ -24,6 +24,7 @@ import { pageItems } from "@grabbin/db/schema/index";
 import { requiresProPlan, resolveLinkMetadata } from "@grabbin/page-link";
 import * as v from "valibot";
 import { PageItemServiceError } from "../exceptions/page-item.exception";
+import { readStoredPageItem } from "../models/stored-page-item";
 import {
 	getPublicPageItemMediaUrl,
 	isOwnedPageLinkImageKey,
@@ -49,9 +50,10 @@ function getPageItemMediaKey(item: { type: string; data: unknown }) {
 }
 
 export function mapPageItemResponse(
-	item: typeof pageItems.$inferSelect,
+	row: typeof pageItems.$inferSelect,
 	publicBaseUrl?: string,
 ): PageItemResponse {
+	const item = readStoredPageItem(row);
 	const data = { ...item.data };
 	if (item.type === "link" && typeof data.url === "string") {
 		const linkMetadata = resolveLinkMetadata(
@@ -215,16 +217,18 @@ export async function persistPageItemBatch({
 		});
 		if (!page) throw new PageItemServiceError("PAGE_NOT_FOUND");
 
-		const existing = await tx.query.pageItems.findMany({
-			where: eq(pageItems.pageId, page.id),
-			columns: {
-				id: true,
-				type: true,
-				data: true,
-				layouts: true,
-				updatedAt: true,
-			},
-		});
+		const existing = (
+			await tx.query.pageItems.findMany({
+				where: eq(pageItems.pageId, page.id),
+				columns: {
+					id: true,
+					type: true,
+					data: true,
+					layouts: true,
+					updatedAt: true,
+				},
+			})
+		).map(readStoredPageItem);
 		const requestedIds = [
 			...new Set([
 				...upserts.map((item) => item.id),

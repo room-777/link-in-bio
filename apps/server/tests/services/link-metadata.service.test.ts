@@ -43,6 +43,40 @@ function createDatabase(url = "https://example.com") {
 
 describe("link metadata service", () => {
 	/**
+	 * Case ID: LINK-METADATA-SERVICE-008
+	 * Given: an RSS widget is still stored link-shaped (metadata.provider=rss-feed).
+	 * When: enrichPageItemMetadata is asked to refresh it as a link.
+	 * Then: it rejects with ITEM_NOT_LINK and does not fetch or write.
+	 * Evidence: PageItemServiceError.code=ITEM_NOT_LINK, fetch calls=0, stored data unchanged.
+	 * Result: Pass | Fail | Blocked | Not Run
+	 */
+	it("LINK-METADATA-SERVICE-008 treats a link-shaped widget row as a widget", async () => {
+		const url = "https://example.com/feed";
+		const { db, current } = createDatabase(url);
+		const legacyData = { url, metadata: { provider: "rss-feed" } };
+		current.data = legacyData;
+		let fetchCalls = 0;
+
+		await assert.rejects(
+			enrichPageItemMetadata({
+				db,
+				handle: "jane",
+				userId: "user-1",
+				itemId: "item-1",
+				url,
+				fetch: async () => {
+					fetchCalls += 1;
+					return new Response();
+				},
+			}),
+			(error: unknown) =>
+				error instanceof PageItemServiceError && error.code === "ITEM_NOT_LINK",
+		);
+		assert.equal(fetchCalls, 0);
+		assert.equal(current.data, legacyData);
+	});
+
+	/**
 	 * Case ID: LINK-METADATA-SPOTIFY-001
 	 * Given: Spotify embed metadata is available.
 	 * When: link metadata is enriched.
