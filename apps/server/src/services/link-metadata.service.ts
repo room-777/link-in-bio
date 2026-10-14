@@ -1,6 +1,5 @@
 import {
 	normalizeProviderData,
-	type PageItemLinkMetadata,
 	type PageItemResponse,
 	pageItemLinkDataSchema,
 	pageItemLinkUrlSchema,
@@ -8,10 +7,11 @@ import {
 import type { DatabaseClient } from "@grabbin/db";
 import { and, eq } from "@grabbin/db/drizzle";
 import { pageItems } from "@grabbin/db/schema/index";
-import { providerIconUrl, resolveLinkProvider } from "@grabbin/page-link";
+import { resolveLinkProvider } from "@grabbin/page-link";
 import * as v from "valibot";
 
 import { PageItemServiceError } from "../exceptions/page-item.exception";
+import { readStoredPageItem } from "../models/stored-page-item";
 import {
 	enrichLinkProvider,
 	type LinkProviderEnvironment,
@@ -153,9 +153,10 @@ export async function enrichPageItemMetadata({
 	const page = await getOwnedPage(db, { handle, userId });
 	if (!page) throw new PageItemServiceError("PAGE_NOT_FOUND");
 
-	const current = await db.query.pageItems.findFirst({
+	const row = await db.query.pageItems.findFirst({
 		where: and(eq(pageItems.id, itemId), eq(pageItems.pageId, page.id)),
 	});
+	const current = row && readStoredPageItem(row);
 	if (!current) throw new PageItemServiceError("ITEM_NOT_FOUND");
 	if (current.type !== "link") throw new PageItemServiceError("ITEM_NOT_LINK");
 
@@ -262,36 +263,4 @@ export async function enrichPageItemMetadata({
 	});
 	if (!updated) throw new PageItemServiceError("ITEM_NOT_FOUND");
 	return mapPageItemResponse(updated, publicBaseUrl);
-}
-
-export async function previewSpotifyLinkMetadata({
-	url,
-	fetch,
-	env,
-}: {
-	url: string;
-	fetch: LinkMetadataFetch;
-	env?: LinkProviderEnvironment;
-}): Promise<PageItemLinkMetadata> {
-	const parsedUrl = v.safeParse(pageItemLinkUrlSchema, url);
-	if (!parsedUrl.success)
-		throw new PageItemServiceError("INVALID_LINK_METADATA");
-
-	const spotifyUrl = new URL(parsedUrl.output);
-	const resolved = resolveLinkProvider(spotifyUrl);
-	if (resolved.id !== "spotify" || !resolved.target)
-		throw new PageItemServiceError("INVALID_LINK_METADATA");
-
-	const metadata = await enrichLinkProvider(spotifyUrl, {
-		fetch,
-		fetchOptional: fetch,
-		env,
-	});
-	if (!metadata.title || !metadata.providerData?.spotify)
-		throw new PageItemServiceError("SPOTIFY_PREVIEW_UNAVAILABLE");
-
-	return {
-		...metadata,
-		faviconUrl: providerIconUrl("spotify"),
-	};
 }

@@ -21,7 +21,6 @@ assert.deepEqual(
 export function checkRequestBoundaryRules(context: ArchitectureContext) {
 	const errors: string[] = [];
 	const externalFetchFiles = new Set([
-		join(context.featureDirectory, "tweet/queries/by-id.ts"),
 		join(context.sourceDirectory, "lib/mapbox-geocoding.ts"),
 		join(
 			context.featureDirectory,

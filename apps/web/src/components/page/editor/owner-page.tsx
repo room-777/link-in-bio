@@ -50,8 +50,8 @@ export default function OwnerPage({
 				widgetActionsRef.current?.onRssFeedPreview(url) ?? Promise.reject(),
 			onSpotifyPreview: (url) =>
 				widgetActionsRef.current?.onSpotifyPreview(url) ?? Promise.reject(),
-			onSpotifyAdd: (url, metadata) =>
-				widgetActionsRef.current?.onSpotifyAdd(url, metadata) ??
+			onSpotifyAdd: (preview) =>
+				widgetActionsRef.current?.onSpotifyAdd(preview) ??
 				Promise.resolve(false),
 			onTweetAdd: (url) =>
 				widgetActionsRef.current?.onTweetAdd(url) ?? Promise.resolve(false),

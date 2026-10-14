@@ -1,8 +1,11 @@
 "use client";
 
-import type { PageItemLinkMetadata } from "@grabbin/api";
-import { getPresetGeometry, type PresetName } from "@grabbin/bento-layout";
-import { getWidgetPresets } from "@grabbin/page-link";
+import type { WidgetPreview } from "@grabbin/api";
+import {
+	getAllowedPresets,
+	getPresetGeometry,
+	type PresetName,
+} from "@grabbin/bento-layout";
 import { Skeleton } from "@grabbin/ui/components/skeleton";
 import { AdvancedWidgetPresetControls } from "@/components/page/editor/advanced-widget-preset-controls";
 import { AdvancedWidgetPreviewFrame } from "@/components/page/editor/advanced-widgets/advanced-widget-preview-frame";
@@ -67,7 +70,7 @@ export default function SpotifyAdvancedWidgetPreview({
 	spotifyPreview,
 }: {
 	inputValue?: string;
-	spotifyPreview?: { url: string; metadata: PageItemLinkMetadata };
+	spotifyPreview?: WidgetPreview<"spotify">;
 }) {
 	const {
 		preset,
@@ -75,15 +78,14 @@ export default function SpotifyAdvancedWidgetPreview({
 		transitionPhase,
 		onPresetChange,
 		onTransitionComplete,
-	} = useAdvancedWidgetPreset(getWidgetPresets("spotify"), "squareSmall");
+	} = useAdvancedWidgetPreset(getAllowedPresets("spotify"), "squareSmall");
 	const url =
 		normalizeHttpsUrl(inputValue ?? "") ?? "https://open.spotify.com/";
-	const metadata =
-		spotifyPreview?.url === url ? spotifyPreview.metadata : undefined;
-	const item: Extract<BentoItem, { type: "link" }> = {
+	const preview = spotifyPreview?.url === url ? spotifyPreview : undefined;
+	const item: Extract<BentoItem, { type: "spotify" }> = {
 		id: "advanced-widget-preview-spotify",
-		type: "link",
-		data: { url, ...(metadata ? { metadata } : {}) },
+		type: "spotify",
+		data: preview ?? { url },
 		style: {},
 		layouts: {
 			wide: getPresetGeometry(visiblePreset, "wide"),
@@ -98,16 +100,16 @@ export default function SpotifyAdvancedWidgetPreview({
 			item={item}
 			transitionPhase={transitionPhase}
 			onTransitionComplete={onTransitionComplete}
-			interactive={Boolean(metadata)}
+			interactive={Boolean(preview)}
 			controls={
 				<AdvancedWidgetPresetControls
-					presets={getWidgetPresets("spotify")}
+					presets={getAllowedPresets("spotify")}
 					preset={preset}
 					onPresetChange={onPresetChange}
 				/>
 			}
 		>
-			{metadata ? (
+			{preview ? (
 				<SpotifyWidget item={item} preset={visiblePreset} />
 			) : (
 				<SpotifyWidgetSkeleton preset={visiblePreset} />

@@ -1,26 +1,23 @@
-import { pageItemSpotifyPreviewResponseSchema } from "@grabbin/api";
+import { widgetPreviewResponseSchema } from "@grabbin/api";
 import { useMutation } from "@tanstack/react-query";
 import * as v from "valibot";
 import { apiClient, getApiErrorMessage } from "@/lib/api-client";
 
-async function getBentoSpotifyPreview(handle: string, url: string) {
-	const response = await apiClient.pages[":handle"].metadata.$post(
-		{ param: { handle } },
-		{
-			init: {
-				body: JSON.stringify({ kind: "spotify", url }),
-				headers: { "Content-Type": "application/json" },
-			},
+async function getSpotifyWidgetPreview(url: string) {
+	const response = await apiClient.widgets.preview.$post(undefined, {
+		init: {
+			body: JSON.stringify({ kind: "spotify", url }),
+			headers: { "Content-Type": "application/json" },
 		},
-	);
+	});
 	if (!response.ok) throw new Error(await getApiErrorMessage(response));
-	return v.parse(pageItemSpotifyPreviewResponseSchema, await response.json())
-		.metadata;
+	const result = v.parse(widgetPreviewResponseSchema, await response.json());
+	if (result.kind !== "spotify") throw new Error("Unexpected widget preview.");
+	return result.data;
 }
 
-export function useFetchBentoSpotifyPreviewMutation() {
+export function useSpotifyWidgetPreviewMutation() {
 	return useMutation({
-		mutationFn: ({ handle, url }: { handle: string; url: string }) =>
-			getBentoSpotifyPreview(handle, url),
+		mutationFn: ({ url }: { url: string }) => getSpotifyWidgetPreview(url),
 	});
 }

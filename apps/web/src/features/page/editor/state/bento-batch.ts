@@ -68,6 +68,12 @@ function toBatchItem(item: BentoItem): BentoBatchItem {
 		}
 		case "calendly":
 			return { ...base, type: item.type, data: item.data };
+		case "rss":
+			return { ...base, type: item.type, data: item.data };
+		case "tweet":
+			return { ...base, type: item.type, data: item.data };
+		case "spotify":
+			return { ...base, type: item.type, data: item.data };
 	}
 }
 

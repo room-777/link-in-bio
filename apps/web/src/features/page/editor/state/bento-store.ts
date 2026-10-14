@@ -262,7 +262,7 @@ export function useBentoStore({
 			}
 
 			if (
-				(command.type === "add-item" || command.type === "add-calendly-item") &&
+				(command.type === "add-item" || command.type === "add-widget") &&
 				result.addedItem
 			) {
 				setAutoFocusItemId(

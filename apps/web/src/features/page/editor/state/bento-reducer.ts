@@ -25,11 +25,11 @@ export function reduceBentoItems(
 		});
 		return { items: [...items, addedItem], addedItem };
 	}
-	if (command.type === "add-calendly-item") {
+	if (command.type === "add-widget") {
 		const addedItem = createBentoItem({
 			items,
-			itemType: "calendly",
-			calendlyEvent: command.event,
+			itemType: command.widget.type,
+			widget: command.widget,
 		});
 		return { items: [...items, addedItem], addedItem };
 	}

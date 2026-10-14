@@ -5,10 +5,7 @@ import type { DatabaseClient } from "@grabbin/db";
 import { resolveLinkMetadata } from "@grabbin/page-link";
 
 import { PageItemServiceError } from "../../src/exceptions/page-item.exception";
-import {
-	enrichPageItemMetadata,
-	previewSpotifyLinkMetadata,
-} from "../../src/services/link-metadata.service";
+import { enrichPageItemMetadata } from "../../src/services/link-metadata.service";
 import { LINK_METADATA_USER_AGENTS } from "../../src/services/link-providers/runtime";
 
 const layout = { x: 0, y: 0, w: 1, h: 2 };
@@ -46,28 +43,37 @@ function createDatabase(url = "https://example.com") {
 
 describe("link metadata service", () => {
 	/**
-	 * Case ID: LINK-METADATA-SPOTIFY-002
-	 * Given: a preview request targets a non-Spotify host.
-	 * When: Spotify preview metadata is requested.
-	 * Then: it rejects the URL before making an outbound request.
-	 * Evidence: INVALID_LINK_METADATA and fetch call count=0.
+	 * Case ID: LINK-METADATA-SERVICE-008
+	 * Given: an RSS widget is still stored link-shaped (metadata.provider=rss-feed).
+	 * When: enrichPageItemMetadata is asked to refresh it as a link.
+	 * Then: it rejects with ITEM_NOT_LINK and does not fetch or write.
+	 * Evidence: PageItemServiceError.code=ITEM_NOT_LINK, fetch calls=0, stored data unchanged.
 	 * Result: Pass | Fail | Blocked | Not Run
 	 */
-	it("rejects non-Spotify preview URLs before fetching", async () => {
+	it("LINK-METADATA-SERVICE-008 treats a link-shaped widget row as a widget", async () => {
+		const url = "https://example.com/feed";
+		const { db, current } = createDatabase(url);
+		const legacyData = { url, metadata: { provider: "rss-feed" } };
+		current.data = legacyData;
 		let fetchCalls = 0;
+
 		await assert.rejects(
-			previewSpotifyLinkMetadata({
-				url: "https://example.com/track/123",
+			enrichPageItemMetadata({
+				db,
+				handle: "jane",
+				userId: "user-1",
+				itemId: "item-1",
+				url,
 				fetch: async () => {
 					fetchCalls += 1;
 					return new Response();
 				},
 			}),
 			(error: unknown) =>
-				error instanceof PageItemServiceError &&
-				error.code === "INVALID_LINK_METADATA",
+				error instanceof PageItemServiceError && error.code === "ITEM_NOT_LINK",
 		);
 		assert.equal(fetchCalls, 0);
+		assert.equal(current.data, legacyData);
 	});
 
 	/**

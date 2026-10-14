@@ -85,6 +85,12 @@ const allowedPresets: Record<ItemType, readonly PresetName[]> = {
 	link: cardPresets,
 	calendly: cardPresets,
 	text: cardPresets,
+	rss: cardPresets,
+	spotify: cardPresets,
+	// Tweets need the tall sizes to show the post body.
+	tweet: cardPresets.filter(
+		(preset) => preset === "portrait" || preset === "squareLarge",
+	),
 };
 
 const presetGeometry: Record<PresetName, ItemLayout> = {
@@ -101,7 +107,8 @@ export function getAllowedPresets(type: ItemType): PresetName[] {
 }
 
 export function getDefaultPreset(type: ItemType): PresetName {
-	return type === "section" ? "fullBanner" : "squareSmall";
+	if (type === "section") return "fullBanner";
+	return type === "tweet" ? "squareLarge" : "squareSmall";
 }
 
 export function getPresetGeometry(

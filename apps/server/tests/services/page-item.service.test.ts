@@ -1,13 +1,90 @@
 import assert from "node:assert/strict";
 import { describe, it } from "node:test";
-import { normalizeProviderData } from "@grabbin/api";
+import { normalizeProviderData, type RssFeedResponse } from "@grabbin/api";
 import { getPresetGeometry } from "@grabbin/bento-layout";
 import type { DatabaseClient } from "@grabbin/db";
 
 import { PageItemServiceError } from "../../src/exceptions/page-item.exception";
-import { persistPageItemBatch } from "../../src/services/page-item.service";
+import {
+	listPageItems,
+	persistPageItemBatch,
+} from "../../src/services/page-item.service";
 
 const layout = { x: 0, y: 0, w: 1, h: 2 };
+
+const storedAt = new Date("2026-09-21T00:00:00.000Z");
+const spotifyData = { type: "album", tracks: [] };
+const rssFeed: RssFeedResponse = {
+	source: {
+		inputUrl: "https://example.substack.com/feed",
+		pageUrl: "https://example.substack.com",
+		feedUrl: "https://example.substack.com/feed",
+		platform: "substack",
+		type: "publication",
+		iconUrl: "/api/provider-icons/substack.svg",
+		title: "Example",
+	},
+	items: [],
+};
+const tweetResponse = { id_str: "20", text: "just setting up my twttr" };
+
+/** Widget rows as the old server saved them: links marked by metadata. */
+function legacyWidgetRows() {
+	const row = (id: string, data: Record<string, unknown>) => ({
+		id,
+		pageId: "page-1",
+		type: "link",
+		data,
+		style: {},
+		layouts: { wide: layout, compact: layout },
+		createdAt: storedAt,
+		updatedAt: storedAt,
+	});
+	return [
+		row("rss-default-title", {
+			url: "https://example.com/feed",
+			metadata: { title: "RSS Feed", provider: "rss-feed", rss: rssFeed },
+		}),
+		row("rss-own-title", {
+			url: "https://example.com/feed",
+			metadata: { title: "My blog", provider: "rss-feed" },
+		}),
+		row("tweet-nested", {
+			url: "https://x.com/i/status/20",
+			metadata: {
+				provider: "tweet",
+				providerData: {
+					tweet: {
+						authorName: "jack",
+						authorProfileUrl: "https://x.com/jack",
+						response: tweetResponse,
+					},
+				},
+			},
+		}),
+		row("tweet-flat", {
+			url: "https://x.com/i/status/20",
+			metadata: {
+				provider: "tweet",
+				providerData: { authorName: "jack", authorProfileImageUrl: null },
+			},
+		}),
+		row("spotify-widget", {
+			url: "https://open.spotify.com/album/1",
+			metadata: {
+				title: "Album",
+				imageUrl: "https://i.scdn.co/image/1",
+				provider: "spotify",
+				widget: "spotify",
+				providerData: { spotify: spotifyData },
+			},
+		}),
+		row("spotify-link", {
+			url: "https://open.spotify.com/album/1",
+			metadata: { title: "Album", provider: "spotify" },
+		}),
+	];
+}
 
 describe("page item service", () => {
 	/**
@@ -95,11 +172,8 @@ describe("page item service", () => {
 					upserts: [
 						{
 							id: "spotify-1",
-							type: "link",
-							data: {
-								url: "https://open.spotify.com/track/123",
-								metadata: { provider: "spotify", widget: "spotify" },
-							},
+							type: "spotify",
+							data: { url: "https://open.spotify.com/track/123" },
 							style: {},
 							layouts: { wide: layout, compact: layout },
 						},
@@ -121,7 +195,7 @@ describe("page item service", () => {
 	 * Evidence: persistence reaches the insert step instead of returning PRO_REQUIRED.
 	 * Result: Pass | Fail | Blocked | Not Run
 	 */
-	it("PAGE-ITEM-SERVICE-014 allows Spotify links without the widget marker", async () => {
+	it("PAGE-ITEM-SERVICE-014 allows Spotify URLs saved as plain links", async () => {
 		const reachedInsert = new Error("insert reached");
 		const tx = {
 			query: {
@@ -595,7 +669,7 @@ describe("page item service", () => {
 
 	/**
 	 * Case ID: PAGE-ITEM-SERVICE-011
-	 * Given: a Tweet link uses a preset outside its supported sizes.
+	 * Given: a Tweet widget uses a preset outside its supported sizes.
 	 * When: persistPageItemBatch validates the item payload.
 	 * Then: it rejects the layout before writing.
 	 * Evidence: PageItemServiceError.code=INVALID_ITEM_LAYOUT.
@@ -634,16 +708,8 @@ describe("page item service", () => {
 					upserts: [
 						{
 							id: "tweet-1",
-							type: "link",
-							data: {
-								url: "https://x.com/i/status/123",
-								metadata: {
-									title: "X post",
-									faviconUrl:
-										"https://cdn.grabbin.me/provider-icons/v1/tweet.svg?v=3",
-									provider: "tweet",
-								},
-							},
+							type: "tweet",
+							data: { url: "https://x.com/i/status/123" },
 							style: {},
 							layouts: {
 								wide: { x: 0, y: 0, w: 1, h: 2 },
@@ -662,13 +728,13 @@ describe("page item service", () => {
 
 	/**
 	 * Case ID: PAGE-ITEM-SERVICE-015
-	 * Given: a Pro account saves a Tweet link in its allowed tall sizes.
+	 * Given: a Pro account saves a Tweet widget in its allowed tall sizes.
 	 * When: persistPageItemBatch validates the item payload.
 	 * Then: the layout passes and the batch reaches the insert step.
 	 * Evidence: the insert stub is reached instead of INVALID_ITEM_LAYOUT.
 	 * Result: Pass | Fail | Blocked | Not Run
 	 */
-	it("PAGE-ITEM-SERVICE-015 accepts Tweet sizes from the widget rules", async () => {
+	it("PAGE-ITEM-SERVICE-015 accepts the Tweet sizes", async () => {
 		const reachedInsert = new Error("insert reached");
 		const tx = {
 			query: {
@@ -705,11 +771,8 @@ describe("page item service", () => {
 					upserts: [
 						{
 							id: "tweet-1",
-							type: "link",
-							data: {
-								url: "https://x.com/i/status/123",
-								metadata: { provider: "tweet" },
-							},
+							type: "tweet",
+							data: { url: "https://x.com/i/status/123" },
 							style: {},
 							layouts: {
 								wide: getPresetGeometry("squareLarge", "wide"),
@@ -953,5 +1016,137 @@ describe("page item service", () => {
 				error instanceof PageItemServiceError &&
 				error.code === "CONCURRENT_ITEM_UPDATE",
 		);
+	});
+
+	/**
+	 * Case ID: PAGE-ITEM-SERVICE-016
+	 * Given: the database still holds link-shaped RSS, Tweet and Spotify widget rows, and a plain Spotify link.
+	 * When: listPageItems reads the page.
+	 * Then: widgets come back as rss/tweet/spotify with only their widget fields; the plain Spotify link stays a link.
+	 * Evidence: returned type and data per item ID.
+	 * Result: Pass | Fail | Blocked | Not Run
+	 */
+	it("PAGE-ITEM-SERVICE-016 reads link-shaped widget rows as widget types", async () => {
+		const db = {
+			query: { pageItems: { findMany: async () => legacyWidgetRows() } },
+		} as unknown as DatabaseClient;
+
+		const items = await listPageItems({ db, pageId: "page-1" });
+		const byId = Object.fromEntries(
+			items.map((item) => [item.id, { type: item.type, data: item.data }]),
+		);
+
+		assert.deepEqual(byId["rss-default-title"], {
+			type: "rss",
+			data: { url: "https://example.com/feed", feed: rssFeed },
+		});
+		assert.deepEqual(byId["rss-own-title"], {
+			type: "rss",
+			data: { url: "https://example.com/feed", title: "My blog" },
+		});
+		assert.deepEqual(byId["tweet-nested"], {
+			type: "tweet",
+			data: {
+				url: "https://x.com/i/status/20",
+				authorName: "jack",
+				authorProfileUrl: "https://x.com/jack",
+				tweet: tweetResponse,
+			},
+		});
+		assert.deepEqual(byId["tweet-flat"], {
+			type: "tweet",
+			data: { url: "https://x.com/i/status/20", authorName: "jack" },
+		});
+		assert.deepEqual(byId["spotify-widget"], {
+			type: "spotify",
+			data: {
+				url: "https://open.spotify.com/album/1",
+				title: "Album",
+				imageUrl: "https://i.scdn.co/image/1",
+				spotify: spotifyData,
+			},
+		});
+		assert.equal(byId["spotify-link"]?.type, "link");
+	});
+
+	/**
+	 * Case ID: PAGE-ITEM-SERVICE-017
+	 * Given: a free account has a link-shaped RSS widget row saved before the rollout.
+	 * When: the new editor saves that item resized, as type=rss.
+	 * Then: the save passes the type, Pro and layout checks and writes the row as type=rss.
+	 * Evidence: captured insert values (type and data); no PRO_REQUIRED or ITEM_TYPE_IMMUTABLE.
+	 * Result: Pass | Fail | Blocked | Not Run
+	 */
+	it("PAGE-ITEM-SERVICE-017 saves an edited legacy widget row as its widget type", async () => {
+		const [stored] = legacyWidgetRows();
+		assert.ok(stored);
+		const inserted: Array<Record<string, unknown>> = [];
+		const squareLarge = {
+			wide: getPresetGeometry("squareLarge", "wide"),
+			compact: getPresetGeometry("squareLarge", "compact"),
+		};
+		let findManyCount = 0;
+		const tx = {
+			query: {
+				pages: { findFirst: async () => ({ id: "page-1" }) },
+				pageItems: {
+					findMany: async () => {
+						findManyCount += 1;
+						if (findManyCount === 2)
+							return [{ id: stored.id, pageId: "page-1" }];
+						if (findManyCount === 3)
+							return [
+								{
+									...stored,
+									type: "rss",
+									data: inserted[0]?.data,
+									layouts: squareLarge,
+								},
+							];
+						return [stored];
+					},
+				},
+				creemSubscription: { findMany: async () => [] },
+			},
+			update: () => ({ set: () => ({ where: async () => [] }) }),
+			insert: () => ({
+				values(values: Array<Record<string, unknown>>) {
+					inserted.push(...values);
+					return { onConflictDoUpdate: async () => undefined };
+				},
+			}),
+		};
+		const db = {
+			transaction: async (callback: (value: typeof tx) => unknown) =>
+				callback(tx),
+		} as unknown as DatabaseClient;
+
+		const response = await persistPageItemBatch({
+			db,
+			handle: "jane",
+			userId: "user-1",
+			proProductIds: ["pro-monthly"],
+			batch: {
+				upserts: [
+					{
+						id: stored.id,
+						type: "rss",
+						data: { url: "https://example.com/feed", feed: rssFeed },
+						style: {},
+						layouts: squareLarge,
+						updatedAt: storedAt.toISOString(),
+					},
+				],
+				deletes: [],
+			},
+		});
+
+		assert.equal(inserted.length, 1);
+		assert.equal(inserted[0]?.type, "rss");
+		assert.deepEqual(inserted[0]?.data, {
+			url: "https://example.com/feed",
+			feed: rssFeed,
+		});
+		assert.equal(response.items[0]?.type, "rss");
 	});
 });

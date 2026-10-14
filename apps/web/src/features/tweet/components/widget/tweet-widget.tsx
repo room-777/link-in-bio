@@ -1,8 +1,8 @@
 "use client";
 
 import type { PresetName } from "@grabbin/bento-layout";
+import { getTweetId } from "@grabbin/page-link";
 import type { Tweet as TweetResponse } from "react-tweet/api";
-import { getTweetId } from "../../utils/tweet-url";
 import { Tweet } from "./tweet";
 
 export default function TweetWidget({

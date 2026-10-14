@@ -1,7 +1,7 @@
 import {
-	type PageItemLinkMetadata,
 	type ProviderData,
 	providerDataSchema,
+	type WidgetPreview,
 } from "@grabbin/api";
 import { resolveLinkProvider } from "@grabbin/page-link";
 import { Button } from "@grabbin/ui/components/button";
@@ -45,12 +45,9 @@ export default function SpotifyWidgetDetails({
 	spotifyPreview,
 	spotifyPreviewError,
 }: {
-	onSpotifyAdd: (
-		url: string,
-		metadata: PageItemLinkMetadata,
-	) => Promise<boolean>;
+	onSpotifyAdd: (preview: WidgetPreview<"spotify">) => Promise<boolean>;
 	onInputChange?: (value: string) => void;
-	spotifyPreview?: { url: string; metadata: PageItemLinkMetadata };
+	spotifyPreview?: WidgetPreview<"spotify">;
 	spotifyPreviewError?: boolean;
 }) {
 	const [url, setUrl] = useState("");
@@ -58,9 +55,9 @@ export default function SpotifyWidgetDetails({
 	const [error, setError] = useState<string>();
 	const normalizedUrl = normalizeHttpsUrl(url);
 	const hasInvalidUrl = Boolean(url.trim() && !getSpotifyResourceType(url));
-	const previewMetadata =
+	const preview =
 		normalizedUrl && spotifyPreview?.url === normalizedUrl
-			? spotifyPreview.metadata
+			? spotifyPreview
 			: undefined;
 	const invalidUrlMessage =
 		"Enter a Spotify artist, album, track, playlist, or episode URL.";
@@ -70,10 +67,7 @@ export default function SpotifyWidgetDetails({
 		{
 			id: "preview",
 			message:
-				spotifyPreviewError &&
-				normalizedUrl &&
-				!previewMetadata &&
-				!hasInvalidUrl
+				spotifyPreviewError && normalizedUrl && !preview && !hasInvalidUrl
 					? "Could not load Spotify data. Check the URL and try again."
 					: undefined,
 		},
@@ -93,11 +87,7 @@ export default function SpotifyWidgetDetails({
 
 		setIsAdding(true);
 		try {
-			if (
-				!normalizedUrl ||
-				!previewMetadata ||
-				!(await onSpotifyAdd(normalizedUrl, previewMetadata))
-			) {
+			if (!normalizedUrl || !preview || !(await onSpotifyAdd(preview))) {
 				setError("Could not add this Spotify link. Try again.");
 			}
 		} catch {
@@ -140,7 +130,7 @@ export default function SpotifyWidgetDetails({
 					size="xl"
 					aria-busy={isAdding}
 					aria-label={isAdding ? "Adding Spotify link" : undefined}
-					disabled={!previewMetadata || isAdding}
+					disabled={!preview || isAdding}
 					className="relative px-5 text-base"
 					onClick={handleAdd}
 				>

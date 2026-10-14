@@ -17,12 +17,10 @@ export {
 	resolveLinkProvider,
 	resolveProviderIconUrl,
 } from "./provider-data";
-export type { WidgetKind, WidgetKindInput } from "./widget-kind";
+export { getTweetId } from "./tweet-url";
+export type { WidgetType } from "./widget-kind";
 export {
-	getItemPresets,
-	getWidgetKind,
-	getWidgetPresets,
-	isWidgetProvider,
+	isWidgetType,
 	requiresProPlan,
-	widgetRules,
+	widgetNeutralBorder,
 } from "./widget-kind";

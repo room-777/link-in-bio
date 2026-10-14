@@ -1,6 +1,5 @@
 import type { RssFeedResponse } from "@grabbin/api";
-import { getPresetGeometry } from "@grabbin/bento-layout";
-import { getWidgetPresets } from "@grabbin/page-link";
+import { getAllowedPresets, getPresetGeometry } from "@grabbin/bento-layout";
 import { AdvancedWidgetPresetControls } from "@/components/page/editor/advanced-widget-preset-controls";
 import { AdvancedWidgetPreviewFrame } from "@/components/page/editor/advanced-widgets/advanced-widget-preview-frame";
 import { useAdvancedWidgetPreset } from "@/components/page/editor/advanced-widgets/use-advanced-widget-preset";
@@ -20,14 +19,11 @@ export default function RssAdvancedWidgetPreview({
 		transitionPhase,
 		onPresetChange,
 		onTransitionComplete,
-	} = useAdvancedWidgetPreset(getWidgetPresets("rss"), "squareLarge");
+	} = useAdvancedWidgetPreset(getAllowedPresets("rss"), "squareLarge");
 	const item: BentoItem = {
 		id: "advanced-widget-preview-rss-feed",
-		type: "link",
-		data: {
-			url: "https://example.com",
-			metadata: { title: "RSS Feed", provider: "rss-feed" },
-		},
+		type: "rss",
+		data: { url: "https://example.com" },
 		style: {},
 		preset: visiblePreset,
 		layouts: {
@@ -44,7 +40,7 @@ export default function RssAdvancedWidgetPreview({
 			onTransitionComplete={onTransitionComplete}
 			controls={
 				<AdvancedWidgetPresetControls
-					presets={getWidgetPresets("rss")}
+					presets={getAllowedPresets("rss")}
 					preset={preset}
 					onPresetChange={onPresetChange}
 				/>

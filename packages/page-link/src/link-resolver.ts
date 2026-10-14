@@ -4,7 +4,6 @@ import type {
 } from "@grabbin/api";
 import { normalizeProviderData } from "@grabbin/api";
 import { providerLabels, resolveLinkProvider } from "./provider-data";
-import { isWidgetProvider } from "./widget-kind";
 
 const compactNumberFormatter = new Intl.NumberFormat("en-US", {
 	notation: "compact",
@@ -134,10 +133,7 @@ export function resolveLinkMetadata(
 			? {}
 			: { title: hostname }),
 		...(faviconUrl ? { faviconUrl } : {}),
-		provider:
-			metadata?.provider && isWidgetProvider(metadata.provider)
-				? metadata.provider
-				: presentation.provider,
+		provider: presentation.provider,
 		presentation,
 	};
 }

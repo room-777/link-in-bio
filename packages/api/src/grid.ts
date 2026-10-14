@@ -8,6 +8,9 @@ export const itemTypeSchema = v.union([
 	v.literal("section"),
 	v.literal("link"),
 	v.literal("calendly"),
+	v.literal("rss"),
+	v.literal("tweet"),
+	v.literal("spotify"),
 ]);
 
 export type ItemType = v.InferOutput<typeof itemTypeSchema>;
@@ -282,14 +285,6 @@ export const providerDataSchema = v.object({
 		v.object({ ...followerFields, talkingAboutCount: v.optional(v.number()) }),
 	),
 	linkedin: v.optional(v.object({ ...followerFields })),
-	"rss-feed": v.optional(v.object({ ...followerFields })),
-	tweet: v.optional(
-		v.object({
-			...creatorFields,
-			authorProfileImageUrl: v.optional(tweetAuthorImageUrlSchema),
-			response: v.optional(v.unknown()),
-		}),
-	),
 	github: v.optional(
 		v.object({
 			followers: v.optional(v.number()),
@@ -466,8 +461,6 @@ const pageItemLinkMetadataEntries = {
 	faviconUrl: v.optional(faviconUrlSchema),
 	imageUrl: v.optional(httpsUrlSchema),
 	provider: v.optional(v.string()),
-	widget: v.optional(v.literal("spotify")),
-	rss: v.optional(rssFeedResponseSchema),
 	providerData: v.optional(v.unknown()),
 };
 
@@ -543,6 +536,28 @@ export const pageItemLinkDataSchema = v.object({
 	metadata: v.optional(pageItemLinkMetadataSchema),
 });
 
+export const pageItemRssDataSchema = v.object({
+	url: pageItemLinkUrlSchema,
+	title: v.optional(v.string()),
+	feed: v.optional(rssFeedResponseSchema),
+});
+
+export const pageItemTweetDataSchema = v.object({
+	url: pageItemLinkUrlSchema,
+	authorName: v.optional(v.string()),
+	authorProfileUrl: v.optional(v.string()),
+	authorProfileImageUrl: v.optional(tweetAuthorImageUrlSchema),
+	/** The react-tweet payload saved when the widget was added. */
+	tweet: v.optional(v.unknown()),
+});
+
+export const pageItemSpotifyDataSchema = v.object({
+	url: pageItemLinkUrlSchema,
+	title: v.optional(v.string()),
+	imageUrl: v.optional(httpsUrlSchema),
+	spotify: v.optional(spotifyProviderDataSchema),
+});
+
 export function createInitialLinkMetadata(value: string) {
 	const parsed = new URL(value);
 	const hostname = parsed.hostname.replace(/^www\./, "");
@@ -559,6 +574,9 @@ export const pageItemDataSchemas = {
 	section: pageItemSectionDataSchema,
 	link: pageItemLinkDataSchema,
 	calendly: pageItemCalendlyDataSchema,
+	rss: pageItemRssDataSchema,
+	tweet: pageItemTweetDataSchema,
+	spotify: pageItemSpotifyDataSchema,
 } as const;
 
 const pageItemResponseBaseSchema = v.object({
@@ -582,6 +600,9 @@ const pageItemResponseVariantSchema = v.variant("type", [
 		type: v.literal("calendly"),
 		data: pageItemCalendlyDataSchema,
 	}),
+	v.object({ type: v.literal("rss"), data: pageItemRssDataSchema }),
+	v.object({ type: v.literal("tweet"), data: pageItemTweetDataSchema }),
+	v.object({ type: v.literal("spotify"), data: pageItemSpotifyDataSchema }),
 ]);
 
 export const pageItemResponseSchema = v.intersect([
@@ -607,6 +628,9 @@ export const pageItemUpsertSchema = v.intersect([
 		v.object({ type: v.literal("section"), data: pageItemSectionDataSchema }),
 		v.object({ type: v.literal("link"), data: pageItemLinkDataSchema }),
 		v.object({ type: v.literal("calendly"), data: pageItemCalendlyDataSchema }),
+		v.object({ type: v.literal("rss"), data: pageItemRssDataSchema }),
+		v.object({ type: v.literal("tweet"), data: pageItemTweetDataSchema }),
+		v.object({ type: v.literal("spotify"), data: pageItemSpotifyDataSchema }),
 	]),
 ]);
 
@@ -640,20 +664,10 @@ export type PageItemBatchResponse = v.InferOutput<
 	typeof pageItemBatchResponseSchema
 >;
 
-export const pageItemMetadataRequestSchema = v.union([
-	v.object({
-		itemId: v.pipe(v.string(), v.minLength(1)),
-		url: pageItemLinkUrlSchema,
-	}),
-	v.object({
-		kind: v.literal("rss"),
-		url: pageItemLinkUrlSchema,
-	}),
-	v.object({
-		kind: v.literal("spotify"),
-		url: pageItemLinkUrlSchema,
-	}),
-]);
+export const pageItemMetadataRequestSchema = v.object({
+	itemId: v.pipe(v.string(), v.minLength(1)),
+	url: pageItemLinkUrlSchema,
+});
 
 export type PageItemMetadataRequest = v.InferOutput<
 	typeof pageItemMetadataRequestSchema
@@ -662,22 +676,6 @@ export type PageItemMetadataRequest = v.InferOutput<
 export const pageItemMetadataResponseSchema = v.object({
 	item: pageItemResponseSchema,
 });
-
-export const pageItemSpotifyPreviewResponseSchema = v.object({
-	metadata: pageItemLinkMetadataSchema,
-});
-
-export type PageItemSpotifyPreviewResponse = v.InferOutput<
-	typeof pageItemSpotifyPreviewResponseSchema
->;
-
-export const pageItemRssResponseSchema = v.object({
-	rss: rssFeedResponseSchema,
-});
-
-export type PageItemRssResponse = v.InferOutput<
-	typeof pageItemRssResponseSchema
->;
 
 export type PageItemMetadataResponse = v.InferOutput<
 	typeof pageItemMetadataResponseSchema
