@@ -12,6 +12,7 @@ import {
 	AdvancedWidgetActionsContext,
 } from "@/features/page/editor/contexts/advanced-widget-actions-context";
 import { PageProfileForm } from "@/features/page/profile";
+import GoogleAnalyticsPageView from "@/features/page/view/components/google-analytics-page-view";
 import { getPageImageUrl } from "@/lib/page-image-url";
 import PageFooter from "../shared/page-footer";
 import BentoEditor from "./bento-editor";
@@ -151,6 +152,7 @@ export default function OwnerPage({
 							: undefined
 					}
 				>
+					{!demoMode && <GoogleAnalyticsPageView pageId={page.id} isOwner />}
 					<div className="w-full min-w-0">
 						<PageProfileForm
 							page={currentPage}

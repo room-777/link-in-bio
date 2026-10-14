@@ -2,6 +2,7 @@
 
 import { Button } from "@grabbin/ui/components/button";
 import { useEffect } from "react";
+import GoogleAnalyticsFallbackPageView from "@/components/analytics/google-analytics-fallback-page-view";
 
 export default function RootError({
 	error,
@@ -16,6 +17,7 @@ export default function RootError({
 
 	return (
 		<main className="relative isolate grid min-h-svh place-items-center bg-background px-6 py-16 text-center font-open-runde">
+			<GoogleAnalyticsFallbackPageView pageType="error" />
 			<section className="relative z-10 flex flex-col items-center">
 				<h1 className="mb-4 font-semibold text-[clamp(4.5rem,13vw,6.25rem)] text-primary/90 leading-none tracking-tight">
 					500
