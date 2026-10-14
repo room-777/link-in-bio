@@ -1,7 +1,7 @@
 import type { DatabaseClient } from "@grabbin/db";
 import { creemSubscription, pages, user } from "@grabbin/db/schema/index";
 import { isReservedPageHandle } from "@grabbin/page-handle";
-import { getPlanAccess, PAGE_GRACE_PERIOD_MS } from "@grabbin/plan";
+import { getPlanAccess, graceEndsAt } from "@grabbin/plan";
 import { and, asc, eq, isNotNull, isNull, lte, ne, sql } from "drizzle-orm";
 import { getAccountPlan } from "./billing";
 import { PageServiceError } from "./exceptions/page.exception";
@@ -199,12 +199,7 @@ export async function reconcileUserPageLifecycle({
 			proProductIds,
 			now,
 		);
-		const cancellationScheduled =
-			access.cancelAtPeriodEnd || access.status === "scheduled_cancel";
-		const periodEnded = access.periodEnd
-			? access.periodEnd <= now
-			: access.status === "canceled" || access.status === "expired";
-		if (access.hasAccess && !cancellationScheduled) {
+		if (access.hasAccess && !access.cancellationScheduled) {
 			await tx
 				.update(pages)
 				.set({ deletionScheduledAt: null })
@@ -213,14 +208,11 @@ export async function reconcileUserPageLifecycle({
 		}
 		if (
 			!access.productId ||
-			!proProductIds.includes(access.productId) ||
-			(!cancellationScheduled && !periodEnded)
+			(!access.cancellationScheduled && !access.periodEnded)
 		)
 			return;
 
-		const deletionScheduledAt = new Date(
-			(access.periodEnd ?? now).getTime() + PAGE_GRACE_PERIOD_MS,
-		);
+		const deletionScheduledAt = graceEndsAt(access.periodEnd, now);
 		await tx
 			.update(pages)
 			.set({ deletionScheduledAt })

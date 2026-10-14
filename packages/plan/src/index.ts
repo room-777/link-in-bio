@@ -36,6 +36,102 @@ export type PlanSubscription = {
 	cancelAtPeriodEnd: boolean | null;
 };
 
+type StatusFields = {
+	status: SubscriptionStatus | null;
+	periodEnd: Date | null;
+	cancelAtPeriodEnd?: boolean | null;
+};
+
+/** Creem's cancel flag wins; otherwise a scheduled_cancel status implies it. */
+export function deriveCancelAtPeriodEnd(
+	status: SubscriptionStatus,
+	cancelAtPeriodEnd?: boolean | null,
+) {
+	return cancelAtPeriodEnd ?? status === "scheduled_cancel";
+}
+
+export function isCancellationScheduled(
+	subscription: Pick<StatusFields, "status" | "cancelAtPeriodEnd">,
+) {
+	return (
+		!!subscription.cancelAtPeriodEnd ||
+		subscription.status === "scheduled_cancel"
+	);
+}
+
+/** Without a period end, only ending statuses count as ended. */
+export function isPeriodEnded(
+	subscription: Pick<StatusFields, "status" | "periodEnd">,
+	now = new Date(),
+) {
+	if (subscription.periodEnd) return subscription.periodEnd <= now;
+	return (
+		subscription.status === "canceled" ||
+		subscription.status === "scheduled_cancel" ||
+		subscription.status === "expired"
+	);
+}
+
+/** Pro access to Creem's subscription is what Creem still bills or honors. */
+export function grantsProAccess(subscription: StatusFields, now = new Date()) {
+	return (
+		!!subscription.status &&
+		PRO_SUBSCRIPTION_STATUSES.has(subscription.status) &&
+		!isPeriodEnded(subscription, now)
+	);
+}
+
+/**
+ * Different question from Pro access: a past_due/unpaid subscription still
+ * blocks a second checkout, and an open checkout (no Creem id) never does.
+ */
+export function blocksNewCheckout(
+	subscription: StatusFields & { creemSubscriptionId: string | null },
+	now = new Date(),
+) {
+	if (!subscription.creemSubscriptionId) return false;
+	const periodOpen = !subscription.periodEnd || subscription.periodEnd > now;
+	if (subscription.status === "canceled")
+		return !!subscription.periodEnd && periodOpen;
+	return (
+		(subscription.status === "active" ||
+			subscription.status === "trialing" ||
+			subscription.status === "scheduled_cancel" ||
+			subscription.status === "past_due" ||
+			subscription.status === "unpaid") &&
+		periodOpen
+	);
+}
+
+/** Open checkout row: saved before Creem created a subscription. */
+export function isOpenCheckout(subscription: {
+	status: SubscriptionStatus | null;
+	creemSubscriptionId: string | null;
+	checkoutId: string | null;
+}) {
+	return (
+		subscription.status === null &&
+		!subscription.creemSubscriptionId &&
+		!!subscription.checkoutId
+	);
+}
+
+export function canScheduleCancellation(
+	subscription: Pick<StatusFields, "status">,
+) {
+	return subscription.status === "active" || subscription.status === "trialing";
+}
+
+export function graceEndsAt(
+	periodEnd: Date | null,
+	now = new Date(),
+	fallback?: Date | null,
+) {
+	return periodEnd
+		? new Date(periodEnd.getTime() + PAGE_GRACE_PERIOD_MS)
+		: (fallback ?? new Date(now.getTime() + PAGE_GRACE_PERIOD_MS));
+}
+
 export function getPlanAccess(
 	subscriptions: readonly PlanSubscription[],
 	proProductIds: readonly string[],
@@ -46,19 +142,17 @@ export function getPlanAccess(
 		.sort(
 			(a, b) => (b.periodEnd?.getTime() ?? 0) - (a.periodEnd?.getTime() ?? 0),
 		)[0];
-	const status = subscription?.status ?? null;
-	const periodActive = subscription?.periodEnd
-		? subscription.periodEnd > now
-		: status !== "canceled" &&
-			status !== "scheduled_cancel" &&
-			status !== "expired";
-	const hasAccess =
-		!!status && periodActive && PRO_SUBSCRIPTION_STATUSES.has(status);
+	const hasAccess = !!subscription && grantsProAccess(subscription, now);
 
 	return {
 		tier: hasAccess ? ("pro" as const) : ("free" as const),
 		pageLimit: hasAccess ? PRO_PAGE_LIMIT : FREE_PAGE_LIMIT,
 		hasAccess,
+		/** Had a Pro subscription that no longer grants access. */
+		lapsedFromPro: !!subscription && !hasAccess,
+		cancellationScheduled:
+			!!subscription && isCancellationScheduled(subscription),
+		periodEnded: !!subscription && isPeriodEnded(subscription, now),
 		status: subscription?.status ?? null,
 		subscriptionId: subscription?.subscriptionId ?? null,
 		productId: subscription?.productId ?? null,

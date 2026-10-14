@@ -4,6 +4,13 @@ import { syncCreemCheckout } from "@grabbin/auth/creem-webhook";
 import type { DatabaseClient } from "@grabbin/db";
 import { eq, sql } from "@grabbin/db/drizzle";
 import { creemSubscription } from "@grabbin/db/schema/index";
+import {
+	blocksNewCheckout,
+	canScheduleCancellation,
+	isCancellationScheduled,
+	isOpenCheckout,
+	parseSubscriptionStatus,
+} from "@grabbin/plan";
 
 type CreemClient = ReturnType<typeof createCreemClient>;
 type CheckoutTransactionResult =
@@ -51,31 +58,13 @@ export async function createOrResumeProCheckout({
 			const subscriptions = await tx.query.creemSubscription.findMany({
 				where: eq(creemSubscription.referenceId, userId),
 			});
-			const hasCurrentSubscription = subscriptions.some((subscription) => {
-				const status = subscription.status;
-				if (!subscription.creemSubscriptionId) return false;
-				if (status === "canceled")
-					return Boolean(
-						subscription.periodEnd && subscription.periodEnd > now,
-					);
-				return (
-					(status === "active" ||
-						status === "trialing" ||
-						status === "scheduled_cancel" ||
-						status === "past_due" ||
-						status === "unpaid") &&
-					(!subscription.periodEnd || subscription.periodEnd > now)
-				);
-			});
+			const hasCurrentSubscription = subscriptions.some((subscription) =>
+				blocksNewCheckout(subscription, now),
+			);
 			if (hasCurrentSubscription)
 				return { kind: "error", error: "SUBSCRIPTION_EXISTS" };
 
-			const pendingCheckout = subscriptions.find(
-				(subscription) =>
-					subscription.status === null &&
-					!subscription.creemSubscriptionId &&
-					subscription.checkoutId,
-			);
+			const pendingCheckout = subscriptions.find(isOpenCheckout);
 			if (pendingCheckout?.checkoutId) {
 				if (pendingCheckout.productId !== productId) {
 					return { kind: "error", error: "CHECKOUT_IN_PROGRESS" };
@@ -185,15 +174,18 @@ export async function scheduleProCancellation({
 		where: eq(creemSubscription.referenceId, userId),
 	});
 	if (!subscription?.creemSubscriptionId) return false;
-	if (subscription.status === "scheduled_cancel") return true;
-	if (subscription.status !== "active" && subscription.status !== "trialing")
-		return false;
+	if (isCancellationScheduled(subscription)) return true;
+	if (!canScheduleCancellation(subscription)) return false;
 
 	const canceled = await creem.subscriptions.cancel(
 		subscription.creemSubscriptionId,
 		{ mode: "scheduled", onExecute: "cancel" },
 	);
-	if (canceled.status !== "scheduled_cancel")
+	if (
+		!isCancellationScheduled({
+			status: parseSubscriptionStatus(canceled.status),
+		})
+	)
 		throw new Error("Creem did not schedule the subscription cancellation.");
 
 	await db

@@ -18,7 +18,7 @@ import {
 	type HandleAvailabilityResponse,
 	normalizePageHandle,
 } from "@grabbin/page-handle";
-import { FREE_PAGE_LIMIT, getPlanAccess, PRO_PAGE_LIMIT } from "@grabbin/plan";
+import { getPlanAccess } from "@grabbin/plan";
 import { isOwnedPageMediaKey } from "./media.service";
 import { checkPageHandle } from "./page-handle.service";
 
@@ -146,7 +146,7 @@ export async function createPage({
 				})),
 				proProductIds,
 			);
-			const limit = plan.hasAccess ? PRO_PAGE_LIMIT : FREE_PAGE_LIMIT;
+			const limit = plan.pageLimit;
 			if (ownedPages.length >= limit) {
 				throw new PageServiceError("PAGE_LIMIT_REACHED");
 			}

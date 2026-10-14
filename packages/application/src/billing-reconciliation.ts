@@ -1,7 +1,10 @@
 import { retrieveSubscription } from "@grabbin/auth/creem-server";
 import type { DatabaseClient } from "@grabbin/db";
 import { creemSubscription } from "@grabbin/db/schema/index";
-import { parseSubscriptionStatus } from "@grabbin/plan";
+import {
+	deriveCancelAtPeriodEnd,
+	parseSubscriptionStatus,
+} from "@grabbin/plan";
 import { and, eq, inArray, isNull, lte } from "drizzle-orm";
 import { reconcileUserPageLifecycle } from "./page-lifecycle";
 
@@ -54,7 +57,7 @@ export async function reconcileExpiredSubscriptions({
 					status,
 					periodStart: current.currentPeriodStartDate,
 					periodEnd: current.currentPeriodEndDate,
-					cancelAtPeriodEnd: status === "scheduled_cancel",
+					cancelAtPeriodEnd: deriveCancelAtPeriodEnd(status),
 				})
 				.where(
 					and(

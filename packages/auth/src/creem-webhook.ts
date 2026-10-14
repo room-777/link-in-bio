@@ -1,6 +1,7 @@
 import type { DatabaseClient } from "@grabbin/db";
 import { creemSubscription, user } from "@grabbin/db/schema/index";
 import {
+	deriveCancelAtPeriodEnd,
 	parseSubscriptionStatus,
 	type SubscriptionStatus,
 } from "@grabbin/plan";
@@ -93,8 +94,10 @@ export async function syncCreemWebhook(
 				periodEnd?.toISOString() ??
 				subscription.periodEnd?.toISOString() ??
 				null,
-			cancelAtPeriodEnd:
-				event.cancel_at_period_end ?? status === "scheduled_cancel",
+			cancelAtPeriodEnd: deriveCancelAtPeriodEnd(
+				status,
+				event.cancel_at_period_end,
+			),
 			lastWebhookId: event.webhookId,
 			lastWebhookCreatedAt: eventTime.toISOString(),
 		};

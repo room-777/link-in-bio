@@ -1,6 +1,6 @@
 import type { PageDomainResponse } from "@grabbin/api";
 import type { DatabaseClient } from "@grabbin/db";
-import { getPlanAccess, PAGE_GRACE_PERIOD_MS } from "@grabbin/plan";
+import { getPlanAccess, graceEndsAt as planGraceEndsAt } from "@grabbin/plan";
 import { parse } from "tldts";
 import { PageDomainError } from "../exceptions/page-domain.exception";
 import type { CloudflareSaas, DomainDns } from "./cloudflare-saas";
@@ -100,14 +100,8 @@ export function createPageDomainService(options: DomainOptions) {
 			now,
 		);
 		let graceEndsAt: Date | null = null;
-		if (
-			!plan.hasAccess &&
-			plan.productId &&
-			proProductIds.includes(plan.productId)
-		) {
-			graceEndsAt = plan.periodEnd
-				? new Date(plan.periodEnd.getTime() + PAGE_GRACE_PERIOD_MS)
-				: (row?.graceEndsAt ?? new Date(now.getTime() + PAGE_GRACE_PERIOD_MS));
+		if (plan.lapsedFromPro) {
+			graceEndsAt = planGraceEndsAt(plan.periodEnd, now, row?.graceEndsAt);
 		}
 		// Preserve the first observed end when the provider has no period-end timestamp.
 		if (row && row.graceEndsAt?.getTime() !== graceEndsAt?.getTime()) {
