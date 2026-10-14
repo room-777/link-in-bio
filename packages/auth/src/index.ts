@@ -14,6 +14,7 @@ import {
 } from "better-auth";
 import { drizzleAdapter } from "better-auth/adapters/drizzle";
 import { customSession, emailOTP } from "better-auth/plugins";
+import { eq } from "drizzle-orm";
 import { cancelSubscriptionsBeforeAccountDeletion } from "./account-deletion";
 import {
 	getCookieAttributes,
@@ -145,6 +146,56 @@ const socialProviders: BetterAuthOptions["socialProviders"] = {
 		: {}),
 };
 
+/** Session shape: the user's page handle and plan, read on every get-session. */
+function planSession(
+	getDatabase: () => DatabaseClient | Promise<DatabaseClient>,
+) {
+	return customSession(async ({ user, session }, context) => {
+		// "pages" is not a Better Auth model, so the adapter cannot read it.
+		const db = await getDatabase();
+		const ownPage = await db.query.pages.findFirst({
+			where: eq(schema.pages.userId, user.id),
+			columns: { handle: true },
+		});
+		const subscriptions = (await context.context.adapter.findMany({
+			model: "creem_subscription",
+			where: [{ field: "referenceId", value: user.id }],
+		})) as Array<{
+			creemSubscriptionId: string | null;
+			productId: string;
+			status: SubscriptionStatus | null;
+			periodEnd: Date | null;
+			cancelAtPeriodEnd: boolean | null;
+		}>;
+		const access = getPlanAccess(
+			subscriptions.map((subscription) => ({
+				subscriptionId: subscription.creemSubscriptionId,
+				productId: subscription.productId,
+				status: subscription.status,
+				periodEnd: subscription.periodEnd
+					? new Date(subscription.periodEnd)
+					: null,
+				cancelAtPeriodEnd: subscription.cancelAtPeriodEnd,
+			})),
+			[
+				env.CREEM_PRO_MONTHLY_PRODUCT_ID,
+				env.CREEM_PRO_YEARLY_PRODUCT_ID,
+			].filter(Boolean),
+		);
+		return {
+			user: { ...user, pageHandle: ownPage?.handle ?? null },
+			session,
+			plan: {
+				tier: access.tier,
+				hasAccess: access.hasAccess,
+				status: access.status,
+				periodEnd: access.periodEnd?.toISOString() ?? null,
+				cancelAtPeriodEnd: access.cancelAtPeriodEnd,
+			},
+		};
+	});
+}
+
 const authOptions = {
 	basePath: "/auth",
 	trustedOrigins: [env.CORS_ORIGIN],
@@ -187,48 +238,7 @@ const authOptions = {
 					otp,
 				}),
 		}),
-		customSession(async ({ user, session }, context) => {
-			const ownPage = (await context.context.adapter.findOne({
-				model: "pages",
-				where: [{ field: "userId", value: user.id }],
-			})) as { handle: string } | null;
-			const subscriptions = (await context.context.adapter.findMany({
-				model: "creem_subscription",
-				where: [{ field: "referenceId", value: user.id }],
-			})) as Array<{
-				creemSubscriptionId: string | null;
-				productId: string;
-				status: SubscriptionStatus | null;
-				periodEnd: Date | null;
-				cancelAtPeriodEnd: boolean | null;
-			}>;
-			const access = getPlanAccess(
-				subscriptions.map((subscription) => ({
-					subscriptionId: subscription.creemSubscriptionId,
-					productId: subscription.productId,
-					status: subscription.status,
-					periodEnd: subscription.periodEnd
-						? new Date(subscription.periodEnd)
-						: null,
-					cancelAtPeriodEnd: subscription.cancelAtPeriodEnd,
-				})),
-				[
-					env.CREEM_PRO_MONTHLY_PRODUCT_ID,
-					env.CREEM_PRO_YEARLY_PRODUCT_ID,
-				].filter(Boolean),
-			);
-			return {
-				user: { ...user, pageHandle: ownPage?.handle ?? null },
-				session,
-				plan: {
-					tier: access.tier,
-					hasAccess: access.hasAccess,
-					status: access.status,
-					periodEnd: access.periodEnd?.toISOString() ?? null,
-					cancelAtPeriodEnd: access.cancelAtPeriodEnd,
-				},
-			};
-		}),
+		planSession(createDb),
 	],
 	// uncomment cookieCache setting when ready to deploy to Cloudflare using *.workers.dev domains
 	session: {
@@ -281,7 +291,8 @@ export async function createAuth(
 			},
 		},
 		plugins: [
-			...(authOptions.plugins ?? []),
+			...authOptions.plugins.filter((plugin) => plugin.id !== "custom-session"),
+			planSession(() => resolvedDatabase),
 			createCreemPlugin(resolvedDatabase, options?.onSubscriptionChange),
 		],
 		database: drizzleAdapter(resolvedDatabase, {
