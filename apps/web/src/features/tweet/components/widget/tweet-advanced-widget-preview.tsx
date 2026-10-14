@@ -1,5 +1,5 @@
 import { getPresetGeometry } from "@grabbin/bento-layout";
-import { widgetRules } from "@grabbin/page-link";
+import { getWidgetPresets } from "@grabbin/page-link";
 import { AdvancedWidgetPresetControls } from "@/components/page/editor/advanced-widget-preset-controls";
 import { AdvancedWidgetPreviewFrame } from "@/components/page/editor/advanced-widgets/advanced-widget-preview-frame";
 import { useAdvancedWidgetPreset } from "@/components/page/editor/advanced-widgets/use-advanced-widget-preset";
@@ -20,7 +20,7 @@ export default function TweetAdvancedWidgetPreview({
 		transitionPhase,
 		onPresetChange,
 		onTransitionComplete,
-	} = useAdvancedWidgetPreset(widgetRules.tweet.presets, "squareLarge");
+	} = useAdvancedWidgetPreset(getWidgetPresets("tweet"), "squareLarge");
 
 	const previewUrl = debouncedTweetId
 		? `https://x.com/i/status/${debouncedTweetId}`
@@ -45,7 +45,7 @@ export default function TweetAdvancedWidgetPreview({
 			onTransitionComplete={onTransitionComplete}
 			controls={
 				<AdvancedWidgetPresetControls
-					presets={widgetRules.tweet.presets}
+					presets={getWidgetPresets("tweet")}
 					preset={preset}
 					onPresetChange={onPresetChange}
 				/>

@@ -21,6 +21,7 @@ export type { WidgetKind, WidgetKindInput } from "./widget-kind";
 export {
 	getItemPresets,
 	getWidgetKind,
+	getWidgetPresets,
 	isWidgetProvider,
 	requiresProPlan,
 	widgetRules,

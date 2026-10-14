@@ -18,32 +18,32 @@ export type WidgetKindInput =
 	| { type: Exclude<ItemType, "link"> };
 
 type WidgetRule = {
-	/** Sizes the editor offers and the server accepts. */
-	presets: readonly PresetName[];
+	/** Item type the widget is saved as; its sizes are the default. */
+	itemType: "link" | "calendly";
+	/** Only set when the widget allows fewer sizes than its item type. */
+	presets?: readonly PresetName[];
 	/** Card border follows the neutral widget border, not the link theme. */
 	neutralBorder: boolean;
 	/** The item toolbar lets the owner edit the URL. */
 	editableUrl: boolean;
 };
 
-const linkPresets = getAllowedPresets("link");
-
-export const widgetRules = {
-	rss: { presets: linkPresets, neutralBorder: true, editableUrl: true },
+export const widgetRules: Record<WidgetKind, WidgetRule> = {
+	rss: { itemType: "link", neutralBorder: true, editableUrl: true },
 	tweet: {
-		presets: linkPresets.filter(
-			(preset) => preset === "portrait" || preset === "squareLarge",
-		),
+		itemType: "link",
+		presets: ["portrait", "squareLarge"],
 		neutralBorder: true,
 		editableUrl: false,
 	},
-	spotify: { presets: linkPresets, neutralBorder: false, editableUrl: true },
-	calendly: {
-		presets: getAllowedPresets("calendly"),
-		neutralBorder: true,
-		editableUrl: true,
-	},
-} as const satisfies Record<WidgetKind, WidgetRule>;
+	spotify: { itemType: "link", neutralBorder: false, editableUrl: true },
+	calendly: { itemType: "calendly", neutralBorder: true, editableUrl: true },
+};
+
+export function getWidgetPresets(kind: WidgetKind): readonly PresetName[] {
+	const rule = widgetRules[kind];
+	return rule.presets ?? getAllowedPresets(rule.itemType);
+}
 
 /**
  * RSS and Tweet items keep their provider id even though no URL host backs it,
@@ -72,7 +72,7 @@ export function getWidgetKind(item: WidgetKindInput): WidgetKind | null {
 
 export function getItemPresets(item: WidgetKindInput): readonly PresetName[] {
 	const kind = getWidgetKind(item);
-	return kind ? widgetRules[kind].presets : getAllowedPresets(item.type);
+	return kind ? getWidgetPresets(kind) : getAllowedPresets(item.type);
 }
 
 /** Advanced-widget providers shown as "coming soon" without a renderer yet. */
