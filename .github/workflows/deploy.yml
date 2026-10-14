@@ -52,7 +52,7 @@ jobs:
           CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
           CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
           ALCHEMY_TELEMETRY_DISABLED: "1"
-        run: bun run deploy:production
+        run: bun run deploy:production -- --yes
       - name: Smoke test
         run: |
           curl -fsS -o /dev/null https://grabbin.me/
