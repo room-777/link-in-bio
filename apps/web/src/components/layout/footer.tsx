@@ -2,6 +2,19 @@ import Image from "next/image";
 import Link from "next/link";
 import Logo from "@/components/logo";
 
+const guideLinks = [
+	{ slug: "build-visual-link-in-bio", label: "Build a visual link in bio" },
+	{ slug: "free-linktree-alternatives", label: "Free Linktree alternatives" },
+	{ slug: "what-is-link-in-bio", label: "What is a link in bio?" },
+	{
+		slug: "instagram-bio-character-limit",
+		label: "Instagram bio character limit",
+	},
+	{ slug: "choose-link-in-bio-tool", label: "Choose a link-in-bio tool" },
+	{ slug: "your-page-your-domain", label: "Use your own domain" },
+	{ slug: "what-grabbin-gives-you", label: "What Grabbin gives you" },
+] as const;
+
 export default function Footer() {
 	return (
 		<footer className="w-full pt-16 text-muted-foreground/80 text-sm">
@@ -109,6 +122,21 @@ export default function Footer() {
 										Community
 									</a>
 								</li>
+							</ul>
+						</div>
+						<div className="flex flex-col gap-2">
+							<h6 className="font-medium text-foreground text-sm">Guides</h6>
+							<ul className="flex flex-col items-start gap-1">
+								{guideLinks.map(({ slug, label }) => (
+									<li key={slug}>
+										<Link
+											href={`/update/${slug}`}
+											className="hover:text-primary/80"
+										>
+											{label}
+										</Link>
+									</li>
+								))}
 							</ul>
 						</div>
 						<div className="flex flex-col gap-2">
