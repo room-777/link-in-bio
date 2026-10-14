@@ -9,6 +9,7 @@ import { usePatchBentoItemsMutation } from "@/features/page/editor/mutations/pat
 import { useRefreshBentoLinkMetadataMutation } from "@/features/page/editor/mutations/refresh-link-metadata";
 import { useUploadBentoMediaMutation } from "@/features/page/editor/mutations/upload-media";
 import { getErrorMessage } from "@/lib/error-message";
+import { trackGoogleAnalyticsEvent } from "@/lib/google-analytics";
 import {
 	createBentoBatch,
 	hasBentoBatchChanges,
@@ -40,6 +41,31 @@ type MediaUploadTask = {
 	itemId?: string;
 	kind?: "link-image";
 };
+
+/** 저장이 끝난 변경을 page_edited로 보낸다. 한 번 저장에 같은 종류·동작은 1번만 보낸다. */
+function trackSavedItems(
+	batch: PageItemBatchRequest,
+	persistedItems: readonly BentoItem[],
+) {
+	const persistedById = new Map(persistedItems.map((item) => [item.id, item]));
+	const edits = new Set<string>();
+	for (const item of batch.upserts) {
+		edits.add(
+			`${item.type}:${persistedById.has(item.id) ? "update" : "create"}`,
+		);
+	}
+	for (const id of batch.deletes) {
+		const item = persistedById.get(id);
+		if (item) edits.add(`${item.type}:delete`);
+	}
+	for (const edit of edits) {
+		const [itemType, action] = edit.split(":");
+		trackGoogleAnalyticsEvent("page_edited", {
+			item_type: itemType,
+			action,
+		});
+	}
+}
 
 export function useBentoStore({
 	initialItems,
@@ -141,6 +167,7 @@ export function useBentoStore({
 					return { ok: true };
 				}
 
+				trackSavedItems(sentBatch, persistedRef.current);
 				const sentIds = new Set(sentBatch.upserts.map((item) => item.id));
 				const acknowledgedItems = response.items
 					.map(toBentoItem)

@@ -10,13 +10,15 @@ import {
 import { motion, useReducedMotion } from "motion/react";
 import dynamic from "next/dynamic";
 import Image from "next/image";
-import type { CSSProperties } from "react";
+import type { CSSProperties, MouseEvent } from "react";
 import { useEffect, useState } from "react";
 import { MadeWithGrabbinBadge } from "@/components/page/shared/made-with-grabbin-badge";
 import PageFooter from "@/components/page/shared/page-footer";
 import { toBentoItem } from "@/features/page/editor/state/bento-batch";
 import { getMediaCropStyle } from "@/features/page/editor/state/media-crop";
+import { trackGoogleAnalyticsEvent } from "@/lib/google-analytics";
 import { getPageImageUrl } from "@/lib/page-image-url";
+import GoogleAnalyticsPageView from "./google-analytics-page-view";
 import PublicShareLinkButton from "./public-share-link-button";
 import SimpleAnalyticsTracker from "./simple-analytics-tracker";
 
@@ -67,6 +69,28 @@ export default function HandlePage({
 				duration: PROFILE_ENTER_DURATION_SECONDS,
 				ease: [0.22, 1, 0.36, 1] as const,
 			};
+	// 링크 순서는 지금 화면 배치(위에서 아래, 왼쪽에서 오른쪽) 기준 1부터 센다.
+	const handleBentoLinkClick = (event: MouseEvent<HTMLElement>) => {
+		if (event.type === "auxclick" && event.button !== 1) return;
+		const target = event.target as Element;
+		const itemElement = target
+			.closest("a[href]")
+			?.closest<HTMLElement>("[data-bento-item-id]");
+		if (!itemElement) return;
+		const itemId = itemElement.dataset.bentoItemId;
+		const orderedIds = [...pageResponse.items]
+			.sort((a, b) => {
+				const layoutA = a.layouts[profileBreakpoint];
+				const layoutB = b.layouts[profileBreakpoint];
+				return layoutA.y - layoutB.y || layoutA.x - layoutB.x;
+			})
+			.map((item) => item.id);
+		trackGoogleAnalyticsEvent("profile_link_click", {
+			page_id: page.id,
+			link_position: orderedIds.indexOf(itemId ?? "") + 1,
+			item_type: itemElement.dataset.bentoItemType,
+		});
+	};
 	useEffect(() => {
 		const mediaQuery = window.matchMedia(bentoWideMediaQuery);
 		const syncBreakpoint = () =>
@@ -79,6 +103,7 @@ export default function HandlePage({
 		<main className="page-scroll-container no-scrollbar relative box-border flex h-dvh min-h-0 w-full flex-col page-wide:items-start items-center page-wide:justify-center overflow-y-auto overscroll-y-none bg-background">
 			<PublicShareLinkButton profileImageUrl={imageUrl} />
 			<SimpleAnalyticsTracker pageId={page.id} />
+			<GoogleAnalyticsPageView pageId={page.id} isOwner={page.isOwner} />
 			<div className="flex page-wide:min-h-dvh w-full page-wide:flex-row flex-col items-center page-wide:items-stretch page-wide:justify-around gap-8">
 				<div className="page-wide:flex contents page-wide:min-h-0 page-wide:w-2xl w-full min-w-0 max-w-md page-wide:max-w-none page-wide:flex-col">
 					<article
@@ -157,6 +182,8 @@ export default function HandlePage({
 					style={
 						{ "--bento-grid-height": `${bentoGridHeight}px` } as CSSProperties
 					}
+					onClickCapture={handleBentoLinkClick}
+					onAuxClickCapture={handleBentoLinkClick}
 				>
 					<div className="flex flex-col gap-4">
 						<BentoSection

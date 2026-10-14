@@ -3,11 +3,14 @@
 import { usePathname } from "next/navigation";
 import Script from "next/script";
 import { useEffect, useState } from "react";
+import { authClient } from "@/lib/auth-client";
 import {
 	GA_MEASUREMENT_ID,
+	getGoogleAnalyticsPageType,
 	initGoogleAnalytics,
 	isGoogleAnalyticsEnabled,
 	sendGoogleAnalyticsPageView,
+	setGoogleAnalyticsUserType,
 } from "@/lib/google-analytics";
 
 export default function GoogleAnalyticsRouteTracker() {
@@ -22,9 +25,15 @@ export default function GoogleAnalyticsRouteTracker() {
 
 	useEffect(() => {
 		if (!enabled) return;
+		const pageType = getGoogleAnalyticsPageType(
+			pathname,
+			window.location.hostname,
+		);
+		// 핸들 페이지는 page_id를 아는 화면(GoogleAnalyticsPageView)이 직접 보낸다.
+		if (pageType === "handle") return;
 		// 제목이 바뀐 뒤에 보내도록 한 프레임 미룬다.
 		const frame = requestAnimationFrame(() =>
-			sendGoogleAnalyticsPageView(pathname),
+			sendGoogleAnalyticsPageView(pageType),
 		);
 		return () => cancelAnimationFrame(frame);
 	}, [enabled, pathname]);
@@ -32,9 +41,24 @@ export default function GoogleAnalyticsRouteTracker() {
 	if (!enabled) return null;
 
 	return (
-		<Script
-			src={`https://www.googletagmanager.com/gtag/js?id=${GA_MEASUREMENT_ID}`}
-			strategy="afterInteractive"
-		/>
+		<>
+			<GoogleAnalyticsUserType />
+			<Script
+				src={`https://www.googletagmanager.com/gtag/js?id=${GA_MEASUREMENT_ID}`}
+				strategy="afterInteractive"
+			/>
+		</>
 	);
+}
+
+function GoogleAnalyticsUserType() {
+	const { data: session, isPending } = authClient.useSession();
+	const isSignedIn = Boolean(session);
+
+	useEffect(() => {
+		if (isPending) return;
+		setGoogleAnalyticsUserType(isSignedIn ? "creator" : "visitor");
+	}, [isPending, isSignedIn]);
+
+	return null;
 }
