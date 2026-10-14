@@ -1,10 +1,16 @@
 import type { Metadata } from "next";
+import Link from "next/link";
 import { notFound } from "next/navigation";
 import CtaSection from "@/components/landing/cta-section";
 import MdxContent from "@/components/mdx/mdx-content";
 import { UpdateAuthor } from "@/components/updates/update-author";
 import { UpdateMedia } from "@/components/updates/update-media";
-import { getUpdate, updates } from "@/lib/updates";
+import {
+	getRelatedUpdates,
+	getUpdate,
+	getUpdateLastModified,
+	updates,
+} from "@/lib/updates";
 
 export const revalidate = false;
 
@@ -33,6 +39,7 @@ export async function generateMetadata({
 			siteName: "Grabbin",
 			type: "article",
 			publishedTime: new Date(`${update.date}T00:00:00Z`).toISOString(),
+			modifiedTime: getUpdateLastModified(update).toISOString(),
 			images: [image],
 		},
 		twitter: {
@@ -51,6 +58,7 @@ export default async function UpdateDetailPage({
 	const update = getUpdate(slug);
 	if (!update) notFound();
 	const { Content } = update;
+	const related = getRelatedUpdates(update.slug);
 
 	return (
 		<main className="px-5 pt-36 font-open-runde sm:pt-40">
@@ -87,6 +95,31 @@ export default async function UpdateDetailPage({
 				<div className="prose prose-neutral dark:prose-invert mx-auto mt-12 max-w-xl px-5 text-primary/70 sm:mt-16">
 					<MdxContent Content={Content} />
 				</div>
+				{related.length > 0 && (
+					<nav
+						aria-labelledby="related-heading"
+						className="mx-auto mt-16 max-w-xl px-5"
+					>
+						<h2 id="related-heading" className="font-medium text-lg">
+							Related guides
+						</h2>
+						<ul className="mt-4 space-y-3">
+							{related.map((item) => (
+								<li key={item.slug}>
+									<Link
+										href={`/update/${item.slug}`}
+										className="font-medium text-primary/80 underline-offset-4 hover:underline"
+									>
+										{item.title}
+									</Link>
+									<p className="text-muted-foreground/80 text-sm">
+										{item.description}
+									</p>
+								</li>
+							))}
+						</ul>
+					</nav>
+				)}
 				<div className="mx-auto">
 					<CtaSection />
 				</div>
