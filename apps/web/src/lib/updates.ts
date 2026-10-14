@@ -11,7 +11,6 @@ export const updateCategories = [
 export type UpdateCategory = (typeof updateCategories)[number];
 
 export type UpdateFrontmatter = {
-	showInUpdates?: boolean;
 	type: string;
 	category: UpdateCategory;
 	date: string;
@@ -84,11 +83,6 @@ const relatedPriority = [
 	"what-grabbin-gives-you",
 ];
 
-const priorityRank = (slug: string) => {
-	const index = relatedPriority.indexOf(slug);
-	return index === -1 ? relatedPriority.length : index;
-};
-
 export const featuredUpdateSlugs = [
 	"instagram-bio-character-limit",
 	"how-to-add-link-instagram-bio",
@@ -114,23 +108,31 @@ export const getUpdatesBySlugs = (slugs: string[]) =>
 		return update ? [update] : [];
 	});
 
-/** Pinned guides first (in priority order), then same-category posts by date. */
+const hashSlug = (slug: string) => {
+	let hash = 0;
+	for (const char of slug) hash = (hash * 31 + char.charCodeAt(0)) >>> 0;
+	return hash;
+};
+
+/**
+ * Same-category posts first (newest first), then fill remaining slots from the
+ * pinned priority list rotated by a hash of the current slug, so different
+ * posts surface different pinned guides. Never includes the current post.
+ */
 export const getRelatedUpdates = (slug: string, limit = 4) => {
 	const current = getUpdate(slug);
 	if (!current) return [];
-	return updates
-		.filter(
-			(update) =>
-				update.slug !== slug &&
-				(update.category === current.category ||
-					relatedPriority.includes(update.slug)),
-		)
-		.map((update, index) => ({ update, index }))
-		.sort(
-			(a, b) =>
-				priorityRank(a.update.slug) - priorityRank(b.update.slug) ||
-				a.index - b.index,
-		)
-		.slice(0, limit)
-		.map(({ update }) => update);
+	const sameCategory = updates.filter(
+		(update) => update.slug !== slug && update.category === current.category,
+	);
+	const offset = hashSlug(slug) % relatedPriority.length;
+	const rotated = [
+		...relatedPriority.slice(offset),
+		...relatedPriority.slice(0, offset),
+	];
+	const seen = new Set([slug, ...sameCategory.map((update) => update.slug)]);
+	const pinned = getUpdatesBySlugs(
+		rotated.filter((pinnedSlug) => !seen.has(pinnedSlug)),
+	);
+	return [...sameCategory, ...pinned].slice(0, limit);
 };
