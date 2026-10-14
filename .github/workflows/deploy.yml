@@ -9,9 +9,6 @@ on:
     types: [completed]
     branches: [main]
   workflow_dispatch:
-  # TEMP: test run from PR branch (workflow_dispatch needs the file on main). Remove before merge.
-  push:
-    branches: [ci/deploy-on-main]
 
 permissions:
   contents: read
@@ -22,7 +19,7 @@ concurrency:
 
 jobs:
   deploy:
-    if: github.event_name != 'workflow_run' || github.event.workflow_run.conclusion == 'success'
+    if: github.event_name == 'workflow_dispatch' || github.event.workflow_run.conclusion == 'success'
     runs-on: ubuntu-latest
     environment: production
     steps:
