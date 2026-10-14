@@ -117,5 +117,3 @@ export default function SpotifyAdvancedWidgetPreview({
 		</AdvancedWidgetPreviewFrame>
 	);
 }
-
-export { SpotifyAdvancedWidgetPreview };

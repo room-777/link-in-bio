@@ -63,5 +63,3 @@ export default function RssAdvancedWidgetPreview({
 		</AdvancedWidgetPreviewFrame>
 	);
 }
-
-export { RssAdvancedWidgetPreview };

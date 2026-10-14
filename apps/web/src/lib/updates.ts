@@ -1,6 +1,6 @@
 import type { MDXContent } from "mdx/types.js";
 
-export const updateCategories = [
+const updateCategories = [
 	"Product",
 	"Link in bio basics",
 	"Instagram & TikTok bio",

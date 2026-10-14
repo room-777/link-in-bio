@@ -3,7 +3,7 @@ import { useMutation } from "@tanstack/react-query";
 import * as v from "valibot";
 import { apiClient, getApiErrorMessage } from "@/lib/api-client";
 
-export async function getBentoSpotifyPreview(handle: string, url: string) {
+async function getBentoSpotifyPreview(handle: string, url: string) {
 	const response = await apiClient.pages[":handle"].metadata.$post(
 		{ param: { handle } },
 		{

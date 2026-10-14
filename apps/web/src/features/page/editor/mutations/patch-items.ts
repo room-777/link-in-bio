@@ -4,10 +4,7 @@ import { useMutation } from "@tanstack/react-query";
 import * as v from "valibot";
 import { apiClient, getApiErrorMessage } from "@/lib/api-client";
 
-export async function patchBentoBatch(
-	handle: string,
-	batch: PageItemBatchRequest,
-) {
+async function patchBentoBatch(handle: string, batch: PageItemBatchRequest) {
 	const response = await apiClient.pages[":handle"].batch.$patch(
 		{ param: { handle } },
 		{

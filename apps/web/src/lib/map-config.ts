@@ -20,7 +20,7 @@ export const MAPBOX_STYLE_CONFIG = {
 
 export const MAP_ZOOM_MIN = 0;
 export const MAP_ZOOM_MAX = 22;
-export const DEFAULT_MAP_ZOOM = 12;
+const DEFAULT_MAP_ZOOM = 12;
 
 export type MapCamera = {
 	latitude: number;

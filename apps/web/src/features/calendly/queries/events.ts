@@ -18,7 +18,7 @@ async function getCalendlyEvents(signal: AbortSignal) {
 	return result.output.events;
 }
 
-export function getCalendlyEventsQueryOptions() {
+function getCalendlyEventsQueryOptions() {
 	return queryOptions({
 		queryKey: ["calendly", "events"] as const,
 		queryFn: ({ signal }) => getCalendlyEvents(signal),

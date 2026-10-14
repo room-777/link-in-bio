@@ -69,5 +69,3 @@ export default function RssArticle({
 		</li>
 	);
 }
-
-export { RssArticle };

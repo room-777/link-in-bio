@@ -38,7 +38,7 @@ async function getCalendlyConnection(signal: AbortSignal) {
 	return result.output;
 }
 
-export function getCalendlyConnectionQueryOptions() {
+function getCalendlyConnectionQueryOptions() {
 	return queryOptions({
 		queryKey: calendlyConnectionQueryKey,
 		retry: false,

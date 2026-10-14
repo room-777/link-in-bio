@@ -1,7 +1,7 @@
 import { useMutation } from "@tanstack/react-query";
 import { apiClient, getApiErrorMessage } from "@/lib/api-client";
 
-export async function cancelBentoMediaUpload(
+async function cancelBentoMediaUpload(
 	handle: string,
 	objectKey: string,
 	options: { itemId?: string; kind?: "link-image" } = {},
