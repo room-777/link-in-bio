@@ -9,7 +9,11 @@ import { usePatchBentoItemsMutation } from "@/features/page/editor/mutations/pat
 import { useRefreshBentoLinkMetadataMutation } from "@/features/page/editor/mutations/refresh-link-metadata";
 import { useUploadBentoMediaMutation } from "@/features/page/editor/mutations/upload-media";
 import { getErrorMessage } from "@/lib/error-message";
-import { trackGoogleAnalyticsEvent } from "@/lib/google-analytics";
+import {
+	type GoogleAnalyticsPageContext,
+	getGoogleAnalyticsPageContext,
+	trackGoogleAnalyticsEvent,
+} from "@/lib/google-analytics";
 import {
 	createBentoBatch,
 	hasBentoBatchChanges,
@@ -46,7 +50,10 @@ type MediaUploadTask = {
 function trackSavedItems(
 	batch: PageItemBatchRequest,
 	persistedItems: readonly BentoItem[],
+	pageContext: GoogleAnalyticsPageContext | null,
 ) {
+	// 저장을 시작한 페이지 기준으로 보낸다. 그사이 다른 화면으로 옮겨도 섞이지 않는다.
+	if (!pageContext) return;
 	const persistedById = new Map(persistedItems.map((item) => [item.id, item]));
 	const edits = new Set<string>();
 	for (const item of batch.upserts) {
@@ -61,6 +68,7 @@ function trackSavedItems(
 	for (const edit of edits) {
 		const [itemType, action] = edit.split(":");
 		trackGoogleAnalyticsEvent("page_edited", {
+			...pageContext,
 			item_type: itemType,
 			action,
 		});
@@ -154,6 +162,7 @@ export function useBentoStore({
 		}
 
 		setStatus("saving");
+		const analyticsPageContext = getGoogleAnalyticsPageContext();
 
 		let request: Promise<SaveResult> | null = null;
 		request = (async () => {
@@ -167,7 +176,7 @@ export function useBentoStore({
 					return { ok: true };
 				}
 
-				trackSavedItems(sentBatch, persistedRef.current);
+				trackSavedItems(sentBatch, persistedRef.current, analyticsPageContext);
 				const sentIds = new Set(sentBatch.upserts.map((item) => item.id));
 				const acknowledgedItems = response.items
 					.map(toBentoItem)

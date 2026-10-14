@@ -5,6 +5,7 @@ import { Button } from "@grabbin/ui/components/button";
 import { Globe } from "lucide-react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
+import GoogleAnalyticsFallbackPageView from "@/components/analytics/google-analytics-fallback-page-view";
 
 export default function NotFound() {
 	const pathname = usePathname().replace("/", "");
@@ -12,6 +13,7 @@ export default function NotFound() {
 
 	return (
 		<main className="relative isolate grid min-h-svh place-items-center overflow-x-clip bg-background px-6 py-16 text-center font-open-runde">
+			<GoogleAnalyticsFallbackPageView pageType="not_found" />
 			<section className="z-10 flex flex-col items-center">
 				<h1 className="mb-4 font-semibold text-[clamp(4.5rem,13vw,6.25rem)] text-primary/90 leading-none tracking-tight">
 					404

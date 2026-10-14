@@ -29,6 +29,9 @@ export type GoogleAnalyticsPageContext = {
 let pageContext: GoogleAnalyticsPageContext | null = null;
 // 같은 화면에서 page_view가 두 번 나가지 않게 마지막으로 보낸 주소를 기억한다.
 let lastPageViewPath: string | null = null;
+// user_type이 정해지기 전에 생긴 이벤트. 정해지면 순서대로 보낸다.
+let pendingEvents: [string, GoogleAnalyticsEventParams][] | null = [];
+const USER_TYPE_WAIT_MS = 3000;
 // 마지막으로 page_view를 보낸 화면 종류. 가입 화면의 entry_point에 쓴다.
 let lastPageType: string | null = null;
 
@@ -93,15 +96,45 @@ export function initGoogleAnalytics() {
 	});
 }
 
-export function setGoogleAnalyticsUserType(userType: "creator" | "visitor") {
-	window.gtag?.("set", "user_properties", { user_type: userType });
+function flushPendingEvents() {
+	const events = pendingEvents ?? [];
+	pendingEvents = null;
+	for (const [name, params] of events) window.gtag?.("event", name, params);
 }
 
+/** 로그인 확인이 끝나면 user_type을 넣고, 그동안 모아 둔 이벤트를 보낸다. */
+export function setGoogleAnalyticsUserType(userType: "creator" | "visitor") {
+	window.gtag?.("set", "user_properties", { user_type: userType });
+	flushPendingEvents();
+}
+
+/**
+ * 첫 이벤트에도 user_type이 붙도록 로그인 확인이 끝날 때까지 모아 둔다.
+ * 확인이 늦어지면 USER_TYPE_WAIT_MS 뒤에 user_type 없이 보낸다.
+ */
 export function trackGoogleAnalyticsEvent(
 	name: string,
 	params: GoogleAnalyticsEventParams = {},
 ) {
-	window.gtag?.("event", name, { ...pageContext, ...params });
+	if (!window.gtag) return;
+	const eventParams: GoogleAnalyticsEventParams = {
+		page_location: window.location.href,
+		page_title: document.title,
+		...pageContext,
+		...params,
+	};
+	if (!pendingEvents) {
+		window.gtag("event", name, eventParams);
+		return;
+	}
+	if (pendingEvents.length === 0) {
+		window.setTimeout(flushPendingEvents, USER_TYPE_WAIT_MS);
+	}
+	pendingEvents.push([name, eventParams]);
+}
+
+export function getGoogleAnalyticsPageContext() {
+	return pageContext;
 }
 
 /** 같은 주소로 이미 보냈으면 다시 보내지 않는다(주소가 바뀌면 다시 보낸다). */
@@ -142,14 +175,15 @@ const STATIC_PAGE_TYPES: Record<string, string> = {
 };
 
 /**
- * 주소로 화면 종류를 정한다. 핸들 페이지(커스텀 도메인 포함)는 "handle"이고,
+ * 주소로 화면 종류를 정한다. 핸들 페이지(커스텀 도메인의 첫 화면 포함)는 "handle"이고,
  * 핸들 페이지의 page_view는 page_id를 알고 있는 핸들 페이지 화면이 직접 보낸다.
  */
 export function getGoogleAnalyticsPageType(pathname: string, hostname: string) {
-	if (isCustomDomainHost(hostname)) return "handle";
 	const [firstSegment, ...rest] = pathname.split("/").filter(Boolean);
-	if (!firstSegment) return "home";
-	const staticType = STATIC_PAGE_TYPES[firstSegment];
+	const staticType = firstSegment ? STATIC_PAGE_TYPES[firstSegment] : null;
 	if (staticType) return staticType;
+	// 커스텀 도메인은 첫 화면(/)만 핸들 페이지다.
+	if (isCustomDomainHost(hostname)) return firstSegment ? "other" : "handle";
+	if (!firstSegment) return "home";
 	return rest.length === 0 ? "handle" : "other";
 }
