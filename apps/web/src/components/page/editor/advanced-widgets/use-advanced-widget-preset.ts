@@ -1,13 +1,5 @@
 import type { PresetName } from "@grabbin/bento-layout";
-import { getAllowedPresets } from "@grabbin/bento-layout";
 import { useState } from "react";
-
-export const advancedWidgetPresets = {
-	calendly: getAllowedPresets("calendly"),
-	"rss-feed": getAllowedPresets("link"),
-	spotify: getAllowedPresets("link"),
-	tweet: ["portrait", "squareLarge"],
-} satisfies Record<string, readonly PresetName[]>;
 
 export function useAdvancedWidgetPreset(
 	allowedPresets: readonly PresetName[],

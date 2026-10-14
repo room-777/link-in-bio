@@ -21,7 +21,12 @@ import {
 import type { DatabaseClient } from "@grabbin/db";
 import { and, eq, inArray, sql } from "@grabbin/db/drizzle";
 import { pageItems } from "@grabbin/db/schema/index";
-import { providerDefinitions, resolveLinkMetadata } from "@grabbin/page-link";
+import {
+	getItemPresets,
+	getWidgetKind,
+	requiresProPlan,
+	resolveLinkMetadata,
+} from "@grabbin/page-link";
 import * as v from "valibot";
 import { PageItemServiceError } from "../exceptions/page-item.exception";
 import {
@@ -32,22 +37,6 @@ import {
 import { getOwnedPage, getPage } from "./page.service";
 
 type PageItemLayouts = PageItemBatchRequest["upserts"][number]["layouts"];
-
-const advancedWidgetProviderIds = new Set<string>(
-	providerDefinitions
-		.filter((provider) => "advancedWidget" in provider)
-		.map((provider) => provider.id),
-);
-
-function isAdvancedWidget(item: PageItemBatchRequest["upserts"][number]) {
-	if (item.type === "calendly") return true;
-	if (item.type !== "link") return false;
-	const metadata = item.data.metadata;
-	return (
-		advancedWidgetProviderIds.has(metadata?.provider ?? "") &&
-		(metadata?.provider !== "spotify" || metadata.widget === "spotify")
-	);
-}
 
 function isRecord(value: unknown): value is Record<string, unknown> {
 	return typeof value === "object" && value !== null && !Array.isArray(value);
@@ -130,13 +119,12 @@ function assertValidItemPayload(
 	userId: string,
 	pageId: string,
 ) {
-	const isTweet =
-		item.type === "link" && item.data.metadata?.provider === "tweet";
+	const allowedPresets = getItemPresets(item);
 	for (const [breakpoint, layout] of Object.entries(item.layouts) as Array<
 		[BentoBreakpoint, PageItemLayouts[BentoBreakpoint]]
 	>) {
 		const preset = inferPresetFromLayout(item.type, layout, breakpoint);
-		if (!preset || (isTweet && !["squareLarge", "portrait"].includes(preset))) {
+		if (!preset || !allowedPresets.includes(preset)) {
 			throw new PageItemServiceError("INVALID_ITEM_LAYOUT");
 		}
 	}
@@ -220,7 +208,8 @@ export async function getPageItemRssUrl({
 	if (item?.type !== "link") return undefined;
 
 	const parsed = v.safeParse(pageItemLinkDataSchema, item.data);
-	return parsed.success && parsed.output.metadata?.provider === "rss-feed"
+	return parsed.success &&
+		getWidgetKind({ type: "link", data: parsed.output }) === "rss"
 		? parsed.output.url
 		: undefined;
 }
@@ -285,7 +274,7 @@ export async function persistPageItemBatch({
 		const existingById = new Map(existing.map((item) => [item.id, item]));
 		if (
 			upserts.some(
-				(item) => !existingById.has(item.id) && isAdvancedWidget(item),
+				(item) => !existingById.has(item.id) && requiresProPlan(item),
 			) &&
 			!(
 				await getAccountPlan({

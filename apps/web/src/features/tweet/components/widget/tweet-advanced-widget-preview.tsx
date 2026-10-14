@@ -1,10 +1,8 @@
 import { getPresetGeometry } from "@grabbin/bento-layout";
+import { widgetRules } from "@grabbin/page-link";
 import { AdvancedWidgetPresetControls } from "@/components/page/editor/advanced-widget-preset-controls";
 import { AdvancedWidgetPreviewFrame } from "@/components/page/editor/advanced-widgets/advanced-widget-preview-frame";
-import {
-	advancedWidgetPresets,
-	useAdvancedWidgetPreset,
-} from "@/components/page/editor/advanced-widgets/use-advanced-widget-preset";
+import { useAdvancedWidgetPreset } from "@/components/page/editor/advanced-widgets/use-advanced-widget-preset";
 import type { BentoItem } from "@/features/page/editor/state/bento-types";
 import { getTweetId } from "../../utils/tweet-url";
 import { TweetSkeleton } from "./tweet-skeleton";
@@ -22,7 +20,7 @@ export default function TweetAdvancedWidgetPreview({
 		transitionPhase,
 		onPresetChange,
 		onTransitionComplete,
-	} = useAdvancedWidgetPreset(advancedWidgetPresets.tweet, "squareLarge");
+	} = useAdvancedWidgetPreset(widgetRules.tweet.presets, "squareLarge");
 
 	const previewUrl = debouncedTweetId
 		? `https://x.com/i/status/${debouncedTweetId}`
@@ -47,7 +45,7 @@ export default function TweetAdvancedWidgetPreview({
 			onTransitionComplete={onTransitionComplete}
 			controls={
 				<AdvancedWidgetPresetControls
-					presets={advancedWidgetPresets.tweet}
+					presets={widgetRules.tweet.presets}
 					preset={preset}
 					onPresetChange={onPresetChange}
 				/>

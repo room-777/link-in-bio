@@ -2,6 +2,7 @@
 
 import type { PageItemResponse } from "@grabbin/api";
 import type { PresetName } from "@grabbin/bento-layout";
+import { getWidgetKind } from "@grabbin/page-link";
 import type { Tweet as TweetResponse } from "react-tweet/api";
 import { getTweetId } from "../../utils/tweet-url";
 import { TweetWidget } from "./tweet-widget";
@@ -16,8 +17,8 @@ export default function TweetItem({
 	preset: PresetName;
 }) {
 	const authorData =
-		item.data.metadata?.provider === "tweet"
-			? item.data.metadata.providerData?.tweet
+		getWidgetKind(item) === "tweet"
+			? item.data.metadata?.providerData?.tweet
 			: undefined;
 	const response = authorData?.response;
 	const storedTweet =

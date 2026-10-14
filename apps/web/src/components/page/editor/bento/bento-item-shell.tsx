@@ -6,6 +6,7 @@ import {
 	getBentoItemRadius,
 	inferPresetFromLayout,
 } from "@grabbin/bento-layout";
+import { getWidgetKind, widgetRules } from "@grabbin/page-link";
 import { Button } from "@grabbin/ui/components/button";
 import { animate, motion } from "motion/react";
 import {
@@ -139,19 +140,12 @@ export default function BentoItemShell({
 		: undefined;
 	const cardBackground =
 		getBackgroundColor(item.style.backgroundColor) ?? linkTheme?.cardBackground;
-	const isRssFeedWidget =
-		item.type === "link" && item.data.metadata?.provider === "rss-feed";
-	const isTweetWidget =
-		item.type === "link" && item.data.metadata?.provider === "tweet";
-	const isSpotifyWidget =
-		item.type === "link" && item.data.metadata?.widget === "spotify";
+	const widgetKind = getWidgetKind(item);
 	const publicLink =
 		mode === "view" &&
 		!disableCardLink &&
 		item.type === "link" &&
-		!isRssFeedWidget &&
-		!isTweetWidget &&
-		!isSpotifyWidget
+		widgetKind === null
 			? {
 					href: item.data.url,
 					title: item.data.metadata?.title?.trim() || item.data.url,
@@ -164,7 +158,7 @@ export default function BentoItemShell({
 	const cardBorderColor =
 		item.type === "map" || item.type === "media" || item.type === "section"
 			? undefined
-			: isRssFeedWidget || isTweetWidget || item.type === "calendly"
+			: widgetKind && widgetRules[widgetKind].neutralBorder
 				? "oklch(from white calc(l - 0.06) c h)"
 				: item.type === "link"
 					? "oklch(from var(--link-card-background) calc(l - 0.06) c h)"
@@ -304,7 +298,7 @@ export default function BentoItemShell({
 							}
 						: undefined
 				}
-				className={`bento-item-card relative size-full overflow-hidden bg-background ${publicLink ? "bento-link-card block cursor-pointer! touch-manipulation outline-none focus-visible:outline-2 focus-visible:outline-ring focus-visible:outline-offset-2" : ""} ${hasSurfaceLine ? "surface-line" : ""} ${linkTheme ? "link-card-themed" : ""} ${isSpotifyWidget ? "spotify-widget-card" : ""} ${cardClassName ?? ""}`}
+				className={`bento-item-card relative size-full overflow-hidden bg-background ${publicLink ? "bento-link-card block cursor-pointer! touch-manipulation outline-none focus-visible:outline-2 focus-visible:outline-ring focus-visible:outline-offset-2" : ""} ${hasSurfaceLine ? "surface-line" : ""} ${linkTheme ? "link-card-themed" : ""} ${widgetKind === "spotify" ? "spotify-widget-card" : ""} ${cardClassName ?? ""}`}
 				style={cardStyle}
 			>
 				<div className="relative z-10 size-full min-h-0 rounded-[inherit]">

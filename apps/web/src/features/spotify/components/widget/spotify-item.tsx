@@ -11,7 +11,6 @@ export default function SpotifyItem({
 	item: LinkItem;
 	preset: PresetName;
 }) {
-	if (item.data.metadata?.provider !== "spotify") return null;
 	return <SpotifyWidget item={item} preset={preset} />;
 }
 

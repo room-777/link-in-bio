@@ -1,6 +1,7 @@
 "use client";
 
 import type { PresetName } from "@grabbin/bento-layout";
+import { getWidgetKind } from "@grabbin/page-link";
 import dynamic from "next/dynamic";
 import type { ReactNode } from "react";
 import { CalendlyItem } from "@/features/calendly/components/widget/calendly-item";
@@ -73,7 +74,8 @@ function renderSection({ item, options }: Parameters<ItemRenderer>[0]) {
 
 function renderLink({ item, preset, options }: Parameters<ItemRenderer>[0]) {
 	if (item.type !== "link") return null;
-	if (item.data.metadata?.provider === "rss-feed") {
+	const kind = getWidgetKind(item);
+	if (kind === "rss") {
 		return (
 			<RssFeedItem
 				item={item}
@@ -83,10 +85,10 @@ function renderLink({ item, preset, options }: Parameters<ItemRenderer>[0]) {
 			/>
 		);
 	}
-	if (item.data.metadata?.provider === "tweet") {
+	if (kind === "tweet") {
 		return <TweetItem item={item} mode={options.mode} preset={preset} />;
 	}
-	if (item.data.metadata?.widget === "spotify") {
+	if (kind === "spotify") {
 		return <SpotifyItem item={item} preset={preset} />;
 	}
 	return (
