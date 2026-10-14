@@ -11,6 +11,9 @@ export const env = createEnv({
 		NEXT_PUBLIC_CREEM_PRO_YEARLY_PRODUCT_ID: v.optional(v.string()),
 		NEXT_PUBLIC_SENTRY_DSN: v.optional(v.pipe(v.string(), v.url())),
 		NEXT_PUBLIC_MAPBOX_ACCESS_TOKEN: v.optional(v.string()),
+		NEXT_PUBLIC_GA_MEASUREMENT_ID: v.optional(
+			v.pipe(v.string(), v.regex(/^G-[A-Z0-9]+$/)),
+		),
 	},
 	server: {
 		SENTRY_DSN: v.optional(v.pipe(v.string(), v.url())),
@@ -30,6 +33,7 @@ export const env = createEnv({
 		NEXT_PUBLIC_SENTRY_DSN: process.env.NEXT_PUBLIC_SENTRY_DSN,
 		NEXT_PUBLIC_MAPBOX_ACCESS_TOKEN:
 			process.env.NEXT_PUBLIC_MAPBOX_ACCESS_TOKEN,
+		NEXT_PUBLIC_GA_MEASUREMENT_ID: process.env.NEXT_PUBLIC_GA_MEASUREMENT_ID,
 		SENTRY_DSN: process.env.SENTRY_DSN,
 		SENTRY_AUTH_TOKEN: process.env.SENTRY_AUTH_TOKEN,
 		SENTRY_WEB_ORG: process.env.SENTRY_WEB_ORG,
