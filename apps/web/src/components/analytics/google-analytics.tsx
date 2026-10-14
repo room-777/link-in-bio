@@ -1,33 +1,22 @@
 "use client";
 
-import { usePathname } from "next/navigation";
 import Script from "next/script";
 import { useEffect, useState } from "react";
 import {
 	GA_MEASUREMENT_ID,
 	initGoogleAnalytics,
 	isGoogleAnalyticsEnabled,
-	sendGoogleAnalyticsPageView,
 } from "@/lib/google-analytics";
 
-export default function GoogleAnalyticsRouteTracker() {
+// 페이지 조회는 GA 향상된 측정(브라우저 기록 이벤트 기반 페이지 변경)이 자동으로 센다.
+export default function GoogleAnalytics() {
 	const [enabled, setEnabled] = useState(false);
-	const pathname = usePathname();
 
 	useEffect(() => {
 		if (!isGoogleAnalyticsEnabled(window.location.hostname)) return;
 		initGoogleAnalytics();
 		setEnabled(true);
 	}, []);
-
-	useEffect(() => {
-		if (!enabled) return;
-		// 제목이 바뀐 뒤에 보내도록 한 프레임 미룬다.
-		const frame = requestAnimationFrame(() =>
-			sendGoogleAnalyticsPageView(pathname),
-		);
-		return () => cancelAnimationFrame(frame);
-	}, [enabled, pathname]);
 
 	if (!enabled) return null;
 
