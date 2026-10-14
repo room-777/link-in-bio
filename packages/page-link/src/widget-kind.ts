@@ -45,27 +45,29 @@ export const widgetRules = {
 	},
 } as const satisfies Record<WidgetKind, WidgetRule>;
 
-/** Providers whose id alone marks a link as a widget. */
-const widgetKindByProvider: Partial<Record<string, WidgetKind>> = {
-	"rss-feed": "rss",
-	tweet: "tweet",
-};
-
+/**
+ * RSS and Tweet items keep their provider id even though no URL host backs it,
+ * so the id alone marks the widget.
+ */
 export function isWidgetProvider(provider: string | undefined) {
-	return (
-		provider !== undefined && Object.hasOwn(widgetKindByProvider, provider)
-	);
+	return provider === "rss-feed" || provider === "tweet";
 }
 
 export function getWidgetKind(item: WidgetKindInput): WidgetKind | null {
 	if (item.type === "calendly") return "calendly";
 	if (item.type !== "link") return null;
 	const metadata = item.data.metadata;
-	const provider = metadata?.provider;
-	if (provider === "spotify") {
-		return metadata?.widget === "spotify" ? "spotify" : null;
+	switch (metadata?.provider) {
+		case "rss-feed":
+			return "rss";
+		case "tweet":
+			return "tweet";
+		// A Spotify URL is a plain link card until the owner adds it as a widget.
+		case "spotify":
+			return metadata.widget === "spotify" ? "spotify" : null;
+		default:
+			return null;
 	}
-	return (provider && widgetKindByProvider[provider]) || null;
 }
 
 export function getItemPresets(item: WidgetKindInput): readonly PresetName[] {

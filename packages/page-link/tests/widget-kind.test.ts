@@ -149,3 +149,20 @@ describe("requiresProPlan", () => {
 		assert.equal(requiresProPlan({ type: "media" }), false);
 	});
 });
+
+describe("provider ids that collide with Object.prototype", () => {
+	it("treats them as plain links instead of throwing", () => {
+		for (const provider of ["__proto__", "constructor", "toString"]) {
+			const item = link("https://example.com", { provider });
+			assert.equal(getWidgetKind(item), null, provider);
+			assert.deepEqual(getItemPresets(item), [
+				"squareSmall",
+				"halfBanner",
+				"landscape",
+				"portrait",
+				"squareLarge",
+			]);
+			assert.equal(requiresProPlan(item), false, provider);
+		}
+	});
+});
