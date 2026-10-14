@@ -1,9 +1,11 @@
-import type {
-	WidgetPreview,
-	WidgetPreviewRequest,
-	WidgetPreviewResponse,
+import {
+	tweetPayloadSchema,
+	type WidgetPreview,
+	type WidgetPreviewRequest,
+	type WidgetPreviewResponse,
 } from "@grabbin/api";
 import { getTweetId, resolveLinkProvider } from "@grabbin/page-link";
+import * as v from "valibot";
 import {
 	enrichLinkProvider,
 	type LinkProviderEnvironment,
@@ -60,12 +62,16 @@ async function previewTweet(
 	if (!tweetId) throw new WidgetPreviewError("WIDGET_URL_MISMATCH");
 	const response = await fetch(`${tweetApiOrigin}/api/tweet/${tweetId}`);
 	if (!response.ok) throw new WidgetPreviewError("TWEET_UNAVAILABLE");
-	const result = (await response.json().catch(() => null)) as {
-		data?: { id_str?: unknown };
-	} | null;
-	if (result?.data?.id_str !== tweetId)
+	const result = v.safeParse(
+		v.object({ data: tweetPayloadSchema }),
+		await response.json().catch(() => null),
+	);
+	if (!result.success || result.output.data.id_str !== tweetId)
 		throw new WidgetPreviewError("TWEET_UNAVAILABLE");
-	return { url: `https://x.com/i/status/${tweetId}`, tweet: result.data };
+	return {
+		url: `https://x.com/i/status/${tweetId}`,
+		tweet: result.output.data,
+	};
 }
 
 export type WidgetPreviewer = (

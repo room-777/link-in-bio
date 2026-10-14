@@ -19,7 +19,8 @@ async function getTweetById(tweetId: string, signal: AbortSignal) {
 	if (!response.ok) throw new Error(await getApiErrorMessage(response));
 	const result = v.parse(widgetPreviewResponseSchema, await response.json());
 	if (result.kind !== "tweet") throw new Error("Unable to load this Tweet.");
-	return result.data.tweet as TweetResponse;
+	// The server checked the fields the widget renders and kept the rest.
+	return result.data.tweet as unknown as TweetResponse;
 }
 
 function getTweetQueryOptions(tweetId: string) {
