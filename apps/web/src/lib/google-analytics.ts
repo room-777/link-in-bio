@@ -1,5 +1,4 @@
 import { env } from "@grabbin/env/web";
-import { isSimpleAnalyticsHost } from "@/lib/simple-analytics";
 
 declare global {
 	interface Window {
@@ -13,11 +12,9 @@ const DEFAULT_GA_MEASUREMENT_ID = "G-69G89BFREL";
 export const GA_MEASUREMENT_ID =
 	env.NEXT_PUBLIC_GA_MEASUREMENT_ID ?? DEFAULT_GA_MEASUREMENT_ID;
 
-// 운영 빌드 + 서비스 도메인(grabbin.me)에서만 켠다. 로컬·개발·커스텀 도메인은 제외.
-export function isGoogleAnalyticsEnabled(hostname: string) {
-	return (
-		process.env.NODE_ENV === "production" && isSimpleAnalyticsHost(hostname)
-	);
+// 운영 빌드에서만 켠다. 서비스 도메인(grabbin.me)과 사용자 커스텀 도메인 모두 포함.
+export function isGoogleAnalyticsEnabled() {
+	return process.env.NODE_ENV === "production";
 }
 
 export function initGoogleAnalytics() {

@@ -15,7 +15,7 @@ export default function GoogleAnalyticsRouteTracker() {
 	const pathname = usePathname();
 
 	useEffect(() => {
-		if (!isGoogleAnalyticsEnabled(window.location.hostname)) return;
+		if (!isGoogleAnalyticsEnabled()) return;
 		initGoogleAnalytics();
 		setEnabled(true);
 	}, []);
