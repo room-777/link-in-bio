@@ -106,13 +106,6 @@
 			"when": 1791948889783,
 			"tag": "0014_creem_refund_ledger",
 			"breakpoints": true
-		},
-		{
-			"idx": 15,
-			"version": "7",
-			"when": 1791965100067,
-			"tag": "0015_widget_item_types",
-			"breakpoints": true
 		}
 	]
 }
