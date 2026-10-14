@@ -4,7 +4,7 @@ import Script from "next/script";
 
 import "../index.css";
 import { cn } from "@grabbin/ui/lib/utils";
-import GoogleAnalytics from "@/components/analytics/google-analytics";
+import GoogleAnalyticsRouteTracker from "@/components/analytics/google-analytics-route-tracker";
 import SimpleAnalyticsRouteTracker from "@/components/analytics/simple-analytics-route-tracker";
 import Providers from "@/components/provider/providers";
 
@@ -73,7 +73,7 @@ export default function RootLayout({
 				/>
 				<Providers>
 					<SimpleAnalyticsRouteTracker />
-					<GoogleAnalytics />
+					<GoogleAnalyticsRouteTracker />
 					{children}
 				</Providers>
 			</body>

@@ -26,6 +26,14 @@ export function initGoogleAnalytics() {
 		window.dataLayer?.push(arguments);
 	};
 	window.gtag("js", new Date());
-	// 첫 page_view와 이후 주소 변경은 GA가 자동으로 보낸다.
-	window.gtag("config", GA_MEASUREMENT_ID);
+	// 첫 page_view도 직접 보낸다. 자동 page_view를 끄지 않으면 첫 화면이 두 번 세어진다.
+	window.gtag("config", GA_MEASUREMENT_ID, { send_page_view: false });
+}
+
+export function sendGoogleAnalyticsPageView(pathname: string) {
+	window.gtag?.("event", "page_view", {
+		page_path: pathname,
+		page_location: window.location.href,
+		page_title: document.title,
+	});
 }
