@@ -284,7 +284,7 @@ async function main() {
 			const row = await db.query.creemSubscription.findFirst({
 				where: eq(creemSubscription.referenceId, user.id),
 			});
-			return row?.status === "active" || row?.status === "paid" ? row : null;
+			return row?.status === "active" ? row : null;
 		}, "the paid subscription webhook");
 		subscriptionId = activeSubscription.creemSubscriptionId ?? undefined;
 		assert.ok(subscriptionId);

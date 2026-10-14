@@ -102,7 +102,7 @@ describe("billing service", () => {
 		assert.deepEqual(result, { url: "https://checkout.creem.io/ch_new" });
 		assert.equal(state.createCalls, 1);
 		assert.equal(state.rows[0]?.checkoutId, "ch_new");
-		assert.equal(state.rows[0]?.status, "pending");
+		assert.equal(state.rows[0]?.status, null);
 	});
 
 	/**
@@ -119,7 +119,7 @@ describe("billing service", () => {
 				id: "hold-1",
 				referenceId: "user-1",
 				productId: "pro-monthly",
-				status: "pending",
+				status: null,
 				checkoutId: "ch_existing",
 				checkoutUrl: "https://checkout.creem.io/ch_existing",
 				creemSubscriptionId: null,
@@ -172,7 +172,7 @@ describe("billing service", () => {
 				id: "hold-1",
 				referenceId: "user-1",
 				productId: "pro-monthly",
-				status: "pending",
+				status: null,
 				checkoutId: "ch_old",
 				checkoutUrl: "https://checkout.creem.io/ch_old",
 				creemSubscriptionId: null,
@@ -201,7 +201,7 @@ describe("billing service", () => {
 				id: "hold-1",
 				referenceId: "user-1",
 				productId: "pro-monthly",
-				status: "pending",
+				status: null,
 				checkoutId: "ch_missing",
 				checkoutUrl: "https://checkout.creem.io/ch_missing",
 				creemSubscriptionId: null,

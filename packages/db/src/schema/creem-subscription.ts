@@ -1,3 +1,4 @@
+import type { SubscriptionStatus } from "@grabbin/plan";
 import {
 	boolean,
 	index,
@@ -22,7 +23,8 @@ export const creemSubscription = pgTable(
 		checkoutId: text("checkout_id"),
 		checkoutUrl: text("checkout_url"),
 		creemOrderId: text("creem_order_id"),
-		status: text("status").default("pending"),
+		// null while a checkout is open; Creem status once a subscription exists.
+		status: text("status").$type<SubscriptionStatus>(),
 		periodStart: timestamp("period_start", { withTimezone: true }),
 		periodEnd: timestamp("period_end", { withTimezone: true }),
 		cancelAtPeriodEnd: boolean("cancel_at_period_end").default(false),

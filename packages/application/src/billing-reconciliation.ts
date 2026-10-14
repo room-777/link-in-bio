@@ -1,6 +1,7 @@
 import { retrieveSubscription } from "@grabbin/auth/creem-server";
 import type { DatabaseClient } from "@grabbin/db";
 import { creemSubscription } from "@grabbin/db/schema/index";
+import { parseSubscriptionStatus } from "@grabbin/plan";
 import { and, eq, inArray, isNull, lte } from "drizzle-orm";
 import { reconcileUserPageLifecycle } from "./page-lifecycle";
 
@@ -46,7 +47,7 @@ export async function reconcileExpiredSubscriptions({
 				},
 				candidate.creemSubscriptionId,
 			);
-			const status = current.status.toLowerCase();
+			const status = parseSubscriptionStatus(current.status);
 			await db
 				.update(creemSubscription)
 				.set({

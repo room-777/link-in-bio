@@ -6,7 +6,7 @@ import {
 	sendVerificationOTP as sendVerificationOTPEmail,
 } from "@grabbin/email";
 import { env } from "@grabbin/env/server";
-import { getPlanAccess } from "@grabbin/plan";
+import { getPlanAccess, type SubscriptionStatus } from "@grabbin/plan";
 import {
 	type BetterAuthOptions,
 	type BetterAuthPlugin,
@@ -194,7 +194,7 @@ const authOptions = {
 			})) as Array<{
 				creemSubscriptionId: string | null;
 				productId: string;
-				status: string | null;
+				status: SubscriptionStatus | null;
 				periodEnd: Date | null;
 				cancelAtPeriodEnd: boolean | null;
 			}>;

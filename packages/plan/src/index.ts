@@ -1,21 +1,37 @@
+import type { SubscriptionStatus } from "@creem_io/webhook-types";
+
+export type { SubscriptionStatus };
+
 export const FREE_PAGE_LIMIT = 1;
 export const PRO_PAGE_LIMIT = 3;
 export const PAGE_GRACE_PERIOD_MS = 7 * 24 * 60 * 60 * 1000;
 
-export const PRO_SUBSCRIPTION_STATUSES = new Set([
-	"active",
-	"trialing",
-	"paid",
-	"scheduled_cancel",
-	"canceled",
-]);
+const SUBSCRIPTION_STATUSES = {
+	active: true,
+	canceled: true,
+	expired: true,
+	past_due: true,
+	unpaid: true,
+	paused: true,
+	trialing: true,
+	scheduled_cancel: true,
+} satisfies Record<SubscriptionStatus, true>;
+
+export function parseSubscriptionStatus(value: string): SubscriptionStatus {
+	if (Object.hasOwn(SUBSCRIPTION_STATUSES, value))
+		return value as SubscriptionStatus;
+	throw new Error(`Unknown Creem subscription status: ${value}`);
+}
+
+export const PRO_SUBSCRIPTION_STATUSES: ReadonlySet<SubscriptionStatus> =
+	new Set(["active", "trialing", "scheduled_cancel", "canceled"]);
 
 export type PlanTier = "free" | "pro";
 
 export type PlanSubscription = {
 	subscriptionId?: string | null;
 	productId: string;
-	status: string | null;
+	status: SubscriptionStatus | null;
 	periodEnd: Date | null;
 	cancelAtPeriodEnd: boolean | null;
 };
@@ -30,12 +46,14 @@ export function getPlanAccess(
 		.sort(
 			(a, b) => (b.periodEnd?.getTime() ?? 0) - (a.periodEnd?.getTime() ?? 0),
 		)[0];
-	const status = subscription?.status?.toLowerCase() ?? "";
+	const status = subscription?.status ?? null;
 	const periodActive = subscription?.periodEnd
 		? subscription.periodEnd > now
-		: !["canceled", "scheduled_cancel", "expired"].includes(status);
+		: status !== "canceled" &&
+			status !== "scheduled_cancel" &&
+			status !== "expired";
 	const hasAccess =
-		!!subscription && periodActive && PRO_SUBSCRIPTION_STATUSES.has(status);
+		!!status && periodActive && PRO_SUBSCRIPTION_STATUSES.has(status);
 
 	return {
 		tier: hasAccess ? ("pro" as const) : ("free" as const),

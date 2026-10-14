@@ -1,5 +1,9 @@
 import type { DatabaseClient } from "@grabbin/db";
 import { creemSubscription, user } from "@grabbin/db/schema/index";
+import {
+	parseSubscriptionStatus,
+	type SubscriptionStatus,
+} from "@grabbin/plan";
 import { and, eq, isNull, sql } from "drizzle-orm";
 
 type CreemEvent = {
@@ -18,7 +22,7 @@ type CreemEvent = {
 
 type SavedWebhookState = {
 	productId: string;
-	status: string;
+	status: SubscriptionStatus;
 	creemCustomerId: string | null;
 	creemSubscriptionId: string;
 	creemOrderId: string | null;
@@ -72,11 +76,12 @@ export async function syncCreemWebhook(
 	} else {
 		const periodStart = toDate(event.current_period_start_date);
 		const periodEnd = toDate(event.current_period_end_date);
+		const status = parseSubscriptionStatus(event.status);
 		const orderId =
 			typeof event.order === "string" ? event.order : event.order?.id;
 		state = {
 			productId: event.product.id,
-			status: event.status.toLowerCase(),
+			status,
 			creemCustomerId: event.customer?.id ?? subscription.creemCustomerId,
 			creemSubscriptionId: event.id,
 			creemOrderId: orderId ?? subscription.creemOrderId,
@@ -89,7 +94,7 @@ export async function syncCreemWebhook(
 				subscription.periodEnd?.toISOString() ??
 				null,
 			cancelAtPeriodEnd:
-				event.cancel_at_period_end ?? event.status === "scheduled_cancel",
+				event.cancel_at_period_end ?? status === "scheduled_cancel",
 			lastWebhookId: event.webhookId,
 			lastWebhookCreatedAt: eventTime.toISOString(),
 		};
@@ -133,7 +138,7 @@ export async function syncCreemWebhook(
 			.where(
 				and(
 					eq(creemSubscription.referenceId, subscription.referenceId),
-					eq(creemSubscription.status, "pending"),
+					isNull(creemSubscription.status),
 					isNull(creemSubscription.creemSubscriptionId),
 				),
 			);
@@ -246,7 +251,7 @@ export async function syncCreemRefund(
 		webhookId: event.webhookId,
 		webhookCreatedAt: event.webhookCreatedAt,
 		id: subscriptionId,
-		status: "refunded",
+		status: "expired",
 		product: { id: subscription.productId },
 		customer: subscription.creemCustomerId
 			? { id: subscription.creemCustomerId }

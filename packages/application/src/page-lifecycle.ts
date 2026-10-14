@@ -200,11 +200,10 @@ export async function reconcileUserPageLifecycle({
 			now,
 		);
 		const cancellationScheduled =
-			access.cancelAtPeriodEnd ||
-			access.status?.toLowerCase() === "scheduled_cancel";
+			access.cancelAtPeriodEnd || access.status === "scheduled_cancel";
 		const periodEnded = access.periodEnd
 			? access.periodEnd <= now
-			: ["canceled", "expired"].includes(access.status?.toLowerCase() ?? "");
+			: access.status === "canceled" || access.status === "expired";
 		if (access.hasAccess && !cancellationScheduled) {
 			await tx
 				.update(pages)

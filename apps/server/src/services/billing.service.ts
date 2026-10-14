@@ -52,22 +52,18 @@ export async function createOrResumeProCheckout({
 				where: eq(creemSubscription.referenceId, userId),
 			});
 			const hasCurrentSubscription = subscriptions.some((subscription) => {
-				const status = subscription.status?.toLowerCase();
+				const status = subscription.status;
 				if (!subscription.creemSubscriptionId) return false;
 				if (status === "canceled")
 					return Boolean(
 						subscription.periodEnd && subscription.periodEnd > now,
 					);
 				return (
-					[
-						"pending",
-						"active",
-						"trialing",
-						"paid",
-						"scheduled_cancel",
-						"past_due",
-						"unpaid",
-					].includes(status ?? "") &&
+					(status === "active" ||
+						status === "trialing" ||
+						status === "scheduled_cancel" ||
+						status === "past_due" ||
+						status === "unpaid") &&
 					(!subscription.periodEnd || subscription.periodEnd > now)
 				);
 			});
@@ -76,7 +72,7 @@ export async function createOrResumeProCheckout({
 
 			const pendingCheckout = subscriptions.find(
 				(subscription) =>
-					subscription.status === "pending" &&
+					subscription.status === null &&
 					!subscription.creemSubscriptionId &&
 					subscription.checkoutId,
 			);
@@ -133,7 +129,7 @@ export async function createOrResumeProCheckout({
 					id: checkoutRequestId,
 					referenceId: userId,
 					productId,
-					status: "pending",
+					status: null,
 					checkoutId: checkout.id,
 					checkoutUrl: checkout.checkoutUrl,
 				});
@@ -190,7 +186,7 @@ export async function scheduleProCancellation({
 	});
 	if (!subscription?.creemSubscriptionId) return false;
 	if (subscription.status === "scheduled_cancel") return true;
-	if (!["active", "trialing", "paid"].includes(subscription.status ?? ""))
+	if (subscription.status !== "active" && subscription.status !== "trialing")
 		return false;
 
 	const canceled = await creem.subscriptions.cancel(
