@@ -32,11 +32,16 @@ export const PRO_SUBSCRIPTION_STATUSES: ReadonlySet<SubscriptionStatus> =
 		"paused",
 	]);
 
-/** Payment problems keep Pro only through a period that was already paid. */
-const PAID_PERIOD_ONLY_STATUSES: ReadonlySet<SubscriptionStatus> = new Set([
+/**
+ * Pro for these statuses only lasts through a period already on record:
+ * payment problems honor what was paid, and a scheduled cancel ends at it.
+ * Normal flows always store a periodEnd, so a missing one is corrupt data.
+ */
+const PERIOD_END_REQUIRED_STATUSES: ReadonlySet<SubscriptionStatus> = new Set([
 	"past_due",
 	"unpaid",
 	"paused",
+	"scheduled_cancel",
 ]);
 
 export type PlanTier = "free" | "pro";
@@ -50,6 +55,7 @@ export type PlanSubscription = {
 };
 
 type StatusFields = {
+	subscriptionId?: string | null;
 	status: SubscriptionStatus | null;
 	periodEnd: Date | null;
 	cancelAtPeriodEnd?: boolean | null;
@@ -87,9 +93,14 @@ export function isPeriodEnded(
 export function grantsProAccess(subscription: StatusFields, now = new Date()) {
 	const { status } = subscription;
 	if (!status || !PRO_SUBSCRIPTION_STATUSES.has(status)) return false;
-	// No paid period on record means nothing to honor for a payment problem.
-	if (PAID_PERIOD_ONLY_STATUSES.has(status) && !subscription.periodEnd)
+	if (PERIOD_END_REQUIRED_STATUSES.has(status) && !subscription.periodEnd) {
+		// Invalid state: log only the id, never other subscription data.
+		console.warn(
+			`[plan] ${status} subscription without periodEnd; denying Pro`,
+			{ subscriptionId: subscription.subscriptionId ?? null },
+		);
 		return false;
+	}
 	return !isPeriodEnded(subscription, now);
 }
 

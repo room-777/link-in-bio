@@ -22,6 +22,34 @@ function access(status: SubscriptionStatus, periodEnd: Date | null) {
 }
 
 describe("plan decisions", () => {
+	it("PLAN-008 missing periodEnd logs only the subscription id", (t) => {
+		const warn = t.mock.method(console, "warn", () => {});
+		for (const status of [
+			"scheduled_cancel",
+			"past_due",
+			"unpaid",
+			"paused",
+		] as const) {
+			const plan = getPlanAccess(
+				[
+					{
+						subscriptionId: "sub_123",
+						productId: "pro",
+						status,
+						periodEnd: null,
+						cancelAtPeriodEnd: true,
+					},
+				],
+				["pro"],
+				now,
+			);
+			assert.equal(plan.hasAccess, false, status);
+		}
+		assert.equal(warn.mock.callCount(), 4);
+		for (const call of warn.mock.calls)
+			assert.deepEqual(call.arguments[1], { subscriptionId: "sub_123" });
+	});
+
 	it("PLAN-001 rejects statuses outside Creem's type", () => {
 		assert.equal(parseSubscriptionStatus("past_due"), "past_due");
 		assert.throws(() => parseSubscriptionStatus("paid"), /Unknown/);
@@ -95,9 +123,11 @@ describe("plan decisions", () => {
 		}
 	});
 
-	it("PLAN-007 scheduled_cancel without periodEnd keeps Pro", () => {
+	it("PLAN-007 scheduled_cancel without periodEnd is invalid: no Pro", () => {
 		const plan = access("scheduled_cancel", null);
-		assert.equal(plan.hasAccess, true);
+		assert.equal(plan.hasAccess, false);
+		assert.equal(plan.lapsedFromPro, true);
+		assert.equal(access("scheduled_cancel", later).hasAccess, true);
 		assert.equal(access("canceled", null).hasAccess, false);
 		assert.equal(access("expired", null).hasAccess, false);
 	});
