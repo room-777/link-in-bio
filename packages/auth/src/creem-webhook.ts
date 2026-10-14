@@ -3,6 +3,7 @@ import { creemSubscription, user } from "@grabbin/db/schema/index";
 import {
 	deriveCancelAtPeriodEnd,
 	parseSubscriptionStatus,
+	refundRevokesAccess,
 	type SubscriptionStatus,
 } from "@grabbin/plan";
 import { and, eq, isNull, sql } from "drizzle-orm";
@@ -231,16 +232,18 @@ export async function syncCreemCheckout(
 	return syncCreemWebhook(db, eventData, event.id);
 }
 
-export async function syncCreemRefund(
+type RevokingEvent = {
+	subscription?: { id: string } | string | null;
+	webhookId: string;
+	webhookCreatedAt: number;
+};
+
+/** A full refund or a chargeback ends Pro right away (Creem has no status for it). */
+async function revokeForPaymentReversal(
 	db: DatabaseClient,
-	event: {
-		status: string;
-		subscription?: { id: string } | string | null;
-		webhookId: string;
-		webhookCreatedAt: number;
-	},
+	event: RevokingEvent,
 ) {
-	if (event.status !== "succeeded" || !event.subscription) return null;
+	if (!event.subscription) return null;
 	const subscriptionId =
 		typeof event.subscription === "string"
 			? event.subscription
@@ -264,4 +267,37 @@ export async function syncCreemRefund(
 		current_period_end_date: new Date(event.webhookCreatedAt),
 		cancel_at_period_end: false,
 	});
+}
+
+export async function syncCreemRefund(
+	db: DatabaseClient,
+	event: RevokingEvent & {
+		status: string;
+		refund_amount?: number | null;
+		transaction?:
+			| { amount_paid?: number | null; refunded_amount?: number | null }
+			| string
+			| null;
+	},
+) {
+	const transaction =
+		typeof event.transaction === "object" ? event.transaction : null;
+	const amountPaid = transaction?.amount_paid;
+	if (
+		!refundRevokesAccess({
+			status: event.status,
+			// The transaction total covers earlier partial refunds too.
+			refundedAmount: transaction?.refunded_amount ?? event.refund_amount,
+			amountPaid,
+		})
+	)
+		return null;
+	return revokeForPaymentReversal(db, event);
+}
+
+export async function syncCreemDispute(
+	db: DatabaseClient,
+	event: RevokingEvent,
+) {
+	return revokeForPaymentReversal(db, event);
 }

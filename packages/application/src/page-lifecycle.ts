@@ -191,6 +191,7 @@ export async function reconcileUserPageLifecycle({
 		if (!owner) return;
 		const access = getPlanAccess(
 			subscriptions.map((subscription) => ({
+				subscriptionId: subscription.creemSubscriptionId,
 				productId: subscription.productId,
 				status: subscription.status,
 				periodEnd: subscription.periodEnd,

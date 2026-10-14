@@ -14,7 +14,7 @@ import {
 } from "better-auth";
 import { drizzleAdapter } from "better-auth/adapters/drizzle";
 import { customSession, emailOTP } from "better-auth/plugins";
-
+import { cancelSubscriptionsBeforeAccountDeletion } from "./account-deletion";
 import {
 	getCookieAttributes,
 	shouldEnableCrossSubDomainCookies,
@@ -22,6 +22,7 @@ import {
 import { createCreemClient, retrieveSubscription } from "./creem-server";
 import {
 	syncCreemCheckout,
+	syncCreemDispute,
 	syncCreemRefund,
 	syncCreemWebhook,
 } from "./creem-webhook";
@@ -56,6 +57,10 @@ function createCreemPlugin(
 		persistSubscriptions: true,
 		onRefundCreated: async (data) => {
 			const result = await syncCreemRefund(db, data);
+			if (result) await onSubscriptionChange?.(result.userId);
+		},
+		onDisputeCreated: async (data) => {
+			const result = await syncCreemDispute(db, data);
 			if (result) await onSubscriptionChange?.(result.userId);
 		},
 		onCheckoutCompleted: async (data) => {
@@ -260,6 +265,23 @@ export async function createAuth(
 	const resolvedDatabase = database ?? (await createDb());
 	return betterAuth({
 		...authOptions,
+		user: {
+			...authOptions.user,
+			deleteUser: {
+				...authOptions.user.deleteUser,
+				// Stop billing first; if Creem fails, the account is kept so nobody
+				// is charged for an account that no longer exists.
+				beforeDelete: (deleted) =>
+					cancelSubscriptionsBeforeAccountDeletion(
+						resolvedDatabase,
+						deleted.id,
+						{
+							apiKey: env.CREEM_API_KEY,
+							testMode: env.CREEM_TEST_MODE === "true",
+						},
+					),
+			},
+		},
 		plugins: [
 			...(authOptions.plugins ?? []),
 			createCreemPlugin(resolvedDatabase, options?.onSubscriptionChange),
