@@ -4,3 +4,4 @@ export * from "./grid";
 export * from "./page-domains";
 export * from "./pages";
 export * from "./rss";
+export * from "./widgets";
