@@ -1,8 +1,11 @@
 import { retrieveSubscription } from "@grabbin/auth/creem-server";
 import type { DatabaseClient } from "@grabbin/db";
 import { creemSubscription } from "@grabbin/db/schema/index";
+import {
+	deriveCancelAtPeriodEnd,
+	parseSubscriptionStatus,
+} from "@grabbin/plan";
 import { and, eq, inArray, isNull, lte } from "drizzle-orm";
-import { reconcileUserPageLifecycle } from "./page-lifecycle";
 
 type BillingBindings = {
 	CREEM_API_KEY: string;
@@ -46,14 +49,18 @@ export async function reconcileExpiredSubscriptions({
 				},
 				candidate.creemSubscriptionId,
 			);
-			const status = current.status.toLowerCase();
+			const status = parseSubscriptionStatus(current.status);
+			// Never erase a stored period with an empty API value.
+			const periodStart =
+				current.currentPeriodStartDate ?? candidate.periodStart;
+			const periodEnd = current.currentPeriodEndDate ?? candidate.periodEnd;
 			await db
 				.update(creemSubscription)
 				.set({
 					status,
-					periodStart: current.currentPeriodStartDate,
-					periodEnd: current.currentPeriodEndDate,
-					cancelAtPeriodEnd: status === "scheduled_cancel",
+					periodStart,
+					periodEnd,
+					cancelAtPeriodEnd: deriveCancelAtPeriodEnd(status),
 				})
 				.where(
 					and(
@@ -63,12 +70,6 @@ export async function reconcileExpiredSubscriptions({
 							: isNull(creemSubscription.lastWebhookId),
 					),
 				);
-			await reconcileUserPageLifecycle({
-				db,
-				userId: candidate.referenceId,
-				proProductIds,
-				now,
-			});
 		} catch {
 			console.warn("[creem] subscription reconciliation will retry", {
 				subscriptionId: candidate.creemSubscriptionId,

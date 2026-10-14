@@ -221,7 +221,7 @@ describe("Creem webhook synchronization", () => {
 	 * Given: a current subscription period has already been paid.
 	 * When: Creem confirms a successful refund for that subscription.
 	 * Then: Pro access ends at the refund event time.
-	 * Evidence: saved status is refunded and saved period end equals refund time.
+	 * Evidence: saved status is expired and saved period end equals refund time.
 	 * Result: Pass | Fail | Blocked | Not Run
 	 */
 	it("CREEM-WEBHOOK-004 revokes access after a successful subscription refund", async () => {
@@ -268,7 +268,52 @@ describe("Creem webhook synchronization", () => {
 		});
 
 		assert.equal(result?.userId, "user-1");
-		assert.equal(saved[0]?.status, "refunded");
+		assert.equal(saved[0]?.status, "expired");
 		assert.deepEqual(saved[0]?.periodEnd, refundedAt);
+	});
+
+	/**
+	 * Case ID: CREEM-WEBHOOK-005
+	 * Given: Creem sends a subscription status outside its SubscriptionStatus type.
+	 * When: the webhook is synchronized.
+	 * Then: the boundary throws and nothing is saved.
+	 * Evidence: rejected promise with the unknown status and zero update calls.
+	 * Result: Pass | Fail | Blocked | Not Run
+	 */
+	it("CREEM-WEBHOOK-005 rejects an unknown subscription status", async () => {
+		let updates = 0;
+		const db = {
+			query: {
+				creemSubscription: {
+					findFirst: async () => ({
+						id: "row-1",
+						referenceId: "user-1",
+						creemCustomerId: null,
+						creemOrderId: null,
+						periodStart: null,
+						periodEnd: null,
+						lastWebhookId: null,
+						lastWebhookCreatedAt: null,
+						lastWebhookState: null,
+					}),
+				},
+			},
+			update: () => {
+				updates += 1;
+				throw new Error("must not save");
+			},
+		} as unknown as DatabaseClient;
+
+		await assert.rejects(
+			syncCreemWebhook(db, {
+				webhookId: "event-1",
+				webhookCreatedAt: Date.now(),
+				id: "subscription-1",
+				status: "paid",
+				product: { id: "pro-monthly" },
+			}),
+			/Unknown Creem subscription status: paid/,
+		);
+		assert.equal(updates, 0);
 	});
 });

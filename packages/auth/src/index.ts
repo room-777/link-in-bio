@@ -6,7 +6,7 @@ import {
 	sendVerificationOTP as sendVerificationOTPEmail,
 } from "@grabbin/email";
 import { env } from "@grabbin/env/server";
-import { getPlanAccess } from "@grabbin/plan";
+import { getPlanAccess, type SubscriptionStatus } from "@grabbin/plan";
 import {
 	type BetterAuthOptions,
 	type BetterAuthPlugin,
@@ -14,7 +14,7 @@ import {
 } from "better-auth";
 import { drizzleAdapter } from "better-auth/adapters/drizzle";
 import { customSession, emailOTP } from "better-auth/plugins";
-
+import { cancelSubscriptionsBeforeAccountDeletion } from "./account-deletion";
 import {
 	getCookieAttributes,
 	shouldEnableCrossSubDomainCookies,
@@ -22,6 +22,7 @@ import {
 import { createCreemClient, retrieveSubscription } from "./creem-server";
 import {
 	syncCreemCheckout,
+	syncCreemDispute,
 	syncCreemRefund,
 	syncCreemWebhook,
 } from "./creem-webhook";
@@ -56,6 +57,10 @@ function createCreemPlugin(
 		persistSubscriptions: true,
 		onRefundCreated: async (data) => {
 			const result = await syncCreemRefund(db, data);
+			if (result) await onSubscriptionChange?.(result.userId);
+		},
+		onDisputeCreated: async (data) => {
+			const result = await syncCreemDispute(db, data);
 			if (result) await onSubscriptionChange?.(result.userId);
 		},
 		onCheckoutCompleted: async (data) => {
@@ -156,11 +161,6 @@ const authOptions = {
 				}),
 		},
 		additionalFields: {
-			primaryPageHandle: {
-				type: "string",
-				required: false,
-				input: false,
-			},
 			role: {
 				type: "string",
 				required: true,
@@ -188,13 +188,17 @@ const authOptions = {
 				}),
 		}),
 		customSession(async ({ user, session }, context) => {
+			const ownPage = (await context.context.adapter.findOne({
+				model: "pages",
+				where: [{ field: "userId", value: user.id }],
+			})) as { handle: string } | null;
 			const subscriptions = (await context.context.adapter.findMany({
 				model: "creem_subscription",
 				where: [{ field: "referenceId", value: user.id }],
 			})) as Array<{
 				creemSubscriptionId: string | null;
 				productId: string;
-				status: string | null;
+				status: SubscriptionStatus | null;
 				periodEnd: Date | null;
 				cancelAtPeriodEnd: boolean | null;
 			}>;
@@ -214,11 +218,10 @@ const authOptions = {
 				].filter(Boolean),
 			);
 			return {
-				user,
+				user: { ...user, pageHandle: ownPage?.handle ?? null },
 				session,
 				plan: {
 					tier: access.tier,
-					pageLimit: access.pageLimit,
 					hasAccess: access.hasAccess,
 					status: access.status,
 					periodEnd: access.periodEnd?.toISOString() ?? null,
@@ -260,6 +263,23 @@ export async function createAuth(
 	const resolvedDatabase = database ?? (await createDb());
 	return betterAuth({
 		...authOptions,
+		user: {
+			...authOptions.user,
+			deleteUser: {
+				...authOptions.user.deleteUser,
+				// Stop billing first; if Creem fails, the account is kept so nobody
+				// is charged for an account that no longer exists.
+				beforeDelete: (deleted) =>
+					cancelSubscriptionsBeforeAccountDeletion(
+						resolvedDatabase,
+						deleted.id,
+						{
+							apiKey: env.CREEM_API_KEY,
+							testMode: env.CREEM_TEST_MODE === "true",
+						},
+					),
+			},
+		},
 		plugins: [
 			...(authOptions.plugins ?? []),
 			createCreemPlugin(resolvedDatabase, options?.onSubscriptionChange),

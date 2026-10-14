@@ -26,7 +26,6 @@ const sessionMiddleware: MiddlewareHandler<AppEnv> = async (c, next) => {
 		query: {
 			pages: { findFirst: async () => ({ id: "page-1", handle: "jane" }) },
 			creemSubscription: { findMany: async () => [] },
-			user: { findFirst: async () => ({ primaryPageHandle: "jane" }) },
 		},
 	} as unknown as DatabaseClient);
 	c.set("session", { user: { id: "user-1", email: "user@example.com" } });

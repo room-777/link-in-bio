@@ -196,6 +196,7 @@
       "name": "@grabbin/db",
       "dependencies": {
         "@grabbin/env": "workspace:*",
+        "@grabbin/plan": "workspace:*",
         "dotenv": "catalog:runtime",
         "drizzle-orm": "^0.45.2",
         "pg": "^8.16.3",
@@ -268,6 +269,9 @@
     "packages/plan": {
       "name": "@grabbin/plan",
       "version": "0.0.0",
+      "dependencies": {
+        "@creem_io/webhook-types": "1.0.1",
+      },
       "devDependencies": {
         "@grabbin/config": "workspace:*",
         "typescript": "catalog:tooling",

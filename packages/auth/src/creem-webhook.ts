@@ -1,5 +1,11 @@
 import type { DatabaseClient } from "@grabbin/db";
-import { creemSubscription, user } from "@grabbin/db/schema/index";
+import { creemRefund, creemSubscription, user } from "@grabbin/db/schema/index";
+import {
+	deriveCancelAtPeriodEnd,
+	parseSubscriptionStatus,
+	refundRevokesAccess,
+	type SubscriptionStatus,
+} from "@grabbin/plan";
 import { and, eq, isNull, sql } from "drizzle-orm";
 
 type CreemEvent = {
@@ -18,7 +24,7 @@ type CreemEvent = {
 
 type SavedWebhookState = {
 	productId: string;
-	status: string;
+	status: SubscriptionStatus;
 	creemCustomerId: string | null;
 	creemSubscriptionId: string;
 	creemOrderId: string | null;
@@ -72,11 +78,12 @@ export async function syncCreemWebhook(
 	} else {
 		const periodStart = toDate(event.current_period_start_date);
 		const periodEnd = toDate(event.current_period_end_date);
+		const status = parseSubscriptionStatus(event.status);
 		const orderId =
 			typeof event.order === "string" ? event.order : event.order?.id;
 		state = {
 			productId: event.product.id,
-			status: event.status.toLowerCase(),
+			status,
 			creemCustomerId: event.customer?.id ?? subscription.creemCustomerId,
 			creemSubscriptionId: event.id,
 			creemOrderId: orderId ?? subscription.creemOrderId,
@@ -88,8 +95,10 @@ export async function syncCreemWebhook(
 				periodEnd?.toISOString() ??
 				subscription.periodEnd?.toISOString() ??
 				null,
-			cancelAtPeriodEnd:
-				event.cancel_at_period_end ?? event.status === "scheduled_cancel",
+			cancelAtPeriodEnd: deriveCancelAtPeriodEnd(
+				status,
+				event.cancel_at_period_end,
+			),
 			lastWebhookId: event.webhookId,
 			lastWebhookCreatedAt: eventTime.toISOString(),
 		};
@@ -133,7 +142,7 @@ export async function syncCreemWebhook(
 			.where(
 				and(
 					eq(creemSubscription.referenceId, subscription.referenceId),
-					eq(creemSubscription.status, "pending"),
+					isNull(creemSubscription.status),
 					isNull(creemSubscription.creemSubscriptionId),
 				),
 			);
@@ -223,16 +232,18 @@ export async function syncCreemCheckout(
 	return syncCreemWebhook(db, eventData, event.id);
 }
 
-export async function syncCreemRefund(
+type RevokingEvent = {
+	subscription?: { id: string } | string | null;
+	webhookId: string;
+	webhookCreatedAt: number;
+};
+
+/** A full refund or a chargeback ends Pro right away (Creem has no status for it). */
+async function revokeForPaymentReversal(
 	db: DatabaseClient,
-	event: {
-		status: string;
-		subscription?: { id: string } | string | null;
-		webhookId: string;
-		webhookCreatedAt: number;
-	},
+	event: RevokingEvent,
 ) {
-	if (event.status !== "succeeded" || !event.subscription) return null;
+	if (!event.subscription) return null;
 	const subscriptionId =
 		typeof event.subscription === "string"
 			? event.subscription
@@ -242,11 +253,15 @@ export async function syncCreemRefund(
 	});
 	if (!subscription) return null;
 
+	// A reversal always wins, even when its webhook is older than the last
+	// one applied (e.g. an earlier partial refund delivered late).
+	const eventTime = toWebhookDate(event.webhookCreatedAt).getTime();
+	const lastTime = subscription.lastWebhookCreatedAt?.getTime() ?? 0;
 	return syncCreemWebhook(db, {
 		webhookId: event.webhookId,
-		webhookCreatedAt: event.webhookCreatedAt,
+		webhookCreatedAt: Math.max(eventTime, lastTime + 1),
 		id: subscriptionId,
-		status: "refunded",
+		status: "expired",
 		product: { id: subscription.productId },
 		customer: subscription.creemCustomerId
 			? { id: subscription.creemCustomerId }
@@ -256,4 +271,91 @@ export async function syncCreemRefund(
 		current_period_end_date: new Date(event.webhookCreatedAt),
 		cancel_at_period_end: false,
 	});
+}
+
+type RefundTransaction = {
+	id?: string | null;
+	amount_paid?: number | null;
+	refunded_amount?: number | null;
+};
+
+/**
+ * Records a succeeded refund once (keyed by refund id) and returns the total
+ * refunded so far on its transaction. Each statement commits on its own, so
+ * two partial refunds landing at once still see each other in the sum.
+ */
+async function recordRefund(
+	db: DatabaseClient,
+	refund: {
+		id: string;
+		transactionId: string;
+		subscriptionId: string | null;
+		amount: number;
+	},
+) {
+	await db
+		.insert(creemRefund)
+		.values({
+			id: refund.id,
+			transactionId: refund.transactionId,
+			creemSubscriptionId: refund.subscriptionId,
+			amount: refund.amount,
+		})
+		.onConflictDoNothing({ target: creemRefund.id });
+	const [row] = await db
+		.select({ total: sql<string>`coalesce(sum(${creemRefund.amount}), 0)` })
+		.from(creemRefund)
+		.where(eq(creemRefund.transactionId, refund.transactionId));
+	return Number(row?.total ?? 0);
+}
+
+export async function syncCreemRefund(
+	db: DatabaseClient,
+	event: RevokingEvent & {
+		id?: string | null;
+		status: string;
+		refund_amount?: number | null;
+		transaction?: RefundTransaction | string | null;
+	},
+) {
+	if (event.status !== "succeeded") return null;
+	const transaction =
+		typeof event.transaction === "object" ? event.transaction : null;
+	const transactionId =
+		typeof event.transaction === "string"
+			? event.transaction
+			: (transaction?.id ?? null);
+	const amountPaid = transaction?.amount_paid;
+	// Creem's embedded transaction is a snapshot from before this refund, so
+	// refunded_amount may be null or stale; our ledger is the running total.
+	let refundedAmount = transaction?.refunded_amount ?? event.refund_amount;
+	if (event.id && transactionId && event.refund_amount != null) {
+		const subscriptionId =
+			typeof event.subscription === "string"
+				? event.subscription
+				: (event.subscription?.id ?? null);
+		const total = await recordRefund(db, {
+			id: event.id,
+			transactionId,
+			subscriptionId,
+			amount: event.refund_amount,
+		});
+		refundedAmount = Math.max(total, transaction?.refunded_amount ?? 0);
+	}
+	if (
+		!refundRevokesAccess({
+			status: event.status,
+			refundedAmount,
+			amountPaid,
+		})
+	)
+		return null;
+	return revokeForPaymentReversal(db, event);
+}
+
+export async function syncCreemDispute(
+	db: DatabaseClient,
+	event: RevokingEvent,
+) {
+	return revokeForPaymentReversal(db, event);
 }

@@ -60,7 +60,8 @@
 		"destroy": "bun run --filter @grabbin/infra destroy",
 		"release": "semantic-release",
 		"check": "biome check --write .",
-		"prepare": "git config core.hooksPath .githooks 2>/dev/null || true"
+		"prepare": "git config core.hooksPath .githooks 2>/dev/null || true",
+		"check:plan-boundary": "bun scripts/check-plan-boundary.ts"
 	},
 	"dependencies": {
 		"@grabbin/env": "workspace:*",

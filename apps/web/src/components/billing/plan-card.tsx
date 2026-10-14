@@ -11,7 +11,6 @@ import { Diamonds } from "reicon-react/icons/Diamonds";
 import { Globe } from "reicon-react/icons/Globe";
 import { Tag5 } from "reicon-react/icons/Tag5";
 import SpinningCounter from "@/components/page/shared/spinning-counter";
-import { isMultiPageEnabled } from "@/lib/feature-flags";
 
 export type BillingPeriod = "monthly" | "yearly";
 export type PlanCardVariant = "default" | "horizontal" | "landing";
@@ -58,7 +57,6 @@ export default function PlanCard({
 			]
 		: [
 				{ label: "All Free plan features included" },
-				...(isMultiPageEnabled ? [{ label: "Up to 3 pages per account" }] : []),
 				{ label: "Remove watermark" },
 				{ label: "Custom domain" },
 				{ label: "Advanced Widgets" },

@@ -24,9 +24,6 @@ export const pages = pgTable(
 		imageSource: text("image_source"),
 		imageCrop: jsonb("image_crop").$type<Record<string, number> | null>(),
 		role: text("role"),
-		deletionScheduledAt: timestamp("deletion_scheduled_at", {
-			withTimezone: true,
-		}),
 		createdAt: timestamp("created_at", { withTimezone: true })
 			.defaultNow()
 			.notNull(),
@@ -38,7 +35,6 @@ export const pages = pgTable(
 	(table) => [
 		uniqueIndex("pages_handle_idx").on(table.handle),
 		index("pages_userId_idx").on(table.userId),
-		index("pages_deletion_scheduled_at_idx").on(table.deletionScheduledAt),
 	],
 );
 

@@ -15,5 +15,8 @@
 	"devDependencies": {
 		"@grabbin/config": "workspace:*",
 		"typescript": "catalog:tooling"
+	},
+	"dependencies": {
+		"@creem_io/webhook-types": "1.0.1"
 	}
 }
