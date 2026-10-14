@@ -11,13 +11,13 @@ const inter = Inter({ subsets: ["latin"], variable: "--font-sans" });
 
 export const metadata: Metadata = {
 	metadataBase: new URL("https://grabbin.me"),
-	title: "Visual Link in Bio & Personal Website on Your Domain | Grabbin",
+	title: "Grabbin: Visual Link in Bio & Personal Website on Your Domain",
 	description:
-		"Create a free link in bio that looks like a personal website. Arrange links, photos, videos, and maps in a bento-style page, then use your own domain.",
+		"Grabbin is a free link in bio that works like a personal website. Arrange links, photos, videos, and places in one bento-style page and use your own domain.",
 	openGraph: {
-		title: "Visual Link in Bio & Personal Website on Your Domain | Grabbin",
+		title: "Grabbin: Visual Link in Bio & Personal Website on Your Domain",
 		description:
-			"Create a free link in bio that looks like a personal website. Arrange links, photos, videos, and maps in a bento-style page, then use your own domain.",
+			"Grabbin is a free link in bio that works like a personal website. Arrange links, photos, videos, and places in one bento-style page and use your own domain.",
 	},
 	icons: {
 		icon: "/favicon.svg",

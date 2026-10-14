@@ -95,6 +95,34 @@ export default async function UpdateDetailPage({
 				<div className="prose prose-neutral dark:prose-invert mx-auto mt-12 max-w-xl px-5 text-primary/70 sm:mt-16">
 					<MdxContent Content={Content} />
 				</div>
+				{update.faq && update.faq.length > 0 && (
+					<section
+						aria-labelledby="faq-heading"
+						className="prose prose-neutral dark:prose-invert mx-auto mt-12 max-w-xl px-5 text-primary/70"
+					>
+						<h2 id="faq-heading">FAQ</h2>
+						{update.faq.map(({ question, answer }) => (
+							<div key={question}>
+								<h3>{question}</h3>
+								<p>{answer}</p>
+							</div>
+						))}
+						<script
+							type="application/ld+json"
+							dangerouslySetInnerHTML={{
+								__html: JSON.stringify({
+									"@context": "https://schema.org",
+									"@type": "FAQPage",
+									mainEntity: update.faq.map(({ question, answer }) => ({
+										"@type": "Question",
+										name: question,
+										acceptedAnswer: { "@type": "Answer", text: answer },
+									})),
+								}).replace(/</g, "\\u003c"),
+							}}
+						/>
+					</section>
+				)}
 				{related.length > 0 && (
 					<nav
 						aria-labelledby="related-heading"

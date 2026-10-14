@@ -2,13 +2,18 @@ import type { Metadata } from "next";
 import Image from "next/image";
 import Link from "next/link";
 import { UpdateMedia } from "@/components/updates/update-media";
-import { getUpdatesByCategory } from "@/lib/updates";
+import {
+	featuredUpdateSlugs,
+	getUpdatesByCategory,
+	getUpdatesBySlugs,
+} from "@/lib/updates";
 
 const title = "Link in Bio Guides & Product Updates | Grabbin";
 const description =
 	"Practical guides to link-in-bio pages, Instagram and TikTok bios, and portfolio websites, plus the latest Grabbin product updates.";
 
 const groups = getUpdatesByCategory();
+const featured = getUpdatesBySlugs(featuredUpdateSlugs);
 
 const categoryIntro: Record<string, string> = {
 	Product: "New features and changes to Grabbin.",
@@ -88,6 +93,35 @@ export default function UpdatesPage() {
 						</a>
 					))}
 				</nav>
+			</section>
+			<section
+				aria-labelledby="featured-heading"
+				id="featured"
+				className="mt-20"
+			>
+				<h2
+					id="featured-heading"
+					className="font-medium text-2xl tracking-[-0.03em]"
+				>
+					Featured guides
+				</h2>
+				<ul className="mt-6 grid gap-x-8 gap-y-6 md:grid-cols-2 lg:grid-cols-3">
+					{featured.map((update) => (
+						<li key={update.slug}>
+							<Link
+								href={`/update/${update.slug}`}
+								className="block rounded-md bg-muted/60 p-4"
+							>
+								<h3 className="font-medium text-base leading-6">
+									{update.title}
+								</h3>
+								<p className="mt-1 text-pretty text-muted-foreground/80 text-sm leading-5">
+									{update.description}
+								</p>
+							</Link>
+						</li>
+					))}
+				</ul>
 			</section>
 			{groups.map(({ category, updates }) => (
 				<section

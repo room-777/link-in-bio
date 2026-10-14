@@ -3,6 +3,7 @@ import { headers } from "next/headers";
 import { notFound } from "next/navigation";
 import { cache } from "react";
 import CtaSection from "@/components/landing/cta-section";
+import GuidesSection from "@/components/landing/guides-section";
 import HeroSection from "@/components/landing/hero-section";
 import PlanSection from "@/components/landing/plan-section";
 import WelcomeSection from "@/components/landing/welcome-section";
@@ -16,9 +17,9 @@ import { makeQueryClient } from "@/lib/query-client";
 
 export const revalidate = false;
 
-const title = "Visual Link in Bio & Personal Website on Your Domain | Grabbin";
+const title = "Grabbin: Visual Link in Bio & Personal Website on Your Domain";
 const description =
-	"Create a free link in bio that looks like a personal website. Arrange links, photos, videos, and maps in a bento-style page, then use your own domain.";
+	"Grabbin is a free link in bio that works like a personal website. Arrange links, photos, videos, and places in one bento-style page and use your own domain.";
 
 const landingMetadata: Metadata = {
 	title,
@@ -123,6 +124,7 @@ export default async function Home() {
 			<HeroSection />
 			<WelcomeSection />
 			<PlanSection />
+			<GuidesSection />
 			<CtaSection />
 		</main>
 	);
