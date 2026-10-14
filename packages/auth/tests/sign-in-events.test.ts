@@ -2,14 +2,13 @@ import assert from "node:assert/strict";
 import { describe, it } from "node:test";
 import { betterAuth } from "better-auth";
 import { memoryAdapter } from "better-auth/adapters/memory";
-import { emailOTP } from "better-auth/plugins";
+import { emailOTP, genericOAuth, testUtils } from "better-auth/plugins";
 import { createSignInDatabaseHooks } from "../src/sign-in-method";
 
 type SignIn = { userId: string; method: string; cookie: string | null };
 
 function createTestAuth() {
 	const signIns: SignIn[] = [];
-	const otps = new Map<string, string>();
 	const auth = betterAuth({
 		baseURL: "http://localhost:3001",
 		basePath: "/auth",
@@ -21,10 +20,26 @@ function createTestAuth() {
 			verification: [],
 		}),
 		plugins: [
+			testUtils({ captureOTP: true }),
 			emailOTP({
-				sendVerificationOTP: async ({ email, otp }) => {
-					otps.set(email, otp);
-				},
+				sendVerificationOTP: async () => {},
+			}),
+			genericOAuth({
+				config: [
+					{
+						providerId: "google",
+						clientId: "test-client",
+						tokenUrl: "http://localhost/token",
+						authorizationUrl: "http://localhost/authorize",
+						getToken: async () => ({ accessToken: "test-token" }),
+						getUserInfo: async () => ({
+							id: "google-user",
+							email: "oauth@example.com",
+							emailVerified: true,
+							name: "OAuth User",
+						}),
+					},
+				],
 			}),
 		],
 		databaseHooks: createSignInDatabaseHooks({
@@ -51,8 +66,9 @@ function createTestAuth() {
 			}),
 		);
 	async function signInWithOtp(email: string) {
+		const test = (await auth.$context).test;
 		await post("/email-otp/send-verification-otp", { email, type: "sign-in" });
-		return post("/sign-in/email-otp", { email, otp: otps.get(email) });
+		return post("/sign-in/email-otp", { email, otp: test.getOTP(email) });
 	}
 	return { auth, signIns, signInWithOtp };
 }
@@ -79,6 +95,8 @@ describe("GA sign-in hooks", () => {
 		assert.equal(signIns[0]?.method, "email");
 		assert.equal(signIns[0]?.cookie, "_ga=GA1.1.111.222");
 		assert.ok(signIns[0]?.userId);
+		assert.equal(signIns[1]?.method, "email");
+		assert.equal(signIns[1]?.cookie, "_ga=GA1.1.111.222");
 		assert.equal(signIns[1]?.userId, signIns[0]?.userId);
 	});
 
@@ -92,28 +110,56 @@ describe("GA sign-in hooks", () => {
 	 * Result: Pass | Fail | Blocked | Not Run
 	 */
 	it("AUTH-GA-002 uses the OAuth provider and ignores other sessions", async () => {
-		const calls: Array<{ method: string; cookie: string | null }> = [];
+		const { auth, signIns } = createTestAuth();
+		const start = await auth.handler(
+			new Request("http://localhost:3001/auth/sign-in/social", {
+				method: "POST",
+				headers: {
+					"content-type": "application/json",
+					origin: "http://localhost:3001",
+				},
+				body: JSON.stringify({
+					provider: "google",
+					callbackURL: "http://localhost:3001/signed-in",
+					disableRedirect: true,
+				}),
+			}),
+		);
+		assert.equal(start.status, 200);
+		const { url } = (await start.json()) as { url: string };
+		const state = new URL(url).searchParams.get("state");
+		assert.ok(state);
+		const cookies = start.headers
+			.getSetCookie()
+			.map((cookie) => cookie.split(";", 1)[0])
+			.join("; ");
+		const callback = await auth.handler(
+			new Request(
+				`http://localhost:3001/auth/callback/google?code=test-code&state=${state}`,
+				{
+					headers: { cookie: `${cookies}; _ga=GA1.1.1.2` },
+				},
+			),
+		);
+		assert.equal(callback.status, 302);
+
 		const hooks = createSignInDatabaseHooks({
 			trackSignIn: (input) => {
-				calls.push({
+				signIns.push({
+					userId: input.userId,
 					method: input.method,
 					cookie: input.headers?.get("cookie") ?? null,
 				});
 				return Promise.resolve({ sent: false, reason: "disabled" as const });
 			},
 		});
-		const request = new Request("https://api.grabbin.me/auth/callback/google", {
-			headers: { cookie: "_ga=GA1.1.1.2" },
-		});
-		await hooks.session.create.after({ userId: "u1" }, {
-			path: "/callback/:id",
-			params: { id: "google" },
-			request,
-		} as never);
 		await hooks.session.create.after({ userId: "u1" }, {
 			path: "/update-user",
 			headers: new Headers(),
 		} as never);
-		assert.deepEqual(calls, [{ method: "google", cookie: "_ga=GA1.1.1.2" }]);
+		assert.equal(signIns.length, 1);
+		assert.equal(signIns[0]?.method, "google");
+		assert.ok(signIns[0]?.cookie?.endsWith("_ga=GA1.1.1.2"));
+		assert.ok(signIns[0]?.userId);
 	});
 });
