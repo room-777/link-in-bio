@@ -70,19 +70,21 @@ export function getBentoGridHeight(
 	return rows * rowHeight + Math.max(0, rows - 1) * margin[1];
 }
 
+const cardPresets = [
+	"squareSmall",
+	"halfBanner",
+	"landscape",
+	"portrait",
+	"squareLarge",
+] as const satisfies readonly PresetName[];
+
 const allowedPresets: Record<ItemType, readonly PresetName[]> = {
 	section: ["fullBanner"],
 	media: ["squareSmall", "landscape", "portrait", "squareLarge"],
 	map: ["squareSmall", "landscape", "portrait", "squareLarge"],
-	link: ["squareSmall", "halfBanner", "landscape", "portrait", "squareLarge"],
-	calendly: [
-		"squareSmall",
-		"halfBanner",
-		"landscape",
-		"portrait",
-		"squareLarge",
-	],
-	text: ["squareSmall", "halfBanner", "landscape", "portrait", "squareLarge"],
+	link: cardPresets,
+	calendly: cardPresets,
+	text: cardPresets,
 };
 
 const presetGeometry: Record<PresetName, ItemLayout> = {

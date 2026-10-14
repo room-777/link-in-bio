@@ -1,6 +1,7 @@
 import assert from "node:assert/strict";
 import { describe, it } from "node:test";
 import { normalizeProviderData } from "@grabbin/api";
+import { getPresetGeometry } from "@grabbin/bento-layout";
 import type { DatabaseClient } from "@grabbin/db";
 
 import { PageItemServiceError } from "../../src/exceptions/page-item.exception";
@@ -656,6 +657,70 @@ describe("page item service", () => {
 			(error: unknown) =>
 				error instanceof PageItemServiceError &&
 				error.code === "INVALID_ITEM_LAYOUT",
+		);
+	});
+
+	/**
+	 * Case ID: PAGE-ITEM-SERVICE-015
+	 * Given: a Pro account saves a Tweet link in its allowed tall sizes.
+	 * When: persistPageItemBatch validates the item payload.
+	 * Then: the layout passes and the batch reaches the insert step.
+	 * Evidence: the insert stub is reached instead of INVALID_ITEM_LAYOUT.
+	 * Result: Pass | Fail | Blocked | Not Run
+	 */
+	it("PAGE-ITEM-SERVICE-015 accepts Tweet sizes from the widget rules", async () => {
+		const reachedInsert = new Error("insert reached");
+		const tx = {
+			query: {
+				pages: { findFirst: async () => ({ id: "page-1" }) },
+				pageItems: { findMany: async () => [] },
+				creemSubscription: {
+					findMany: async () => [
+						{
+							creemSubscriptionId: "sub-1",
+							productId: "pro-monthly",
+							status: "active",
+							periodEnd: new Date("2099-01-01T00:00:00.000Z"),
+							cancelAtPeriodEnd: false,
+						},
+					],
+				},
+			},
+			insert: () => {
+				throw reachedInsert;
+			},
+		};
+		const db = {
+			transaction: async (callback: (value: typeof tx) => unknown) =>
+				callback(tx),
+		} as unknown as DatabaseClient;
+
+		await assert.rejects(
+			persistPageItemBatch({
+				db,
+				handle: "jane",
+				userId: "user-1",
+				proProductIds: ["pro-monthly"],
+				batch: {
+					upserts: [
+						{
+							id: "tweet-1",
+							type: "link",
+							data: {
+								url: "https://x.com/i/status/123",
+								metadata: { provider: "tweet" },
+							},
+							style: {},
+							layouts: {
+								wide: getPresetGeometry("squareLarge", "wide"),
+								compact: getPresetGeometry("portrait", "compact"),
+							},
+						},
+					],
+					deletes: [],
+				},
+			}),
+			(error: unknown) => error === reachedInsert,
 		);
 	});
 

@@ -1,11 +1,9 @@
 import type { CalendlyEventType } from "@grabbin/api";
 import { getPresetGeometry } from "@grabbin/bento-layout";
+import { getWidgetPresets } from "@grabbin/page-link";
 import { AdvancedWidgetPresetControls } from "@/components/page/editor/advanced-widget-preset-controls";
 import { AdvancedWidgetPreviewFrame } from "@/components/page/editor/advanced-widgets/advanced-widget-preview-frame";
-import {
-	advancedWidgetPresets,
-	useAdvancedWidgetPreset,
-} from "@/components/page/editor/advanced-widgets/use-advanced-widget-preset";
+import { useAdvancedWidgetPreset } from "@/components/page/editor/advanced-widgets/use-advanced-widget-preset";
 import type { BentoItem } from "@/features/page/editor/state/bento-types";
 import type { CalendlyAvailability } from "./calendly-widget";
 import { CalendlyWidget } from "./calendly-widget";
@@ -44,7 +42,7 @@ export default function CalendlyAdvancedWidgetPreview() {
 		transitionPhase,
 		onPresetChange,
 		onTransitionComplete,
-	} = useAdvancedWidgetPreset(advancedWidgetPresets.calendly, "landscape");
+	} = useAdvancedWidgetPreset(getWidgetPresets("calendly"), "landscape");
 	const item: BentoItem = {
 		...previewItem,
 		preset: visiblePreset,
@@ -80,7 +78,7 @@ export default function CalendlyAdvancedWidgetPreview() {
 			onTransitionComplete={onTransitionComplete}
 			controls={
 				<AdvancedWidgetPresetControls
-					presets={advancedWidgetPresets.calendly}
+					presets={getWidgetPresets("calendly")}
 					preset={preset}
 					onPresetChange={onPresetChange}
 				/>

@@ -2,13 +2,11 @@
 
 import type { PageItemLinkMetadata } from "@grabbin/api";
 import { getPresetGeometry, type PresetName } from "@grabbin/bento-layout";
+import { getWidgetPresets } from "@grabbin/page-link";
 import { Skeleton } from "@grabbin/ui/components/skeleton";
 import { AdvancedWidgetPresetControls } from "@/components/page/editor/advanced-widget-preset-controls";
 import { AdvancedWidgetPreviewFrame } from "@/components/page/editor/advanced-widgets/advanced-widget-preview-frame";
-import {
-	advancedWidgetPresets,
-	useAdvancedWidgetPreset,
-} from "@/components/page/editor/advanced-widgets/use-advanced-widget-preset";
+import { useAdvancedWidgetPreset } from "@/components/page/editor/advanced-widgets/use-advanced-widget-preset";
 import type { BentoItem } from "@/features/page/editor/state/bento-types";
 import { normalizeHttpsUrl } from "@/lib/normalize-https-url";
 import { SpotifyWidget } from "./spotify-widget";
@@ -77,7 +75,7 @@ export default function SpotifyAdvancedWidgetPreview({
 		transitionPhase,
 		onPresetChange,
 		onTransitionComplete,
-	} = useAdvancedWidgetPreset(advancedWidgetPresets.spotify, "squareSmall");
+	} = useAdvancedWidgetPreset(getWidgetPresets("spotify"), "squareSmall");
 	const url =
 		normalizeHttpsUrl(inputValue ?? "") ?? "https://open.spotify.com/";
 	const metadata =
@@ -103,7 +101,7 @@ export default function SpotifyAdvancedWidgetPreview({
 			interactive={Boolean(metadata)}
 			controls={
 				<AdvancedWidgetPresetControls
-					presets={advancedWidgetPresets.spotify}
+					presets={getWidgetPresets("spotify")}
 					preset={preset}
 					onPresetChange={onPresetChange}
 				/>

@@ -17,3 +17,12 @@ export {
 	resolveLinkProvider,
 	resolveProviderIconUrl,
 } from "./provider-data";
+export type { WidgetKind, WidgetKindInput } from "./widget-kind";
+export {
+	getItemPresets,
+	getWidgetKind,
+	getWidgetPresets,
+	isWidgetProvider,
+	requiresProPlan,
+	widgetRules,
+} from "./widget-kind";

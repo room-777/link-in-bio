@@ -10,10 +10,12 @@
 		}
 	},
 	"scripts": {
-		"check-types": "tsc --noEmit"
+		"check-types": "tsc --noEmit",
+		"test": "bun test tests"
 	},
 	"dependencies": {
-		"@grabbin/api": "workspace:*"
+		"@grabbin/api": "workspace:*",
+		"@grabbin/bento-layout": "workspace:*"
 	},
 	"devDependencies": {
 		"@grabbin/config": "workspace:*",
