@@ -27,12 +27,11 @@
 
 ## Cursor Cloud
 
-Cloud Agent 부팅 스크립트는 로컬 Postgres, API, 웹을 띄운다. 이미 떠 있으면 다시 띄우지 않는다.
+Cloud Agent는 Grok 봇과 같은 로컬 스택을 쓴다. 부팅은 [`scripts/cloud-agent-start.sh`](scripts/cloud-agent-start.sh)가 맡고, 이미 웹과 API가 응답하면 다시 띄우지 않는다. 절차는 [`.agents/skills/verify-editor/SKILL.md`](.agents/skills/verify-editor/SKILL.md)의 preferred launch와 같다.
 
-- 웹: `http://127.0.0.1:3000`
-- API: `http://127.0.0.1:3001` (`GET /` 는 `"OK"`)
-- Postgres: `postgres://postgres:postgres@127.0.0.1:54322/postgres`
+1. Docker를 띄운 뒤 Postgres만 켠다: `bun run db:local:supabase` (포트 `54322`).
+2. `apps/server/.env`와 `apps/web/.env`는 각 `.env.example`에서 만들고, HTTP 주소는 `localhost`로 둔다. R2 키는 넣지 않는다. Postgres는 `postgres://postgres:postgres@127.0.0.1:54322/postgres`.
+3. Alchemy Cloudflare 프로필을 등록한다. `packages/infra`에서 `bun ./node_modules/.bin/alchemy profile edit --add Cloudflare --method stored --set apiToken=env:CLOUDFLARE_API_TOKEN --set accountId=<id> --no-input`. account id는 `GET https://api.cloudflare.com/client/v4/accounts`로 구한다. CLI는 `bun`으로 실행한다.
+4. 저장소 루트에서 `bun run dev` (`alchemy dev`)를 실행한다. 웹 `http://localhost:3000`, API `http://localhost:3001`. Alchemy가 로컬 R2를 제공한다.
 
-브라우저, `apps/web/.env`, `apps/server/.env`는 `127.0.0.1`을 쓴다. `localhost`와 섞으면 쿠키가 나뉜다.
-
-`bun run dev`(Alchemy)는 `CLOUDFLARE_API_TOKEN`이 있을 때만 쓴다. 토큰이 없으면 부팅된 `vinext`와 `wrangler`를 쓴다. 미디어 업로드는 Alchemy의 로컬 R2가 필요해서, 이 기본 스택에서는 동작하지 않는다.
+브라우저와 앱 URL은 `localhost`를 쓴다. `localhost`와 `127.0.0.1`을 섞으면 쿠키가 나뉜다. `CLOUDFLARE_API_TOKEN`이 있어야 이 스택이 뜬다.
