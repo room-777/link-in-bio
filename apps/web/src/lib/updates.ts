@@ -92,16 +92,6 @@ export const featuredUpdateSlugs = [
 	"what-is-link-in-bio",
 ];
 
-export const homeGuideSlugs = [
-	"build-visual-link-in-bio",
-	"free-linktree-alternatives",
-	"what-is-link-in-bio",
-	"instagram-bio-character-limit",
-	"choose-link-in-bio-tool",
-	"your-page-your-domain",
-	"what-grabbin-gives-you",
-];
-
 export const getUpdatesBySlugs = (slugs: string[]) =>
 	slugs.flatMap((slug) => {
 		const update = getUpdate(slug);
@@ -115,9 +105,10 @@ const hashSlug = (slug: string) => {
 };
 
 /**
- * Same-category posts first (newest first), then fill remaining slots from the
- * pinned priority list rotated by a hash of the current slug, so different
- * posts surface different pinned guides. Never includes the current post.
+ * Two same-category posts (newest first), then two pinned guides from the
+ * priority list rotated by a hash of the current slug, so different posts
+ * surface different pinned guides. Skips the current post and duplicates; if
+ * pinned candidates run out, remaining slots fall back to same-category posts.
  */
 export const getRelatedUpdates = (slug: string, limit = 4) => {
 	const current = getUpdate(slug);
@@ -125,14 +116,25 @@ export const getRelatedUpdates = (slug: string, limit = 4) => {
 	const sameCategory = updates.filter(
 		(update) => update.slug !== slug && update.category === current.category,
 	);
+	const sameCategorySlots = Math.min(2, sameCategory.length);
+	const picked = sameCategory.slice(0, sameCategorySlots);
+	const seen = new Set([slug, ...picked.map((update) => update.slug)]);
 	const offset = hashSlug(slug) % relatedPriority.length;
 	const rotated = [
 		...relatedPriority.slice(offset),
 		...relatedPriority.slice(0, offset),
 	];
-	const seen = new Set([slug, ...sameCategory.map((update) => update.slug)]);
 	const pinned = getUpdatesBySlugs(
 		rotated.filter((pinnedSlug) => !seen.has(pinnedSlug)),
-	);
-	return [...sameCategory, ...pinned].slice(0, limit);
+	).slice(0, limit - picked.length);
+	const result = [...picked, ...pinned];
+	for (const pinnedUpdate of pinned) seen.add(pinnedUpdate.slug);
+	for (const update of sameCategory) {
+		if (result.length >= limit) break;
+		if (!seen.has(update.slug)) {
+			result.push(update);
+			seen.add(update.slug);
+		}
+	}
+	return result;
 };

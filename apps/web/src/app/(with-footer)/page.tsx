@@ -3,7 +3,6 @@ import { headers } from "next/headers";
 import { notFound } from "next/navigation";
 import { cache } from "react";
 import CtaSection from "@/components/landing/cta-section";
-import GuidesSection from "@/components/landing/guides-section";
 import HeroSection from "@/components/landing/hero-section";
 import PlanSection from "@/components/landing/plan-section";
 import WelcomeSection from "@/components/landing/welcome-section";
@@ -124,7 +123,6 @@ export default async function Home() {
 			<HeroSection />
 			<WelcomeSection />
 			<PlanSection />
-			<GuidesSection />
 			<CtaSection />
 		</main>
 	);
