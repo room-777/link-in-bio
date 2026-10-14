@@ -12,6 +12,7 @@ import {
 	pageItemUploadRequestSchema,
 } from "@grabbin/api";
 import { registerPendingPageMedia } from "@grabbin/application/media-assets";
+import type { ServerEventTracker } from "@grabbin/auth/google-analytics";
 import type { DatabaseClient } from "@grabbin/db";
 import type { Context, MiddlewareHandler } from "hono";
 import { Hono } from "hono";
@@ -101,12 +102,15 @@ export type PageItemsControllerOptions = {
 	sessionMiddleware: MiddlewareHandler<AppEnv>;
 	persist: PersistPageItemBatch;
 	enrichMetadata: EnrichPageItemMetadata;
+	/** Background GA events; omitted in tests that do not check them. */
+	serverEvents?: Pick<ServerEventTracker, "track">;
 };
 
 export function createPageItemsController({
 	sessionMiddleware,
 	persist,
 	enrichMetadata,
+	serverEvents,
 }: PageItemsControllerOptions) {
 	return new Hono<AppEnv>()
 		.post("/:handle/metadata", sessionMiddleware, async (c) => {
@@ -325,19 +329,28 @@ export function createPageItemsController({
 				return jsonApiError(c, { status: 404, detail: "Page not found." });
 
 			try {
-				return c.json(
-					await persist({
-						db: c.var.db,
-						handle: c.req.param("handle"),
+				const saved = await persist({
+					db: c.var.db,
+					handle: c.req.param("handle"),
+					userId: session.user.id,
+					batch: parsed.output,
+					proProductIds: [
+						c.env.CREEM_PRO_MONTHLY_PRODUCT_ID,
+						c.env.CREEM_PRO_YEARLY_PRODUCT_ID,
+					].filter(Boolean),
+					publicBaseUrl: c.env?.R2_PUBLIC_URL,
+				});
+				const firstItem = parsed.output.upserts[0];
+				if (firstItem) {
+					serverEvents?.track({
+						name: "first_link_added",
+						once: "first_link_added",
 						userId: session.user.id,
-						batch: parsed.output,
-						proProductIds: [
-							c.env.CREEM_PRO_MONTHLY_PRODUCT_ID,
-							c.env.CREEM_PRO_YEARLY_PRODUCT_ID,
-						].filter(Boolean),
-						publicBaseUrl: c.env?.R2_PUBLIC_URL,
-					}),
-				);
+						headers: c.req.raw.headers,
+						params: { item_type: firstItem.type },
+					});
+				}
+				return c.json(saved);
 			} catch (error) {
 				if (error instanceof PageItemServiceError) {
 					return pageItemErrorResponse(c, error);

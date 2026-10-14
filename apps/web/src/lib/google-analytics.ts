@@ -9,6 +9,7 @@ declare global {
 
 const DEFAULT_GA_MEASUREMENT_ID = "G-69G89BFREL";
 const INTERNAL_TRAFFIC_STORAGE_KEY = "grabbin:ga-internal";
+const INTERNAL_TRAFFIC_COOKIE = "grabbin_ga_internal";
 
 export const GA_MEASUREMENT_ID =
 	env.NEXT_PUBLIC_GA_MEASUREMENT_ID ?? DEFAULT_GA_MEASUREMENT_ID;
@@ -66,13 +67,36 @@ export function isCustomDomainHost(hostname: string) {
 	);
 }
 
+/**
+ * 서버에서 보내는 GA 이벤트도 내부 트래픽으로 표시되도록 같은 값을 쿠키로 둔다.
+ * grabbin.me에서는 상위 도메인 쿠키라 api.grabbin.me도 읽는다.
+ */
+function syncInternalTrafficCookie(internal: boolean) {
+	const hostname = window.location.hostname;
+	const serviceHostname = getServiceHostname();
+	const isNamedHost =
+		serviceHostname.includes(".") && !/^[\d.]+$/.test(serviceHostname);
+	const domain =
+		isNamedHost &&
+		(hostname === serviceHostname || hostname.endsWith(`.${serviceHostname}`))
+			? `; domain=${serviceHostname}`
+			: "";
+	const secure = window.location.protocol === "https:" ? "; secure" : "";
+	// biome-ignore lint/suspicious/noDocumentCookie: 모든 브라우저에서 같은 방식으로 쿠키를 쓴다.
+	document.cookie = internal
+		? `${INTERNAL_TRAFFIC_COOKIE}=1; path=/; max-age=31536000; samesite=lax${domain}${secure}`
+		: `${INTERNAL_TRAFFIC_COOKIE}=; path=/; max-age=0; samesite=lax${domain}${secure}`;
+}
+
 /** `?internal=1`이면 이 브라우저를 내부 사용자로 기억하고, `?internal=0`이면 지운다. */
 function isInternalTraffic() {
 	try {
 		const flag = new URLSearchParams(window.location.search).get("internal");
 		if (flag === "1") localStorage.setItem(INTERNAL_TRAFFIC_STORAGE_KEY, "1");
 		if (flag === "0") localStorage.removeItem(INTERNAL_TRAFFIC_STORAGE_KEY);
-		return localStorage.getItem(INTERNAL_TRAFFIC_STORAGE_KEY) === "1";
+		const internal = localStorage.getItem(INTERNAL_TRAFFIC_STORAGE_KEY) === "1";
+		syncInternalTrafficCookie(internal);
+		return internal;
 	} catch {
 		return false;
 	}
