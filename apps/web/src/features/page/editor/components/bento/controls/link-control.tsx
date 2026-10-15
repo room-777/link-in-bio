@@ -9,7 +9,13 @@ import {
 } from "@grabbin/ui/components/popover";
 import { cn } from "@grabbin/ui/lib/utils";
 import { Link2, RefreshCw, Unlink } from "lucide-react";
-import { type KeyboardEvent, useEffect, useRef, useState } from "react";
+import {
+	type ClipboardEvent,
+	type KeyboardEvent,
+	useEffect,
+	useRef,
+	useState,
+} from "react";
 import { useEmailOtpShake } from "@/hooks/use-email-otp-shake";
 import { normalizeHttpsUrl } from "@/lib/normalize-https-url";
 
@@ -95,6 +101,18 @@ export default function LinkControl({
 			setOpen(false);
 		}
 	};
+	const handlePaste = (event: ClipboardEvent<HTMLInputElement>) => {
+		const pastedValue = event.clipboardData.getData("text");
+		if (!pastedValue) return;
+
+		event.preventDefault();
+		const input = event.currentTarget;
+		const start = input.selectionStart ?? draftUrl.length;
+		const end = input.selectionEnd ?? draftUrl.length;
+		const nextValue = `${draftUrl.slice(0, start)}${pastedValue}${draftUrl.slice(end)}`;
+		setDraftUrl(nextValue);
+		commitDraftUrl(nextValue);
+	};
 
 	return (
 		<Popover
@@ -148,18 +166,7 @@ export default function LinkControl({
 							invalidRef.current = false;
 							setLinkError(false);
 						}}
-						onPaste={(event) => {
-							const pastedValue = event.clipboardData.getData("text");
-							if (!pastedValue) return;
-
-							event.preventDefault();
-							const input = event.currentTarget;
-							const start = input.selectionStart ?? draftUrl.length;
-							const end = input.selectionEnd ?? draftUrl.length;
-							const nextValue = `${draftUrl.slice(0, start)}${pastedValue}${draftUrl.slice(end)}`;
-							setDraftUrl(nextValue);
-							commitDraftUrl(nextValue);
-						}}
+						onPaste={handlePaste}
 						onBlur={() => commitDraftUrl(draftUrl)}
 						onKeyDown={handleKeyDown}
 						autoComplete="url"
