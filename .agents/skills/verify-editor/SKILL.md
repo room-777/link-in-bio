@@ -17,15 +17,18 @@ Use the shared cloud-agent entrypoint for Grok Bot, Cursor, and Codex. Each envi
 scripts/cloud-agent-start.sh
 ```
 
-It configures localhost URLs, starts Postgres, applies migrations, registers the Alchemy Cloudflare profile non-interactively, and prepares the same local Pro account in each agent environment. Alchemy provides local R2 and the local S3 endpoint; no R2 keys go in `.env`. Stop it with Ctrl-C in the terminal that owns `bun run dev`.
+It configures `127.0.0.1` URLs, starts Postgres, applies migrations, registers the Alchemy Cloudflare profile non-interactively, and prepares the same local Pro account in each agent environment. Alchemy provides local R2 and the local S3 endpoint; no R2 keys go in `.env`. Stop it with Ctrl-C in the terminal that owns `bun run dev`.
 
-Run the account driver after startup. It signs in as `featuremap@example.com`, creates `featuremap-test` through the visible `/create` form if needed, and saves screenshots and actions:
+Run the account driver after startup from the repository root. In a second terminal, change to that root first. The driver signs in as `featuremap@example.com`, creates `featuremap-test` through the visible `/create` form if needed, and saves screenshots and actions:
 
 ```sh
-node "$REPO/.agents/skills/verify-editor/scripts/drive-create-page.mjs" "$EVIDENCE_DIR/account"
+REPO="$(git rev-parse --show-toplevel)"
+ACCOUNT_EVIDENCE_DIR="$REPO/artifacts/verify-editor/account-$(date +%Y%m%d-%H%M%S)-$$"
+mkdir -p "$ACCOUNT_EVIDENCE_DIR"
+node "$REPO/.agents/skills/verify-editor/scripts/drive-create-page.mjs" "$ACCOUNT_EVIDENCE_DIR"
 ```
 
-The driver needs Playwright installed in the current directory (or run it from the configured Playwright directory). Later runs reuse the same account and page. `start-local.sh` is a limited fallback without local S3 and must not be used to claim media upload/cancel passed.
+The driver needs Playwright installed in the current directory (or run it from the configured Playwright directory). Later runs reuse the same account and page. `start-local.sh` is a limited fallback without local S3 and must not be used to claim media upload/cancel passed. The sign-in driver always uses `http://127.0.0.1:3000`.
 
 Steps:
 
@@ -40,7 +43,7 @@ git -C "$REPO" rev-parse HEAD > "$EVIDENCE_DIR/revision"
 cd "$REPO" && scripts/cloud-agent-start.sh             # full shared stack + local Pro account
 ```
 
-The shared launcher owns the foreground `bun run dev` process. It uses localhost URLs and fails if another stack is occupying the app ports.
+The shared launcher owns the foreground `bun run dev` process. It uses `127.0.0.1` URLs and fails if another stack is occupying the app ports.
 
 ## Doctor
 
@@ -60,7 +63,6 @@ Harness: headless Playwright (Chromium), one fresh browser context per run, loca
 cd "$PW_DIR"
 node "$REPO/.agents/skills/verify-editor/scripts/drive-demo-add-text.mjs" "$EVIDENCE_DIR/editor-add-item"
 node "$REPO/.agents/skills/verify-editor/scripts/drive-sign-in.mjs" "$EVIDENCE_DIR/sign-in" featuremap@example.com
-node "$REPO/.agents/skills/verify-editor/scripts/drive-create-page.mjs" "$EVIDENCE_DIR/account"
 RUN_DIR="$RUN_DIR" node "$REPO/.agents/skills/verify-editor/scripts/drive-editor-journeys.mjs" "$EVIDENCE_DIR/editor" media-upload,media-cancel,link-refresh,item-add
 ```
 
@@ -103,12 +105,12 @@ Never kill by process name. Leave Supabase running unless this run started it (`
 | `scripts/drive-demo-add-text.mjs <dir>` | Prove `editor-add-item` on `/demo` (add text block, then delete it). |
 | `scripts/drive-sign-in.mjs <dir> [email]` | Drive email-OTP sign-in and check the post-sign-in landing page. |
 | `scripts/drive-create-page.mjs <dir>` | Sign in and create `featuremap-test` through `/create` if it does not exist. |
-| `scripts/drive-editor-journeys.mjs <dir> [ids]` | Owner editor journeys on the real `/{handle}`: `media-upload`, `media-cancel`, `link-refresh`, `item-add`. Env: `RUN_DIR`, optional `WEB_URL`/`SERVER_URL` (default `localhost`). Fails on any cloud R2 request. |
+| `scripts/drive-editor-journeys.mjs <dir> [ids]` | Owner editor journeys on the real `/{handle}`: `media-upload`, `media-cancel`, `link-refresh`, `item-add`. Env: `RUN_DIR`, optional `WEB_URL`/`SERVER_URL` (default `127.0.0.1`). Fails on any cloud R2 request. |
 | `scripts/server.wrangler.jsonc` | Local API worker config used by `start-local.sh`. |
 
 ## Known gotchas (environment)
 
-- With `start-local.sh`, use `127.0.0.1` everywhere (both in `.env` and when driving); with `bun run dev`, use the `localhost` URLs alchemy prints (Chromium resolves `localhost` to both `::1` and `127.0.0.1`). In some sandboxes `localhost` resolves to `::1` only, and `vinext dev` binds there while the API binds IPv4; mixing hosts also splits auth cookies between `localhost` and `127.0.0.1`.
+- Use `127.0.0.1` for browser, API, and app URLs with either launcher. In some sandboxes `localhost` resolves to `::1` only while the API binds IPv4; mixing hosts also splits auth cookies.
 - Exported shell variables (`NEXT_PUBLIC_SERVER_URL`, ...) override `.env`; `start-local.sh` unsets them. If the browser calls the wrong API origin, check `env`.
 - In Docker without systemd, start `dockerd` yourself; if containers cannot reach each other (Supabase start fails with `DbSetupError`), the host FORWARD policy is dropping bridge traffic.
 

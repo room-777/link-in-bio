@@ -83,7 +83,10 @@ export const grabbinBucket = Cloudflare.R2.Bucket("grabbin", {
 	cors: [
 		{
 			allowedMethods: ["PUT", "HEAD"],
-			allowedOrigins: ["http://localhost:3000", "https://grabbin.me"],
+			allowedOrigins: [
+				...(isAlchemyDev ? ["http://127.0.0.1:3000"] : []),
+				"https://grabbin.me",
+			],
 			allowedHeaders: ["content-type"],
 			exposeHeaders: ["etag"],
 			maxAgeSeconds: 3600,
@@ -110,7 +113,7 @@ export const server = Cloudflare.Worker("server", {
 		}),
 		R2_LOCAL_MODE: isAlchemyDev ? "true" : "false",
 		R2_PUBLIC_URL: isAlchemyDev
-			? Cloudflare.Worker.URL
+			? "http://127.0.0.1:3001"
 			: Config.String("R2_PUBLIC_URL").pipe(
 					Config.orElse(() => Config.String("NEXT_PUBLIC_R2_PUBLIC_URL")),
 					Config.withDefault(""),
@@ -120,7 +123,9 @@ export const server = Cloudflare.Worker("server", {
 			? ""
 			: Config.String("SENTRY_DSN").pipe(Config.withDefault("")),
 		BETTER_AUTH_SECRET: Config.Redacted("BETTER_AUTH_SECRET"),
-		BETTER_AUTH_URL: Cloudflare.Worker.URL,
+		BETTER_AUTH_URL: isAlchemyDev
+			? "http://127.0.0.1:3001"
+			: Cloudflare.Worker.URL,
 		GOOGLE_CLIENT_ID: Config.String("GOOGLE_CLIENT_ID").pipe(
 			Config.withDefault(""),
 		),
@@ -267,16 +272,16 @@ export default Alchemy.Stack(
 		yield* cron;
 		if (isAlchemyDev) {
 			yield* Command.Dev("web-dev", {
-				command: "bun run dev:bare",
+				command: "bun run dev:bare -- --hostname 127.0.0.1",
 				cwd: "../../apps/web",
 				env: {
-					NEXT_PUBLIC_SERVER_URL: serverWorker.url.as<string>(),
-					NEXT_PUBLIC_R2_PUBLIC_URL: serverWorker.url.as<string>(),
+					NEXT_PUBLIC_SERVER_URL: "http://127.0.0.1:3001",
+					NEXT_PUBLIC_R2_PUBLIC_URL: "http://127.0.0.1:3001",
 				},
 			});
 			return {
-				web: new URL("http://localhost:3000"),
-				server: serverWorker.url,
+				web: new URL("http://127.0.0.1:3000"),
+				server: new URL("http://127.0.0.1:3001"),
 			};
 		}
 

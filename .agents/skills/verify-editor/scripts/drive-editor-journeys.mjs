@@ -1,6 +1,6 @@
 // Drive owner-editor journeys on the real signed-in editor (not /demo) and write evidence per journey.
 // Usage (from $PW_DIR so `playwright` resolves):
-//   RUN_DIR=<scratch dir> [WEB_URL=http://localhost:3000 SERVER_URL=http://localhost:3001] \
+//   RUN_DIR=<scratch dir> [WEB_URL=http://127.0.0.1:3000 SERVER_URL=http://127.0.0.1:3001] \
 //   node $SKILL/scripts/drive-editor-journeys.mjs "$EVIDENCE_DIR" [media-upload,media-cancel,link-refresh,item-add]
 // Signs in as featuremap@example.com (OTP from local DB). Needs the shared featuremap-test page.
 
@@ -13,7 +13,7 @@ import { fileURLToPath } from "node:url";
 const { chromium } = createRequire(`${process.cwd()}/`)("playwright");
 const SCRIPTS = dirname(fileURLToPath(import.meta.url));
 const EMAIL = "featuremap@example.com";
-const WEB = process.env.WEB_URL || "http://localhost:3000";
+const WEB = process.env.WEB_URL || "http://127.0.0.1:3000";
 async function login() {
 	const b = await chromium.launch();
 	const ctx = await b.newContext({ viewport: { width: 1280, height: 900 } });
@@ -69,6 +69,10 @@ const items = () =>
 	sql(
 		`select coalesce(string_agg(type || ':' || coalesce(data->>'objectKey', data->>'url', left(data::text,40)), ' | ' order by created_at), '') from page_items where page_id='${PAGE}'`,
 	);
+const itemIds = () =>
+	sql(
+		`select coalesce(string_agg(id, E'\\n' order by created_at), '') from page_items where page_id='${PAGE}'`,
+	).split("\n").filter(Boolean);
 const count = (t) =>
 	Number(
 		sql(
@@ -76,7 +80,7 @@ const count = (t) =>
 		),
 	);
 // Local bucket check through the server's local media route (R2_LOCAL_MODE under alchemy dev).
-const SERVER = process.env.SERVER_URL || "http://localhost:3001";
+const SERVER = process.env.SERVER_URL || "http://127.0.0.1:3001";
 const localObject = async (key) => {
 	const r = await fetch(`${SERVER}/media/${key}`);
 	return r.ok
@@ -142,10 +146,24 @@ await ctx.route(
 	},
 );
 const results = [];
+async function cleanupNewItems(beforeIds, step) {
+	const created = itemIds().filter((itemId) => !beforeIds.has(itemId));
+	if (!created.length) return;
+	const response = await ctx.request.patch(`${SERVER}/pages/${HANDLE}/batch`, {
+		data: { upserts: [], deletes: created },
+	});
+	if (!response.ok())
+		throw new Error(`cleanup request failed: ${response.status()}`);
+	await p.reload({ waitUntil: "networkidle" });
+	if (itemIds().some((itemId) => !beforeIds.has(itemId)))
+		throw new Error("cleanup left new page items behind");
+	step(`cleanup: removed ${created.length} items; media objects queued for deletion`);
+}
 async function journey(id, fn) {
 	if (only.length && !only.includes(id)) return;
 	const dir = `${EV}/${id}`;
 	mkdirSync(dir, { recursive: true });
+	const beforeIds = new Set(itemIds());
 	const log = [];
 	netlog = `${dir}/network.txt`;
 	writeFileSync(netlog, "");
@@ -153,6 +171,7 @@ async function journey(id, fn) {
 		log.push(s);
 		console.log(`[${id}] ${s}`);
 	};
+	let failure;
 	try {
 		await p.goto(`${WEB}/${HANDLE}`, {
 			waitUntil: "networkidle",
@@ -167,11 +186,10 @@ async function journey(id, fn) {
 			await p.locator("body").ariaSnapshot(),
 		);
 		step(`db after: ${items() || "(none)"}`);
-		step("RESULT: PASS");
-		results.push(`${id}: PASS`);
+		step("journey complete");
 	} catch (e) {
-		step(`RESULT: FAIL ${e.message.split("\n")[0]}`);
-		results.push(`${id}: FAIL`);
+		failure = e;
+		step(`journey failed: ${e.message.split("\n")[0]}`);
 		await p
 			.screenshot({ path: `${dir}/failure.png`, fullPage: true })
 			.catch(() => {});
@@ -183,6 +201,15 @@ async function journey(id, fn) {
 				.catch(() => ""),
 		);
 	} finally {
+		hold = null;
+		try {
+			await cleanupNewItems(beforeIds, step);
+		} catch (e) {
+			step(`cleanup: FAIL ${e.message.split("\n")[0]}`);
+			failure ??= e;
+		}
+		step(`RESULT: ${failure ? `FAIL ${failure.message.split("\n")[0]}` : "PASS"}`);
+		results.push(`${id}: ${failure ? "FAIL" : "PASS"}`);
 		writeFileSync(
 			`${dir}/actions.md`,
 			log.map((l) => `- ${l}`).join("\n") + "\n",

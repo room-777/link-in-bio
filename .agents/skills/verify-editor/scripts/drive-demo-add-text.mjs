@@ -20,11 +20,11 @@ const page = await (
 ).newPage();
 const apiRequests = [];
 page.on("request", (request) => {
-	if (new URL(request.url()).origin === "http://localhost:3001")
+	if (new URL(request.url()).origin === "http://127.0.0.1:3001")
 		apiRequests.push(`${request.method()} ${request.url()}`);
 });
 try {
-	await page.goto("http://localhost:3000/demo", {
+	await page.goto("http://127.0.0.1:3000/demo", {
 		waitUntil: "networkidle",
 		timeout: 240_000,
 	});

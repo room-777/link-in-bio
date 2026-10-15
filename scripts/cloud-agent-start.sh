@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # Boot the shared local stack used by every cloud coding agent: Supabase
-# Postgres and `bun run dev` (alchemy dev) on localhost. Alchemy supplies local R2.
+# Postgres and `bun run dev` (alchemy dev) on 127.0.0.1. Alchemy supplies local R2.
 set -euo pipefail
 
 ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
@@ -67,7 +67,7 @@ start_dockerd() {
 	exit 1
 }
 
-write_localhost_env() {
+write_local_env() {
 	# Rebuild both ignored env files from the tracked templates on every run so
 	# provider-specific local overrides cannot drift across agent environments.
 	cp apps/server/.env.example apps/server/.env
@@ -95,10 +95,12 @@ def update_env(path, values, template=None):
     path.write_text("\n".join(result) + "\n")
 
 update_env("apps/server/.env", {
-    "BETTER_AUTH_URL": "http://localhost:3001",
-    "CORS_ORIGIN": "http://localhost:3000",
+    "BETTER_AUTH_URL": "http://127.0.0.1:3001",
+    "CORS_ORIGIN": "http://127.0.0.1:3000",
+    "CREEM_SUCCESS_URL": "http://127.0.0.1:3000/",
     "DATABASE_URL": "postgres://postgres:postgres@127.0.0.1:54322/postgres",
     "DATABASE_URL_LOCAL": "postgres://postgres:postgres@127.0.0.1:54322/postgres",
+    "PAGE_DOMAIN": "127.0.0.1:3000",
     # Keep local verification isolated from mail, billing, SaaS, and telemetry APIs.
     "RESEND_API_KEY": "",
     "CREEM_API_KEY": "",
@@ -109,8 +111,9 @@ update_env("apps/server/.env", {
     "CREEM_PRO_YEARLY_PRODUCT_ID": "",
 }, "apps/server/.env.example")
 update_env("apps/web/.env", {
-    "NEXT_PUBLIC_SERVER_URL": "http://localhost:3001",
-    "NEXT_PUBLIC_PAGE_DOMAIN": "localhost:3000",
+    "NEXT_PUBLIC_SERVER_URL": "http://127.0.0.1:3001",
+    "NEXT_PUBLIC_PAGE_DOMAIN": "127.0.0.1:3000",
+    "NEXT_PUBLIC_R2_PUBLIC_URL": "http://127.0.0.1:3001",
 }, "apps/web/.env.example")
 PY
 }
@@ -132,8 +135,8 @@ start_postgres() {
 }
 
 stack_ready() {
-	curl -fsS -m 5 http://localhost:3001/ >/dev/null 2>&1 \
-		&& curl -fsS -m 20 http://localhost:3000/ >/dev/null 2>&1
+	curl -fsS -m 5 http://127.0.0.1:3001/ >/dev/null 2>&1 \
+		&& curl -fsS -m 20 http://127.0.0.1:3000/ >/dev/null 2>&1
 }
 
 stop_fallback_stack() {
@@ -213,14 +216,28 @@ assert_ports_free() {
 }
 
 start_dockerd
-write_localhost_env
+write_local_env
 start_postgres
 
-bun run --filter @grabbin/db db:migrate:deploy
+export BETTER_AUTH_URL=http://127.0.0.1:3001
+export CORS_ORIGIN=http://127.0.0.1:3000
+export CREEM_SUCCESS_URL=http://127.0.0.1:3000/
+export DATABASE_URL=postgres://postgres:postgres@127.0.0.1:54322/postgres
+export DATABASE_URL_LOCAL=postgres://postgres:postgres@127.0.0.1:54322/postgres
+export NEXT_PUBLIC_SERVER_URL=http://127.0.0.1:3001
+export NEXT_PUBLIC_PAGE_DOMAIN=127.0.0.1:3000
+export NEXT_PUBLIC_R2_PUBLIC_URL=http://127.0.0.1:3001
+export PAGE_DOMAIN=127.0.0.1:3000
+export R2_PUBLIC_URL=http://127.0.0.1:3001
+
+NODE_ENV=development \
+	DATABASE_URL_LOCAL=postgres://postgres:postgres@127.0.0.1:54322/postgres \
+	DATABASE_URL=postgres://postgres:postgres@127.0.0.1:54322/postgres \
+	bun run --filter @grabbin/db db:migrate:deploy
 scripts/prepare-feature-map-account.sh
 
 if stack_ready && [[ ! -e /tmp/grabbin-dev/server.pid && ! -e /tmp/grabbin-dev/web.pid ]]; then
-	log "grabbin already ready: web http://localhost:3000  api http://localhost:3001"
+	log "grabbin already ready: web http://127.0.0.1:3000  api http://127.0.0.1:3001"
 	exit 0
 fi
 

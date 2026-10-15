@@ -5,7 +5,7 @@ Maintained recipes for the signed-in editor and sign-in, driven against the full
 ## Baseline preconditions
 
 - Stack launched with `scripts/cloud-agent-start.sh` and `scripts/doctor.sh` prints `OK: stack healthy`.
-- Every provider uses web `http://localhost:3000`, API `http://localhost:3001`, and local Postgres at `127.0.0.1:54322`.
+- Every provider uses web `http://127.0.0.1:3000`, API `http://127.0.0.1:3001`, and local Postgres at `127.0.0.1:54322`.
 - Shared identity: `featuremap@example.com`, handle `featuremap-test`, and local Pro product `local-pro`. The launcher creates the same user and Pro grant in each disposable local database. `drive-create-page.mjs` signs in and creates the handle through `/create` on first run.
 - `/demo` is intentionally database-free and Free. It can prove demo interactions only; it never counts as proof for owner access, Pro widgets, persistence, or a public stored page.
 - Media upload/cancel require the shared Alchemy local R2 endpoint. Never use real R2 keys or a production database.

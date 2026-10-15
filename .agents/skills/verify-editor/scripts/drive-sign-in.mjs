@@ -28,7 +28,7 @@ const browser = await chromium.launch();
 const context = await browser.newContext();
 const page = await context.newPage();
 try {
-	await page.goto("http://localhost:3000/sign-in", {
+	await page.goto("http://127.0.0.1:3000/sign-in", {
 		waitUntil: "networkidle",
 		timeout: 240_000,
 	});
