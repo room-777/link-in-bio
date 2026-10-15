@@ -1,7 +1,6 @@
 /**
- * The one list of repository checks. The pre-commit hook and CI both run
- * `bun run verify`, so a commit that passes here passes in CI and the other
- * way round. Add a check here, never only in the hook or only in CI.
+ * The one list of repository checks. CI and deploy both run `bun run verify`.
+ * Add checks here, not only in one workflow.
  */
 import { spawnSync } from "node:child_process";
 import { readFileSync } from "node:fs";

@@ -1,7 +1,7 @@
 /**
  * Fails when production keys or resources can reach local, bot or test code.
  * Rule (CONTRIBUTING.md, "Production keys"): only the Deploy workflow holds
- * production keys. Runs in `bun run verify`, so pre-commit and CI both run it.
+ * production keys. Runs in `bun run verify` and CI.
  * Reads tracked files from the index and never prints values beyond a match.
  */
 import { spawnSync } from "node:child_process";

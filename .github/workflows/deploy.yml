@@ -1,9 +1,9 @@
 name: Deploy
 
 # Deploys production only after the Release workflow succeeds on main (or on
-# a manual run). If Release fails or is cancelled, the `blocked` job fails with
-# an error annotation so the blocked deploy is never silent (GitHub notifies
-# about the failed run). `bun run verify` runs again before deploying.
+# a manual run). Release runs only after main CI succeeds. If Release fails or
+# is cancelled, the `blocked` job reports why the deploy did not start. Manual
+# deploys run verify because they bypass CI and Release.
 # Database migrations are NOT run here; apply them explicitly before merging
 # schema changes (see README "Apply migrations").
 on:
@@ -50,8 +50,8 @@ jobs:
         with:
           bun-version-file: package.json
       - run: bun install --frozen-lockfile
-      # Gate: the same checks as the pre-commit hook and CI, on this commit.
-      - name: Verify before deploy
+      - name: Verify manual deployment
+        if: github.event_name == 'workflow_dispatch'
         run: bun run verify
       - name: Write production env files
         env:
