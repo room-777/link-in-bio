@@ -14,7 +14,7 @@ Maintained recipes for the signed-in editor and sign-in, driven against the full
 
 - Headless Playwright, a fresh context per run, ARIA role + accessible name locators.
 - Use the same account (`featuremap@example.com`), handle (`featuremap-test`), and local Pro grant (`local-pro`) in Grok Bot, Cursor, and Codex.
-- Editor controls live in the `group "Page editor toolbar"` (buttons `Add media`, `Add map`, `Add text`, `Add section`, `Add link`, `Advanced`) and on each item (`Delete item`, size presets `Small square` / `Half banner` / `Wide` / `Portrait` / `Full square`, `Edit link URL`, `Refresh link metadata`).
+- Editor controls live in the `group "Page editor toolbar"` (buttons `Add media`, `Add map`, `Add text`, `Add section`, `Add link`, `Advanced`) and on each item. Item controls include `Delete item`, size presets, text style and link controls, media crop, map search and navigation, and media or link captions.
 - The owner editor saves automatically ~1.5 s after the last change. Wait for that before reloading.
 - Restore what you change; keep the evidence.
 
@@ -30,5 +30,14 @@ Maintained recipes for the signed-in editor and sign-in, driven against the full
 - [Sign in with email OTP](./sign-in-email-otp.md): `/sign-in` → code → signed-in landing.
 - [Add an item](./editor-add-item.md): toolbar `Add text` / `Add section` / `Add link` / `Add map`, then delete.
 - [Media upload and cancel](./editor-media-upload.md): toolbar `Add media`, upload to local R2, delete mid-upload.
+- [Profile and handle](./editor-profile-and-handle.md): edit the name, bio, profile image, image crop, and page handle.
+- [Layout and item placement](./editor-layout.md): switch compact and wide layouts, drag items, and apply size presets.
+- [Text formatting](./editor-text-formatting.md): edit text and section content, alignment, and background colors.
+- [Media editing](./editor-media-editing.md): edit captions and crop uploaded media.
+- [Map editing](./editor-map-editing.md): search for a location and adjust the map view.
+- [Link card images](./editor-link-card-images.md): add, replace, and remove a link card image.
 - [Link metadata refresh](./editor-link-metadata.md): `Add link` and `Refresh link metadata`.
+- [Text and media destination URLs](./editor-inline-destination-url.md): add, edit, clear, and confirm optional destinations.
 - [Add a Tweet (X post)](./editor-tweet.md): `Advanced` → X widget with a status URL.
+- [Advanced widgets](./editor-advanced-widgets.md): browse the catalog and add Spotify, RSS, or Calendly widgets.
+- [Share the page](./editor-page-sharing.md): open the share dialog, copy the page link, and read its QR code.
