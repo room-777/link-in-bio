@@ -1,24 +1,34 @@
 ---
 name: verify-editor
-description: Drive Grabbin's full local stack (web :3000, Hono API :3001, local Supabase Postgres) with headless Playwright to prove page-editor and email-OTP sign-in behavior. Use after changes to the Bento editor, its state/mutations, or auth, when the demo-only `verify` skill is not enough.
+description: Drive Grabbin's full local stack (web :3000, Hono API :3001, local PostgreSQL) with headless Playwright to prove page-editor and email-OTP sign-in behavior. Use after changes to the Bento editor, its state/mutations, or auth, when the demo-only `verify` skill is not enough.
 ---
 
 # Verify the Grabbin editor (full stack)
 
 The `verify` skill covers `/demo` with no backend. This skill runs the API and database too, so editor and sign-in journeys can be driven against real storage. Feature recipes live in [`features/README.md`](features/README.md).
 
-Commands below run from the repo root. To verify a different checkout (for example a PR worktree) with these scripts, export `GRABBIN_REPO=/path/to/that/checkout` before `start-local.sh` and `doctor.sh`; it needs its own `bun install` and `.env` files.
+Commands below run from the repo root. To verify a different checkout, use its own dependencies and local `.env` files. The feature-map fixture is local to each agent's disposable Postgres instance but has the same email, handle, and Pro plan everywhere.
 
 ## Launch
 
-Prerequisites (one-time per machine):
+Use the shared cloud-agent entrypoint for Grok Bot, Cursor, and Codex. Each environment needs Docker, Bun dependencies, `CLOUDFLARE_API_TOKEN`, and `CLOUDFLARE_ACCOUNT_ID` when the token can see multiple accounts. From the repository root run:
 
-- Docker running, Supabase CLI installed, `bun install` done at the repo root.
-- `apps/server/.env` and `apps/web/.env` exist (copy the `.env.example` files, `localhost` URLs). Do **not** add R2 keys.
-- **Preferred launch (same as the Mac): `bun run dev`** (`alchemy dev`). It runs the server worker, cron, and `vinext dev` locally with alchemy's local R2 bucket and local S3 endpoint for presigned uploads. Web `http://localhost:3000`, API `http://localhost:3001`. It needs a Cloudflare profile because the stack state lives in Cloudflare (`Cloudflare.state()`). On a headless box or agent shell the interactive `alchemy profile edit` refuses to prompt, so register a token non-interactively:
-  `cd packages/infra && bun ./node_modules/.bin/alchemy profile edit --add Cloudflare --method stored --set apiToken=env:CLOUDFLARE_API_TOKEN --set accountId=<id> --no-input` (account id: `GET https://api.cloudflare.com/client/v4/accounts`). Use `bun`; alchemy's CLI needs node ≥ 22.15. Stop it by killing the process group you started.
-- **Cloud Agent:** from the repo root, `scripts/cloud-agent-start.sh` is the configured bootstrap. It starts Docker and local Postgres, writes example `.env` files with localhost URLs, registers the Cloudflare profile, applies local DB migrations, and starts `bun run dev`. It requires `CLOUDFLARE_API_TOKEN`; never put production R2 keys in `.env`. The bucket and S3 endpoint are local. If `localhost:3000` and `:3001` already answer, the script reuses them; run `doctor.sh` and confirm the checkout before driving.
-- Fallback without Cloudflare: `scripts/start-local.sh` (plain `wrangler dev`, `127.0.0.1` URLs in `.env`). Sign-in, item, link, and tweet journeys work; media upload/cancel are blocked (no local S3 endpoint).
+```sh
+scripts/cloud-agent-start.sh
+```
+
+It configures loopback URLs, starts a regular PostgreSQL 15 container on `127.0.0.1:5432`, applies migrations, registers the Alchemy Cloudflare profile non-interactively, and prepares the same local Pro account in each agent's disposable database. Alchemy provides local R2 and the local S3 endpoint; no R2 keys go in `.env`. Stop it with Ctrl-C in the terminal that owns `bun run dev`.
+
+Run the account driver after startup from the repository root. In a second terminal, change to that root first. The driver signs in as `featuremap@example.com`, creates `featuremap-test` through the visible `/create` form if needed, and saves screenshots and actions:
+
+```sh
+REPO="$(git rev-parse --show-toplevel)"
+ACCOUNT_EVIDENCE_DIR="$REPO/artifacts/verify-editor/account-$(date +%Y%m%d-%H%M%S)-$$"
+mkdir -p "$ACCOUNT_EVIDENCE_DIR"
+node "$REPO/.agents/skills/verify-editor/scripts/drive-create-page.mjs" "$ACCOUNT_EVIDENCE_DIR"
+```
+
+The driver needs Playwright installed in the current directory (or run it from the configured Playwright directory). Later runs reuse the same account and page. `start-local.sh` is a limited fallback without local S3 and must not be used to claim media upload/cancel passed. The sign-in driver always uses `http://127.0.0.1:3000`.
 
 Steps:
 
@@ -30,12 +40,10 @@ EVIDENCE_DIR="$REPO/artifacts/verify-editor/$RUN_ID"   # proof: survives cleanup
 mkdir -p "$RUN_DIR" "$EVIDENCE_DIR"
 git -C "$REPO" rev-parse HEAD > "$EVIDENCE_DIR/revision"
 
-cd "$REPO" && bun run db:local:supabase                 # Postgres on 54322 (idempotent; prints DB_URL when ready)
-bun run --filter @grabbin/db db:migrate:deploy          # must end with "migrations applied successfully"
-.agents/skills/verify-editor/scripts/start-local.sh "$RUN_DIR"
+cd "$REPO" && scripts/cloud-agent-start.sh             # full shared stack + local Pro account
 ```
 
-`start-local.sh` refuses to start if `:3000` or `:3001` is already in use, and exits 0 only after the API answers `OK` and `/sign-in` renders (first compile can take ~1-2 min). It prints `ready: web http://127.0.0.1:3000  api http://127.0.0.1:3001`.
+The shared launcher owns the foreground `bun run dev` process. It uses `127.0.0.1` URLs and fails if another stack is occupying the app ports.
 
 ## Doctor
 
@@ -54,25 +62,26 @@ Harness: headless Playwright (Chromium), one fresh browser context per run, loca
 ```sh
 cd "$PW_DIR"
 node "$REPO/.agents/skills/verify-editor/scripts/drive-demo-add-text.mjs" "$EVIDENCE_DIR/editor-add-item"
-node "$REPO/.agents/skills/verify-editor/scripts/drive-sign-in.mjs" "$EVIDENCE_DIR/sign-in" dev@example.com
+node "$REPO/.agents/skills/verify-editor/scripts/drive-sign-in.mjs" "$EVIDENCE_DIR/sign-in" featuremap@example.com
+RUN_DIR="$RUN_DIR" node "$REPO/.agents/skills/verify-editor/scripts/drive-editor-journeys.mjs" "$EVIDENCE_DIR/editor" media-upload,media-cancel,link-refresh,item-add
 ```
 
 Each script prints its steps, ends with `RESULT: PASS` or `RESULT: FAIL <reason>`, sets the exit code, and writes `actions.md` plus screenshots/ARIA snapshots into the given directory. For journeys without a script, follow the matching file in `features/` and use the same conventions.
 
-Sign-in: `apps/server/.env` may hold a real `RESEND_API_KEY`, so "Send OTP" sends a real email. Only ever use reserved `@example.com` addresses (`drive-sign-in.mjs` refuses anything else). Read the code from the local database instead of a mailbox:
+Sign-in: the shared launcher blanks `RESEND_API_KEY`; only use `featuremap@example.com` and read its code from the local database:
 
 ```sh
-.agents/skills/verify-editor/scripts/otp.sh dev@example.com   # prints the newest 6-digit code
+.agents/skills/verify-editor/scripts/otp.sh featuremap@example.com   # prints the newest 6-digit code
 ```
 
 ## Evidence
 
-Proof goes to `$EVIDENCE_DIR/<feature-id>/` (under `artifacts/verify-editor/`, gitignored). Standards:
+Proof goes only to `$EVIDENCE_DIR/<feature-id>/` (under `artifacts/verify-editor/`, gitignored). Keep screenshots, snapshots, logs, and database evidence there. Do not copy proof to another path or commit it for PR visibility. The Priority 5 rule in `AGENTS.md` is enforced by the pre-commit hook and `bun run verify`. Standards:
 
 - Drive the real user path (toolbar buttons, forms), never internal setters or test-only endpoints.
 - Capture the action and the result: a before snapshot/screenshot, the after state, and `actions.md` with each step and observed value.
-- For anything that should persist, verify the side effect separately: reload in a new context and read the row back (`docker exec supabase_db_grabbin psql -U postgres -c "select id, type from page_items where ..."`). A toast or "saved" status alone is not proof.
-- `/demo` runs the same Bento editor store with persistence off; a `/demo` proof covers editor interaction, not saving. Say so in the report.
+- For anything that should persist, verify the side effect separately: reload in a new context and read the row back (`docker exec grabbin-featuremap-postgres psql -U postgres -c "select id, type from page_items where ..."`). A toast or "saved" status alone is not proof.
+- `/demo` runs the same Bento editor store with persistence off and without Pro access; its driver records API traffic and fails if any request reaches the API. A `/demo` proof covers interaction only, not saving or gated features.
 - Record the revision (`$EVIDENCE_DIR/revision`) and the feature/sub-feature IDs used.
 
 ## Cleanup
@@ -83,7 +92,7 @@ rm -rf "$RUN_DIR"
 ls "$EVIDENCE_DIR"                                               # proof must still be there
 ```
 
-Never kill by process name. Leave Supabase running unless this run started it (`bun run db:local:supabase:stop` then). Remove test rows you created (for example the `dev@example.com` user and its page) only if the journey requires a clean state; evidence stays.
+Never kill by process name. Leave the PostgreSQL container running so later runs can reuse the local fixture. Keep the shared fixture intact; evidence stays.
 
 ## Helpers
 
@@ -95,17 +104,18 @@ Never kill by process name. Leave Supabase running unless this run started it (`
 | `scripts/otp.sh <email>` | Print the newest sign-in OTP for an `@example.com` address from local Postgres. |
 | `scripts/drive-demo-add-text.mjs <dir>` | Prove `editor-add-item` on `/demo` (add text block, then delete it). |
 | `scripts/drive-sign-in.mjs <dir> [email]` | Drive email-OTP sign-in and check the post-sign-in landing page. |
-| `scripts/drive-editor-journeys.mjs <dir> [ids]` | Owner editor journeys on the real `/{handle}`: `media-upload`, `media-cancel`, `link-refresh`, `item-add`. Env: `RUN_DIR`, optional `WEB_URL`/`SERVER_URL` (default `localhost`). Fails on any cloud R2 request. |
+| `scripts/drive-create-page.mjs <dir>` | Sign in and create `featuremap-test` through `/create` if it does not exist. |
+| `scripts/drive-editor-journeys.mjs <dir> [ids]` | Owner editor journeys on the real `/{handle}`: `media-upload`, `media-cancel`, `link-refresh`, `item-add`. Env: `RUN_DIR`, optional `WEB_URL`/`SERVER_URL` (default `127.0.0.1`). Fails on any cloud R2 request. |
 | `scripts/server.wrangler.jsonc` | Local API worker config used by `start-local.sh`. |
 
 ## Known gotchas (environment)
 
-- With `start-local.sh`, use `127.0.0.1` everywhere (both in `.env` and when driving); with `bun run dev`, use the `localhost` URLs alchemy prints (Chromium resolves `localhost` to both `::1` and `127.0.0.1`). In some sandboxes `localhost` resolves to `::1` only, and `vinext dev` binds there while the API binds IPv4; mixing hosts also splits auth cookies between `localhost` and `127.0.0.1`.
+- Use `127.0.0.1` for browser, API, and app URLs with either launcher. In some sandboxes `localhost` resolves to `::1` only while the API binds IPv4; mixing hosts also splits auth cookies.
 - Exported shell variables (`NEXT_PUBLIC_SERVER_URL`, ...) override `.env`; `start-local.sh` unsets them. If the browser calls the wrong API origin, check `env`.
-- In Docker without systemd, start `dockerd` yourself; if containers cannot reach each other (Supabase start fails with `DbSetupError`), the host FORWARD policy is dropping bridge traffic.
+- In Docker without systemd, start `dockerd` yourself; if containers cannot reach each other, the host FORWARD policy may be dropping bridge traffic.
 
 - `GRABBIN_REPO` stays exported in your shell; unset or re-export it before starting a different checkout, and check the `checkout:` line `start-local.sh` prints.
-- `RESEND_API_KEY` may be real: only ever use `@example.com` addresses (`dev@example.com`); read the OTP with `scripts/otp.sh`.
+- Use the shared `featuremap@example.com` account only; its OTP is read locally with `scripts/otp.sh`.
 - `start-local.sh` only: `apps/server/.env` (`--env-file`) overrides `vars` in `scripts/server.wrangler.jsonc`, even with an empty value.
 - `GET /pages/{handle}/views` returns 500 locally ("Simple Analytics request failed"); the footer shows "Views on break". Expected without analytics access; ignore it.
 

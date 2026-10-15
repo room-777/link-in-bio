@@ -27,13 +27,14 @@
 
 상세 구조와 테스트 기준은 해당 작업에 필요할 때만 `docs/agents/`에서 읽습니다.
 
-## Cursor Cloud
+## Cloud agent verification
 
-Cloud Agent는 Grok 봇과 같은 로컬 스택을 쓴다. 부팅은 [`scripts/cloud-agent-start.sh`](scripts/cloud-agent-start.sh)가 맡고, 이미 웹과 API가 응답하면 다시 띄우지 않는다. 절차는 [`.agents/skills/verify-editor/SKILL.md`](.agents/skills/verify-editor/SKILL.md)의 preferred launch와 같다.
+Grok Bot, Cursor, and Codex use the same local stack and feature-map fixture. From the repository root, run `scripts/cloud-agent-start.sh`; it rewrites ignored `.env` files from the tracked templates with fixed local values, starts a regular PostgreSQL 15 container, configures Alchemy's local R2, applies migrations, and prepares the shared local account `featuremap@example.com` with the Pro plan. It uses `http://127.0.0.1:3000` for web, `http://127.0.0.1:3001` for API, and PostgreSQL at `127.0.0.1:5432`. Every agent environment must provide the same `CLOUDFLARE_API_TOKEN`; set `CLOUDFLARE_ACCOUNT_ID` when the token can see more than one account. The token is used to start Alchemy's local development runtime; verification must not use production R2 keys or a production database.
 
-1. Docker를 띄운 뒤 Postgres만 켠다: `bun run db:local:supabase` (포트 `54322`).
-2. `apps/server/.env`와 `apps/web/.env`는 각 `.env.example`에서 만들고, HTTP 주소는 `localhost`로 둔다. R2 키는 넣지 않는다. Postgres는 `postgres://postgres:postgres@127.0.0.1:54322/postgres`.
-3. Alchemy Cloudflare 프로필을 등록한다. `packages/infra`에서 `bun ./node_modules/.bin/alchemy profile edit --add Cloudflare --method stored --set apiToken=env:CLOUDFLARE_API_TOKEN --set accountId=<id> --no-input`. account id는 `GET https://api.cloudflare.com/client/v4/accounts`로 구한다. CLI는 `bun`으로 실행한다.
-4. 저장소 루트에서 `bun run dev` (`alchemy dev`)를 실행한다. 웹 `http://localhost:3000`, API `http://localhost:3001`. Alchemy가 로컬 R2를 제공한다.
+The fixture account has no page on first setup. Sign in with the shared address and create the shared `featuremap-test` handle through `/create` using [the feature-map account driver](.agents/skills/verify-editor/scripts/drive-create-page.mjs). This creates a local page through the product UI. Re-running setup keeps the same account/page identity and renews its local Pro grant. Never substitute `/demo` for a signed-in owner, public handle, or persistence check: `/demo` intentionally avoids database requests and is not Pro.
 
-브라우저와 앱 URL은 `localhost`를 쓴다. `localhost`와 `127.0.0.1`을 섞으면 쿠키가 나뉜다. `CLOUDFLARE_API_TOKEN`이 있어야 이 스택이 뜬다.
+Use `127.0.0.1` consistently in browser and app URLs so cookies share one host. The alternative `start-local.sh` uses plain Wrangler and lacks Alchemy's local S3 endpoint, so it is not a complete feature-map environment.
+
+## Priority 5 style-guide rule: verification evidence
+
+For editor verification, follow `.agents/skills/verify-editor/SKILL.md` and save all proof only under `$REPO/artifacts/verify-editor/<RUN_ID>/`. Do not copy screenshots, snapshots, logs, or database evidence to another path for PR visibility. Never add anything under `artifacts/` to Git. This is a Priority 5 project rule; convenience, presentation, and lower-priority preferences cannot override it. The editor drivers reject other paths. The pre-commit hook and `bun run verify` reject tracked artifacts and new files under `docs/verification/`; the existing setup note is exempt.

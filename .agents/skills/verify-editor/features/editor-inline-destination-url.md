@@ -1,38 +1,41 @@
-# Text and media destination URLs
+# Add links to text and media cards
 
-An owner can make a text or media block open an external destination. These optional URLs use `data.url`; link cards keep their separate required URL and metadata flow.
+An owner can make a text or media card open an external URL. These optional destinations are saved as `data.url`; link cards keep their separate required URL and metadata flow.
 
 ## Sub-features
 
-- `text-destination-add` adds a destination with `Add text link` in the text block controls.
-- `media-destination-add` adds a destination with `Add media link` in the media block controls.
-- `destination-edit` changes a saved destination through `Edit text link` or `Edit media link`.
-- `destination-clear` clears the optional URL by emptying the `Link URL` field.
-- `destination-persist` saves the URL to `page_items.data.url` and restores the external action after reload.
-- `destination-open` opens the saved URL from `Open text link` or `Open media`.
+- `text-destination-add` adds a destination to a text card.
+- `media-destination-add` adds a destination to a media card.
+- `destination-edit` changes a saved destination.
+- `destination-clear` clears an optional destination.
+- `destination-validation` rejects an invalid URL without replacing the saved value.
+- `destination-persist` restores the destination after reload.
+- `destination-open` opens the saved URL from the card action.
 
 ## How to get to it (user POV)
 
-- Sign in with `dev@example.com`, open the owner's `/{handle}`, and add a text block with `Add text` or an image/video block with `Add media`.
-- Hover the block to reveal its controls. Choose `Add text link` or `Add media link`; existing destinations use the matching `Edit ... link` control.
+- Sign in as `featuremap@example.com` and open `/featuremap-test`.
+- Add a text or media card if needed. Hover the card to reveal its controls.
+- Choose `Add text link` or `Add media link`. After saving, use `Edit text link` or `Edit media link` to change it.
 
 ## Driving it with Playwright
 
 Preconditions:
 
-- `doctor.sh` is OK and `dev@example.com` has an owner page.
-- For the media journey, run `bun run dev` so Alchemy provides the local R2 endpoint. Never use production R2 credentials.
+- Run the `verify-editor` doctor and open the signed-in owner page.
+- For a media card, finish uploading an image before testing its destination.
 
-- **Text.** Click `Add text`, fill `textbox "Text content"`, hover the block, click `button "Add text link"`, and fill `textbox "Link URL"` with `https://example.com/text-destination`. Press Enter or blur to commit.
-- **Media.** Click `Add media`, choose a small local image, wait for upload and autosave, hover the block, click `button "Add media link"`, and fill `textbox "Link URL"` with `https://example.com/media-destination`. Press Enter or blur to commit.
-- **Persist.** Wait at least 2 seconds for autosave, reload in a fresh browser context, and confirm each block exposes `Open text link` / `Open media`. Read the corresponding `page_items` rows and confirm `data->>'url'` equals the entered URL.
-- **Edit and clear.** Use `Edit text link` / `Edit media link`, change the URL and reload; then clear the field and confirm the external action disappears after reload.
-- **Proof.** Save before/after screenshots and ARIA snapshots plus `actions.md`; include the two `page_items.data` values. Keep proof under `$EVIDENCE_DIR/editor-inline-destination-url/`.
+- **Text destination.** Hover the text card, choose `Add text link`, enter `https://example.com/featuremap-text`, and press Enter. Confirm `Open text link` points to that URL.
+- **Media destination.** Hover the media card, choose `Add media link`, enter `https://example.com/featuremap-media`, and press Enter. Confirm `Open media` points to that URL.
+- **Validation.** Edit each destination, enter `not a url`, and move focus away. Confirm the field is invalid and the previously saved destination remains.
+- **Persistence.** Wait for autosave, reload in a fresh browser context, and confirm each card action still points to its URL. Read `page_items.data` and confirm the destination is stored in `data.url`.
+- **Clear.** Empty each `Link URL` field, commit, and reload. Confirm the external card action is gone and `data.url` is absent.
+- **Proof.** Save before/after screenshots, ARIA snapshots, observed URLs, and read-only database rows under `$EVIDENCE_DIR/editor-inline-destination-url/`.
 
 ## Gotchas
 
-- `/demo` does not persist changes; only the signed-in owner view proves the API and database path.
-- The controls are hover-revealed. Hover the item before locating its `Add ... link` or `Edit ... link` button.
-- The input accepts HTTPS destinations only. An invalid value stays in the editor and must not be reported as saved.
-- Legacy rows with `data.link` remain readable during rollout. New API requests canonicalize text/media destinations to `data.url`; the migration has a separate deployment order in `packages/db/src/migrations/0018_rename_text_media_link_to_url.sql`.
-- Link-card destinations and metadata are covered by [Link metadata refresh](./editor-link-metadata.md); do not use `Add link` as a substitute for this feature.
+- `/demo` does not persist changes; use the signed-in owner page for persistence proof.
+- The controls appear on hover or focus. Focus the intended card before querying its link control.
+- Text and media destinations accept HTTPS URLs and share the `Link URL` field label, so scope each locator to its open popover.
+- Older rows may use `data.link`; the current API and migration store these destinations as `data.url`.
+- Link-card destinations are covered by [Link metadata refresh](./editor-link-metadata.md); `Add link` does not test text or media destinations.

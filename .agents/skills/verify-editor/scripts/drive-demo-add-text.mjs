@@ -3,10 +3,13 @@
 //   node <skill>/scripts/drive-demo-add-text.mjs <EVIDENCE_DIR>
 import { mkdirSync, writeFileSync } from "node:fs";
 import { createRequire } from "node:module";
+import { requireEvidenceDir } from "./evidence-path.mjs";
 
+const evidenceArgument = process.argv[2];
+if (!evidenceArgument)
+	throw new Error("usage: drive-demo-add-text.mjs <EVIDENCE_DIR>");
+const evidence = requireEvidenceDir(evidenceArgument);
 const { chromium } = createRequire(`${process.cwd()}/`)("playwright");
-const evidence = process.argv[2];
-if (!evidence) throw new Error("usage: drive-demo-add-text.mjs <EVIDENCE_DIR>");
 mkdirSync(evidence, { recursive: true });
 const log = [];
 const step = (line) => {
@@ -14,10 +17,17 @@ const step = (line) => {
 	console.log(line);
 };
 
-const browser = await chromium.launch();
+const browser = await chromium.launch({
+	executablePath: process.env.CHROMIUM_PATH,
+});
 const page = await (
 	await browser.newContext({ viewport: { width: 1280, height: 900 } })
 ).newPage();
+const apiRequests = [];
+page.on("request", (request) => {
+	if (new URL(request.url()).origin === "http://127.0.0.1:3001")
+		apiRequests.push(`${request.method()} ${request.url()}`);
+});
 try {
 	await page.goto("http://127.0.0.1:3000/demo", {
 		waitUntil: "networkidle",
@@ -77,6 +87,13 @@ try {
 		fullPage: true,
 	});
 	step(`after Delete item: ${await textBlocks.count()} blocks (restored)`);
+	writeFileSync(
+		`${evidence}/network.txt`,
+		apiRequests.join("\n") || "No API requests\n",
+	);
+	if (apiRequests.length > 0)
+		throw new Error(`demo made API requests: ${apiRequests.join(", ")}`);
+	step("API requests: none (demo remains database-free)");
 	step("RESULT: PASS");
 } catch (error) {
 	step(

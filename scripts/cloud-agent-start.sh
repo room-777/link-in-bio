@@ -1,12 +1,35 @@
 #!/usr/bin/env bash
-# Boot the same local stack the verify-editor skill prefers: Supabase Postgres
-# and `bun run dev` (alchemy dev) on localhost. Alchemy supplies local R2.
+# Boot the shared local stack used by every cloud coding agent: standard
+# PostgreSQL and `bun run dev` (alchemy dev) on 127.0.0.1. Alchemy supplies local R2.
 set -euo pipefail
 
 ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 cd "$ROOT"
 
-export PATH="/usr/local/bin:${HOME}/.bun/bin:${PATH}"
+BUN_VERSION="1.4.0"
+BUN_INSTALL="${BUN_INSTALL:-${HOME}/.bun}"
+export BUN_INSTALL
+export PATH="/usr/local/bin:${BUN_INSTALL}/bin:${PATH}"
+PG_CONTAINER="grabbin-featuremap-postgres"
+
+ensure_bun() {
+	local installed=""
+	if command -v bun >/dev/null 2>&1; then
+		installed="$(bun --version)"
+	fi
+	if [[ "$installed" != "$BUN_VERSION" ]]; then
+		curl -fsSL https://bun.sh/install | bash -s "bun-v${BUN_VERSION}"
+		export PATH="${BUN_INSTALL}/bin:${PATH}"
+	fi
+}
+
+ensure_bun
+bun install --frozen-lockfile
+
+if [[ -z "${CLOUDFLARE_API_TOKEN:-}" ]]; then
+	printf '%s\n' "CLOUDFLARE_API_TOKEN is required for bun run dev; configure it as a cloud environment secret and rerun." >&2
+	exit 1
+fi
 
 log() {
 	printf '%s\n' "$*"
@@ -33,31 +56,76 @@ start_dockerd() {
 	exit 1
 }
 
-write_localhost_env() {
+write_local_env() {
+	# Rebuild both ignored env files from the tracked templates on every run so
+	# provider-specific local overrides cannot drift across agent environments.
 	cp apps/server/.env.example apps/server/.env
+	cp apps/web/.env.example apps/web/.env
 	python3 - <<'PY'
 from pathlib import Path
 
-lines = []
-for line in Path("apps/web/.env.example").read_text().splitlines():
-    if line.startswith("NEXT_PUBLIC_SERVER_URL="):
-        lines.append("NEXT_PUBLIC_SERVER_URL=http://localhost:3001")
-    elif line.startswith("NEXT_PUBLIC_PAGE_DOMAIN="):
-        lines.append("NEXT_PUBLIC_PAGE_DOMAIN=localhost:3000")
-    else:
-        lines.append(line)
-Path("apps/web/.env").write_text("\n".join(lines) + "\n")
+def update_env(path, values, template=None):
+    path = Path(path)
+    if not path.exists():
+        path.write_text(Path(template).read_text())
+    lines = path.read_text().splitlines()
+    seen = set()
+    result = []
+    for line in lines:
+        key = line.partition("=")[0]
+        if key in values:
+            result.append(f"{key}={values[key]}")
+            seen.add(key)
+        else:
+            result.append(line)
+    for key, value in values.items():
+        if key not in seen:
+            result.append(f"{key}={value}")
+    path.write_text("\n".join(result) + "\n")
+
+update_env("apps/server/.env", {
+    "BETTER_AUTH_URL": "http://127.0.0.1:3001",
+    "CORS_ORIGIN": "http://127.0.0.1:3000",
+    "CREEM_SUCCESS_URL": "http://127.0.0.1:3000/",
+    "DATABASE_URL": "postgres://postgres:postgres@127.0.0.1:5432/postgres",
+    "DATABASE_URL_LOCAL": "postgres://postgres:postgres@127.0.0.1:5432/postgres",
+    "PAGE_DOMAIN": "127.0.0.1:3000",
+    # Keep local verification isolated from mail, billing, SaaS, and telemetry APIs.
+    "RESEND_API_KEY": "",
+    "CREEM_API_KEY": "local-verification-key",
+    "CREEM_WEBHOOK_SECRET": "local-verification-secret",
+    "CLOUDFLARE_SAAS_API_TOKEN": "",
+    "SENTRY_AUTH_TOKEN": "",
+    "CREEM_PRO_MONTHLY_PRODUCT_ID": "local-pro",
+    "CREEM_PRO_YEARLY_PRODUCT_ID": "",
+}, "apps/server/.env.example")
+update_env("apps/web/.env", {
+    "NEXT_PUBLIC_SERVER_URL": "http://127.0.0.1:3001",
+    "NEXT_PUBLIC_PAGE_DOMAIN": "127.0.0.1:3000",
+    "NEXT_PUBLIC_R2_PUBLIC_URL": "http://127.0.0.1:3001",
+}, "apps/web/.env.example")
 PY
 }
 
 start_postgres() {
-	if docker exec supabase_db_grabbin pg_isready -U postgres >/dev/null 2>&1; then
+	if docker exec "$PG_CONTAINER" pg_isready -U postgres >/dev/null 2>&1; then
 		return
 	fi
-	sudo iptables -P FORWARD ACCEPT || true
-	bun run db:local:supabase
+	if docker container inspect "$PG_CONTAINER" >/dev/null 2>&1; then
+		docker start "$PG_CONTAINER" >/dev/null
+	else
+		docker run --detach \
+			--name "$PG_CONTAINER" \
+			--restart unless-stopped \
+			--publish 127.0.0.1:5432:5432 \
+			--env POSTGRES_USER=postgres \
+			--env POSTGRES_PASSWORD=postgres \
+			--env POSTGRES_DB=postgres \
+			--volume grabbin-featuremap-postgres-data:/var/lib/postgresql/data \
+			postgres:15-alpine >/dev/null
+	fi
 	for _ in $(seq 1 60); do
-		if docker exec supabase_db_grabbin pg_isready -U postgres >/dev/null 2>&1; then
+		if docker exec "$PG_CONTAINER" pg_isready -U postgres >/dev/null 2>&1; then
 			return
 		fi
 		sleep 1
@@ -67,8 +135,9 @@ start_postgres() {
 }
 
 stack_ready() {
-	curl -fsS -m 5 http://localhost:3001/ >/dev/null 2>&1 \
-		&& curl -fsS -m 20 http://localhost:3000/ >/dev/null 2>&1
+	curl -fsS -m 5 http://127.0.0.1:3001/ >/dev/null 2>&1 \
+		&& curl -fsS -m 20 http://127.0.0.1:3000/ >/dev/null 2>&1 \
+		&& [[ "$(curl -sS -m 2 -o /dev/null -w '%{http_code}' http://127.0.0.1:3002/ 2>/dev/null)" == "404" ]]
 }
 
 stop_fallback_stack() {
@@ -79,7 +148,7 @@ stop_fallback_stack() {
 	fi
 	for _ in $(seq 1 20); do
 		busy=0
-		for port in 3000 3001; do
+		for port in 3000 3001 3002; do
 			if ss -ltn "sport = :${port}" | grep -q LISTEN; then
 				busy=1
 			fi
@@ -139,7 +208,7 @@ register_cloudflare_profile() {
 
 assert_ports_free() {
 	local port
-	for port in 3000 3001; do
+	for port in 3000 3001 3002; do
 		if ss -ltn "sport = :${port}" | grep -q LISTEN; then
 			log "port ${port} is in use" >&2
 			exit 1
@@ -148,16 +217,28 @@ assert_ports_free() {
 }
 
 start_dockerd
-write_localhost_env
+write_local_env
 start_postgres
 
-if [[ -z "${CLOUDFLARE_API_TOKEN:-}" ]]; then
-	log "CLOUDFLARE_API_TOKEN is required for bun run dev" >&2
-	exit 1
-fi
+export BETTER_AUTH_URL=http://127.0.0.1:3001
+export CORS_ORIGIN=http://127.0.0.1:3000
+export CREEM_SUCCESS_URL=http://127.0.0.1:3000/
+export DATABASE_URL=postgres://postgres:postgres@127.0.0.1:5432/postgres
+export DATABASE_URL_LOCAL=postgres://postgres:postgres@127.0.0.1:5432/postgres
+export NEXT_PUBLIC_SERVER_URL=http://127.0.0.1:3001
+export NEXT_PUBLIC_PAGE_DOMAIN=127.0.0.1:3000
+export NEXT_PUBLIC_R2_PUBLIC_URL=http://127.0.0.1:3001
+export PAGE_DOMAIN=127.0.0.1:3000
+export R2_PUBLIC_URL=http://127.0.0.1:3001
+
+NODE_ENV=development \
+	DATABASE_URL_LOCAL=postgres://postgres:postgres@127.0.0.1:5432/postgres \
+	DATABASE_URL=postgres://postgres:postgres@127.0.0.1:5432/postgres \
+	bun run --filter @grabbin/db db:migrate:deploy
+scripts/prepare-feature-map-account.sh
 
 if stack_ready && [[ ! -e /tmp/grabbin-dev/server.pid && ! -e /tmp/grabbin-dev/web.pid ]]; then
-	log "grabbin already ready: web http://localhost:3000  api http://localhost:3001"
+	log "grabbin already ready: web http://127.0.0.1:3000  api http://127.0.0.1:3001"
 	exit 0
 fi
 
@@ -166,6 +247,5 @@ assert_ports_free
 
 account_id="$(resolve_account_id)"
 register_cloudflare_profile "$account_id"
-bun run --filter @grabbin/db db:migrate:deploy
 log "starting bun run dev"
 exec bun run dev

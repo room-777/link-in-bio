@@ -17,7 +17,11 @@ import { useAdvancedWidgetActions } from "@/features/page/editor/contexts/advanc
 import { normalizeHttpsUrl } from "@/lib/normalize-https-url";
 import AdvancedWidgetsDialog from "./advanced-widgets-dialog";
 
-export default function AddWidgetButton() {
+export default function AddWidgetButton({
+	demoMode = false,
+}: {
+	demoMode?: boolean;
+}) {
 	const actions = useAdvancedWidgetActions();
 	const fileInputRef = useRef<HTMLInputElement>(null);
 	const [linkPopoverOpen, setLinkPopoverOpen] = useState(false);
@@ -127,7 +131,7 @@ export default function AddWidgetButton() {
 					</form>
 				</PopoverContent>
 			</Popover>
-			<AdvancedWidgetsDialog />
+			{!demoMode ? <AdvancedWidgetsDialog /> : null}
 		</div>
 	);
 }

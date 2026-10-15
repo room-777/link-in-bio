@@ -5,8 +5,10 @@ The page editor lets a signed-in owner arrange and update the content on their o
 ## Sub-features
 
 - `editor-open` opens the owner view for the account's primary page.
-- `editor-layout` changes the page layout through visible editor controls.
-- `editor-save` saves a profile or content change and shows it on a second view.
+- `editor-layout` changes the compact or wide page layout, item order, or item size.
+- `editor-profile` edits and saves the page name, bio, image, or handle.
+- `editor-content` adds, edits, arranges, and saves page items and widgets.
+- `editor-share` opens the share dialog and exposes the page link and QR code.
 
 ## How to get to it (user POV)
 
@@ -16,7 +18,7 @@ The page editor lets a signed-in owner arrange and update the content on their o
 
 ## Driving it with Chrome DevTools
 
-Preconditions: a dedicated signed-in test account, its primary page, a running disposable local PostgreSQL database, and any needed local media fixtures. The default repo does not provide these safely.
+Preconditions: the shared `featuremap@example.com` account with Pro and its `featuremap-test` page, created in the local disposable Postgres database by the shared cloud-agent setup and account driver. Use local media fixtures only. For complete editor journeys, follow the [full editor feature map](../../verify-editor/features/README.md).
 
 - **Open the owner view.** Sign in with the dedicated test account and navigate to its `/{handle}`. Confirm the owner controls appear.
 - **Change a setting.** Choose a visible editor control from the latest snapshot, make one small reversible change, and save. Confirm a visible saved status or updated value.

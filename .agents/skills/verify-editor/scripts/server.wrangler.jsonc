@@ -7,7 +7,7 @@
 		{
 			"binding": "HYPERDRIVE",
 			"id": "local",
-			"localConnectionString": "postgres://postgres:postgres@127.0.0.1:54322/postgres"
+			"localConnectionString": "postgres://postgres:postgres@127.0.0.1:5432/postgres"
 		}
 	],
 	"r2_buckets": [{ "binding": "R2_BUCKET", "bucket_name": "grabbin" }],
@@ -15,6 +15,7 @@
 		"R2_LOCAL_MODE": "true",
 		"R2_PUBLIC_URL": "http://127.0.0.1:3001",
 		"BETTER_AUTH_URL": "http://127.0.0.1:3001",
+		"CREEM_PRO_MONTHLY_PRODUCT_ID": "local-pro",
 		"SENTRY_DSN": ""
 	}
 }

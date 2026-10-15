@@ -1,4 +1,5 @@
 #!/bin/sh
 set -eu
 
+bun scripts/check-verification-artifacts.mjs --staged
 bunx lint-staged

@@ -1,21 +1,23 @@
 // Drive owner-editor journeys on the real signed-in editor (not /demo) and write evidence per journey.
 // Usage (from $PW_DIR so `playwright` resolves):
-//   RUN_DIR=<scratch dir> [WEB_URL=http://localhost:3000 SERVER_URL=http://localhost:3001] \
+//   RUN_DIR=<scratch dir> [WEB_URL=http://127.0.0.1:3000 SERVER_URL=http://127.0.0.1:3001] \
 //   node $SKILL/scripts/drive-editor-journeys.mjs "$EVIDENCE_DIR" [media-upload,media-cancel,link-refresh,item-add]
-// Signs in as dev@example.com (OTP from local DB). Needs a page for that user (create via /create).
+// Signs in as featuremap@example.com (OTP from local DB). Needs the shared featuremap-test page.
 
 import { execFileSync } from "node:child_process";
 import { appendFileSync, mkdirSync, writeFileSync } from "node:fs";
 import { createRequire } from "node:module";
 import { dirname } from "node:path";
 import { fileURLToPath } from "node:url";
+import { requireEvidenceDir } from "./evidence-path.mjs";
 
-const { chromium } = createRequire(`${process.cwd()}/`)("playwright");
 const SCRIPTS = dirname(fileURLToPath(import.meta.url));
-const EMAIL = "dev@example.com";
-const WEB = process.env.WEB_URL || "http://localhost:3000";
+const EMAIL = "featuremap@example.com";
+const WEB = process.env.WEB_URL || "http://127.0.0.1:3000";
 async function login() {
-	const b = await chromium.launch();
+	const b = await chromium.launch({
+		executablePath: process.env.CHROMIUM_PATH,
+	});
 	const ctx = await b.newContext({ viewport: { width: 1280, height: 900 } });
 	const p = await ctx.newPage();
 	await p.goto(`${WEB}/sign-in`, {
@@ -34,20 +36,21 @@ async function login() {
 	await p.waitForLoadState("networkidle", { timeout: 240000 });
 	return { b, ctx, p };
 }
-const EV = process.argv[2];
+const evidenceArgument = process.argv[2];
+const EV = evidenceArgument ? requireEvidenceDir(evidenceArgument) : undefined;
 const only = (process.argv[3] || "").split(",").filter(Boolean);
 const RUN_DIR = process.env.RUN_DIR;
-const REPO = process.env.GRABBIN_REPO || process.cwd();
 if (!EV || !RUN_DIR) {
 	console.error(
 		"usage: RUN_DIR=... node drive-editor-journeys.mjs <evidence-dir> [ids]",
 	);
 	process.exit(2);
 }
+const { chromium } = createRequire(`${process.cwd()}/`)("playwright");
 const sql = (q) =>
 	execFileSync("docker", [
 		"exec",
-		"supabase_db_grabbin",
+		"grabbin-featuremap-postgres",
 		"psql",
 		"-U",
 		"postgres",
@@ -56,8 +59,8 @@ const sql = (q) =>
 	])
 		.toString()
 		.trim();
-const [UID, PAGE, HANDLE] = sql(
-	`select u.id || '|' || p.id || '|' || p.handle from "user" u join pages p on p.user_id = u.id where u.email = '${EMAIL}' order by p.created_at limit 1`,
+const [PAGE, HANDLE] = sql(
+	`select p.id || '|' || p.handle from "user" u join pages p on p.user_id = u.id where u.email = '${EMAIL}' order by p.created_at limit 1`,
 ).split("|");
 if (!PAGE) {
 	console.error(
@@ -69,6 +72,12 @@ const items = () =>
 	sql(
 		`select coalesce(string_agg(type || ':' || coalesce(data->>'objectKey', data->>'url', left(data::text,40)), ' | ' order by created_at), '') from page_items where page_id='${PAGE}'`,
 	);
+const itemIds = () =>
+	sql(
+		`select coalesce(string_agg(id, E'\\n' order by created_at), '') from page_items where page_id='${PAGE}'`,
+	)
+		.split("\n")
+		.filter(Boolean);
 const count = (t) =>
 	Number(
 		sql(
@@ -76,7 +85,7 @@ const count = (t) =>
 		),
 	);
 // Local bucket check through the server's local media route (R2_LOCAL_MODE under alchemy dev).
-const SERVER = process.env.SERVER_URL || "http://localhost:3001";
+const SERVER = process.env.SERVER_URL || "http://127.0.0.1:3001";
 const localObject = async (key) => {
 	const r = await fetch(`${SERVER}/media/${key}`);
 	return r.ok
@@ -142,10 +151,26 @@ await ctx.route(
 	},
 );
 const results = [];
+async function cleanupNewItems(beforeIds, step) {
+	const created = itemIds().filter((itemId) => !beforeIds.has(itemId));
+	if (!created.length) return;
+	const response = await ctx.request.patch(`${SERVER}/pages/${HANDLE}/batch`, {
+		data: { upserts: [], deletes: created },
+	});
+	if (!response.ok())
+		throw new Error(`cleanup request failed: ${response.status()}`);
+	await p.reload({ waitUntil: "networkidle" });
+	if (itemIds().some((itemId) => !beforeIds.has(itemId)))
+		throw new Error("cleanup left new page items behind");
+	step(
+		`cleanup: removed ${created.length} items; media objects queued for deletion`,
+	);
+}
 async function journey(id, fn) {
 	if (only.length && !only.includes(id)) return;
 	const dir = `${EV}/${id}`;
 	mkdirSync(dir, { recursive: true });
+	const beforeIds = new Set(itemIds());
 	const log = [];
 	netlog = `${dir}/network.txt`;
 	writeFileSync(netlog, "");
@@ -153,6 +178,7 @@ async function journey(id, fn) {
 		log.push(s);
 		console.log(`[${id}] ${s}`);
 	};
+	let failure;
 	try {
 		await p.goto(`${WEB}/${HANDLE}`, {
 			waitUntil: "networkidle",
@@ -167,11 +193,10 @@ async function journey(id, fn) {
 			await p.locator("body").ariaSnapshot(),
 		);
 		step(`db after: ${items() || "(none)"}`);
-		step("RESULT: PASS");
-		results.push(`${id}: PASS`);
+		step("journey complete");
 	} catch (e) {
-		step(`RESULT: FAIL ${e.message.split("\n")[0]}`);
-		results.push(`${id}: FAIL`);
+		failure = e;
+		step(`journey failed: ${e.message.split("\n")[0]}`);
 		await p
 			.screenshot({ path: `${dir}/failure.png`, fullPage: true })
 			.catch(() => {});
@@ -183,9 +208,20 @@ async function journey(id, fn) {
 				.catch(() => ""),
 		);
 	} finally {
+		hold = null;
+		try {
+			await cleanupNewItems(beforeIds, step);
+		} catch (e) {
+			step(`cleanup: FAIL ${e.message.split("\n")[0]}`);
+			failure ??= e;
+		}
+		step(
+			`RESULT: ${failure ? `FAIL ${failure.message.split("\n")[0]}` : "PASS"}`,
+		);
+		results.push(`${id}: ${failure ? "FAIL" : "PASS"}`);
 		writeFileSync(
 			`${dir}/actions.md`,
-			log.map((l) => `- ${l}`).join("\n") + "\n",
+			`${log.map((l) => `- ${l}`).join("\n")}\n`,
 		);
 		hold = null;
 	}
@@ -266,7 +302,7 @@ await journey("media-cancel", async (step, dir) => {
 	step("released the held PUT as aborted (never reached the local bucket)");
 	const req = await cancelReq;
 	step(
-		`cancel request: ${req ? req.method() + " " + new URL(req.url()).pathname + " -> " + (await req.response())?.status() : "none"}`,
+		`cancel request: ${req ? `${req.method()} ${new URL(req.url()).pathname} -> ${(await req.response())?.status()}` : "none"}`,
 	);
 	await p.waitForTimeout(4000);
 	step(
@@ -290,9 +326,9 @@ await journey("link-refresh", async (step, dir) => {
 	await toolbar.getByRole("button", { name: "Add link" }).click();
 	await p
 		.getByRole("textbox", { name: "Link URL" })
-		.fill("https://github.com/honojs/hono");
+		.fill("https://github.com/microsoft/playwright");
 	await p.keyboard.press("Enter");
-	step("toolbar Add link → https://github.com/honojs/hono + Enter");
+	step("toolbar Add link → https://github.com/microsoft/playwright + Enter");
 	await until(() => count("link") > before, "link row");
 	await p.waitForTimeout(6000);
 	const id = sql(
@@ -333,7 +369,7 @@ await journey("link-refresh", async (step, dir) => {
 		step(`response title: ${j?.item?.data?.metadata?.title}`);
 	}
 	step(
-		`request: ${r ? r.request().method() + " " + new URL(r.url()).pathname + new URL(r.url()).search.slice(0, 80) + " -> " + r.status() : "none"}`,
+		`request: ${r ? `${r.request().method()} ${new URL(r.url()).pathname}${new URL(r.url()).search.slice(0, 80)} -> ${r.status()}` : "none"}`,
 	);
 	await until(
 		() =>
@@ -351,12 +387,7 @@ await journey("link-refresh", async (step, dir) => {
 });
 
 await journey("item-add", async (step, dir) => {
-	for (const [btn, t] of [
-		["Add text", "text"],
-		["Add section", "section"],
-		["Add link", null],
-		["Add map", "map"],
-	]) {
+	for (const btn of ["Add text", "Add section", "Add link", "Add map"]) {
 		const types = sql(
 			`select string_agg(type||'='||c, ',') from (select type, count(*) c from page_items where page_id='${PAGE}' group by type) x`,
 		);

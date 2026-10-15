@@ -16,7 +16,7 @@ A public creator page shows a person's name, profile, and arranged content at th
 
 ## Driving it with Chrome DevTools
 
-Preconditions: successful page checks need a known page in a disposable local PostgreSQL database. Custom-domain checks also need a local domain-to-handle row and a local hostname mapping. No such safe seeded page is provided by the repo's default verification setup.
+Preconditions: create the shared local `featuremap-test` page using `verify-editor/scripts/drive-create-page.mjs`. Public page checks use that stored row, never `/demo`. Custom-domain checks still require a deliberately seeded local domain-to-handle row and a local hostname mapping.
 
 - **Open a known handle.** Navigate to `http://127.0.0.1:3000/{handle}` using a handle from the disposable fixture. The creator's public page and saved content appear without an owner edit state.
 - **Open its custom domain.** Use the exact local hostname mapped in the fixture. The same creator page appears at `/`.

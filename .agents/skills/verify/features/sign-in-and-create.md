@@ -17,16 +17,16 @@ Sign-in lets a visitor use an email code or an enabled social provider; a signed
 
 ## Driving it with Chrome DevTools
 
-Preconditions: rendering `/sign-in` needs no account. Completing sign-in needs working email or OAuth settings and can contact external services. Creating a page needs a dedicated test account with no primary page and a disposable local PostgreSQL database. These account and database fixtures are not available in the default repo setup.
+Preconditions: rendering `/sign-in` needs no account. The shared setup prepares `featuremap@example.com` and its local Pro subscription with no page on first use. The local mail key is blank, and the one-time code is read from local Postgres. Create the `featuremap-test` handle through the UI; the same identity and handle are used in every agent environment.
 
 - **Open the sign-in screen.** Navigate to `http://127.0.0.1:3000/sign-in`. The latest accessibility snapshot shows the email-code form and any enabled provider buttons.
 - **Check email entry without sending.** Fill the email textbox with a reserved example address such as `verify@example.invalid`; confirm the form accepts the value. Do not click the send-code button in a read-only run.
 - **Check the create-page gate.** Navigate to `http://127.0.0.1:3000/create` while signed out. The app returns to `/sign-in`. This proves the signed-out access gate only, not successful page creation.
-- **Prove account creation only with fixtures.** If a disposable account and local database have been set up, complete sign-in, enter an unused test handle on `/create`, save it through the visible form, then open the resulting public page and confirm it belongs to the test account. Read the saved row back using the existing read-only database tooling. If those fixtures are missing, report the journey as blocked with the missing precondition.
+- **Prove account and page creation.** Run `scripts/cloud-agent-start.sh`, then use `verify-editor/scripts/drive-create-page.mjs`. It signs in as `featuremap@example.com`, creates `featuremap-test` through the visible form when the account has no page, opens the owner route, and saves the screenshots and actions. Read the `user` and `pages` rows back from local Postgres.
 - **Proof.** Capture the route, snapshots, visible result, and any stored-page readback. Never claim successful sign-in or page creation from the form alone.
 
 ## Gotchas
 
-- Submitting email or provider sign-in can send a real request; never do it without a dedicated test setup.
+- Do not use another account or a deliverable address. Only the shared local fixture is authorized for OTP sign-in.
 - An unauthenticated redirect from `/create` is an access-gate check, not proof that creating a page works.
-- The local Supabase stack is not started by the web-only verification command. Do not use a personal or shared database as test data.
+- The shared local PostgreSQL stack is not started by the web-only verification command. Do not use a personal or shared database as test data.
