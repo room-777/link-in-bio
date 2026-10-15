@@ -32,6 +32,7 @@ export default function TextItem({
 		preset === "halfBanner" ? "center" : (item.style.verticalAlign ?? "top");
 	const itemRadius = getBentoItemRadius(item.type, preset);
 	const textAreaRadius = itemRadius - 12;
+	const externalUrl = item.data.url ?? item.data.link;
 	useLayoutEffect(() => {
 		const textarea = textAreaRef.current;
 		const viewport = viewportRef.current;
@@ -112,9 +113,9 @@ export default function TextItem({
 					/>
 				</div>
 			</div>
-			{item.data.link ? (
+			{externalUrl ? (
 				<div className="absolute right-4 bottom-4 z-20 flex h-fit items-center">
-					<ExternalAction href={item.data.link} label="Open text link" />
+					<ExternalAction href={externalUrl} label="Open text link" />
 				</div>
 			) : null}
 		</div>

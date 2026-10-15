@@ -7,6 +7,13 @@ import type { BentoBatchItem, BentoItem } from "./bento-types";
 
 type LinkResponse = Extract<PageItemResponse, { type: "link" }>;
 
+function withLegacyDestination<T extends { url?: string; link?: string }>(
+	data: T,
+) {
+	const destination = data.url ?? data.link;
+	return destination ? { ...data, url: destination, link: destination } : data;
+}
+
 function toRequestMetadata(metadata: LinkResponse["data"]["metadata"]) {
 	if (!metadata) return undefined;
 	const { presentation: _presentation, ...requestMetadata } = metadata;
@@ -27,7 +34,11 @@ function toBatchItem(item: BentoItem): BentoBatchItem {
 
 	switch (item.type) {
 		case "text":
-			return { ...base, type: item.type, data: item.data };
+			return {
+				...base,
+				type: item.type,
+				data: withLegacyDestination(item.data),
+			};
 		case "media":
 			return {
 				...base,
@@ -42,7 +53,10 @@ function toBatchItem(item: BentoItem): BentoBatchItem {
 					...(item.data.caption !== undefined
 						? { caption: item.data.caption }
 						: {}),
-					...(item.data.link !== undefined ? { link: item.data.link } : {}),
+					...withLegacyDestination({
+						url: item.data.url,
+						link: item.data.link,
+					}),
 				},
 			};
 		case "map":

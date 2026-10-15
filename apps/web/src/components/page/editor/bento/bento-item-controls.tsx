@@ -616,9 +616,13 @@ function TextStyleControls({
 						className="rounded-lg bg-background/30 data-vertical:my-2 data-vertical:w-[2.5px]"
 					/>
 					<LinkControl
-						value={item.data.link ?? ""}
+						value={item.data.url ?? item.data.link ?? ""}
 						onCommit={onManageLink}
-						ariaLabel={item.data.link ? "Edit text link" : "Add text link"}
+						ariaLabel={
+							(item.data.url ?? item.data.link)
+								? "Edit text link"
+								: "Add text link"
+						}
 						inputBackground="bg-transparent"
 					/>
 				</div>
@@ -678,7 +682,7 @@ function TextStyleControls({
 function getLinkValue(item: BentoItem) {
 	if (item.type === "link") return item.data.url;
 	if (item.type === "text" || item.type === "media") {
-		return item.data.link ?? "";
+		return item.data.url ?? item.data.link ?? "";
 	}
 	return null;
 }
@@ -718,19 +722,22 @@ export default function BentoItemControls({
 
 		if (item.type !== "text" && item.type !== "media") return;
 		if (!value) {
+			if (!item.data.url && !item.data.link) return;
 			onCommand({
 				type: "update-data",
 				itemId: item.id,
-				data: { ...item.data, link: undefined },
+				data: { ...item.data, url: undefined, link: undefined },
 			});
 			return;
 		}
 		const normalizedUrl = normalizeHttpsUrl(value);
-		if (!normalizedUrl || normalizedUrl === item.data.link) return;
+		if (!normalizedUrl || normalizedUrl === (item.data.url ?? item.data.link)) {
+			return;
+		}
 		onCommand({
 			type: "update-data",
 			itemId: item.id,
-			data: { ...item.data, link: normalizedUrl },
+			data: { ...item.data, url: normalizedUrl, link: normalizedUrl },
 		});
 	};
 
