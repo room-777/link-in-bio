@@ -209,7 +209,7 @@ export async function persistPageItemBatch({
 	assertUniqueBatchIds(persistableBatch);
 
 	const response = await db.transaction(async (tx) => {
-		const page = await getOwnedPage(tx as unknown as DatabaseClient, {
+		const page = await getOwnedPage(tx, {
 			handle,
 			userId,
 		});
@@ -253,7 +253,7 @@ export async function persistPageItemBatch({
 			) &&
 			!(
 				await getAccountPlan({
-					db: tx as unknown as DatabaseClient,
+					db: tx,
 					userId,
 					proProductIds,
 				})

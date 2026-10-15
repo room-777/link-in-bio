@@ -3,10 +3,28 @@
 	"type": "module",
 	"exports": {
 		".": {
+			"types": "./src/index.ts",
 			"default": "./src/index.ts"
 		},
-		"./*": {
-			"default": "./src/*.ts"
+		"./account-deletion": {
+			"types": "./src/account-deletion.ts",
+			"default": "./src/account-deletion.ts"
+		},
+		"./creem-server": {
+			"types": "./src/creem-server.ts",
+			"default": "./src/creem-server.ts"
+		},
+		"./creem-webhook": {
+			"types": "./src/creem-webhook.ts",
+			"default": "./src/creem-webhook.ts"
+		},
+		"./google-analytics": {
+			"types": "./src/google-analytics.ts",
+			"default": "./src/google-analytics.ts"
+		},
+		"./server-events": {
+			"types": "./src/server-events.ts",
+			"default": "./src/server-events.ts"
 		}
 	},
 	"scripts": {},

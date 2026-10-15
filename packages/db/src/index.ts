@@ -14,3 +14,4 @@ export async function createDb() {
 }
 
 export type DatabaseClient = Awaited<ReturnType<typeof createDb>>;
+export type DatabaseQueryClient = Pick<DatabaseClient, "query">;

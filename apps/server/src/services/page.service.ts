@@ -8,7 +8,7 @@ import {
 	queuePageMediaDeletion,
 } from "@grabbin/application/media-assets";
 import { PageServiceError } from "@grabbin/application/page-lifecycle";
-import type { DatabaseClient } from "@grabbin/db";
+import type { DatabaseClient, DatabaseQueryClient } from "@grabbin/db";
 import { and, eq, inArray, sql } from "@grabbin/db/drizzle";
 import { creemSubscription, pages } from "@grabbin/db/schema/index";
 import {
@@ -36,7 +36,7 @@ function findPublicPageByHandle(db: DatabaseClient, handle: string) {
 }
 
 export function getOwnedPage(
-	db: DatabaseClient,
+	db: DatabaseQueryClient,
 	input: { handle: string; userId: string },
 ) {
 	return db.query.pages.findFirst({

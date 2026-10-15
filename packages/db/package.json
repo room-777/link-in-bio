@@ -3,10 +3,20 @@
 	"type": "module",
 	"exports": {
 		".": {
+			"types": "./src/index.ts",
 			"default": "./src/index.ts"
 		},
-		"./*": {
-			"default": "./src/*.ts"
+		"./drizzle": {
+			"types": "./src/drizzle.ts",
+			"default": "./src/drizzle.ts"
+		},
+		"./schema/index": {
+			"types": "./src/schema/index.ts",
+			"default": "./src/schema/index.ts"
+		},
+		"./schema/calendly-connection": {
+			"types": "./src/schema/calendly-connection.ts",
+			"default": "./src/schema/calendly-connection.ts"
 		}
 	},
 	"scripts": {
