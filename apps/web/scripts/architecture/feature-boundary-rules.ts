@@ -1,6 +1,15 @@
 import assert from "node:assert/strict";
-import { readdirSync, readFileSync } from "node:fs";
-import { dirname, join, relative, resolve, sep } from "node:path";
+import {
+	mkdirSync,
+	mkdtempSync,
+	readdirSync,
+	readFileSync,
+	rmSync,
+	statSync,
+	writeFileSync,
+} from "node:fs";
+import { tmpdir } from "node:os";
+import { basename, dirname, join, relative, resolve, sep } from "node:path";
 import { parse } from "@babel/parser";
 import type { ArchitectureContext } from "./context";
 
@@ -82,8 +91,20 @@ function importViolation(
 			: null;
 	if (!target) return null;
 	const targetPath = relative(sourceDirectory, target).split(sep).join("/");
-	if (hasGenericFolder(specifier) || hasGenericFolder(targetPath)) {
-		return "use a behavior-named module beside its feature instead of state/ or contexts/.";
+	const importsFile = ["", ".ts", ".tsx"].some((extension) =>
+		statSync(`${target}${extension}`, { throwIfNoEntry: false })?.isFile(),
+	);
+	for (
+		let prefix = importsFile ? dirname(target) : target;
+		prefix.startsWith(`${resolve(sourceDirectory)}${sep}`);
+		prefix = dirname(prefix)
+	) {
+		if (
+			hasGenericFolder(basename(prefix)) &&
+			statSync(prefix, { throwIfNoEntry: false })?.isDirectory()
+		) {
+			return "use a behavior-named module beside its feature instead of state/ or contexts/.";
+		}
 	}
 	const sourcePath = relative(sourceDirectory, file).split(sep).join("/");
 	if (
@@ -120,14 +141,6 @@ assert.ok(
 	importViolation(fixtureFile, "@/features/page/editor/types", fixtureRoot),
 );
 assert.ok(importViolation(fixtureFile, "../page/editor/types", fixtureRoot));
-assert.ok(importViolation(fixtureFile, "./state/item", fixtureRoot));
-assert.ok(
-	importViolation(
-		join(fixtureRoot, "components/widget.tsx"),
-		"./contexts/item",
-		fixtureRoot,
-	),
-);
 assert.equal(
 	importViolation(
 		join(fixtureRoot, "components/page/editor/owner-page.tsx"),
@@ -153,7 +166,9 @@ assert.equal(
 	null,
 );
 
-export function checkFeatureBoundaryRules(context: ArchitectureContext) {
+export function checkFeatureBoundaryRules(
+	context: Pick<ArchitectureContext, "sourceDirectory" | "allFiles">,
+) {
 	const errors: string[] = [];
 	function checkFolders(directory: string) {
 		for (const entry of readdirSync(directory, { withFileTypes: true })) {
@@ -182,4 +197,48 @@ export function checkFeatureBoundaryRules(context: ArchitectureContext) {
 		}
 	}
 	return errors;
+}
+
+const directoryFixture = mkdtempSync(join(tmpdir(), "feature-boundaries-"));
+try {
+	const components = join(directoryFixture, "components");
+	mkdirSync(components);
+	const caller = join(components, "widget.tsx");
+	writeFileSync(join(components, "state.ts"), "export const state = 1;");
+	writeFileSync(join(components, "contexts.ts"), "export const contexts = 1;");
+	writeFileSync(
+		caller,
+		'import { state } from "./state"; import { contexts } from "./contexts.ts";',
+	);
+	const context = { sourceDirectory: directoryFixture, allFiles: [caller] };
+	assert.deepEqual(checkFeatureBoundaryRules(context), []);
+	assert.deepEqual(
+		checkFeatureBoundaryRules({
+			...context,
+			sourceDirectory: `${directoryFixture}${sep}`,
+		}),
+		[],
+	);
+	mkdirSync(join(components, "state"));
+	mkdirSync(join(components, "contexts"));
+	assert.equal(importViolation(caller, "./state", directoryFixture), null);
+	assert.equal(importViolation(caller, "./contexts", directoryFixture), null);
+	rmSync(join(components, "contexts.ts"));
+	writeFileSync(caller, 'import "./state/item"; import "./contexts";');
+	const errors = checkFeatureBoundaryRules(context);
+	assert.equal(errors.length, 4);
+	assert.deepEqual(
+		checkFeatureBoundaryRules({
+			...context,
+			sourceDirectory: `${directoryFixture}${sep}`,
+		}),
+		errors,
+	);
+	assert.ok(errors.some((error) => error.startsWith("components/contexts:")));
+	assert.ok(
+		errors.some((error) => error.includes("widget.tsx: ./state/item:")),
+	);
+	assert.ok(errors.some((error) => error.includes("widget.tsx: ./contexts:")));
+} finally {
+	rmSync(directoryFixture, { recursive: true, force: true });
 }
