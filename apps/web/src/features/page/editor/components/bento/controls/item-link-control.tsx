@@ -21,7 +21,7 @@ export default function ItemLinkControl({
 }) {
 	const [isRefreshing, setIsRefreshing] = useState(false);
 	const isLinkItem = item.type === "link";
-	const value = isLinkItem ? item.data.url : (item.data.link ?? "");
+	const value = item.data.url ?? "";
 	const ariaLabel = isLinkItem
 		? "Edit link URL"
 		: value

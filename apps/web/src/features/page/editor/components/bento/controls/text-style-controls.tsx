@@ -267,9 +267,9 @@ export default function TextStyleControls({
 						className="rounded-lg bg-background/30 data-vertical:my-2 data-vertical:w-[2.5px]"
 					/>
 					<LinkControl
-						value={item.data.link ?? ""}
+						value={item.data.url ?? ""}
 						onCommit={manageLink}
-						ariaLabel={item.data.link ? "Edit text link" : "Add text link"}
+						ariaLabel={item.data.url ? "Edit text link" : "Add text link"}
 						inputBackground="bg-transparent"
 					/>
 				</div>

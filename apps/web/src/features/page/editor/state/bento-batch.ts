@@ -42,7 +42,7 @@ function toBatchItem(item: BentoItem): BentoBatchItem {
 					...(item.data.caption !== undefined
 						? { caption: item.data.caption }
 						: {}),
-					...(item.data.link !== undefined ? { link: item.data.link } : {}),
+					...(item.data.url !== undefined ? { url: item.data.url } : {}),
 				},
 			};
 		case "map":

@@ -88,6 +88,10 @@ NODE_ENV=production bun run --filter @grabbin/db db:migrate:deploy
 
 Run the production command from CI when possible.
 
+Apply schema migrations before merging the code that needs them. For a JSONB
+data-shape migration, follow its SQL instructions when it requires compatible
+application code to deploy first.
+
 ## UI Customization
 
 React web apps in this stack share shadcn/ui primitives through `packages/ui`.

@@ -23,17 +23,18 @@ export function createItemLinkCommand(
 
 	if (item.type !== "text" && item.type !== "media") return null;
 	if (!value) {
+		if (!item.data.url) return null;
 		return {
 			type: "update-data",
 			itemId: item.id,
-			data: { ...item.data, link: undefined },
+			data: { ...item.data, url: undefined },
 		};
 	}
 	const normalizedUrl = normalizeHttpsUrl(value);
-	if (!normalizedUrl || normalizedUrl === item.data.link) return null;
+	if (!normalizedUrl || normalizedUrl === item.data.url) return null;
 	return {
 		type: "update-data",
 		itemId: item.id,
-		data: { ...item.data, link: normalizedUrl },
+		data: { ...item.data, url: normalizedUrl },
 	};
 }

@@ -3,8 +3,8 @@ name: Deploy
 # Deploys the CI-tested commit after Release succeeds on main. Manual deploys
 # use the current main commit and run both CI checks because they bypass CI and
 # Release.
-# Database migrations are NOT run here; apply them explicitly before merging
-# schema changes (see README "Apply migrations").
+# Database migrations are NOT run here. Apply schema migrations before merging.
+# JSONB shape migrations may require the compatible app version to deploy first.
 on:
   workflow_run:
     workflows: [Release]
