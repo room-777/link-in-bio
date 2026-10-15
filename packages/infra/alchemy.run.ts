@@ -112,6 +112,7 @@ export const server = Cloudflare.Worker("server", {
 			access: "write",
 		}),
 		R2_LOCAL_MODE: isAlchemyDev ? "true" : "false",
+		LOCAL_OUTBOUND_PROXY_URL: isAlchemyDev ? "http://127.0.0.1:3002" : "",
 		R2_PUBLIC_URL: isAlchemyDev
 			? "http://127.0.0.1:3001"
 			: Config.String("R2_PUBLIC_URL").pipe(
@@ -271,6 +272,10 @@ export default Alchemy.Stack(
 		const serverWorker = yield* server;
 		yield* cron;
 		if (isAlchemyDev) {
+			yield* Command.Dev("outbound-proxy", {
+				command: "bun scripts/local-outbound-proxy.ts",
+				cwd: "../..",
+			});
 			yield* Command.Dev("web-dev", {
 				command: "bun run dev:bare -- --hostname 127.0.0.1",
 				cwd: "../../apps/web",

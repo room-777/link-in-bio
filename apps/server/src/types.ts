@@ -15,6 +15,7 @@ export type AppEnv = EvlogVariables & {
 		R2_S3_CREDENTIALS: string;
 		R2_PUBLIC_URL: string;
 		R2_LOCAL_MODE: string;
+		LOCAL_OUTBOUND_PROXY_URL?: string;
 		YOUTUBE_API_KEY: string;
 		CHZZK_CLIENT_ID: string;
 		CHZZK_CLIENT_SECRET: string;

@@ -2,12 +2,12 @@
 # Create the deterministic, local-only identity used by every agent's feature-map run.
 set -euo pipefail
 
-if ! docker exec supabase_db_grabbin pg_isready -U postgres >/dev/null 2>&1; then
-	printf '%s\n' "Local Supabase Postgres is not ready; run scripts/cloud-agent-start.sh first." >&2
+if ! docker exec grabbin-featuremap-postgres pg_isready -U postgres >/dev/null 2>&1; then
+	printf '%s\n' "Local PostgreSQL is not ready; run scripts/cloud-agent-start.sh first." >&2
 	exit 1
 fi
 
-docker exec -i supabase_db_grabbin psql -v ON_ERROR_STOP=1 -U postgres <<'SQL'
+docker exec -i grabbin-featuremap-postgres psql -v ON_ERROR_STOP=1 -U postgres <<'SQL'
 BEGIN;
 
 INSERT INTO "user" (id, name, email, email_verified, role)

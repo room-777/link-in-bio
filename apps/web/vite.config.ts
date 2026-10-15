@@ -27,6 +27,7 @@ export default defineConfig(({ command }) => ({
 	server: {
 		port: 3000,
 		strictPort: true,
+		allowedHosts: ["featuremap.example.com"],
 	},
 	build: {
 		sourcemap: sourceMapUploadEnabled ? "hidden" : false,

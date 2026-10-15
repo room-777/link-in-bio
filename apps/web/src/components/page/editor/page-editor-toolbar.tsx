@@ -11,11 +11,13 @@ import AddWidgetButton from "./add-widget-button";
 type PageEditorToolbarProps = {
 	value: BentoBreakpoint;
 	onChange: (breakpoint: BentoBreakpoint) => void;
+	demoMode?: boolean;
 };
 
 export default function PageEditorToolbar({
 	value,
 	onChange,
+	demoMode = false,
 }: PageEditorToolbarProps) {
 	const reduceMotion = useReducedMotion();
 	const [activeBreakpoint, setActiveBreakpoint] = useState(value);
@@ -39,7 +41,7 @@ export default function PageEditorToolbar({
 		>
 			<fieldset className="pointer-events-auto flex items-center gap-1 p-1">
 				<legend className="sr-only">Page editor toolbar</legend>
-				<AddWidgetButton />
+				<AddWidgetButton demoMode={demoMode} />
 				<Separator
 					orientation="vertical"
 					className="mx-2 page-wide:block hidden rounded-lg bg-border/80 data-vertical:my-2.5 data-vertical:w-[2.5px]"

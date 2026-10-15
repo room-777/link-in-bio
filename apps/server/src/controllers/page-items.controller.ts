@@ -26,6 +26,7 @@ import {
 	completeItemMediaUpload,
 	createItemMediaUpload,
 } from "../services/media.service";
+import { createOutboundFetch } from "../services/outbound-fetch";
 import { getOwnedPage } from "../services/page.service";
 import type { AppEnv } from "../types";
 
@@ -150,7 +151,7 @@ export function createPageItemsController({
 						itemId: parsed.output.itemId,
 						url: parsed.output.url,
 						publicBaseUrl: c.env?.R2_PUBLIC_URL,
-						fetch: (input, init) => fetch(input, init),
+						fetch: createOutboundFetch(c.env),
 						env: c.env,
 					}),
 				});

@@ -29,4 +29,4 @@ Preconditions: rendering `/sign-in` needs no account. The shared setup prepares 
 
 - Do not use another account or a deliverable address. Only the shared local fixture is authorized for OTP sign-in.
 - An unauthenticated redirect from `/create` is an access-gate check, not proof that creating a page works.
-- The local Supabase stack is not started by the web-only verification command. Do not use a personal or shared database as test data.
+- The shared local PostgreSQL stack is not started by the web-only verification command. Do not use a personal or shared database as test data.

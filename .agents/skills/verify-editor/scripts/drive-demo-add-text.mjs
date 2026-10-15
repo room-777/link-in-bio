@@ -14,7 +14,9 @@ const step = (line) => {
 	console.log(line);
 };
 
-const browser = await chromium.launch();
+const browser = await chromium.launch({
+	executablePath: process.env.CHROMIUM_PATH,
+});
 const page = await (
 	await browser.newContext({ viewport: { width: 1280, height: 900 } })
 ).newPage();

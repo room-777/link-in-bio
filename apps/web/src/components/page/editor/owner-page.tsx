@@ -184,6 +184,7 @@ export default function OwnerPage({
 				<PageEditorToolbar
 					value={layoutBreakpoint}
 					onChange={handleLayoutBreakpointChange}
+					demoMode={demoMode}
 				/>
 			</AdvancedWidgetActionsContext.Provider>
 		</div>

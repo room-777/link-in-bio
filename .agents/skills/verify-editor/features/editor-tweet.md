@@ -26,5 +26,5 @@ Preconditions:
 
 ## Gotchas
 
-- `local-pro` is included in the local worker environment as `CREEM_PRO_MONTHLY_PRODUCT_ID`, and the fixture subscription is renewed by `scripts/prepare-feature-map-account.sh`. This applies only to the local Supabase database; do not grant or test against a shared/remote or production database.
+- `local-pro` is included in the local worker environment as `CREEM_PRO_MONTHLY_PRODUCT_ID`, and the fixture subscription is renewed by `scripts/prepare-feature-map-account.sh`. This applies only to the local PostgreSQL database; do not grant or test against a shared/remote or production database.
 - The API server fetches the tweet from `react-tweet.vercel.app`; offline or blocked egress on the server makes `tweet-add` fail for environment reasons.

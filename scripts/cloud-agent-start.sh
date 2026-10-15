@@ -1,14 +1,16 @@
 #!/usr/bin/env bash
-# Boot the shared local stack used by every cloud coding agent: Supabase
-# Postgres and `bun run dev` (alchemy dev) on 127.0.0.1. Alchemy supplies local R2.
+# Boot the shared local stack used by every cloud coding agent: standard
+# PostgreSQL and `bun run dev` (alchemy dev) on 127.0.0.1. Alchemy supplies local R2.
 set -euo pipefail
 
 ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 cd "$ROOT"
 
-export PATH="/usr/local/bin:${HOME}/.bun/bin:${PATH}"
 BUN_VERSION="1.4.0"
-SUPABASE_CLI_VERSION="2.121.0"
+BUN_INSTALL="${BUN_INSTALL:-${HOME}/.bun}"
+export BUN_INSTALL
+export PATH="/usr/local/bin:${BUN_INSTALL}/bin:${PATH}"
+PG_CONTAINER="grabbin-featuremap-postgres"
 
 ensure_bun() {
 	local installed=""
@@ -16,25 +18,12 @@ ensure_bun() {
 		installed="$(bun --version)"
 	fi
 	if [[ "$installed" != "$BUN_VERSION" ]]; then
-		export BUN_INSTALL="${HOME}/.bun"
 		curl -fsSL https://bun.sh/install | bash -s "bun-v${BUN_VERSION}"
 		export PATH="${BUN_INSTALL}/bin:${PATH}"
 	fi
 }
 
-ensure_supabase_cli() {
-	local installed=""
-	if command -v supabase >/dev/null 2>&1; then
-		installed="$(supabase --version | tr -d '\r\n')"
-	fi
-	if [[ "$installed" != "$SUPABASE_CLI_VERSION" ]]; then
-		bun add --global "supabase@${SUPABASE_CLI_VERSION}"
-		export PATH="${HOME}/.bun/bin:${PATH}"
-	fi
-}
-
 ensure_bun
-ensure_supabase_cli
 bun install --frozen-lockfile
 
 if [[ -z "${CLOUDFLARE_API_TOKEN:-}" ]]; then
@@ -98,13 +87,13 @@ update_env("apps/server/.env", {
     "BETTER_AUTH_URL": "http://127.0.0.1:3001",
     "CORS_ORIGIN": "http://127.0.0.1:3000",
     "CREEM_SUCCESS_URL": "http://127.0.0.1:3000/",
-    "DATABASE_URL": "postgres://postgres:postgres@127.0.0.1:54322/postgres",
-    "DATABASE_URL_LOCAL": "postgres://postgres:postgres@127.0.0.1:54322/postgres",
+    "DATABASE_URL": "postgres://postgres:postgres@127.0.0.1:5432/postgres",
+    "DATABASE_URL_LOCAL": "postgres://postgres:postgres@127.0.0.1:5432/postgres",
     "PAGE_DOMAIN": "127.0.0.1:3000",
     # Keep local verification isolated from mail, billing, SaaS, and telemetry APIs.
     "RESEND_API_KEY": "",
-    "CREEM_API_KEY": "",
-    "CREEM_WEBHOOK_SECRET": "",
+    "CREEM_API_KEY": "local-verification-key",
+    "CREEM_WEBHOOK_SECRET": "local-verification-secret",
     "CLOUDFLARE_SAAS_API_TOKEN": "",
     "SENTRY_AUTH_TOKEN": "",
     "CREEM_PRO_MONTHLY_PRODUCT_ID": "local-pro",
@@ -119,13 +108,24 @@ PY
 }
 
 start_postgres() {
-	if docker exec supabase_db_grabbin pg_isready -U postgres >/dev/null 2>&1; then
+	if docker exec "$PG_CONTAINER" pg_isready -U postgres >/dev/null 2>&1; then
 		return
 	fi
-	sudo iptables -P FORWARD ACCEPT || true
-	bun run db:local:supabase
+	if docker container inspect "$PG_CONTAINER" >/dev/null 2>&1; then
+		docker start "$PG_CONTAINER" >/dev/null
+	else
+		docker run --detach \
+			--name "$PG_CONTAINER" \
+			--restart unless-stopped \
+			--publish 127.0.0.1:5432:5432 \
+			--env POSTGRES_USER=postgres \
+			--env POSTGRES_PASSWORD=postgres \
+			--env POSTGRES_DB=postgres \
+			--volume grabbin-featuremap-postgres-data:/var/lib/postgresql/data \
+			postgres:15-alpine >/dev/null
+	fi
 	for _ in $(seq 1 60); do
-		if docker exec supabase_db_grabbin pg_isready -U postgres >/dev/null 2>&1; then
+		if docker exec "$PG_CONTAINER" pg_isready -U postgres >/dev/null 2>&1; then
 			return
 		fi
 		sleep 1
@@ -136,7 +136,8 @@ start_postgres() {
 
 stack_ready() {
 	curl -fsS -m 5 http://127.0.0.1:3001/ >/dev/null 2>&1 \
-		&& curl -fsS -m 20 http://127.0.0.1:3000/ >/dev/null 2>&1
+		&& curl -fsS -m 20 http://127.0.0.1:3000/ >/dev/null 2>&1 \
+		&& [[ "$(curl -sS -m 2 -o /dev/null -w '%{http_code}' http://127.0.0.1:3002/ 2>/dev/null)" == "404" ]]
 }
 
 stop_fallback_stack() {
@@ -147,7 +148,7 @@ stop_fallback_stack() {
 	fi
 	for _ in $(seq 1 20); do
 		busy=0
-		for port in 3000 3001; do
+		for port in 3000 3001 3002; do
 			if ss -ltn "sport = :${port}" | grep -q LISTEN; then
 				busy=1
 			fi
@@ -207,7 +208,7 @@ register_cloudflare_profile() {
 
 assert_ports_free() {
 	local port
-	for port in 3000 3001; do
+	for port in 3000 3001 3002; do
 		if ss -ltn "sport = :${port}" | grep -q LISTEN; then
 			log "port ${port} is in use" >&2
 			exit 1
@@ -222,8 +223,8 @@ start_postgres
 export BETTER_AUTH_URL=http://127.0.0.1:3001
 export CORS_ORIGIN=http://127.0.0.1:3000
 export CREEM_SUCCESS_URL=http://127.0.0.1:3000/
-export DATABASE_URL=postgres://postgres:postgres@127.0.0.1:54322/postgres
-export DATABASE_URL_LOCAL=postgres://postgres:postgres@127.0.0.1:54322/postgres
+export DATABASE_URL=postgres://postgres:postgres@127.0.0.1:5432/postgres
+export DATABASE_URL_LOCAL=postgres://postgres:postgres@127.0.0.1:5432/postgres
 export NEXT_PUBLIC_SERVER_URL=http://127.0.0.1:3001
 export NEXT_PUBLIC_PAGE_DOMAIN=127.0.0.1:3000
 export NEXT_PUBLIC_R2_PUBLIC_URL=http://127.0.0.1:3001
@@ -231,8 +232,8 @@ export PAGE_DOMAIN=127.0.0.1:3000
 export R2_PUBLIC_URL=http://127.0.0.1:3001
 
 NODE_ENV=development \
-	DATABASE_URL_LOCAL=postgres://postgres:postgres@127.0.0.1:54322/postgres \
-	DATABASE_URL=postgres://postgres:postgres@127.0.0.1:54322/postgres \
+	DATABASE_URL_LOCAL=postgres://postgres:postgres@127.0.0.1:5432/postgres \
+	DATABASE_URL=postgres://postgres:postgres@127.0.0.1:5432/postgres \
 	bun run --filter @grabbin/db db:migrate:deploy
 scripts/prepare-feature-map-account.sh
 

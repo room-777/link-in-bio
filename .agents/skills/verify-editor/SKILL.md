@@ -1,6 +1,6 @@
 ---
 name: verify-editor
-description: Drive Grabbin's full local stack (web :3000, Hono API :3001, local Supabase Postgres) with headless Playwright to prove page-editor and email-OTP sign-in behavior. Use after changes to the Bento editor, its state/mutations, or auth, when the demo-only `verify` skill is not enough.
+description: Drive Grabbin's full local stack (web :3000, Hono API :3001, local PostgreSQL) with headless Playwright to prove page-editor and email-OTP sign-in behavior. Use after changes to the Bento editor, its state/mutations, or auth, when the demo-only `verify` skill is not enough.
 ---
 
 # Verify the Grabbin editor (full stack)
@@ -11,13 +11,13 @@ Commands below run from the repo root. To verify a different checkout, use its o
 
 ## Launch
 
-Use the shared cloud-agent entrypoint for Grok Bot, Cursor, and Codex. Each environment needs Docker, Supabase CLI, Bun dependencies, `CLOUDFLARE_API_TOKEN`, and `CLOUDFLARE_ACCOUNT_ID` when the token can see multiple accounts. From the repository root run:
+Use the shared cloud-agent entrypoint for Grok Bot, Cursor, and Codex. Each environment needs Docker, Bun dependencies, `CLOUDFLARE_API_TOKEN`, and `CLOUDFLARE_ACCOUNT_ID` when the token can see multiple accounts. From the repository root run:
 
 ```sh
 scripts/cloud-agent-start.sh
 ```
 
-It configures `127.0.0.1` URLs, starts Postgres, applies migrations, registers the Alchemy Cloudflare profile non-interactively, and prepares the same local Pro account in each agent environment. Alchemy provides local R2 and the local S3 endpoint; no R2 keys go in `.env`. Stop it with Ctrl-C in the terminal that owns `bun run dev`.
+It configures loopback URLs, starts a regular PostgreSQL 15 container on `127.0.0.1:5432`, applies migrations, registers the Alchemy Cloudflare profile non-interactively, and prepares the same local Pro account in each agent's disposable database. Alchemy provides local R2 and the local S3 endpoint; no R2 keys go in `.env`. Stop it with Ctrl-C in the terminal that owns `bun run dev`.
 
 Run the account driver after startup from the repository root. In a second terminal, change to that root first. The driver signs in as `featuremap@example.com`, creates `featuremap-test` through the visible `/create` form if needed, and saves screenshots and actions:
 
@@ -80,7 +80,7 @@ Proof goes to `$EVIDENCE_DIR/<feature-id>/` (under `artifacts/verify-editor/`, g
 
 - Drive the real user path (toolbar buttons, forms), never internal setters or test-only endpoints.
 - Capture the action and the result: a before snapshot/screenshot, the after state, and `actions.md` with each step and observed value.
-- For anything that should persist, verify the side effect separately: reload in a new context and read the row back (`docker exec supabase_db_grabbin psql -U postgres -c "select id, type from page_items where ..."`). A toast or "saved" status alone is not proof.
+- For anything that should persist, verify the side effect separately: reload in a new context and read the row back (`docker exec grabbin-featuremap-postgres psql -U postgres -c "select id, type from page_items where ..."`). A toast or "saved" status alone is not proof.
 - `/demo` runs the same Bento editor store with persistence off and without Pro access; its driver records API traffic and fails if any request reaches the API. A `/demo` proof covers interaction only, not saving or gated features.
 - Record the revision (`$EVIDENCE_DIR/revision`) and the feature/sub-feature IDs used.
 
@@ -92,7 +92,7 @@ rm -rf "$RUN_DIR"
 ls "$EVIDENCE_DIR"                                               # proof must still be there
 ```
 
-Never kill by process name. Leave Supabase running unless this run started it (`bun run db:local:supabase:stop` then). Keep the shared fixture intact for later runs; evidence stays.
+Never kill by process name. Leave the PostgreSQL container running so later runs can reuse the local fixture. Keep the shared fixture intact; evidence stays.
 
 ## Helpers
 
@@ -112,7 +112,7 @@ Never kill by process name. Leave Supabase running unless this run started it (`
 
 - Use `127.0.0.1` for browser, API, and app URLs with either launcher. In some sandboxes `localhost` resolves to `::1` only while the API binds IPv4; mixing hosts also splits auth cookies.
 - Exported shell variables (`NEXT_PUBLIC_SERVER_URL`, ...) override `.env`; `start-local.sh` unsets them. If the browser calls the wrong API origin, check `env`.
-- In Docker without systemd, start `dockerd` yourself; if containers cannot reach each other (Supabase start fails with `DbSetupError`), the host FORWARD policy is dropping bridge traffic.
+- In Docker without systemd, start `dockerd` yourself; if containers cannot reach each other, the host FORWARD policy may be dropping bridge traffic.
 
 - `GRABBIN_REPO` stays exported in your shell; unset or re-export it before starting a different checkout, and check the `checkout:` line `start-local.sh` prints.
 - Use the shared `featuremap@example.com` account only; its OTP is read locally with `scripts/otp.sh`.

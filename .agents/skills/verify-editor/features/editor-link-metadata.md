@@ -19,7 +19,7 @@ Preconditions:
 
 - Signed-in owner with a page. Outbound network for the target site; provider keys (YouTube, GitHub, Twitch, CHZZK, Product Hunt) improve results.
 
-- **Add.** Click `Add link`, fill `Link URL` with `https://github.com/honojs/hono`, press Enter. A link card appears; within a few seconds its `Link title` is filled.
+- **Add.** Click `Add link`, fill `Link URL` with `https://github.com/microsoft/playwright`, press Enter. A link card appears; within a few seconds its `Link title` is filled.
 - **Refresh.** Hover the card, click `Edit link URL`; the popover holds `textbox "Link URL"` and `button "Refresh link metadata"`. Clicking refresh sends `POST /pages/{handle}/metadata` with `{ itemId, url }`; the server refetches, merges, and **writes `page_items` itself** (no batch `PATCH` needed). To make it observable, set `data->'metadata'->>'title'` to a stale value in the local DB first.
 - **Scripted.** `node scripts/drive-editor-journeys.mjs "$EVIDENCE_DIR" link-refresh` (it saves `metadata-response.json`).
 - **Proof.** Before/after screenshots, the `POST` to the API metadata route, and `select data->'metadata' from page_items where id = ...`.
@@ -29,5 +29,5 @@ Preconditions:
 - On `/demo` metadata is resolved locally without the API (`persistItems` off); it does not prove the server refresh path.
 - Sandboxed boxes may block outbound HTTP from workerd; then metadata stays empty. Report it as an environment block.
 - `Edit link URL` (and the other per-item controls) only show on hover; hover the card's `Link title` first, or the click times out.
-- Refresh is flaky against GitHub. Out of 6 runs on Oct 14 2026, 4 PASS and 2 returned 200 but kept the old title; one captured response had no `description` or `imageUrl`. The server merges new metadata over the old, so an empty upstream fetch keeps the stale title. That is an upstream or environment result, not an editor bug; retry once and attach `metadata-response.json`.
+- Refresh is flaky against GitHub. Out of 6 runs on Oct 14 2026, 4 PASS and 2 returned 200 but kept the old title; one captured response had no `description` or `imageUrl`. On Oct 15 2026, two more target URLs returned 200 but kept the stale title. The server merges new metadata over the old, so an empty upstream fetch keeps the stale title. That is an upstream or environment result, not an editor bug; retry once and attach `metadata-response.json`.
 - Verified Oct 13 2026 (PR #1 run): add `https://github.com/honojs/hono` → title "GitHub - honojs/hono: Web framework built on Web Standards", then edit URL to `https://github.com/microsoft/playwright` → `/pages/{handle}/metadata` 200 and the new title in `page_items`. PASS.

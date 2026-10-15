@@ -21,7 +21,9 @@ const step = (line) => {
 	log.push(line);
 	console.log(line);
 };
-const browser = await chromium.launch();
+const browser = await chromium.launch({
+	executablePath: process.env.CHROMIUM_PATH,
+});
 const context = await browser.newContext();
 const page = await context.newPage();
 
@@ -46,7 +48,20 @@ try {
 		timeout: 180_000,
 	});
 	if (new URL(page.url()).pathname === "/create") {
-		await page.getByRole("textbox", { name: "Handle" }).fill(handle);
+		await page.waitForLoadState("networkidle");
+		// Client components may hydrate after the signed-in route becomes visible.
+		await page.waitForTimeout(3_000);
+		const handleInput = page.getByRole("textbox", { name: "Handle" });
+		const handleCheck = page.waitForResponse(
+			(response) =>
+				new URL(response.url()).pathname === "/pages/check" &&
+				new URL(response.url()).searchParams.get("handle") === handle,
+			{ timeout: 15_000 },
+		);
+		await handleInput.fill(handle);
+		const availability = await handleCheck;
+		if (!availability.ok() || !(await availability.json()).available)
+			throw new Error("shared page handle is unavailable");
 		await page.getByRole("button", { name: "Grab it" }).click();
 		await page.getByRole("heading", { name: "Looking good!" }).waitFor({
 			timeout: 60_000,

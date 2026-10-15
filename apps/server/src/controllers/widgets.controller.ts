@@ -3,6 +3,7 @@ import type { MiddlewareHandler } from "hono";
 import { Hono } from "hono";
 import * as v from "valibot";
 import { jsonApiError } from "../api-error";
+import { createOutboundFetch } from "../services/outbound-fetch";
 import { RssServiceError } from "../services/rss/rss.service";
 import {
 	WidgetPreviewError,
@@ -44,7 +45,7 @@ export function createWidgetsController({
 		try {
 			return c.json(
 				await preview(parsed.output, {
-					fetch: (input, init) => fetch(input, init),
+					fetch: createOutboundFetch(c.env),
 					env: c.env,
 				}),
 			);
