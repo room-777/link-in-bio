@@ -40,6 +40,10 @@ function checkToolVersions() {
 }
 
 const steps: Array<[name: string, command: string[]]> = [
+	[
+		"Verification evidence paths",
+		["bun", "scripts/check-verification-artifacts.mjs"],
+	],
 	["Biome (format + lint, whole repo)", ["bunx", "biome", "ci", "."]],
 	["Typecheck (every package)", ["bun", "run", "check-types"]],
 	[

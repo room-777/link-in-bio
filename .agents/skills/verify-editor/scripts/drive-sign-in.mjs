@@ -6,13 +6,16 @@ import { mkdirSync, writeFileSync } from "node:fs";
 import { createRequire } from "node:module";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
+import { requireEvidenceDir } from "./evidence-path.mjs";
 
-const { chromium } = createRequire(`${process.cwd()}/`)("playwright");
-const [evidence, email = "featuremap@example.com"] = process.argv.slice(2);
-if (!evidence)
+const [evidenceArgument, email = "featuremap@example.com"] =
+	process.argv.slice(2);
+if (!evidenceArgument)
 	throw new Error(
 		"usage: drive-sign-in.mjs <EVIDENCE_DIR> [email@example.com]",
 	);
+const evidence = requireEvidenceDir(evidenceArgument);
+const { chromium } = createRequire(`${process.cwd()}/`)("playwright");
 // RESEND_API_KEY may be real: never send a code to a deliverable mailbox.
 if (!/@example\.(com|org|net)$/.test(email))
 	throw new Error("use an @example.com address only");

@@ -76,7 +76,7 @@ Sign-in: the shared launcher blanks `RESEND_API_KEY`; only use `featuremap@examp
 
 ## Evidence
 
-Proof goes to `$EVIDENCE_DIR/<feature-id>/` (under `artifacts/verify-editor/`, gitignored). Standards:
+Proof goes only to `$EVIDENCE_DIR/<feature-id>/` (under `artifacts/verify-editor/`, gitignored). Keep screenshots, snapshots, logs, and database evidence there. Do not copy proof to another path or commit it for PR visibility. The Priority 5 rule in `AGENTS.md` is enforced by the pre-commit hook and `bun run verify`. Standards:
 
 - Drive the real user path (toolbar buttons, forms), never internal setters or test-only endpoints.
 - Capture the action and the result: a before snapshot/screenshot, the after state, and `actions.md` with each step and observed value.

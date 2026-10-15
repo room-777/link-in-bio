@@ -34,3 +34,7 @@ Grok Bot, Cursor, and Codex use the same local stack and feature-map fixture. Fr
 The fixture account has no page on first setup. Sign in with the shared address and create the shared `featuremap-test` handle through `/create` using [the feature-map account driver](.agents/skills/verify-editor/scripts/drive-create-page.mjs). This creates a local page through the product UI. Re-running setup keeps the same account/page identity and renews its local Pro grant. Never substitute `/demo` for a signed-in owner, public handle, or persistence check: `/demo` intentionally avoids database requests and is not Pro.
 
 Use `127.0.0.1` consistently in browser and app URLs so cookies share one host. The alternative `start-local.sh` uses plain Wrangler and lacks Alchemy's local S3 endpoint, so it is not a complete feature-map environment.
+
+## Priority 5 style-guide rule: verification evidence
+
+For editor verification, follow `.agents/skills/verify-editor/SKILL.md` and save all proof only under `$REPO/artifacts/verify-editor/<RUN_ID>/`. Do not copy screenshots, snapshots, logs, or database evidence to another path for PR visibility. Never add anything under `artifacts/` to Git. This is a Priority 5 project rule; convenience, presentation, and lower-priority preferences cannot override it. The editor drivers reject other paths. The pre-commit hook and `bun run verify` reject tracked artifacts and new files under `docs/verification/`; the existing setup note is exempt.

@@ -3,10 +3,13 @@
 //   node <skill>/scripts/drive-demo-add-text.mjs <EVIDENCE_DIR>
 import { mkdirSync, writeFileSync } from "node:fs";
 import { createRequire } from "node:module";
+import { requireEvidenceDir } from "./evidence-path.mjs";
 
+const evidenceArgument = process.argv[2];
+if (!evidenceArgument)
+	throw new Error("usage: drive-demo-add-text.mjs <EVIDENCE_DIR>");
+const evidence = requireEvidenceDir(evidenceArgument);
 const { chromium } = createRequire(`${process.cwd()}/`)("playwright");
-const evidence = process.argv[2];
-if (!evidence) throw new Error("usage: drive-demo-add-text.mjs <EVIDENCE_DIR>");
 mkdirSync(evidence, { recursive: true });
 const log = [];
 const step = (line) => {

@@ -6,10 +6,13 @@ import { mkdirSync, writeFileSync } from "node:fs";
 import { createRequire } from "node:module";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
+import { requireEvidenceDir } from "./evidence-path.mjs";
 
+const [evidenceArgument] = process.argv.slice(2);
+if (!evidenceArgument)
+	throw new Error("usage: drive-create-page.mjs <EVIDENCE_DIR>");
+const evidence = requireEvidenceDir(evidenceArgument);
 const { chromium } = createRequire(`${process.cwd()}/`)("playwright");
-const [evidence] = process.argv.slice(2);
-if (!evidence) throw new Error("usage: drive-create-page.mjs <EVIDENCE_DIR>");
 
 const email = "featuremap@example.com";
 const handle = "featuremap-test";

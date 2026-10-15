@@ -9,8 +9,8 @@ import { appendFileSync, mkdirSync, writeFileSync } from "node:fs";
 import { createRequire } from "node:module";
 import { dirname } from "node:path";
 import { fileURLToPath } from "node:url";
+import { requireEvidenceDir } from "./evidence-path.mjs";
 
-const { chromium } = createRequire(`${process.cwd()}/`)("playwright");
 const SCRIPTS = dirname(fileURLToPath(import.meta.url));
 const EMAIL = "featuremap@example.com";
 const WEB = process.env.WEB_URL || "http://127.0.0.1:3000";
@@ -36,7 +36,8 @@ async function login() {
 	await p.waitForLoadState("networkidle", { timeout: 240000 });
 	return { b, ctx, p };
 }
-const EV = process.argv[2];
+const evidenceArgument = process.argv[2];
+const EV = evidenceArgument ? requireEvidenceDir(evidenceArgument) : undefined;
 const only = (process.argv[3] || "").split(",").filter(Boolean);
 const RUN_DIR = process.env.RUN_DIR;
 if (!EV || !RUN_DIR) {
@@ -45,6 +46,7 @@ if (!EV || !RUN_DIR) {
 	);
 	process.exit(2);
 }
+const { chromium } = createRequire(`${process.cwd()}/`)("playwright");
 const sql = (q) =>
 	execFileSync("docker", [
 		"exec",
