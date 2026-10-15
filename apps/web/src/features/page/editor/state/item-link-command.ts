@@ -11,8 +11,12 @@ export function createItemLinkCommand(
 	rawValue: string,
 ): UpdateDataCommand | null {
 	const value = rawValue.trim();
+	if (item.type !== "link" && item.type !== "text" && item.type !== "media") {
+		return null;
+	}
+
+	const normalizedUrl = normalizeHttpsUrl(value);
 	if (item.type === "link") {
-		const normalizedUrl = normalizeHttpsUrl(value);
 		if (!normalizedUrl || normalizedUrl === item.data.url) return null;
 		return {
 			type: "update-data",
@@ -21,17 +25,15 @@ export function createItemLinkCommand(
 		};
 	}
 
-	if (item.type !== "text" && item.type !== "media") return null;
-	if (!value) {
-		if (!item.data.url) return null;
+	if (!normalizedUrl) {
+		if (value || !item.data.url) return null;
 		return {
 			type: "update-data",
 			itemId: item.id,
 			data: { ...item.data, url: undefined },
 		};
 	}
-	const normalizedUrl = normalizeHttpsUrl(value);
-	if (!normalizedUrl || normalizedUrl === item.data.url) return null;
+	if (normalizedUrl === item.data.url) return null;
 	return {
 		type: "update-data",
 		itemId: item.id,
