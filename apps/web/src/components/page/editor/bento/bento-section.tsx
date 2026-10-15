@@ -27,10 +27,8 @@ import ReactGridLayout, {
 	useContainerWidth,
 } from "react-grid-layout";
 import { fastVerticalCompactor } from "react-grid-layout/extras";
-import type {
-	BentoCommand,
-	BentoItem as BentoItemData,
-} from "@/features/page/editor/types";
+import type { BentoItem as BentoItemData } from "@/features/page/bento-item";
+import type { BentoCommand } from "@/features/page/editor/types";
 import {
 	resolveBentoDragLayout,
 	toBentoLayoutMap,
