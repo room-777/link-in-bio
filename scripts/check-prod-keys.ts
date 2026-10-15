@@ -2,10 +2,9 @@
  * Fails when production keys or resources can reach local, bot or test code.
  * Rule (CONTRIBUTING.md, "Production keys"): only the Deploy workflow holds
  * production keys. Runs in `bun run verify`, so pre-commit and CI both run it.
- * Checks tracked files only and never prints file values beyond the matched line.
+ * Reads tracked files from the index and never prints values beyond a match.
  */
 import { spawnSync } from "node:child_process";
-import { readFileSync } from "node:fs";
 
 /** Files allowed to name production env files and secrets: the deploy path. */
 const DEPLOY_FILES = new Set([
@@ -53,12 +52,14 @@ for (const file of files) {
 	if (!/\.(ts|tsx|js|mjs|cjs|json|jsonc|toml|ya?ml|sh|example)$/.test(file))
 		continue;
 
-	let source: string;
-	try {
-		source = readFileSync(file, "utf8");
-	} catch {
-		continue; // deleted in the working tree
+	const staged = spawnSync("git", ["show", `:${file}`], {
+		encoding: "utf8",
+	});
+	if (staged.status !== 0) {
+		report(file, 1, "could not read staged file");
+		continue;
 	}
+	const source = staged.stdout;
 	const localOrTest = LOCAL_OR_TEST.test(file);
 	source.split("\n").forEach((line, index) => {
 		const at = index + 1;

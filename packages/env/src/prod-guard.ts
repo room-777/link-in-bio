@@ -74,9 +74,9 @@ export function assertLocalR2Credentials(credentials: string) {
 
 /**
  * Throws when the process environment carries production markers: a
- * production NODE_ENV, a production host in a test, R2, S3 or bucket
- * variable, or R2
- * credentials for a non-local endpoint. Values are never printed.
+ * production NODE_ENV, a production host in a test, R2, S3, database, or
+ * bucket variable, or R2 credentials for a non-local endpoint. Values are
+ * never printed.
  */
 export function assertNoProductionEnvironment(
 	environment: Record<string, string | undefined> = process.env,
@@ -88,7 +88,11 @@ export function assertNoProductionEnvironment(
 		if (name === "R2_S3_CREDENTIALS") assertLocalR2Credentials(value);
 		for (const match of value.matchAll(/[a-z][a-z0-9+.-]*:\/\/[^\s"'<>]+/gi)) {
 			const host = parseUrl(match[0])?.hostname;
-			if (host && isProductionHost(host) && /TEST|R2|S3|BUCKET/i.test(name))
+			if (
+				host &&
+				isProductionHost(host) &&
+				/TEST|R2|S3|BUCKET|DATABASE/i.test(name)
+			)
 				throw new ProductionResourceError(
 					`${name} points at a production host.`,
 				);

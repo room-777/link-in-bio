@@ -1,0 +1,3 @@
+[test]
+pathIgnorePatterns = ["**/dist/**", "**/node_modules/**"]
+preload = ["../../scripts/test-preload.ts"]
