@@ -29,3 +29,8 @@ jobs:
       - run: node ./node_modules/semantic-release/bin/semantic-release.js
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      # Deploy waits for this workflow; a failed release blocks it, so say so
+      # clearly (GitHub notifies the pusher about failed workflow runs).
+      - name: Report release failure
+        if: failure()
+        run: echo "::error title=Release failed::Release/tagging failed for ${GITHUB_SHA}. Production deploy is blocked until this workflow succeeds. Fix the release and re-run it."
