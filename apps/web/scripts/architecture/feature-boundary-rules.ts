@@ -108,7 +108,7 @@ function importViolation(
 	}
 	const sourcePath = relative(sourceDirectory, file).split(sep).join("/");
 	if (
-		sourcePath.startsWith("features/") &&
+		!sourcePath.startsWith("components/page/editor/") &&
 		!sourcePath.startsWith("features/page/editor/") &&
 		(targetPath === "features/page/editor" ||
 			targetPath.startsWith("features/page/editor/"))
@@ -141,6 +141,13 @@ assert.ok(
 	importViolation(fixtureFile, "@/features/page/editor/types", fixtureRoot),
 );
 assert.ok(importViolation(fixtureFile, "../page/editor/types", fixtureRoot));
+assert.ok(
+	importViolation(
+		join(fixtureRoot, "components/mdx/update-block-preview.tsx"),
+		"@/features/page/editor/types",
+		fixtureRoot,
+	),
+);
 assert.equal(
 	importViolation(
 		join(fixtureRoot, "components/page/editor/owner-page.tsx"),
