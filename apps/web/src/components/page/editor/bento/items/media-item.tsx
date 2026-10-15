@@ -13,9 +13,9 @@ import {
 	useRef,
 	useState,
 } from "react";
+import type { BentoCommand } from "@/features/page/bento-command";
 import type { BentoItem } from "@/features/page/bento-item";
 import type { MediaCrop } from "@/features/page/editor/hooks/use-media-crop";
-import type { BentoCommand } from "@/features/page/editor/types";
 import { getPageMediaUrl } from "@/lib/page-media-url";
 import { ExternalAction } from "./external-action";
 import { MediaCaption } from "./media-caption";

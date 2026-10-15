@@ -18,11 +18,11 @@ import {
 	useState,
 } from "react";
 import { Trash } from "@/components/trash";
+import type { BentoCommand } from "@/features/page/bento-command";
 import type { BentoItem } from "@/features/page/bento-item";
 import BentoItemControls from "@/features/page/editor/components/bento/controls/bento-item-controls";
 import { useMapItemInteraction } from "@/features/page/editor/hooks/use-map-item-interaction";
 import { useMediaCrop } from "@/features/page/editor/hooks/use-media-crop";
-import type { BentoCommand } from "@/features/page/editor/types";
 import { renderItem } from "./bento-item-registry";
 import { RuntimeFallback } from "./runtime-fallback";
 

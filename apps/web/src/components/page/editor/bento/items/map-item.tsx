@@ -12,9 +12,9 @@ import MapboxMap, {
 } from "react-map-gl/mapbox";
 import "mapbox-gl/dist/mapbox-gl.css";
 import { type ReactNode, useEffect, useMemo, useRef, useState } from "react";
+import type { BentoCommand } from "@/features/page/bento-command";
 import type { BentoItem } from "@/features/page/bento-item";
 import type { MapItemInteraction } from "@/features/page/editor/hooks/use-map-item-interaction";
-import type { BentoCommand } from "@/features/page/editor/types";
 import {
 	MAP_ZOOM_MAX,
 	MAP_ZOOM_MIN,
