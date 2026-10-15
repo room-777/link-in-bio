@@ -14,7 +14,7 @@ Maintained recipes for the signed-in editor and sign-in, driven against the full
 
 - Headless Playwright, a fresh context per run, ARIA role + accessible name locators.
 - Use the same account (`featuremap@example.com`), handle (`featuremap-test`), and local Pro grant (`local-pro`) in Grok Bot, Cursor, and Codex.
-- Editor controls live in the `group "Page editor toolbar"` (buttons `Add media`, `Add map`, `Add text`, `Add section`, `Add link`, `Advanced`) and on each item. Item controls include `Delete item`, size presets, text style and link controls, media crop, map search and navigation, and media or link captions.
+- Editor controls live in the `group "Page editor toolbar"` (buttons `Add media`, `Add map`, `Add text`, `Add section`, `Add link`, `Advanced`) and on each item. Item controls include `Delete item`, size presets (`Small square`, `Half banner`, `Wide`, `Portrait`, `Full square`), `Edit link URL`, `Add/Edit text link`, `Add/Edit media link`, `Refresh link metadata`, text style, media crop, map search and navigation, and media or link captions.
 - The owner editor saves automatically ~1.5 s after the last change. Wait for that before reloading.
 - Restore what you change; keep the evidence.
 

@@ -18,14 +18,14 @@ import {
 	useState,
 } from "react";
 import { Trash } from "@/components/trash";
+import BentoItemControls from "@/features/page/editor/components/bento/controls/bento-item-controls";
+import { MapItemInteractionProvider } from "@/features/page/editor/contexts/map-item-interaction-provider";
+import { MediaCropProvider } from "@/features/page/editor/contexts/media-crop-provider";
 import type {
 	BentoCommand,
 	BentoItem,
 } from "@/features/page/editor/state/bento-types";
-import BentoItemControls from "./bento-item-controls";
 import { renderItem } from "./bento-item-registry";
-import { MapItemInteractionProvider } from "./items/map-item-interaction-provider";
-import { MediaCropProvider } from "./items/media-crop-provider";
 import { RuntimeFallback } from "./runtime-fallback";
 
 function getBackgroundColor(value: string | undefined) {

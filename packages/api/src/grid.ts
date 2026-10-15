@@ -119,7 +119,7 @@ const faviconUrlSchema = v.union([
 
 export const pageItemLinkUrlSchema = httpsUrlSchema;
 
-const optionalTrimmedLinkSchema = v.pipe(
+const optionalTrimmedUrlSchema = v.pipe(
 	v.optional(v.string()),
 	v.transform((value) => value?.trim() || undefined),
 	v.check((value) => {
@@ -135,7 +135,7 @@ const optionalTrimmedLinkSchema = v.pipe(
 
 export const pageItemTextDataSchema = v.object({
 	text: v.pipe(v.string(), v.trim()),
-	link: optionalTrimmedLinkSchema,
+	url: optionalTrimmedUrlSchema,
 });
 
 const pageItemImagePlaceholderSchema = v.optional(
@@ -149,7 +149,7 @@ const pageItemImagePlaceholderSchema = v.optional(
 	),
 );
 
-export const pageItemMediaDataSchema = v.object({
+const pageItemMediaDataFields = {
 	objectKey: v.pipe(v.string(), v.minLength(1)),
 	mimeType: v.pipe(
 		v.string(),
@@ -157,12 +157,14 @@ export const pageItemMediaDataSchema = v.object({
 	),
 	placeholderDataUrl: pageItemImagePlaceholderSchema,
 	caption: v.optional(v.string()),
-	link: optionalTrimmedLinkSchema,
+	url: optionalTrimmedUrlSchema,
 	crop: v.optional(pageItemMediaCropSchema),
-});
+};
+
+export const pageItemMediaDataSchema = v.object(pageItemMediaDataFields);
 
 export const pageItemMediaResponseDataSchema = v.object({
-	...pageItemMediaDataSchema.entries,
+	...pageItemMediaDataFields,
 	mediaUrl: v.optional(mediaDeliveryUrlSchema),
 });
 

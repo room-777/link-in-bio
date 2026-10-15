@@ -62,6 +62,7 @@ export default function MediaItem({
 		handleCropPointerEnd,
 	} = useMediaCropEditor({ item, mode, onCommand });
 	const originalMediaUrl = item.data.mediaUrl;
+	const externalUrl = item.data.url;
 	const transformedMediaUrl = originalMediaUrl
 		? getPageMediaUrl(originalMediaUrl, isVideo ? "video" : "image")
 		: undefined;
@@ -304,9 +305,9 @@ export default function MediaItem({
 						})
 					}
 				/>
-				{item.data.link ? (
+				{externalUrl ? (
 					<div className="pointer-events-auto flex h-fit shrink-0 items-center">
-						<ExternalAction href={item.data.link} label="Open media" />
+						<ExternalAction href={externalUrl} label="Open media" />
 					</div>
 				) : null}
 			</div>
