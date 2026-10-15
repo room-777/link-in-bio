@@ -87,6 +87,7 @@ function importViolation(
 	}
 	const sourcePath = relative(sourceDirectory, file).split(sep).join("/");
 	if (
+		sourcePath.startsWith("features/") &&
 		!sourcePath.startsWith("features/page/editor/") &&
 		(targetPath === "features/page/editor" ||
 			targetPath.startsWith("features/page/editor/"))
@@ -127,12 +128,13 @@ assert.ok(
 		fixtureRoot,
 	),
 );
-assert.ok(
+assert.equal(
 	importViolation(
-		join(fixtureRoot, "app/page.tsx"),
+		join(fixtureRoot, "components/page/editor/owner-page.tsx"),
 		"@/features/page/editor/types",
 		fixtureRoot,
 	),
+	null,
 );
 assert.equal(
 	importViolation(fixtureFile, "@/features/page/bento-item", fixtureRoot),
