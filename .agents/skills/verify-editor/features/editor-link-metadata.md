@@ -5,6 +5,8 @@ An owner adds a link and the card fills in title, icon, and image from the URL; 
 ## Sub-features
 
 - `link-add` adds a link card from `Add link` → `Link URL`.
+- `link-url-edit` changes the link destination through `Edit link URL`.
+- `link-url-validation` rejects an invalid or empty link URL without changing the saved destination.
 - `link-metadata-initial` fills provider/title after adding.
 - `link-metadata-refresh` re-fetches with `Refresh link metadata` (from `Edit link URL`).
 
@@ -17,10 +19,12 @@ An owner adds a link and the card fills in title, icon, and image from the URL; 
 
 Preconditions:
 
-- Signed-in owner with a page. Outbound network for the target site; provider keys (YouTube, GitHub, Twitch, CHZZK, Product Hunt) improve results.
+- Sign in as `featuremap@example.com` and use its `featuremap-test` page with the local Pro grant. The server needs outbound network access to the target site. Provider keys (YouTube, GitHub, Twitch, CHZZK, Product Hunt) improve results.
 
 - **Add.** Click `Add link`, fill `Link URL` with `https://github.com/microsoft/playwright`, press Enter. A link card appears; within a few seconds its `Link title` is filled.
 - **Refresh.** Hover the card, click `Edit link URL`; the popover holds `textbox "Link URL"` and `button "Refresh link metadata"`. Clicking refresh sends `POST /pages/{handle}/metadata` with `{ itemId, url }`; the server refetches, merges, and **writes `page_items` itself** (no batch `PATCH` needed). To make it observable, set `data->'metadata'->>'title'` to a stale value in the local DB first.
+- **Change destination.** Hover the card and click `Edit link URL`. Fill `textbox "Link URL"` with a valid HTTPS URL, then press Enter or move focus away. Confirm the card's destination updates. Wait for save, reload the owner page, and confirm the URL remains. Read `select id, data->>'url' as url from page_items where id = '<item-id>'`.
+- **Reject invalid input.** In the same popover, enter `not a url` and move focus away. Confirm `textbox "Link URL"` is invalid and the previous destination remains after reload. Link items do not allow an empty URL.
 - **Scripted.** `node scripts/drive-editor-journeys.mjs "$EVIDENCE_DIR" link-refresh` (it saves `metadata-response.json`).
 - **Proof.** Before/after screenshots, the `POST` to the API metadata route, and `select data->'metadata' from page_items where id = ...`.
 
