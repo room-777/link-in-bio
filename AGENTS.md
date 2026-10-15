@@ -27,9 +27,20 @@
 
 상세 구조와 테스트 기준은 해당 작업에 필요할 때만 `docs/agents/`에서 읽습니다.
 
+## 테스트 환경 (Grok Bot 박스, Cursor Cloud, Codex 공통)
+
+모든 환경이 같은 스크립트 하나를 쓴다. 비밀 값은 필요 없다.
+
+```bash
+bash scripts/test-env.sh setup   # 인터넷 필요: Node(.node-version), Bun(package.json), bun install, Postgres 바이너리
+bash scripts/test-env.sh test    # 오프라인: bun run verify + 임시 Postgres(127.0.0.1:55432) 통합 테스트
+```
+
+`test`는 임시 디렉터리에 새 Postgres 클러스터를 만들고 끝나면 끈다. 포트 54322(공유 Supabase), 3000/3001(개발 서버), 운영 DB·R2는 건드리지 않는다. 환경별 설정과 Codex 붙여넣기 값은 [`docs/agents/test-environments.md`](docs/agents/test-environments.md).
+
 ## Cursor Cloud
 
-Cloud Agent는 Grok 봇과 같은 로컬 스택을 쓴다. 부팅은 [`scripts/cloud-agent-start.sh`](scripts/cloud-agent-start.sh)가 맡고, 이미 웹과 API가 응답하면 다시 띄우지 않는다. 절차는 [`.agents/skills/verify-editor/SKILL.md`](.agents/skills/verify-editor/SKILL.md)의 preferred launch와 같다.
+Cloud Agent의 설치 단계는 `.cursor/environment.json`에서 `scripts/test-env.sh setup`을 실행한다. 개발 스택(웹·API) 부팅은 [`scripts/cloud-agent-start.sh`](scripts/cloud-agent-start.sh)가 맡고, 이미 웹과 API가 응답하면 다시 띄우지 않는다. 절차는 [`.agents/skills/verify-editor/SKILL.md`](.agents/skills/verify-editor/SKILL.md)의 preferred launch와 같다.
 
 1. Docker를 띄운 뒤 Postgres만 켠다: `bun run db:local:supabase` (포트 `54322`).
 2. `apps/server/.env`와 `apps/web/.env`는 각 `.env.example`에서 만들고, HTTP 주소는 `localhost`로 둔다. R2 키는 넣지 않는다. Postgres는 `postgres://postgres:postgres@127.0.0.1:54322/postgres`.

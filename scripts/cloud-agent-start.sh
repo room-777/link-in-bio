@@ -6,7 +6,9 @@ set -euo pipefail
 ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 cd "$ROOT"
 
-export PATH="/usr/local/bin:${HOME}/.bun/bin:${PATH}"
+# Shared toolchain + dependencies (same as the test setup on every machine).
+bash "$ROOT/scripts/test-env.sh" setup
+export PATH="${GRABBIN_TOOLS_DIR:-$HOME/.local/grabbin-tools}/node/bin:/usr/local/bin:${HOME}/.bun/bin:${PATH}"
 
 log() {
 	printf '%s\n' "$*"
