@@ -40,7 +40,7 @@ export default function BentoItemControls({
 				currentPreset={currentPreset}
 				onCommand={onCommand}
 			/>
-			<MediaCropControl item={item} />
+			{item.type === "media" ? <MediaCropControl item={item} /> : null}
 			{item.type === "map" ? <MapItemExtraControls /> : null}
 			{item.type === "text" ? (
 				<TextStyleControls

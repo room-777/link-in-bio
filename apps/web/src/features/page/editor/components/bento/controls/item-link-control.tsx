@@ -20,41 +20,39 @@ export default function ItemLinkControl({
 	onRefreshLinkMetadata?: (itemId: string) => Promise<void>;
 }) {
 	const [isRefreshing, setIsRefreshing] = useState(false);
-	const value = item.type === "link" ? item.data.url : (item.data.link ?? "");
+	const isLinkItem = item.type === "link";
+	const value = isLinkItem ? item.data.url : (item.data.link ?? "");
+	const ariaLabel = isLinkItem
+		? "Edit link URL"
+		: value
+			? "Edit media link"
+			: "Add media link";
 	const commitLink = (nextUrl: string) => {
 		const command = createItemLinkCommand(item, nextUrl);
 		if (command) onCommand(command);
 	};
-	const refreshMetadata = async () => {
-		if (!onRefreshLinkMetadata || item.type !== "link") return;
-		setIsRefreshing(true);
-		try {
-			await onRefreshLinkMetadata(item.id);
-		} catch {
-			// The store reports refresh failures with a toast.
-		} finally {
-			setIsRefreshing(false);
-		}
-	};
+	const refreshMetadata =
+		isLinkItem && onRefreshLinkMetadata
+			? async () => {
+					setIsRefreshing(true);
+					try {
+						await onRefreshLinkMetadata(item.id);
+					} catch {
+						// The store reports refresh failures with a toast.
+					} finally {
+						setIsRefreshing(false);
+					}
+				}
+			: undefined;
 
 	return (
 		<LinkControl
 			value={value}
 			onCommit={commitLink}
-			ariaLabel={
-				item.type === "link"
-					? "Edit link URL"
-					: value
-						? "Edit media link"
-						: "Add media link"
-			}
-			allowEmpty={item.type !== "link"}
+			ariaLabel={ariaLabel}
+			allowEmpty={!isLinkItem}
 			inputBackground="bg-transparent"
-			onRefresh={
-				item.type === "link" && onRefreshLinkMetadata
-					? refreshMetadata
-					: undefined
-			}
+			onRefresh={refreshMetadata}
 			isRefreshing={isRefreshing}
 		/>
 	);

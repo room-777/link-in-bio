@@ -149,7 +149,7 @@ export default function TextStyleControls({
 					>
 						<Button
 							type="button"
-							size="icon-sm"
+							size="icon"
 							variant="ghost"
 							aria-label="Align text left"
 							aria-pressed={

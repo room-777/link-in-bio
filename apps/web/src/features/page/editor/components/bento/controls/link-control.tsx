@@ -9,7 +9,7 @@ import {
 } from "@grabbin/ui/components/popover";
 import { cn } from "@grabbin/ui/lib/utils";
 import { Link2, RefreshCw, Unlink } from "lucide-react";
-import { useEffect, useRef, useState } from "react";
+import { type KeyboardEvent, useEffect, useRef, useState } from "react";
 import { useEmailOtpShake } from "@/hooks/use-email-otp-shake";
 import { normalizeHttpsUrl } from "@/lib/normalize-https-url";
 
@@ -85,6 +85,16 @@ export default function LinkControl({
 		setDraftUrl(normalizedUrl);
 		onCommit(normalizedUrl);
 	};
+	const handleKeyDown = (event: KeyboardEvent<HTMLInputElement>) => {
+		if (event.key === "Enter") event.currentTarget.blur();
+		if (event.key === "Escape") {
+			event.preventDefault();
+			invalidRef.current = false;
+			setLinkError(false);
+			setDraftUrl(value);
+			setOpen(false);
+		}
+	};
 
 	return (
 		<Popover
@@ -151,16 +161,7 @@ export default function LinkControl({
 							commitDraftUrl(nextValue);
 						}}
 						onBlur={() => commitDraftUrl(draftUrl)}
-						onKeyDown={(event) => {
-							if (event.key === "Enter") event.currentTarget.blur();
-							if (event.key === "Escape") {
-								event.preventDefault();
-								invalidRef.current = false;
-								setLinkError(false);
-								setDraftUrl(value);
-								setOpen(false);
-							}
-						}}
+						onKeyDown={handleKeyDown}
 						autoComplete="url"
 						inputMode="url"
 					/>
