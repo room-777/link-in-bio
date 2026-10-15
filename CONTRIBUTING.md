@@ -16,12 +16,14 @@ Local machines, bot machines, cloud agents and CI test jobs never use them.
   a bucket with another name.
 - Production database: read-only `SELECT` for investigation only. Tests use a
   throwaway local database (`127.0.0.1`/`localhost`, a `grabbin_*_test` name).
-- Do not skip the pre-commit hook (`--no-verify`).
+- The pre-commit hook applies Biome fixes to staged files and preserves
+  unstaged changes. Do not skip the hook.
+- CI runs the full `bun run verify` checks.
 
 Automated checks:
 
-- `bun run check:prod-keys` (part of `bun run verify`, so it runs in the
-  pre-commit hook and in CI) fails when tracked files commit an env file, read
+- `bun run check:prod-keys` (part of `bun run verify`, so it runs in CI) fails
+  when tracked files commit an env file, read
   `.env.production` or production secrets outside the deploy path, or point
   local/test code at a production host or the `grabbin` bucket.
 - Every `bun test` run loads `scripts/test-preload.ts`, which stops the run
@@ -32,7 +34,7 @@ Automated checks:
 
 ## Checks on every pull request
 
-- `verify`: the same checks as the pre-commit hook (`bun run verify`).
+- `verify`: runs the repository checks (`bun run verify`).
 - `auth-smoke`: signs in with an email OTP against a throwaway Postgres and
   checks that `GET /auth/get-session` returns the session, not a server error.
 
