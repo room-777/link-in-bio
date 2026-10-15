@@ -1,33 +1,48 @@
 name: Deploy
 
-# Deploys production on every push to main (every merged PR), independent of
-# the Release workflow: a release/tagging failure must never skip a deploy.
-# The same checks as CI (`bun run verify`) run first, so a broken main is not
-# deployed. Database migrations are NOT run here; apply them explicitly before
-# merging schema changes (see README "Apply migrations").
+# Deploys production only after the Release workflow succeeds on main (or on
+# a manual run). If Release fails or is cancelled, the `blocked` job fails with
+# an error annotation so the blocked deploy is never silent (GitHub notifies
+# about the failed run). `bun run verify` runs again before deploying.
+# Database migrations are NOT run here; apply them explicitly before merging
+# schema changes (see README "Apply migrations").
 on:
-  push:
+  workflow_run:
+    workflows: [Release]
+    types: [completed]
     branches: [main]
   workflow_dispatch:
 
 permissions:
   contents: read
 
-# One production deploy at a time. A newer push waits for the running deploy
-# and replaces any older one still waiting, so main's latest commit always
-# ends up deployed and two deploys never run at once.
-concurrency:
-  group: deploy-production
-  cancel-in-progress: false
-
 jobs:
+  blocked:
+    if: github.event_name == 'workflow_run' && github.event.workflow_run.conclusion != 'success'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Fail because Release did not succeed
+        env:
+          SHA: ${{ github.event.workflow_run.head_sha }}
+          CONCLUSION: ${{ github.event.workflow_run.conclusion }}
+          RELEASE_URL: ${{ github.event.workflow_run.html_url }}
+        run: |
+          echo "::error title=Deploy blocked::Deploy blocked: Release failed for ${SHA} (conclusion: ${CONCLUSION}). Fix Release (${RELEASE_URL}) and re-run it; Deploy starts after it succeeds."
+          exit 1
+
   deploy:
+    if: github.event_name == 'workflow_dispatch' || github.event.workflow_run.conclusion == 'success'
+    # One production deploy at a time. A newer run waits and replaces any older
+    # one still waiting, so main's latest commit is what ends up deployed.
+    concurrency:
+      group: deploy-production
+      cancel-in-progress: false
     runs-on: ubuntu-latest
     environment: production
     steps:
       - uses: actions/checkout@v4
         with:
-          ref: ${{ github.sha }}
+          ref: ${{ github.event.workflow_run.head_sha || github.sha }}
       - uses: actions/setup-node@v4
         with:
           node-version-file: .node-version
