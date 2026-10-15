@@ -31,7 +31,7 @@ describe("page item media service", () => {
 		const upload = await createPresignedPutUrl({
 			s3Credentials: JSON.stringify({
 				endpoint: "http://localhost:1337/cdn-cgi/local/r2/s3",
-				bucketName: "grabbin",
+				bucketName: "grabbin-local",
 				region: "auto",
 				accessKeyId: "local-access-key",
 				secretAccessKey: "local-secret-key",
@@ -44,7 +44,7 @@ describe("page item media service", () => {
 		assert.equal(uploadUrl.origin, "http://localhost:1337");
 		assert.equal(
 			uploadUrl.pathname,
-			"/cdn-cgi/local/r2/s3/grabbin/users/user-1/pages/page-1/profile/image.jpg",
+			"/cdn-cgi/local/r2/s3/grabbin-local/users/user-1/pages/page-1/profile/image.jpg",
 		);
 	});
 

@@ -1,3 +1,5 @@
 [test]
 # Typecheck (`tsc -b`) emits compiled copies of tests into dist/. Only run sources.
 pathIgnorePatterns = ["**/dist/**", "**/node_modules/**"]
+# Refuse to run any test when the environment points at production resources.
+preload = ["./scripts/test-preload.ts"]

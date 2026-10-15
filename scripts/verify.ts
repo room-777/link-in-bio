@@ -47,6 +47,7 @@ const steps: Array<[name: string, command: string[]]> = [
 		"Web lint (Biome + callback names)",
 		["bun", "run", "--filter", "web", "lint"],
 	],
+	["Production keys", ["bun", "run", "check:prod-keys"]],
 	["Tests (every package)", ["bun", "test"]],
 	["Plan boundary", ["bun", "run", "check:plan-boundary"]],
 ];
