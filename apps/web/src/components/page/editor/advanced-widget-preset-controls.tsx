@@ -1,6 +1,6 @@
 import type { PresetName } from "@grabbin/bento-layout";
 import { Button } from "@grabbin/ui/components/button";
-import BentoPresetIcon from "./bento/bento-preset-icon";
+import BentoPresetIcon from "@/features/page/editor/components/bento/bento-preset-icon";
 
 const presetLabels: Record<PresetName, string> = {
 	fullBanner: "Full banner",
