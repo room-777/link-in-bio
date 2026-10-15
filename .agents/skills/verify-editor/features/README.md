@@ -4,7 +4,7 @@ Maintained recipes for the signed-in editor and sign-in, driven against the full
 
 ## Baseline preconditions
 
-- Stack launched with `scripts/start-local.sh` and `scripts/doctor.sh` prints `OK: stack healthy`.
+- Stack launched with `scripts/cloud-agent-start.sh` in Cursor Cloud or `scripts/start-local.sh` for the no-Cloudflare fallback; `scripts/doctor.sh` prints `OK: stack healthy`.
 - `bun run dev`: web `http://localhost:3000`, API `http://localhost:3001` (fallback `start-local.sh`: `127.0.0.1`), Postgres at `127.0.0.1:54322` with migrations applied.
 - Test identity: `dev@example.com` only. Never a deliverable address (`RESEND_API_KEY` may be real).
 - Owner journeys need the PR #5 session fix (on `main` since `c80d21e`). Tweet needs a local Pro grant (see editor-tweet); media needs `bun run dev` (alchemy's local R2; never real R2 keys).
@@ -13,7 +13,7 @@ Maintained recipes for the signed-in editor and sign-in, driven against the full
 ## Driving conventions
 
 - Headless Playwright, a fresh context per run, ARIA role + accessible name locators.
-- Editor controls live in the `group "Page editor toolbar"` (buttons `Add media`, `Add map`, `Add text`, `Add section`, `Add link`, `Advanced`) and on each item (`Delete item`, size presets `Small square` / `Half banner` / `Wide` / `Portrait` / `Full square`, `Edit link URL`, `Refresh link metadata`).
+- Editor controls live in the `group "Page editor toolbar"` (buttons `Add media`, `Add map`, `Add text`, `Add section`, `Add link`, `Advanced`) and on each item (`Delete item`, size presets `Small square` / `Half banner` / `Wide` / `Portrait` / `Full square`, `Edit link URL`, `Add/Edit text link`, `Add/Edit media link`, `Refresh link metadata`).
 - The owner editor saves automatically ~1.5 s after the last change. Wait for that before reloading.
 - Restore what you change; keep the evidence.
 
@@ -30,4 +30,5 @@ Maintained recipes for the signed-in editor and sign-in, driven against the full
 - [Add an item](./editor-add-item.md): toolbar `Add text` / `Add section` / `Add link` / `Add map`, then delete.
 - [Media upload and cancel](./editor-media-upload.md): toolbar `Add media`, upload to local R2, delete mid-upload.
 - [Link metadata refresh](./editor-link-metadata.md): `Add link` and `Refresh link metadata`.
+- [Text and media destination URLs](./editor-inline-destination-url.md): set optional external URLs on text/media blocks and confirm they save as `data.url`.
 - [Add a Tweet (X post)](./editor-tweet.md): `Advanced` → X widget with a status URL.
