@@ -14,8 +14,8 @@ import { getTweetId, type WidgetType } from "@grabbin/page-link";
 import { toast } from "@grabbin/ui/components/toast";
 import dynamic from "next/dynamic";
 import { type CSSProperties, useCallback, useEffect, useRef } from "react";
-import type { AdvancedWidgetActions } from "@/features/page/editor/contexts/advanced-widget-actions-context";
-import { useBentoStore } from "@/features/page/editor/state/bento-store";
+import { useBentoStore } from "@/features/page/editor/hooks/use-bento-store";
+import type { AdvancedWidgetActions } from "@/features/page/editor/types";
 import { useRssWidgetActions } from "@/features/rss/hooks/use-rss-widget-actions";
 import { useSpotifyWidgetPreviewMutation } from "@/features/spotify/mutations/preview";
 import { useLoadTweet } from "@/features/tweet/queries/by-id";
@@ -67,9 +67,16 @@ export default function BentoEditor({
 		persistItems: !demoMode,
 	});
 	const spotifyPreviewMutation = useSpotifyWidgetPreviewMutation();
-	const { addRssFeed, previewRssFeed } = useRssWidgetActions(
-		store.dispatchCommand,
+	const addRssPreview = useCallback(
+		(preview: WidgetPreview<"rss">) => {
+			store.dispatchCommand({
+				type: "add-widget",
+				widget: { type: "rss", data: preview },
+			});
+		},
+		[store.dispatchCommand],
 	);
+	const { addRssFeed, previewRssFeed } = useRssWidgetActions(addRssPreview);
 	const loadTweet = useLoadTweet();
 	const spotifyPreviewRequestRef = useRef<{
 		url: string;

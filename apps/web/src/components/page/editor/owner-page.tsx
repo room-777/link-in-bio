@@ -7,14 +7,12 @@ import {
 	getBentoWidth,
 } from "@grabbin/bento-layout";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import {
-	type AdvancedWidgetActions,
-	AdvancedWidgetActionsContext,
-} from "@/features/page/editor/contexts/advanced-widget-actions-context";
+import type { AdvancedWidgetActions } from "@/features/page/editor/types";
 import { PageProfileForm } from "@/features/page/profile";
 import GoogleAnalyticsPageView from "@/features/page/view/components/google-analytics-page-view";
 import { getPageImageUrl } from "@/lib/page-image-url";
 import PageFooter from "../shared/page-footer";
+import AddWidgetButton from "./add-widget-button";
 import BentoEditor from "./bento-editor";
 import PageEditorToolbar from "./page-editor-toolbar";
 
@@ -180,13 +178,13 @@ export default function OwnerPage({
 				{isViewportCompact && isViewportReady ? pageFooter : null}
 			</div>
 			{!isViewportCompact && isViewportReady ? pageFooter : null}
-			<AdvancedWidgetActionsContext.Provider value={widgetActions}>
-				<PageEditorToolbar
-					value={layoutBreakpoint}
-					onChange={handleLayoutBreakpointChange}
-					demoMode={demoMode}
-				/>
-			</AdvancedWidgetActionsContext.Provider>
+			<PageEditorToolbar
+				value={layoutBreakpoint}
+				onChange={handleLayoutBreakpointChange}
+			>
+				<AddWidgetButton actions={widgetActions} demoMode={demoMode} />
+			</PageEditorToolbar>
+
 		</div>
 	);
 }

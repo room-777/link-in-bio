@@ -27,14 +27,14 @@ import ReactGridLayout, {
 	useContainerWidth,
 } from "react-grid-layout";
 import { fastVerticalCompactor } from "react-grid-layout/extras";
-import {
-	resolveBentoDragLayout,
-	toBentoLayoutMap,
-} from "@/features/page/editor/state/bento-drag";
 import type {
 	BentoCommand,
 	BentoItem as BentoItemData,
-} from "@/features/page/editor/state/bento-types";
+} from "@/features/page/editor/types";
+import {
+	resolveBentoDragLayout,
+	toBentoLayoutMap,
+} from "@/features/page/editor/utils/bento-drag";
 import { useBentoDragMotion } from "@/hooks/use-bento-drag-motion";
 import { BentoItemShell } from "./bento-item-shell";
 

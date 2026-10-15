@@ -2,12 +2,10 @@
 
 import { getAllowedPresets, type PresetName } from "@grabbin/bento-layout";
 import { Button } from "@grabbin/ui/components/button";
+import type { BentoItem } from "@/features/page/bento-item";
 import BentoPresetIcon from "@/features/page/editor/components/bento/bento-preset-icon";
 import { presetLabels } from "@/features/page/editor/components/bento/preset-labels";
-import type {
-	BentoCommand,
-	BentoItem,
-} from "@/features/page/editor/state/bento-types";
+import type { BentoCommand } from "@/features/page/editor/types";
 
 export default function PresetControls({
 	item,

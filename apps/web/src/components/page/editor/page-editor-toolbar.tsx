@@ -5,19 +5,19 @@ import { Separator } from "@grabbin/ui/components/separator";
 import { Tabs, TabsList, TabsTrigger } from "@grabbin/ui/components/tabs";
 import { Laptop, Smartphone } from "lucide-react";
 import { motion, useReducedMotion } from "motion/react";
+import type { ReactNode } from "react";
 import { startTransition, useEffect, useState } from "react";
-import AddWidgetButton from "./add-widget-button";
 
 type PageEditorToolbarProps = {
+	children: ReactNode;
 	value: BentoBreakpoint;
 	onChange: (breakpoint: BentoBreakpoint) => void;
-	demoMode?: boolean;
 };
 
 export default function PageEditorToolbar({
+	children,
 	value,
 	onChange,
-	demoMode = false,
 }: PageEditorToolbarProps) {
 	const reduceMotion = useReducedMotion();
 	const [activeBreakpoint, setActiveBreakpoint] = useState(value);
@@ -41,7 +41,8 @@ export default function PageEditorToolbar({
 		>
 			<fieldset className="pointer-events-auto flex items-center gap-1 p-1">
 				<legend className="sr-only">Page editor toolbar</legend>
-				<AddWidgetButton demoMode={demoMode} />
+				{children}
+
 				<Separator
 					orientation="vertical"
 					className="mx-2 page-wide:block hidden rounded-lg bg-border/80 data-vertical:my-2.5 data-vertical:w-[2.5px]"

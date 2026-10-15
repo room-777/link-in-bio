@@ -4,9 +4,9 @@ import {
 	getColumns,
 	validateBentoLayout,
 } from "@grabbin/bento-layout";
-
+import type { BentoItem } from "@/features/page/bento-item";
+import type { BentoCommand } from "../types";
 import { createBentoItem } from "./bento-factory";
-import type { BentoCommand, BentoItem } from "./bento-types";
 
 export type BentoReductionResult = {
 	items: BentoItem[];

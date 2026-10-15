@@ -1,19 +1,12 @@
 import { providerDefinitions, providerIconUrl } from "@grabbin/page-link";
-import { type ComponentType, createElement } from "react";
-import CalendlyWidgetActivity from "@/features/calendly/components/widget/calendly-widget-activity";
-import type { AdvancedWidgetActivityProps } from "@/features/page/editor/types";
-import RssWidgetActivity from "@/features/rss/components/widget/rss-widget-activity";
-import SpotifyWidgetActivity from "@/features/spotify/components/widget/spotify-widget-activity";
-import TweetWidgetActivity from "@/features/tweet/components/widget/tweet-widget-activity";
 
 export type AdvancedWidgetModule = {
-	id: string;
+	id: AdvancedWidgetId;
 	label: string;
 	iconUrl: string;
 	iconFrame: boolean;
 	brandColor?: string;
 	badges: readonly { id: string; label: string; iconUrl: string }[];
-	activity: ComponentType<AdvancedWidgetActivityProps>;
 };
 
 type ConfiguredProvider = (typeof providerDefinitions)[number];
@@ -22,29 +15,6 @@ type AdvancedWidgetProvider = Extract<
 	{ advancedWidget: object }
 >;
 type AdvancedWidgetId = AdvancedWidgetProvider["id"];
-
-const ComingSoonActivity = () =>
-	createElement(
-		"div",
-		{
-			className:
-				"flex h-full items-center justify-center text-sm text-muted-foreground",
-		},
-		"Sipping coffee while crafting a polished widget...",
-	);
-
-const advancedWidgetActivities: Record<
-	AdvancedWidgetId,
-	ComponentType<AdvancedWidgetActivityProps>
-> = {
-	calendly: CalendlyWidgetActivity,
-	"rss-feed": RssWidgetActivity,
-	spotify: SpotifyWidgetActivity,
-	soundcloud: ComingSoonActivity,
-	"apple-music": ComingSoonActivity,
-	signature: ComingSoonActivity,
-	tweet: TweetWidgetActivity,
-};
 
 const badgeProvider = (id: string) =>
 	providerDefinitions.find((provider) => provider.id === id);
@@ -78,6 +48,5 @@ export const advancedWidgetModules: readonly AdvancedWidgetModule[] =
 						iconUrl: badge?.faviconUrl ?? providerIconUrl(id),
 					};
 				}),
-				activity: advancedWidgetActivities[id],
 			};
 		});

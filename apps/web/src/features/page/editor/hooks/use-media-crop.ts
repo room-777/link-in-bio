@@ -1,9 +1,6 @@
 import {
-	createContext,
-	type ReactNode,
 	type RefObject,
 	useCallback,
-	useContext,
 	useEffect,
 	useMemo,
 	useRef,
@@ -17,7 +14,7 @@ type CropActions = {
 	onApply(): void;
 };
 
-type MediaCropContextValue = {
+type MediaCropValue = {
 	breakpoint: "wide" | "compact";
 	isOpen: boolean;
 	isDragging: boolean;
@@ -29,14 +26,10 @@ type MediaCropContextValue = {
 	registerActions(actions: CropActions): () => void;
 };
 
-const MediaCropContext = createContext<MediaCropContextValue | null>(null);
-
-export default function MediaCropProvider({
-	children,
+export function useMediaCrop({
 	containerRef,
 	breakpoint,
 }: {
-	children: ReactNode;
 	containerRef: RefObject<HTMLElement | null>;
 	breakpoint: "wide" | "compact";
 }) {
@@ -91,7 +84,7 @@ export default function MediaCropProvider({
 		};
 	}, [cancel, containerRef, isOpen]);
 
-	const value = useMemo(
+	return useMemo<MediaCropValue>(
 		() => ({
 			breakpoint,
 			isOpen,
@@ -114,23 +107,6 @@ export default function MediaCropProvider({
 			registerActions,
 		],
 	);
-
-	return (
-		<MediaCropContext.Provider value={value}>
-			{children}
-		</MediaCropContext.Provider>
-	);
 }
 
-export function useOptionalMediaCrop() {
-	return useContext(MediaCropContext);
-}
-
-export function useMediaCrop() {
-	const context = useOptionalMediaCrop();
-	if (!context)
-		throw new Error("useMediaCrop must be used inside MediaCropProvider");
-	return context;
-}
-
-export { MediaCropProvider };
+export type MediaCrop = ReturnType<typeof useMediaCrop>;

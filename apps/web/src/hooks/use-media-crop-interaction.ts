@@ -10,7 +10,7 @@ import {
 	useRef,
 	useState,
 } from "react";
-import { moveMediaCrop } from "@/features/page/editor/state/media-crop";
+import { moveMediaCrop } from "@/features/page/utils/media-crop";
 
 type MediaSize = { width: number; height: number };
 

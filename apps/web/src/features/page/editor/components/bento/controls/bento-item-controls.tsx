@@ -1,10 +1,10 @@
 "use client";
 
 import { inferPresetFromLayout } from "@grabbin/bento-layout";
-import type {
-	BentoCommand,
-	BentoItem,
-} from "@/features/page/editor/state/bento-types";
+import type { BentoItem } from "@/features/page/bento-item";
+import type { BentoCommand } from "@/features/page/editor/types";
+import type { MapItemInteraction } from "../../../hooks/use-map-item-interaction";
+import type { MediaCrop } from "../../../hooks/use-media-crop";
 import ItemLinkControl from "./item-link-control";
 import MapItemExtraControls from "./map-item-extra-controls";
 import MediaCropControl from "./media-crop-control";
@@ -12,11 +12,15 @@ import PresetControls from "./preset-controls";
 import TextStyleControls from "./text-style-controls";
 
 export default function BentoItemControls({
+	mediaCrop,
+	mapInteraction,
 	item,
 	breakpoint,
 	onCommand,
 	onRefreshLinkMetadata,
 }: {
+	mediaCrop: MediaCrop;
+	mapInteraction: MapItemInteraction;
 	item: BentoItem;
 	breakpoint: "wide" | "compact";
 	onCommand: (command: BentoCommand) => void;
@@ -40,8 +44,12 @@ export default function BentoItemControls({
 				currentPreset={currentPreset}
 				onCommand={onCommand}
 			/>
-			{item.type === "media" ? <MediaCropControl item={item} /> : null}
-			{item.type === "map" ? <MapItemExtraControls /> : null}
+			{item.type === "media" ? (
+				<MediaCropControl item={item} crop={mediaCrop} />
+			) : null}
+			{item.type === "map" ? (
+				<MapItemExtraControls interaction={mapInteraction} />
+			) : null}
 			{item.type === "text" ? (
 				<TextStyleControls
 					item={item}

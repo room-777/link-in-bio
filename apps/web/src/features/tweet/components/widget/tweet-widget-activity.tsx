@@ -1,21 +1,22 @@
 "use client";
 
 import { useState } from "react";
-import { useAdvancedWidgetActions } from "@/features/page/editor/contexts/advanced-widget-actions-context";
-import type { AdvancedWidgetActivityProps } from "@/features/page/editor/types";
 import { useDebouncedValue } from "@/hooks/use-debounced-value";
 import TweetAdvancedWidgetPreview from "./tweet-advanced-widget-preview";
 import TweetWidgetDetails from "./tweet-widget-details";
 
 export default function TweetWidgetActivity({
 	onClose,
-}: AdvancedWidgetActivityProps) {
-	const actions = useAdvancedWidgetActions();
+	onAdd,
+}: {
+	onClose: () => void;
+	onAdd: (url: string) => Promise<boolean>;
+}) {
 	const [inputValue, setInputValue] = useState("");
 	const debouncedInput = useDebouncedValue(inputValue);
 
 	async function handleTweetAdd(url: string) {
-		const added = await actions.onTweetAdd(url);
+		const added = await onAdd(url);
 		if (added) onClose();
 		return added;
 	}

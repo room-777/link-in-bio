@@ -8,10 +8,8 @@ import {
 import { motion } from "motion/react";
 import { useState } from "react";
 import { BentoItemShell } from "@/components/page/editor/bento/bento-item-shell";
-import type {
-	BentoCommand,
-	BentoItem,
-} from "@/features/page/editor/state/bento-types";
+import type { BentoItem } from "@/features/page/bento-item";
+import type { BentoCommand } from "@/features/page/editor/types";
 import { DEMO_PAGE_RESPONSE } from "@/lib/demo-page";
 
 type BlockType = "link" | "media" | "map" | "text" | "section";

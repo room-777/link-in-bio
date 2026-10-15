@@ -2,11 +2,8 @@
 
 import { getBentoItemRadius, type PresetName } from "@grabbin/bento-layout";
 import { useEffect, useLayoutEffect, useRef } from "react";
-
-import type {
-	BentoCommand,
-	BentoItem,
-} from "@/features/page/editor/state/bento-types";
+import type { BentoItem } from "@/features/page/bento-item";
+import type { BentoCommand } from "@/features/page/editor/types";
 import { ExternalAction } from "./external-action";
 import { textSizeClassByPreset } from "./shared";
 

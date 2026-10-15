@@ -3,8 +3,6 @@
 import type { WidgetPreview } from "@grabbin/api";
 import { resolveLinkProvider } from "@grabbin/page-link";
 import { useEffect, useState } from "react";
-import { useAdvancedWidgetActions } from "@/features/page/editor/contexts/advanced-widget-actions-context";
-import type { AdvancedWidgetActivityProps } from "@/features/page/editor/types";
 import { useDebouncedValue } from "@/hooks/use-debounced-value";
 import { normalizeHttpsUrl } from "@/lib/normalize-https-url";
 import SpotifyAdvancedWidgetPreview from "./spotify-advanced-widget-preview";
@@ -12,8 +10,13 @@ import SpotifyWidgetDetails from "./spotify-widget-details";
 
 export default function SpotifyWidgetActivity({
 	onClose,
-}: AdvancedWidgetActivityProps) {
-	const actions = useAdvancedWidgetActions();
+	onAdd,
+	onPreview,
+}: {
+	onClose: () => void;
+	onAdd: (preview: WidgetPreview<"spotify">) => Promise<boolean>;
+	onPreview: (url: string) => Promise<WidgetPreview<"spotify">>;
+}) {
 	const [inputValue, setInputValue] = useState("");
 	const debouncedInput = useDebouncedValue(inputValue);
 	const [spotifyPreview, setSpotifyPreview] =
@@ -37,8 +40,7 @@ export default function SpotifyWidgetActivity({
 		let isCurrent = true;
 		setSpotifyPreview(undefined);
 		setSpotifyPreviewError(false);
-		void actions
-			.onSpotifyPreview(spotifyPreviewUrl)
+		void onPreview(spotifyPreviewUrl)
 			.then((preview) => {
 				if (isCurrent) setSpotifyPreview(preview);
 			})
@@ -48,7 +50,7 @@ export default function SpotifyWidgetActivity({
 		return () => {
 			isCurrent = false;
 		};
-	}, [actions, isSpotifyPreviewUrl, spotifyPreviewUrl]);
+	}, [onPreview, isSpotifyPreviewUrl, spotifyPreviewUrl]);
 
 	function handleInputChange(value: string) {
 		setInputValue(value);
@@ -56,7 +58,7 @@ export default function SpotifyWidgetActivity({
 	}
 
 	async function handleSpotifyAdd(preview: WidgetPreview<"spotify">) {
-		const added = await actions.onSpotifyAdd(preview);
+		const added = await onAdd(preview);
 		if (added) onClose();
 		return added;
 	}

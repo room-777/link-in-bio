@@ -12,11 +12,9 @@ import MapboxMap, {
 } from "react-map-gl/mapbox";
 import "mapbox-gl/dist/mapbox-gl.css";
 import { type ReactNode, useEffect, useMemo, useRef, useState } from "react";
-import { useMapItemInteraction } from "@/features/page/editor/contexts/map-item-interaction-provider";
-import type {
-	BentoCommand,
-	BentoItem,
-} from "@/features/page/editor/state/bento-types";
+import type { BentoItem } from "@/features/page/bento-item";
+import type { MapItemInteraction } from "@/features/page/editor/hooks/use-map-item-interaction";
+import type { BentoCommand } from "@/features/page/editor/types";
 import {
 	MAP_ZOOM_MAX,
 	MAP_ZOOM_MIN,
@@ -222,11 +220,13 @@ function setMapInteractions(map: MapboxMapWithHandlers, enabled: boolean) {
 }
 
 export default function MapItem({
+	interaction,
 	item,
 	preset,
 	mode,
 	onCommand,
 }: {
+	interaction: MapItemInteraction;
 	item: Extract<BentoItem, { type: "map" }>;
 	preset: PresetName;
 	mode: "view" | "edit";
@@ -237,7 +237,7 @@ export default function MapItem({
 		disableLocationSearch,
 		setLocationEditing,
 		registerController,
-	} = useMapItemInteraction();
+	} = interaction;
 	const mapsUrl = `https://www.google.com/maps?q=${item.data.latitude.toFixed(6)},${item.data.longitude.toFixed(6)}`;
 	const accessToken = env.NEXT_PUBLIC_MAPBOX_ACCESS_TOKEN?.trim();
 	const [mapError, setMapError] = useState(false);

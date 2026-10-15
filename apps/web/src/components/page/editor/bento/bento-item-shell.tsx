@@ -18,13 +18,11 @@ import {
 	useState,
 } from "react";
 import { Trash } from "@/components/trash";
+import type { BentoItem } from "@/features/page/bento-item";
 import BentoItemControls from "@/features/page/editor/components/bento/controls/bento-item-controls";
-import { MapItemInteractionProvider } from "@/features/page/editor/contexts/map-item-interaction-provider";
-import { MediaCropProvider } from "@/features/page/editor/contexts/media-crop-provider";
-import type {
-	BentoCommand,
-	BentoItem,
-} from "@/features/page/editor/state/bento-types";
+import { useMapItemInteraction } from "@/features/page/editor/hooks/use-map-item-interaction";
+import { useMediaCrop } from "@/features/page/editor/hooks/use-media-crop";
+import type { BentoCommand } from "@/features/page/editor/types";
 import { renderItem } from "./bento-item-registry";
 import { RuntimeFallback } from "./runtime-fallback";
 
@@ -189,6 +187,8 @@ export default function BentoItemShell({
 	const hasSurfaceLine = item.type === "text" || usesCardLink;
 	const showControls = mode === "edit" && onCommand && item.type !== "section";
 	const shellRef = useRef<HTMLDivElement>(null);
+	const mediaCrop = useMediaCrop({ containerRef: shellRef, breakpoint });
+	const mapInteraction = useMapItemInteraction({ disableLocationSearch });
 	const hideControlsTimer = useRef<number | null>(null);
 	const [controlsOpen, setControlsOpen] = useState(false);
 
@@ -309,6 +309,8 @@ export default function BentoItemShell({
 							onCommand,
 							onLinkImageSelect,
 							isAnyItemDragging,
+							mediaCrop,
+							mapInteraction,
 						})
 					) : (
 						<RuntimeFallback item={item} />
@@ -338,6 +340,8 @@ export default function BentoItemShell({
 							breakpoint={breakpoint}
 							onCommand={onCommand}
 							onRefreshLinkMetadata={onRefreshLinkMetadata}
+							mediaCrop={mediaCrop}
+							mapInteraction={mapInteraction}
 						/>
 					) : null}
 				</>
@@ -383,19 +387,7 @@ export default function BentoItemShell({
 				if (!isEntering) onEntryComplete?.();
 			}}
 		>
-			{item.type === "map" ? (
-				<MapItemInteractionProvider
-					disableLocationSearch={disableLocationSearch}
-				>
-					{content}
-				</MapItemInteractionProvider>
-			) : item.type === "media" ? (
-				<MediaCropProvider containerRef={shellRef} breakpoint={breakpoint}>
-					{content}
-				</MediaCropProvider>
-			) : (
-				content
-			)}
+			{content}
 		</motion.div>
 	);
 }

@@ -1,10 +1,8 @@
 "use client";
 
 import { useEffect, useRef } from "react";
-import type {
-	BentoCommand,
-	BentoItem,
-} from "@/features/page/editor/state/bento-types";
+import type { BentoItem } from "@/features/page/bento-item";
+import type { BentoCommand } from "@/features/page/editor/types";
 
 export default function SectionItem({
 	item,

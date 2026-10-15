@@ -4,7 +4,7 @@ import {
 	getCenteredMediaCrop,
 	getMediaCropStyle,
 	isCropCompatible,
-} from "@/features/page/editor/state/media-crop";
+} from "@/features/page/utils/media-crop";
 import { useMediaCropInteraction } from "@/hooks/use-media-crop-interaction";
 
 export function usePageImageCrop({

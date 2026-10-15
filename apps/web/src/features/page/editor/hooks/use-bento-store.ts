@@ -4,6 +4,8 @@ import type { PageItemBatchRequest, PageItemResponse } from "@grabbin/api";
 import { resolveLinkMetadata } from "@grabbin/page-link";
 import { toast } from "@grabbin/ui/components/toast";
 import { useCallback, useEffect, useRef, useState } from "react";
+import type { BentoItem } from "@/features/page/bento-item";
+import { toBentoItem } from "@/features/page/bento-item";
 import { useCancelBentoMediaUploadMutation } from "@/features/page/editor/mutations/cancel-media-upload";
 import { usePatchBentoItemsMutation } from "@/features/page/editor/mutations/patch-items";
 import { useRefreshBentoLinkMetadataMutation } from "@/features/page/editor/mutations/refresh-link-metadata";
@@ -14,17 +16,16 @@ import {
 	getGoogleAnalyticsPageContext,
 	trackGoogleAnalyticsEvent,
 } from "@/lib/google-analytics";
+import type { BentoCommand } from "../types";
 import {
 	createBentoBatch,
 	hasBentoBatchChanges,
 	mergeAcknowledgedBentoItems,
 	mergeBentoItems,
-	toBentoItem,
-} from "./bento-batch";
-import { createBentoItem } from "./bento-factory";
-import { reduceBentoItems } from "./bento-reducer";
-import type { BentoCommand, BentoItem } from "./bento-types";
-import { createMediaPlaceholderDataUrl } from "./media-placeholder";
+} from "../utils/bento-batch";
+import { createBentoItem } from "../utils/bento-factory";
+import { reduceBentoItems } from "../utils/bento-reducer";
+import { createMediaPlaceholderDataUrl } from "../utils/media-placeholder";
 
 export type BentoStoreStatus = "saved" | "dirty" | "saving" | "error";
 

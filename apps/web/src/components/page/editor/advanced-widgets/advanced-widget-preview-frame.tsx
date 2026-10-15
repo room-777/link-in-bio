@@ -8,7 +8,7 @@ import {
 import { motion, useReducedMotion } from "motion/react";
 import type { ReactNode } from "react";
 import { useEffect, useRef, useState } from "react";
-import type { BentoItem } from "@/features/page/editor/state/bento-types";
+import type { BentoItem } from "@/features/page/bento-item";
 import { BentoItemShell } from "../bento/bento-item-shell";
 
 function getLayoutSize(item: BentoItem) {

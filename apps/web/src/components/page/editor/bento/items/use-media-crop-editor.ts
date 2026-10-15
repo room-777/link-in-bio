@@ -8,30 +8,29 @@ import {
 	useRef,
 	useState,
 } from "react";
-import { useMediaCrop } from "@/features/page/editor/contexts/media-crop-provider";
-import type {
-	BentoCommand,
-	BentoItem,
-} from "@/features/page/editor/state/bento-types";
+import type { BentoItem } from "@/features/page/bento-item";
+import type { MediaCrop } from "@/features/page/editor/hooks/use-media-crop";
+import type { BentoCommand } from "@/features/page/editor/types";
 import {
 	getCenteredMediaCrop,
 	getMediaCropStyle,
 	isCropCompatible,
-} from "@/features/page/editor/state/media-crop";
+} from "@/features/page/utils/media-crop";
 import { useMediaCropInteraction } from "@/hooks/use-media-crop-interaction";
 
 type MediaItem = Extract<BentoItem, { type: "media" }>;
 
 export function useMediaCropEditor({
+	crop,
 	item,
 	mode,
 	onCommand,
 }: {
+	crop: MediaCrop;
 	item: MediaItem;
 	mode: "view" | "edit";
 	onCommand?: (command: BentoCommand) => void;
 }) {
-	const crop = useMediaCrop();
 	const frameRef = useRef<HTMLDivElement>(null);
 	const imageRef = useRef<HTMLImageElement>(null);
 	const videoRef = useRef<HTMLVideoElement>(null);

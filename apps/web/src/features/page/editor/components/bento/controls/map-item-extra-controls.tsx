@@ -11,9 +11,13 @@ import { cn } from "@grabbin/ui/lib/utils";
 import { Expand, LocateFixed, Minus, Plus, Search } from "lucide-react";
 import { useEffect, useState } from "react";
 import { MapLocationSearch } from "@/features/page/editor/components/bento/items/map-location-search";
-import { useMapItemInteraction } from "@/features/page/editor/contexts/map-item-interaction-provider";
+import type { MapItemInteraction } from "../../../hooks/use-map-item-interaction";
 
-export default function MapItemExtraControls() {
+export default function MapItemExtraControls({
+	interaction,
+}: {
+	interaction: MapItemInteraction;
+}) {
 	const {
 		setLocationEditing,
 		disableLocationSearch,
@@ -21,7 +25,7 @@ export default function MapItemExtraControls() {
 		zoomOut: handleZoomOut,
 		locate: handleLocate,
 		selectLocation,
-	} = useMapItemInteraction();
+	} = interaction;
 	const [searchOpen, setSearchOpen] = useState(false);
 	const [mapControlsOpen, setMapControlsOpen] = useState(false);
 

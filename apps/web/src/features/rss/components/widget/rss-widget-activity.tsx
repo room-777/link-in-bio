@@ -1,8 +1,9 @@
 "use client";
 
+import type { RssFeedResponse } from "@grabbin/api";
+import type { ComponentProps } from "react";
+
 import { useState } from "react";
-import { useAdvancedWidgetActions } from "@/features/page/editor/contexts/advanced-widget-actions-context";
-import type { AdvancedWidgetActivityProps } from "@/features/page/editor/types";
 import { useDebouncedValue } from "@/hooks/use-debounced-value";
 import { useRssFeedPreview } from "../../hooks/use-rss-feed-preview";
 import RssAdvancedWidgetPreview from "./rss-advanced-widget-preview";
@@ -10,15 +11,21 @@ import RssFeedWidgetDetails from "./rss-feed-widget-details";
 
 export default function RssWidgetActivity({
 	onClose,
+	onAdd,
+	onPreview,
 	badges,
-}: AdvancedWidgetActivityProps) {
-	const actions = useAdvancedWidgetActions();
+}: {
+	onClose: () => void;
+	onAdd: (url: string) => Promise<boolean>;
+	onPreview: (url: string) => Promise<RssFeedResponse>;
+	badges: ComponentProps<typeof RssFeedWidgetDetails>["badges"];
+}) {
 	const [inputValue, setInputValue] = useState("");
 	const debouncedInput = useDebouncedValue(inputValue);
-	const rssFeed = useRssFeedPreview(debouncedInput, actions.onRssFeedPreview);
+	const rssFeed = useRssFeedPreview(debouncedInput, onPreview);
 
 	async function handleRssFeedAdd(url: string) {
-		const added = await actions.onRssFeedAdd(url);
+		const added = await onAdd(url);
 		if (added) onClose();
 		return added;
 	}
