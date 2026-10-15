@@ -2,6 +2,7 @@ import { checkCallbackRules } from "./architecture/callback-rules";
 import { checkComponentRules } from "./architecture/component-rules";
 import type { ArchitectureContext } from "./architecture/context";
 import { createArchitectureContext } from "./architecture/context";
+import { checkFeatureBoundaryRules } from "./architecture/feature-boundary-rules";
 import { checkFileNameRules } from "./architecture/file-name-rules";
 import { checkMutationRules } from "./architecture/mutation-rules";
 import { checkQueryRules } from "./architecture/query-rules";
@@ -11,6 +12,7 @@ type ArchitectureCheck = (context: ArchitectureContext) => string[];
 
 const checks = {
 	queries: checkQueryRules,
+	"feature-boundaries": checkFeatureBoundaryRules,
 	mutations: checkMutationRules,
 	"request-boundaries": checkRequestBoundaryRules,
 	components: checkComponentRules,
