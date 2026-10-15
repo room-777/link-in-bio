@@ -119,7 +119,7 @@ const faviconUrlSchema = v.union([
 
 export const pageItemLinkUrlSchema = httpsUrlSchema;
 
-const optionalTrimmedLinkSchema = v.pipe(
+const optionalTrimmedUrlSchema = v.pipe(
 	v.optional(v.string()),
 	v.transform((value) => value?.trim() || undefined),
 	v.check((value) => {
@@ -133,10 +133,52 @@ const optionalTrimmedLinkSchema = v.pipe(
 	}, "HTTPS URL required."),
 );
 
-export const pageItemTextDataSchema = v.object({
-	text: v.pipe(v.string(), v.trim()),
-	link: optionalTrimmedLinkSchema,
-});
+const optionalDestinationFields = {
+	url: optionalTrimmedUrlSchema,
+	link: optionalTrimmedUrlSchema,
+};
+
+function hasMatchingDestination({
+	url,
+	link,
+}: {
+	url?: string;
+	link?: string;
+}) {
+	return url === undefined || link === undefined || url === link;
+}
+
+function toCanonicalDestination<T extends { url?: string; link?: string }>(
+	data: T,
+) {
+	const { link, url, ...rest } = data;
+	const destination = url ?? link;
+	return destination ? { ...rest, url: destination } : rest;
+}
+
+function withLegacyDestination<T extends { url?: string; link?: string }>(
+	data: T,
+) {
+	const destination = data.url ?? data.link;
+	return destination ? { ...data, url: destination, link: destination } : data;
+}
+
+export const pageItemTextDataSchema = v.pipe(
+	v.object({
+		text: v.pipe(v.string(), v.trim()),
+		...optionalDestinationFields,
+	}),
+	v.check((data) => hasMatchingDestination(data), "URL fields must match."),
+	v.transform((data) => toCanonicalDestination(data)),
+);
+
+const pageItemTextResponseDataSchema = v.pipe(
+	v.object({
+		text: v.pipe(v.string(), v.trim()),
+		...optionalDestinationFields,
+	}),
+	v.transform(withLegacyDestination),
+);
 
 const pageItemImagePlaceholderSchema = v.optional(
 	v.pipe(
@@ -149,7 +191,7 @@ const pageItemImagePlaceholderSchema = v.optional(
 	),
 );
 
-export const pageItemMediaDataSchema = v.object({
+const pageItemMediaDataFields = {
 	objectKey: v.pipe(v.string(), v.minLength(1)),
 	mimeType: v.pipe(
 		v.string(),
@@ -157,14 +199,23 @@ export const pageItemMediaDataSchema = v.object({
 	),
 	placeholderDataUrl: pageItemImagePlaceholderSchema,
 	caption: v.optional(v.string()),
-	link: optionalTrimmedLinkSchema,
+	...optionalDestinationFields,
 	crop: v.optional(pageItemMediaCropSchema),
-});
+};
 
-export const pageItemMediaResponseDataSchema = v.object({
-	...pageItemMediaDataSchema.entries,
-	mediaUrl: v.optional(mediaDeliveryUrlSchema),
-});
+export const pageItemMediaDataSchema = v.pipe(
+	v.object(pageItemMediaDataFields),
+	v.check((data) => hasMatchingDestination(data), "URL fields must match."),
+	v.transform((data) => toCanonicalDestination(data)),
+);
+
+export const pageItemMediaResponseDataSchema = v.pipe(
+	v.object({
+		...pageItemMediaDataFields,
+		mediaUrl: v.optional(mediaDeliveryUrlSchema),
+	}),
+	v.transform(withLegacyDestination),
+);
 
 export const pageItemMapDataSchema = v.object({
 	latitude: v.pipe(v.number(), v.minValue(-90), v.maxValue(90)),
@@ -588,7 +639,7 @@ const pageItemResponseBaseSchema = v.object({
 });
 
 const pageItemResponseVariantSchema = v.variant("type", [
-	v.object({ type: v.literal("text"), data: pageItemTextDataSchema }),
+	v.object({ type: v.literal("text"), data: pageItemTextResponseDataSchema }),
 	v.object({ type: v.literal("media"), data: pageItemMediaResponseDataSchema }),
 	v.object({ type: v.literal("map"), data: pageItemMapDataSchema }),
 	v.object({ type: v.literal("section"), data: pageItemSectionDataSchema }),
