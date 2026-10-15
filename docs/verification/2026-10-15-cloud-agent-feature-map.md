@@ -18,11 +18,14 @@ Result: **Blocked before stack startup; feature journeys not run**
 
 The canonical stack needs the shared Cloudflare token for Alchemy's local R2 service. The launcher now stops before starting Docker when that secret is absent. An earlier bootstrap attempt was interrupted while downloading the Supabase Postgres image; no local database or browser stack was left running. The shared test account and `featuremap-test` page could not be created. No browser screenshots or database readbacks are claimed.
 
+The user later reported registering the token. On the retry, the current task's cloud environment still reported an empty secret list and the process had no `CLOUDFLARE_API_TOKEN`; the launcher again stopped before Docker startup. This indicates the registration has not reached this task's active executor yet. No token value was requested or logged.
+
 ## Checks that ran
 
 | Check | Result |
 | --- | --- |
 | `scripts/cloud-agent-start.sh` | BLOCKED as designed: exits with `CLOUDFLARE_API_TOKEN is required` before Docker startup. Bun, Supabase CLI, and dependencies were installed first. |
+| Retry after reported token registration | BLOCKED: this task's environment status showed no secret bindings and the launcher process did not receive `CLOUDFLARE_API_TOKEN`. |
 | `bash -n scripts/cloud-agent-start.sh scripts/prepare-feature-map-account.sh .agents/skills/verify-editor/scripts/otp.sh` | PASS |
 | `node --check` on changed Playwright `.mjs` drivers | PASS |
 | `git diff --check` | PASS |
