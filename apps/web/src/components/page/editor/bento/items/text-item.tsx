@@ -32,7 +32,7 @@ export default function TextItem({
 		preset === "halfBanner" ? "center" : (item.style.verticalAlign ?? "top");
 	const itemRadius = getBentoItemRadius(item.type, preset);
 	const textAreaRadius = itemRadius - 12;
-	const externalUrl = item.data.url ?? item.data.link;
+	const externalUrl = item.data.url;
 	useLayoutEffect(() => {
 		const textarea = textAreaRef.current;
 		const viewport = viewportRef.current;

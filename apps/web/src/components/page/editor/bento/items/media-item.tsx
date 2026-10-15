@@ -62,7 +62,7 @@ export default function MediaItem({
 		handleCropPointerEnd,
 	} = useMediaCropEditor({ item, mode, onCommand });
 	const originalMediaUrl = item.data.mediaUrl;
-	const externalUrl = item.data.url ?? item.data.link;
+	const externalUrl = item.data.url;
 	const transformedMediaUrl = originalMediaUrl
 		? getPageMediaUrl(originalMediaUrl, isVideo ? "video" : "image")
 		: undefined;

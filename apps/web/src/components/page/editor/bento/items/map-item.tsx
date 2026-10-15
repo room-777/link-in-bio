@@ -12,7 +12,7 @@ import MapboxMap, {
 } from "react-map-gl/mapbox";
 import "mapbox-gl/dist/mapbox-gl.css";
 import { type ReactNode, useEffect, useMemo, useRef, useState } from "react";
-
+import { useMapItemInteraction } from "@/features/page/editor/contexts/map-item-interaction-provider";
 import type {
 	BentoCommand,
 	BentoItem,
@@ -27,7 +27,6 @@ import {
 } from "@/lib/map-config";
 import type { MapSearchResult } from "@/lib/mapbox-geocoding";
 import { ExternalAction } from "./external-action";
-import { useMapItemInteraction } from "./map-item-interaction-provider";
 import { MapViewportGate } from "./map-viewport-gate";
 import { MediaCaption } from "./media-caption";
 import { removeMapboxControls } from "./shared";
