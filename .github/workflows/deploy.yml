@@ -50,10 +50,29 @@ jobs:
           CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
           ALCHEMY_TELEMETRY_DISABLED: "1"
         run: bun run deploy:production -- --yes
-      - name: Smoke test
+      # Unauthenticated reads only. Retries cover edge propagation; a page or
+      # API that still errors after that fails this run.
+      - name: Production health check
         run: |
-          curl -fsS -o /dev/null https://grabbin.me/
-          curl -fsS -o /dev/null https://grabbin.me/sitemap.xml
+          check() {
+            url="$1"; expect="$2"
+            for attempt in 1 2 3 4 5 6; do
+              status=$(curl -sS -o /tmp/health-body -w '%{http_code}' --max-time 15 "$url" || echo 000)
+              if [ "$status" = "200" ] && { [ -z "$expect" ] || grep -q "$expect" /tmp/health-body; }; then
+                echo "ok $url"
+                return 0
+              fi
+              echo "attempt $attempt: $url returned $status" >&2
+              sleep 10
+            done
+            echo "::error::Health check failed: $url" >&2
+            return 1
+          }
+          check https://grabbin.me/ "<html"
+          check https://grabbin.me/sitemap.xml "<urlset"
+          check https://api.grabbin.me/ '"OK"'
+          # Session check without a cookie: 200 with null, never a server error.
+          check https://api.grabbin.me/auth/get-session "^null"
       - name: Remove env files
         if: always()
         run: rm -f apps/web/.env.production apps/server/.env.production

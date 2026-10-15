@@ -14,6 +14,7 @@
 - 변경 후 영향받은 범위의 검증을 실행하고, 요청 범위의 실패는 고친 뒤 다시 확인합니다. 실행하지 못한 검증은 이유를 기록합니다.
 - `apps/web`에는 테스트를 새로 작성하지 않고, 서버 변경에는 필요한 테스트를 작성합니다.
 - 배포·마이그레이션·외부 상태 변경은 명시적으로 요청된 경우에만 수행합니다.
+- 로컬·봇 컴퓨터와 테스트에서는 운영 키와 운영 리소스(운영 R2 버킷 `grabbin`, 운영 DB 쓰기, `.env.production`)를 쓰지 않습니다. 상세 규칙과 자동 검사는 [`CONTRIBUTING.md`](CONTRIBUTING.md#production-keys)를 따릅니다.
 - 커밋 전 검사는 `bun run verify` 하나입니다. pre-commit hook과 CI가 같은 명령을 실행합니다. `git commit --no-verify`로 hook을 건너뛰지 않습니다.
 
 ## 작업별 지침

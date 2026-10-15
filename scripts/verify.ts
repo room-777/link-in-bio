@@ -49,6 +49,7 @@ const steps: Array<[name: string, command: string[]]> = [
 	],
 	["Tests (every package)", ["bun", "test"]],
 	["Plan boundary", ["bun", "run", "check:plan-boundary"]],
+	["Production keys", ["bun", "run", "check:prod-keys"]],
 ];
 
 checkToolVersions();
