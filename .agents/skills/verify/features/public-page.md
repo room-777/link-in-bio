@@ -18,7 +18,7 @@ A public creator page shows a person's name, profile, and arranged content at th
 
 Preconditions: create the shared local `featuremap-test` page using `verify-editor/scripts/drive-create-page.mjs`. Public page checks use that stored row, never `/demo`. Custom-domain checks still require a deliberately seeded local domain-to-handle row and a local hostname mapping.
 
-- **Open a known handle.** Navigate to `http://localhost:3000/{handle}` using a handle from the disposable fixture. The creator's public page and saved content appear without an owner edit state.
+- **Open a known handle.** Navigate to `http://127.0.0.1:3000/{handle}` using a handle from the disposable fixture. The creator's public page and saved content appear without an owner edit state.
 - **Open its custom domain.** Use the exact local hostname mapped in the fixture. The same creator page appears at `/`.
 - **Open a missing handle.** Navigate to a deliberately unknown handle. The app shows its not-found page.
 - **Proof.** Save snapshots and screenshots for the loaded and not-found states. Verify the expected page data from a read-only database view. If the fixture is absent, report the journey as blocked; do not substitute the demo page.

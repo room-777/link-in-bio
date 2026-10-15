@@ -4,7 +4,7 @@ Read this index before driving the web app, then use the matching feature file. 
 
 ## Baseline
 
-- Follow [the verify skill](../SKILL.md) to run the web app on `http://localhost:3000` and check that this run owns the port.
+- Follow [the verify skill](../SKILL.md) to run the web app on `http://127.0.0.1:3000` and check that this run owns the port.
 - Use a fresh isolated browser context for each run.
 - `/demo` uses built-in sample data and needs no database or account.
 - `/`, `/demo`, and the signed-out `/sign-in` screen can be opened without changing stored data. Submitting an email code or social sign-in can contact external services; do not submit it during a read-only check.

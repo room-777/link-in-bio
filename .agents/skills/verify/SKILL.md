@@ -35,10 +35,10 @@ This check needs Bun dependencies already installed. `/demo` uses the built-in `
 
    Keep the terminal session ID. Do not start it in the background.
 
-4. Wait for the terminal to show `Local: http://localhost:3000/`. Then confirm the demo returns HTTP 200 and the page title:
+4. Wait for the terminal to show the web app is ready. Use the shared `http://127.0.0.1:3000` origin and confirm the demo returns HTTP 200 and the page title:
 
    ```sh
-   curl -fsS http://localhost:3000/demo | rg -q '<title>Interactive Link in Bio Demo \| Grabbin</title>'
+   curl -fsS http://127.0.0.1:3000/demo | rg -q '<title>Interactive Link in Bio Demo \| Grabbin</title>'
    ```
 
    A listening port by itself is not ready.
@@ -53,14 +53,14 @@ cat "$RUN_DIR/revision"
 git rev-parse HEAD
 lsof -nP -iTCP:3000 -sTCP:LISTEN
 ps -p "$(lsof -tiTCP:3000 -sTCP:LISTEN | head -1)" -o command=
-curl -fsS http://localhost:3000/demo | rg -q '<title>Interactive Link in Bio Demo \| Grabbin</title>'
+curl -fsS http://127.0.0.1:3000/demo | rg -q '<title>Interactive Link in Bio Demo \| Grabbin</title>'
 ```
 
 The saved revision must match the current checkout. The port owner must be this checkout's `apps/web/node_modules/.bin/vinext` process. A successful title check proves the expected build is answering. If the checkout, port owner, or title does not match, stop and clean up this run before investigating. Do not drive an unknown or shared instance.
 
 ## Drive
 
-Use Codex's Chrome DevTools browser tools. Create a fresh isolated browser context named with `RUN_ID`, then open `http://localhost:3000/demo` in that context. Take an accessibility snapshot before acting and use its current element IDs for clicks or fills. Do not reuse a user's normal browser context.
+Use Codex's Chrome DevTools browser tools. Create a fresh isolated browser context named with `RUN_ID`, then open `http://127.0.0.1:3000/demo` in that context. Take an accessibility snapshot before acting and use its current element IDs for clicks or fills. Do not reuse a user's normal browser context.
 
 To check the interactive demo:
 

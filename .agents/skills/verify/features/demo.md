@@ -17,7 +17,7 @@ The interactive demo lets a visitor explore a sample Grabbin page without an acc
 
 Preconditions: the local web app is healthy. No account, database, or seed rows are needed.
 
-- **Open the sample.** Navigate to `http://localhost:3000/demo`. The heading `Explore an interactive Grabbin page demo` and sample Bento cards appear.
+- **Open the sample.** Navigate to `http://127.0.0.1:3000/demo`. The heading `Explore an interactive Grabbin page demo` and sample Bento cards appear.
 - **Edit the sample.** Fill the `Name` textbox with `Avery Reed Verification`. Take another snapshot and confirm that value is visible. Restore `Avery Reed`, reload the route, and confirm the built-in sample value returns.
 - **Follow a page link.** Choose a visible link to learn about Grabbin or create a page. Confirm its destination from the browser URL.
 - **Proof.** Save the before and after snapshots, full-page screenshot, URL, action, and visible result. Check that this sample journey did not create account or page data.
