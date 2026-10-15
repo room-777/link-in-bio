@@ -1,6 +1,9 @@
 name: Deploy
 
-# Deploys production after the Release workflow finishes successfully on main.
+# Deploys production only after the Release workflow succeeds on main (or on
+# a manual run). If Release fails or is cancelled, the `blocked` job fails with
+# an error annotation so the blocked deploy is never silent (GitHub notifies
+# about the failed run). `bun run verify` runs again before deploying.
 # Database migrations are NOT run here; apply them explicitly before merging
 # schema changes (see README "Apply migrations").
 on:
@@ -13,13 +16,27 @@ on:
 permissions:
   contents: read
 
-concurrency:
-  group: deploy-production
-  cancel-in-progress: false
-
 jobs:
+  blocked:
+    if: github.event_name == 'workflow_run' && github.event.workflow_run.conclusion != 'success'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Fail because Release did not succeed
+        env:
+          SHA: ${{ github.event.workflow_run.head_sha }}
+          CONCLUSION: ${{ github.event.workflow_run.conclusion }}
+          RELEASE_URL: ${{ github.event.workflow_run.html_url }}
+        run: |
+          echo "::error title=Deploy blocked::Deploy blocked: Release failed for ${SHA} (conclusion: ${CONCLUSION}). Fix Release (${RELEASE_URL}) and re-run it; Deploy starts after it succeeds."
+          exit 1
+
   deploy:
     if: github.event_name == 'workflow_dispatch' || github.event.workflow_run.conclusion == 'success'
+    # One production deploy at a time. A newer run waits and replaces any older
+    # one still waiting, so main's latest commit is what ends up deployed.
+    concurrency:
+      group: deploy-production
+      cancel-in-progress: false
     runs-on: ubuntu-latest
     environment: production
     steps:
@@ -28,11 +45,14 @@ jobs:
           ref: ${{ github.event.workflow_run.head_sha || github.sha }}
       - uses: actions/setup-node@v4
         with:
-          node-version: 22
+          node-version-file: .node-version
       - uses: oven-sh/setup-bun@v2
         with:
-          bun-version: 1.4.0
+          bun-version-file: package.json
       - run: bun install --frozen-lockfile
+      # Gate: the same checks as the pre-commit hook and CI, on this commit.
+      - name: Verify before deploy
+        run: bun run verify
       - name: Write production env files
         env:
           WEB_ENV_PRODUCTION: ${{ secrets.WEB_ENV_PRODUCTION }}
