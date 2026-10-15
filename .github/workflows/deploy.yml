@@ -1,7 +1,8 @@
 name: Deploy
 
 # Deploys the CI-tested commit after Release succeeds on main. Manual deploys
-# use the current main commit and run verify because they bypass CI and Release.
+# use the current main commit and run both CI checks because they bypass CI and
+# Release.
 # Database migrations are NOT run here; apply them explicitly before merging
 # schema changes (see README "Apply migrations").
 on:
@@ -16,7 +17,21 @@ permissions:
   contents: read
 
 jobs:
-  manual-checks:
+  manual-verify:
+    if: github.event_name == 'workflow_dispatch'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version-file: .node-version
+      - uses: oven-sh/setup-bun@v2
+        with:
+          bun-version-file: package.json
+      - run: bun install --frozen-lockfile
+      - run: bun run verify
+
+  manual-auth-smoke:
     if: github.event_name == 'workflow_dispatch'
     runs-on: ubuntu-latest
     services:
@@ -41,7 +56,6 @@ jobs:
         with:
           bun-version-file: package.json
       - run: bun install --frozen-lockfile
-      - run: bun run verify
       - name: Sign in, then check the session
         working-directory: apps/server
         env:
@@ -62,10 +76,12 @@ jobs:
           exit 1
 
   deploy:
-    needs: [manual-checks]
+    needs: [manual-verify, manual-auth-smoke]
     if: >-
       always() &&
-      ((github.event_name == 'workflow_dispatch' && needs.manual-checks.result == 'success') ||
+      ((github.event_name == 'workflow_dispatch' &&
+        needs.manual-verify.result == 'success' &&
+        needs.manual-auth-smoke.result == 'success') ||
        (github.event_name == 'workflow_run' && github.event.workflow_run.conclusion == 'success'))
     # One production deploy runs at a time; each run deploys its checked commit.
     concurrency:
