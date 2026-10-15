@@ -153,7 +153,7 @@ Pushes to `main` create GitHub releases and `vX.Y.Z` tags from Conventional Comm
 
 The first qualifying commit creates `v1.0.0`.
 
-The release tag identifies the source revision. After the Release workflow succeeds on `main`, the Deploy workflow (`.github/workflows/deploy.yml`) runs `bun run deploy:production` in the `production` environment. It can also be started manually (workflow_dispatch). It does not run database migrations.
+The release tag identifies the source revision. Every push to `main` starts the Deploy workflow (`.github/workflows/deploy.yml`), independent of the Release workflow: it runs `bun run verify`, then `bun run deploy:production` in the `production` environment, then a production health check. Deploys run one at a time; a failed Release run is marked with an error annotation but never blocks a deploy. It can also be started manually (workflow_dispatch). It does not run database migrations.
 
 Deploy workflow secrets (environment `production`):
 

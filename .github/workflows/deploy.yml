@@ -1,38 +1,43 @@
 name: Deploy
 
-# Deploys production after the Release workflow finishes successfully on main.
-# Database migrations are NOT run here; apply them explicitly before merging
-# schema changes (see README "Apply migrations").
+# Deploys production on every push to main (every merged PR), independent of
+# the Release workflow: a release/tagging failure must never skip a deploy.
+# The same checks as CI (`bun run verify`) run first, so a broken main is not
+# deployed. Database migrations are NOT run here; apply them explicitly before
+# merging schema changes (see README "Apply migrations").
 on:
-  workflow_run:
-    workflows: [Release]
-    types: [completed]
+  push:
     branches: [main]
   workflow_dispatch:
 
 permissions:
   contents: read
 
+# One production deploy at a time. A newer push waits for the running deploy
+# and replaces any older one still waiting, so main's latest commit always
+# ends up deployed and two deploys never run at once.
 concurrency:
   group: deploy-production
   cancel-in-progress: false
 
 jobs:
   deploy:
-    if: github.event_name == 'workflow_dispatch' || github.event.workflow_run.conclusion == 'success'
     runs-on: ubuntu-latest
     environment: production
     steps:
       - uses: actions/checkout@v4
         with:
-          ref: ${{ github.event.workflow_run.head_sha || github.sha }}
+          ref: ${{ github.sha }}
       - uses: actions/setup-node@v4
         with:
-          node-version: 22
+          node-version-file: .node-version
       - uses: oven-sh/setup-bun@v2
         with:
-          bun-version: 1.4.0
+          bun-version-file: package.json
       - run: bun install --frozen-lockfile
+      # Gate: the same checks as the pre-commit hook and CI, on this commit.
+      - name: Verify before deploy
+        run: bun run verify
       - name: Write production env files
         env:
           WEB_ENV_PRODUCTION: ${{ secrets.WEB_ENV_PRODUCTION }}
