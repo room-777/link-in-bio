@@ -1,7 +1,7 @@
 import assert from "node:assert/strict";
 import { readdirSync, readFileSync } from "node:fs";
 import { dirname, join, relative, resolve, sep } from "node:path";
-import ts from "typescript";
+import { parse } from "@babel/parser";
 import type { ArchitectureContext } from "./context";
 
 function hasGenericFolder(path: string) {
@@ -12,45 +12,61 @@ function hasGenericFolder(path: string) {
 
 function moduleReferences(source: string) {
 	const references: string[] = [];
-	const file = ts.createSourceFile(
-		"feature.tsx",
-		source,
-		ts.ScriptTarget.Latest,
-		true,
-		ts.ScriptKind.TSX,
-	);
-	function visit(node: ts.Node) {
+	function literal(value: unknown) {
 		if (
-			(ts.isImportDeclaration(node) || ts.isExportDeclaration(node)) &&
-			node.moduleSpecifier &&
-			ts.isStringLiteralLike(node.moduleSpecifier)
-		) {
-			references.push(node.moduleSpecifier.text);
-		} else if (
-			ts.isCallExpression(node) &&
-			(node.expression.kind === ts.SyntaxKind.ImportKeyword ||
-				(ts.isIdentifier(node.expression) &&
-					node.expression.text === "require")) &&
-			node.arguments[0] &&
-			ts.isStringLiteralLike(node.arguments[0])
-		) {
-			references.push(node.arguments[0].text);
-		} else if (
-			ts.isImportTypeNode(node) &&
-			ts.isLiteralTypeNode(node.argument) &&
-			ts.isStringLiteralLike(node.argument.literal)
-		) {
-			references.push(node.argument.literal.text);
-		} else if (
-			ts.isExternalModuleReference(node) &&
-			node.expression &&
-			ts.isStringLiteralLike(node.expression)
-		) {
-			references.push(node.expression.text);
-		}
-		ts.forEachChild(node, visit);
+			value &&
+			typeof value === "object" &&
+			"type" in value &&
+			value.type === "StringLiteral" &&
+			"value" in value &&
+			typeof value.value === "string"
+		)
+			references.push(value.value);
 	}
-	visit(file);
+	function visit(node: unknown) {
+		if (!node || typeof node !== "object") return;
+		if ("type" in node) {
+			if (
+				[
+					"ImportDeclaration",
+					"ExportNamedDeclaration",
+					"ExportAllDeclaration",
+					"ImportExpression",
+				].includes(String(node.type)) &&
+				"source" in node
+			)
+				literal(node.source);
+			if (node.type === "TSImportType" && "argument" in node)
+				literal(node.argument);
+			if (node.type === "TSExternalModuleReference" && "expression" in node)
+				literal(node.expression);
+			if (
+				node.type === "CallExpression" &&
+				"callee" in node &&
+				node.callee &&
+				typeof node.callee === "object" &&
+				"type" in node.callee &&
+				(node.callee.type === "Import" ||
+					(node.callee.type === "Identifier" &&
+						"name" in node.callee &&
+						node.callee.name === "require")) &&
+				"arguments" in node &&
+				Array.isArray(node.arguments)
+			)
+				literal(node.arguments[0]);
+		}
+		for (const child of Object.values(node)) {
+			if (Array.isArray(child)) child.forEach(visit);
+			else visit(child);
+		}
+	}
+	visit(
+		parse(source, {
+			sourceType: "module",
+			plugins: ["typescript", "jsx"],
+			allowUndeclaredExports: true,
+		}),
+	);
 	return references;
 }
 
@@ -90,7 +106,7 @@ const text = 'import x from "ignored"';
 import type { Item } from "one";
 export { item } from "two";
 const load = () => import("three");
-type Item = import("four").Item;
+type OtherItem = import("four").Item;
 const legacy = require("five");
 import old = require("six");
 `),
