@@ -1,9 +1,7 @@
 name: Deploy
 
-# Deploys production only after the Release workflow succeeds on main (or on
-# a manual run). Release runs only after main CI succeeds. If Release fails or
-# is cancelled, the `blocked` job reports why the deploy did not start. Manual
-# deploys run verify because they bypass CI and Release.
+# Deploys the CI-tested commit after Release succeeds on main. Manual deploys
+# use the current main commit and run verify because they bypass CI and Release.
 # Database migrations are NOT run here; apply them explicitly before merging
 # schema changes (see README "Apply migrations").
 on:
@@ -14,6 +12,7 @@ on:
   workflow_dispatch:
 
 permissions:
+  actions: read
   contents: read
 
 jobs:
@@ -40,9 +39,24 @@ jobs:
     runs-on: ubuntu-latest
     environment: production
     steps:
+      - name: Download CI-tested commit
+        if: github.event_name == 'workflow_run'
+        uses: actions/download-artifact@v4
+        with:
+          name: release-target
+          path: release-target
+          run-id: ${{ github.event.workflow_run.id }}
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+      - name: Read CI-tested commit
+        id: release-target
+        if: github.event_name == 'workflow_run'
+        run: |
+          sha="$(cat release-target/sha)"
+          [[ "$sha" =~ ^[0-9a-f]{40}$ ]] || { echo "Invalid CI-tested commit SHA" >&2; exit 1; }
+          echo "sha=$sha" >> "$GITHUB_OUTPUT"
       - uses: actions/checkout@v4
         with:
-          ref: ${{ github.event.workflow_run.head_sha || github.sha }}
+          ref: ${{ steps.release-target.outputs.sha || github.sha }}
       - uses: actions/setup-node@v4
         with:
           node-version-file: .node-version

@@ -48,6 +48,17 @@ jobs:
         with:
           bun-version: 1.4.0
       - run: bun install --frozen-lockfile
+      - name: Save CI-tested commit
+        env:
+          SHA: ${{ github.event.workflow_run.head_sha }}
+        run: |
+          mkdir release-target
+          printf '%s\n' "$SHA" > release-target/sha
+      - uses: actions/upload-artifact@v4
+        with:
+          name: release-target
+          path: release-target/sha
+          retention-days: 1
       - run: node ./node_modules/semantic-release/bin/semantic-release.js
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
