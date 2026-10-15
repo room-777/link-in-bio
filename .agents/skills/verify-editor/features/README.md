@@ -4,15 +4,16 @@ Maintained recipes for the signed-in editor and sign-in, driven against the full
 
 ## Baseline preconditions
 
-- Stack launched with `scripts/start-local.sh` and `scripts/doctor.sh` prints `OK: stack healthy`.
-- `bun run dev`: web `http://localhost:3000`, API `http://localhost:3001` (fallback `start-local.sh`: `127.0.0.1`), Postgres at `127.0.0.1:54322` with migrations applied.
-- Test identity: `dev@example.com` only. Never a deliverable address (`RESEND_API_KEY` may be real).
-- Owner journeys need the PR #5 session fix (on `main` since `c80d21e`). Tweet needs a local Pro grant (see editor-tweet); media needs `bun run dev` (alchemy's local R2; never real R2 keys).
-- Signed-in journeys need the `dev@example.com` account with a primary page (create one via `/create` on first run).
+- Stack launched with `scripts/cloud-agent-start.sh` and `scripts/doctor.sh` prints `OK: stack healthy`.
+- Every provider uses web `http://localhost:3000`, API `http://localhost:3001`, and local Postgres at `127.0.0.1:54322`.
+- Shared identity: `featuremap@example.com`, handle `featuremap-test`, and local Pro product `local-pro`. The launcher creates the same user and Pro grant in each disposable local database. `drive-create-page.mjs` signs in and creates the handle through `/create` on first run.
+- `/demo` is intentionally database-free and Free. It can prove demo interactions only; it never counts as proof for owner access, Pro widgets, persistence, or a public stored page.
+- Media upload/cancel require the shared Alchemy local R2 endpoint. Never use real R2 keys or a production database.
 
 ## Driving conventions
 
 - Headless Playwright, a fresh context per run, ARIA role + accessible name locators.
+- Use the same account (`featuremap@example.com`), handle (`featuremap-test`), and local Pro grant (`local-pro`) in Grok Bot, Cursor, and Codex.
 - Editor controls live in the `group "Page editor toolbar"` (buttons `Add media`, `Add map`, `Add text`, `Add section`, `Add link`, `Advanced`) and on each item (`Delete item`, size presets `Small square` / `Half banner` / `Wide` / `Portrait` / `Full square`, `Edit link URL`, `Refresh link metadata`).
 - The owner editor saves automatically ~1.5 s after the last change. Wait for that before reloading.
 - Restore what you change; keep the evidence.
@@ -21,7 +22,7 @@ Maintained recipes for the signed-in editor and sign-in, driven against the full
 
 - Capture the action and the resulting state (before/after ARIA snapshot + screenshot), plus `actions.md`.
 - Persistence needs a second view: reload in a new context and read `page_items` from Postgres.
-- A `/demo` run proves editor interaction only (persistence is off there). Never report it as a save proof.
+- A `/demo` run proves editor interaction only (persistence is off there). Never report it as a save proof or a Pro-gated feature proof.
 - If a precondition is missing, report the journey as blocked with the reason. Do not substitute another entry point.
 
 ## Features

@@ -8,7 +8,7 @@ import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 
 const { chromium } = createRequire(`${process.cwd()}/`)("playwright");
-const [evidence, email = "dev@example.com"] = process.argv.slice(2);
+const [evidence, email = "featuremap@example.com"] = process.argv.slice(2);
 if (!evidence)
 	throw new Error(
 		"usage: drive-sign-in.mjs <EVIDENCE_DIR> [email@example.com]",
@@ -28,7 +28,7 @@ const browser = await chromium.launch();
 const context = await browser.newContext();
 const page = await context.newPage();
 try {
-	await page.goto("http://127.0.0.1:3000/sign-in", {
+	await page.goto("http://localhost:3000/sign-in", {
 		waitUntil: "networkidle",
 		timeout: 240_000,
 	});

@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # Print the newest sign-in OTP Better Auth stored for EMAIL in the local Supabase DB.
-# Usage: otp.sh dev@example.com
+# Usage: otp.sh featuremap@example.com
 set -euo pipefail
 EMAIL="${1:?usage: otp.sh <email>}"
 docker exec supabase_db_grabbin psql -U postgres -tAc \

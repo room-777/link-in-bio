@@ -18,14 +18,14 @@ A visitor enters an email, receives a 6-digit code, enters it, and lands signed 
 
 Preconditions:
 
-- `doctor.sh` is OK. Address is `dev@example.com` (or another `@example.com`).
+- `doctor.sh` is OK. Use the shared `featuremap@example.com` account.
 
-- **Request code.** Fill `textbox "Email"` with `dev@example.com`, click `button "Send OTP"`. `heading "Check your inbox"` appears with the address in bold.
-- **Read code.** Run `scripts/otp.sh dev@example.com`. It prints 6 digits.
+- **Request code.** Fill `textbox "Email"` with `featuremap@example.com`, click `button "Send OTP"`. `heading "Check your inbox"` appears with the address in bold.
+- **Read code.** Run `scripts/otp.sh featuremap@example.com`. It prints 6 digits.
 - **Verify.** Fill the single unnamed textbox in the code group, click `button "Verify code"` (disabled until 6 digits). `POST /auth/sign-in/email-otp` returns 200 and the context gains `better-auth.session_token`.
 - **Landing.** The page does `location.replace` back through `/sign-in`, whose server render redirects a signed-in user to `/create` or `/{handle}`. Wait up to 3 min on first compile.
-- **Scripted.** `node scripts/drive-sign-in.mjs "$EVIDENCE_DIR/sign-in" dev@example.com` from `$PW_DIR`.
-- **Proof.** `otp-sent.png`, `after-verify.png`, `after-verify.aria.txt`, `actions.md`; plus `select id, email from "user" where email = 'dev@example.com'` and a `session` row for that user.
+- **Scripted.** `node scripts/drive-sign-in.mjs "$EVIDENCE_DIR/sign-in" featuremap@example.com` from `$PW_DIR`.
+- **Proof.** `otp-sent.png`, `after-verify.png`, `after-verify.aria.txt`, `actions.md`; plus `select id, email from "user" where email = 'featuremap@example.com'` and a `session` row for that user.
 
 ## Gotchas
 

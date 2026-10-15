@@ -20,7 +20,7 @@ An owner adds a block (text, section, link, map) from the editor toolbar, edits 
 
 Preconditions:
 
-- `doctor.sh` OK. For `item-persist`: signed-in `dev@example.com` with a primary page.
+- `doctor.sh` OK. For `item-persist`: sign in as `featuremap@example.com` and use its `featuremap-test` page.
 
 - **Count before.** Count `textbox "Text content"` (demo seed has 2).
 - **Add.** Click toolbar `button "Add text"`. One more `Text content` textbox exists; fill it with `Verification note`.

@@ -18,9 +18,9 @@ The landing page explains Grabbin and lets a visitor begin sign-in or open the i
 
 Preconditions: the local web app is healthy and the browser uses this run's isolated context.
 
-- **Open the page.** Navigate to `http://127.0.0.1:3000/`. The page title and main heading describe Grabbin's visual personal website.
+- **Open the page.** Navigate to `http://localhost:3000/`. The page title and main heading describe Grabbin's visual personal website.
 - **Follow the sign-in call to action.** From the latest accessibility snapshot, choose the visible create-page link or button. The browser reaches `/sign-in` and shows the sign-in form.
-- **Open the demo.** Navigate to `http://127.0.0.1:3000/demo`. The interactive sample page appears.
+- **Open the demo.** Navigate to `http://localhost:3000/demo`. The interactive sample page appears.
 - **Proof.** Save before/after accessibility snapshots and a screenshot for any interaction. Record the exact accessible name and final URL.
 
 ## Gotchas

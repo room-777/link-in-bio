@@ -9,7 +9,7 @@ Use this skill to check Grabbin through its browser UI. The primary surface is t
 
 ## Launch
 
-This check needs Bun dependencies already installed. It does not need a database, migrations, or seed rows because `/demo` uses the built-in `DEMO_PAGE_RESPONSE` sample. It does not start the API or prove database-backed or signed-in flows. The web app may still try a read-only session check, which can fail while the demo remains usable.
+This check needs Bun dependencies already installed. `/demo` uses the built-in `DEMO_PAGE_RESPONSE` sample; the browser driver records requests to the API origin and fails if it makes one. It does not prove database-backed or signed-in flows, which use the shared full-stack environment in `verify-editor`.
 
 1. Make a unique scratch folder and a lasting evidence folder, then record the checkout revision:
 

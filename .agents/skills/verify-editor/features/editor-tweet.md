@@ -17,7 +17,7 @@ An owner adds an X post as a large card by giving its status URL; the post is lo
 Preconditions:
 
 - `doctor.sh` OK, signed-in owner. Outbound HTTPS to `react-tweet.vercel.app` from the API server.
-- **Pro plan.** On a Free account clicking `Tweet` opens `dialog "Upgrade to Pro"` instead (`advanced-widgets-dialog.tsx`, `session.plan.tier === "pro"`). Grant Pro on the **local** DB only (see Gotchas).
+- **Pro plan.** The shared fixture is granted the local-only `local-pro` product by `scripts/prepare-feature-map-account.sh`. On a Free account clicking `Tweet` opens `dialog "Upgrade to Pro"` instead (`advanced-widgets-dialog.tsx`, `session.plan.tier === "pro"`).
 
 - **Open.** Click `button "Advanced"` (toolbar) → `dialog "Advanced widgets"` lists buttons `Tweet`, `Spotify`, `SoundCloud`, `Apple Music`, `Signature`, `Calendly`, `RSS Feed` (and `textbox "Search widgets"`; searching `X` finds nothing). Click `button "Tweet"` → `dialog "Tweet"` with `Back to widgets`, `Close`, `group "Preview size"` (`Portrait` / `Full square`), `textbox "Tweet ID or URL"`, `button "Add"` (disabled until filled).
 - **Add.** Fill `Tweet ID or URL` with a public post (e.g. `https://x.com/jack/status/20`), click `Add`. The browser sends `POST /widgets/preview` with `{ kind: "tweet", url }`. A card appears; the row is `type = 'tweet'`, `data->>'url' = 'https://x.com/i/status/<id>'`, and `data->'tweet'` holds the post.
@@ -26,10 +26,5 @@ Preconditions:
 
 ## Gotchas
 
-- Local Pro grant (local Postgres `127.0.0.1:54322` only, never a shared/remote DB). Plan comes from `creem_subscription` via `getPlanAccess` (`packages/plan`): a row with `product_id` in `CREEM_PRO_MONTHLY_PRODUCT_ID`/`CREEM_PRO_YEARLY_PRODUCT_ID`, status `active`/`trialing`/`paid`, and `period_end` in the future:
-  ```sh
-  PID=$(sed -n 's/^CREEM_PRO_MONTHLY_PRODUCT_ID=//p' apps/server/.env | tr -d '"')
-  docker exec supabase_db_grabbin psql -U postgres -c "insert into creem_subscription (id, product_id, reference_id, creem_subscription_id, status, period_end) select 'local-dev-pro', '$PID', id, 'local-dev-pro', 'active', now() + interval '1 year' from \"user\" where email = 'dev@example.com' on conflict (id) do nothing"
-  ```
-  Remove with `delete from creem_subscription where id = 'local-dev-pro'`. Verified Oct 13 2026: after the grant, `tweet-add` PASS.
+- `local-pro` is included in the local worker environment as `CREEM_PRO_MONTHLY_PRODUCT_ID`, and the fixture subscription is renewed by `scripts/prepare-feature-map-account.sh`. This applies only to the local Supabase database; do not grant or test against a shared/remote or production database.
 - The API server fetches the tweet from `react-tweet.vercel.app`; offline or blocked egress on the server makes `tweet-add` fail for environment reasons.

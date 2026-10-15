@@ -2,7 +2,7 @@
 // Usage (from $PW_DIR so `playwright` resolves):
 //   RUN_DIR=<scratch dir> [WEB_URL=http://localhost:3000 SERVER_URL=http://localhost:3001] \
 //   node $SKILL/scripts/drive-editor-journeys.mjs "$EVIDENCE_DIR" [media-upload,media-cancel,link-refresh,item-add]
-// Signs in as dev@example.com (OTP from local DB). Needs a page for that user (create via /create).
+// Signs in as featuremap@example.com (OTP from local DB). Needs the shared featuremap-test page.
 
 import { execFileSync } from "node:child_process";
 import { appendFileSync, mkdirSync, writeFileSync } from "node:fs";
@@ -12,7 +12,7 @@ import { fileURLToPath } from "node:url";
 
 const { chromium } = createRequire(`${process.cwd()}/`)("playwright");
 const SCRIPTS = dirname(fileURLToPath(import.meta.url));
-const EMAIL = "dev@example.com";
+const EMAIL = "featuremap@example.com";
 const WEB = process.env.WEB_URL || "http://localhost:3000";
 async function login() {
 	const b = await chromium.launch();

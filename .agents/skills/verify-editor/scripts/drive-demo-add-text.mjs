@@ -18,8 +18,13 @@ const browser = await chromium.launch();
 const page = await (
 	await browser.newContext({ viewport: { width: 1280, height: 900 } })
 ).newPage();
+const apiRequests = [];
+page.on("request", (request) => {
+	if (new URL(request.url()).origin === "http://localhost:3001")
+		apiRequests.push(`${request.method()} ${request.url()}`);
+});
 try {
-	await page.goto("http://127.0.0.1:3000/demo", {
+	await page.goto("http://localhost:3000/demo", {
 		waitUntil: "networkidle",
 		timeout: 240_000,
 	});
@@ -77,6 +82,13 @@ try {
 		fullPage: true,
 	});
 	step(`after Delete item: ${await textBlocks.count()} blocks (restored)`);
+	writeFileSync(
+		`${evidence}/network.txt`,
+		apiRequests.join("\n") || "No API requests\n",
+	);
+	if (apiRequests.length > 0)
+		throw new Error(`demo made API requests: ${apiRequests.join(", ")}`);
+	step("API requests: none (demo remains database-free)");
 	step("RESULT: PASS");
 } catch (error) {
 	step(
