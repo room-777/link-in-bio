@@ -98,6 +98,7 @@ function importViolation(
 
 assert.equal(hasGenericFolder("page/editor/state/item.ts"), true);
 assert.equal(hasGenericFolder("page/editor/contexts/item.ts"), true);
+assert.equal(hasGenericFolder("components/contexts/item.ts"), true);
 assert.equal(hasGenericFolder("page/editor/state-machine.ts"), false);
 assert.deepEqual(
 	moduleReferences(`
@@ -119,6 +120,20 @@ assert.ok(
 );
 assert.ok(importViolation(fixtureFile, "../page/editor/types", fixtureRoot));
 assert.ok(importViolation(fixtureFile, "./state/item", fixtureRoot));
+assert.ok(
+	importViolation(
+		join(fixtureRoot, "components/widget.tsx"),
+		"./contexts/item",
+		fixtureRoot,
+	),
+);
+assert.ok(
+	importViolation(
+		join(fixtureRoot, "app/page.tsx"),
+		"@/features/page/editor/types",
+		fixtureRoot,
+	),
+);
 assert.equal(
 	importViolation(fixtureFile, "@/features/page/bento-item", fixtureRoot),
 	null,
@@ -150,9 +165,8 @@ export function checkFeatureBoundaryRules(context: ArchitectureContext) {
 			checkFolders(path);
 		}
 	}
-	checkFolders(context.featureDirectory);
+	checkFolders(context.sourceDirectory);
 	for (const file of context.allFiles) {
-		if (!file.startsWith(`${context.featureDirectory}${sep}`)) continue;
 		for (const specifier of moduleReferences(readFileSync(file, "utf8"))) {
 			const violation = importViolation(
 				file,
