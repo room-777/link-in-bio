@@ -141,6 +141,13 @@
 			"when": 1792127749000,
 			"tag": "0019_drop_legacy_page_handle_sync",
 			"breakpoints": true
+		},
+		{
+			"idx": 20,
+			"version": "7",
+			"when": 1792147942001,
+			"tag": "0020_drop_analytics_events",
+			"breakpoints": true
 		}
 	]
 }

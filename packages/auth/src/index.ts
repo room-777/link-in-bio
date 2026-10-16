@@ -24,11 +24,15 @@ import { createCreemClient, retrieveSubscription } from "./creem-server";
 import {
 	syncCreemCheckout,
 	syncCreemDispute,
+	syncCreemPaidWebhook,
 	syncCreemRefund,
 	syncCreemWebhook,
 } from "./creem-webhook";
+import {
+	createEmailOtpSignupHooks,
+	emailOtpSignupStatusPlugin,
+} from "./email-otp-signup-status";
 import { serverEvents } from "./server-events";
-import { createSignInDatabaseHooks } from "./sign-in-method";
 
 type CreemEventData = {
 	webhookId: string;
@@ -48,6 +52,10 @@ function createCreemPlugin(
 	db: DatabaseClient,
 	onSubscriptionChange?: (userId: string) => Promise<void>,
 ): BetterAuthPlugin {
+	const client = createCreemClient({
+		apiKey: env.CREEM_API_KEY,
+		testMode: env.CREEM_TEST_MODE === "true",
+	});
 	const syncEvent = async (event: CreemEventData) => {
 		const result = await syncCreemWebhook(db, event);
 		if (result) await onSubscriptionChange?.(result.userId);
@@ -67,21 +75,6 @@ function createCreemPlugin(
 			if (result) await onSubscriptionChange?.(result.userId);
 		},
 		onCheckoutCompleted: async (data) => {
-			const directResult = data.subscription
-				? await syncCreemWebhook(db, {
-						...data.subscription,
-						webhookId: data.webhookId,
-						webhookCreatedAt: data.webhookCreatedAt,
-						product: data.product,
-						customer: data.customer,
-						metadata: data.metadata,
-						order: data.order,
-					})
-				: null;
-			if (directResult) {
-				await onSubscriptionChange?.(directResult.userId);
-				return;
-			}
 			const result = await syncCreemCheckout(
 				db,
 				{
@@ -89,13 +82,7 @@ function createCreemPlugin(
 					webhookId: data.webhookId,
 					webhookCreatedAt: data.webhookCreatedAt,
 				},
-				(id) => {
-					const client = createCreemClient({
-						apiKey: env.CREEM_API_KEY,
-						testMode: env.CREEM_TEST_MODE === "true",
-					});
-					return client.checkouts.retrieve(id);
-				},
+				(id) => client.checkouts.retrieve(id),
 				(id) => {
 					return retrieveSubscription(
 						{
@@ -106,13 +93,27 @@ function createCreemPlugin(
 					);
 				},
 			);
-			if (result) await onSubscriptionChange?.(result.userId);
+			if (!result) return;
+			await onSubscriptionChange?.(result.userId);
 		},
 		onSubscriptionActive: syncEvent,
 		onSubscriptionTrialing: syncEvent,
 		onSubscriptionScheduledCancel: syncEvent,
 		onSubscriptionCanceled: syncEvent,
-		onSubscriptionPaid: syncEvent,
+		onSubscriptionPaid: async (event) => {
+			const result = await syncCreemPaidWebhook(db, event, (id) =>
+				client.transactions.getById(id),
+			);
+			if (!result) return;
+			if (result.purchase) {
+				serverEvents.track({
+					name: "purchase",
+					userId: result.userId,
+					params: result.purchase,
+				});
+			}
+			await onSubscriptionChange?.(result.userId);
+		},
 		onSubscriptionExpired: syncEvent,
 		onSubscriptionUnpaid: syncEvent,
 		onSubscriptionUpdate: syncEvent,
@@ -296,9 +297,9 @@ export async function createAuth(
 			...authOptions.plugins.filter((plugin) => plugin.id !== "custom-session"),
 			planSession(() => resolvedDatabase),
 			createCreemPlugin(resolvedDatabase, options?.onSubscriptionChange),
+			emailOtpSignupStatusPlugin,
 		],
-		// GA sign_up for a new account, login for an existing one.
-		databaseHooks: createSignInDatabaseHooks(serverEvents),
+		databaseHooks: createEmailOtpSignupHooks(),
 		database: drizzleAdapter(resolvedDatabase, {
 			provider: "pg",
 			schema: {

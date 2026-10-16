@@ -6,7 +6,7 @@ An owner adds a photo/video from the toolbar; a placeholder appears immediately,
 
 - `media-add` shows a local preview block right after the file is chosen.
 - `media-upload` gets a presigned PUT URL from the API, uploads the file to R2, and sets the item's `objectKey`.
-- `media-cancel` deleting during upload aborts it and removes the pending upload record.
+- `media-cancel` deleting during upload aborts it and marks the unfinished upload for cleanup.
 - `link-image-add` adds an image to a link card (`Add link image`).
 - `link-image-replace` replaces a link card image (`Replace link image`).
 - `link-image-remove` clears the image with `Remove link image`.

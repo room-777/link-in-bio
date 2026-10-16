@@ -81,7 +81,11 @@ export const billingController = new Hono<AppEnv>()
 								? "Finish or wait for your current checkout before choosing another plan."
 								: "Checkout is temporarily unavailable. Please try again.",
 			});
-		return c.json({ url: checkoutResult.url, redirect: false });
+		return c.json({
+			url: checkoutResult.url,
+			redirect: false,
+			checkoutStarted: checkoutResult.kind === "checkout",
+		});
 	})
 	.post("/billing/cancel-subscription", requiredSession, async (c) => {
 		const session = c.var.session;

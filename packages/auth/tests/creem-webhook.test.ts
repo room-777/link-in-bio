@@ -3,6 +3,7 @@ import { describe, it } from "node:test";
 import type { DatabaseClient } from "@grabbin/db";
 import {
 	syncCreemCheckout,
+	syncCreemPaidWebhook,
 	syncCreemRefund,
 	syncCreemWebhook,
 } from "../src/creem-webhook";
@@ -76,15 +77,7 @@ describe("Creem webhook synchronization", () => {
 		assert.equal(saved[0]?.lastWebhookId, "event-new");
 	});
 
-	/**
-	 * Case ID: CREEM-WEBHOOK-002
-	 * Given: checkout.completed omits the subscription and the pending row has a stale product ID.
-	 * When: checkout retrieval confirms its request, owner, and completed subscription.
-	 * Then: the subscription and user customer ID are saved from the verified checkout.
-	 * Evidence: persisted subscription status, checkout IDs, and customer ID.
-	 * Result: Pass | Fail | Blocked | Not Run
-	 */
-	it("CREEM-WEBHOOK-002 retrieves a completed checkout when its webhook omits the subscription", async () => {
+	it("CREEM-WEBHOOK-002 finds a completed checkout after its pending row is removed", async () => {
 		const values: Record<string, unknown>[] = [];
 		let queryCount = 0;
 		const update = {
@@ -103,15 +96,16 @@ describe("Creem webhook synchronization", () => {
 				creemSubscription: {
 					findFirst: async () => {
 						queryCount += 1;
+						if (queryCount === 1) return undefined;
 						return {
-							id: "checkout-request-1",
+							id: "subscription-row-1",
 							referenceId: "user-1",
-							productId: "pro-monthly",
-							checkoutId: "checkout-1",
-							checkoutUrl: "https://checkout.creem.io/checkout-1",
-							creemSubscriptionId: null,
-							creemCustomerId: null,
-							creemOrderId: null,
+							productId: "pro-yearly",
+							checkoutId: null,
+							checkoutUrl: null,
+							creemSubscriptionId: "subscription-1",
+							creemCustomerId: "customer-1",
+							creemOrderId: "order-1",
 							periodStart: null,
 							periodEnd: null,
 							lastWebhookId: null,
@@ -125,6 +119,7 @@ describe("Creem webhook synchronization", () => {
 			transaction: async (callback: (value: typeof tx) => unknown) =>
 				callback(tx),
 		} as unknown as DatabaseClient;
+		let orderStatus = "paid";
 
 		const result = await syncCreemCheckout(
 			db,
@@ -137,10 +132,26 @@ describe("Creem webhook synchronization", () => {
 				id: "checkout-1",
 				status: "completed",
 				requestId: "checkout-request-1",
-				product: "pro-yearly",
+				product: {
+					id: "pro-yearly",
+					name: "Grabbin Pro Yearly",
+					price: 12000,
+					currency: "USD",
+					taxMode: "exclusive",
+				},
+				units: 1,
 				customer: { id: "customer-1" },
 				metadata: { referenceId: "user-1" },
-				order: { id: "order-1" },
+				order: {
+					id: "order-1",
+					transaction: "transaction-1",
+					product: "pro-yearly",
+					amount: 12000,
+					taxAmount: 1200,
+					amountPaid: 13200,
+					currency: "USD",
+					status: orderStatus,
+				},
 				subscription: {
 					id: "subscription-1",
 					status: "active",
@@ -152,13 +163,132 @@ describe("Creem webhook synchronization", () => {
 			}),
 		);
 
-		assert.equal(queryCount, 2);
+		assert.equal(queryCount, 3);
 		assert.equal(result?.accepted, true);
 		assert.equal(values[0]?.status, "active");
 		assert.equal(values[0]?.productId, "pro-yearly");
 		assert.equal(values[0]?.creemSubscriptionId, "subscription-1");
 		assert.equal(values[0]?.creemCustomerId, "customer-1");
 		assert.deepEqual(values[1], { creemCustomerId: "customer-1" });
+		assert.equal("purchase" in (result ?? {}), false);
+
+		orderStatus = "pending";
+		queryCount = 0;
+		const retry = await syncCreemCheckout(
+			db,
+			{
+				id: "checkout-1",
+				webhookId: "event-checkout-retry",
+				webhookCreatedAt: new Date("2026-09-21T00:00:00.000Z").getTime(),
+			},
+			async () => ({
+				id: "checkout-1",
+				status: "completed",
+				requestId: "checkout-request-1",
+				product: {
+					id: "pro-yearly",
+					name: "Grabbin Pro Yearly",
+					price: 12000,
+					currency: "USD",
+					taxMode: "exclusive",
+				},
+				units: 1,
+				customer: { id: "customer-1" },
+				metadata: { referenceId: "user-1" },
+				order: {
+					id: "order-1",
+					transaction: "transaction-1",
+					product: "pro-yearly",
+					amount: 12000,
+					taxAmount: 1200,
+					amountPaid: 13200,
+					currency: "USD",
+					status: orderStatus,
+				},
+				subscription: {
+					id: "subscription-1",
+					status: "active",
+					product: "pro-yearly",
+					customer: { id: "customer-1" },
+				},
+			}),
+		);
+		assert.equal("purchase" in (retry ?? {}), false);
+	});
+
+	it("records each successful subscription payment by its transaction ID", async () => {
+		const update = {
+			set() {
+				return update;
+			},
+			where: async () => undefined,
+		};
+		const tx = {
+			execute: async () => undefined,
+			delete: () => ({ where: async () => undefined }),
+		};
+		const db = {
+			query: {
+				creemSubscription: {
+					findFirst: async () => ({
+						id: "subscription-row-1",
+						referenceId: "user-1",
+						creemSubscriptionId: "subscription-1",
+						creemCustomerId: "customer-1",
+						lastWebhookId: null,
+						lastWebhookCreatedAt: null,
+						lastWebhookState: null,
+					}),
+				},
+			},
+			update: () => update,
+			transaction: async (callback: (value: typeof tx) => unknown) =>
+				callback(tx),
+		} as unknown as DatabaseClient;
+		const event = {
+			webhookId: "paid-event-1",
+			webhookCreatedAt: new Date("2026-09-20T00:00:00.000Z").getTime(),
+			id: "subscription-1",
+			status: "active",
+			product: { id: "pro-monthly", name: "Grabbin Pro Monthly" },
+			customer: { id: "customer-1" },
+			metadata: { referenceId: "user-1" },
+			last_transaction_id: "transaction-1",
+			items: [{ product_id: "pro-monthly", units: 1 }],
+		};
+		const getTransaction = async (id: string) => ({
+			id,
+			status: "paid",
+			amount: 1200,
+			currency: "USD",
+		});
+
+		const firstPayment = await syncCreemPaidWebhook(db, event, getTransaction);
+		const retry = await syncCreemPaidWebhook(db, event, getTransaction);
+		const renewal = await syncCreemPaidWebhook(
+			db,
+			{
+				...event,
+				webhookId: "paid-event-2",
+				last_transaction_id: "transaction-2",
+			},
+			getTransaction,
+		);
+		const failedPayment = await syncCreemPaidWebhook(db, event, async (id) => ({
+			...(await getTransaction(id)),
+			status: "pending",
+		}));
+
+		assert.equal(firstPayment?.purchase?.transaction_id, "transaction-1");
+		assert.equal(firstPayment?.purchase?.value, 12);
+		assert.equal(firstPayment?.purchase?.currency, "USD");
+		assert.equal(
+			firstPayment?.purchase?.items[0]?.item_name,
+			"Grabbin Pro Monthly",
+		);
+		assert.equal(renewal?.purchase?.transaction_id, "transaction-2");
+		assert.equal(retry?.purchase?.transaction_id, "transaction-1");
+		assert.equal(failedPayment?.purchase, null);
 	});
 
 	/**

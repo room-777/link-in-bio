@@ -1,6 +1,6 @@
 # Grabbin editor verification map
 
-Source-of-truth recipes for the signed-in editor and sign-in, driven against the full local stack from [the verify-editor skill](../SKILL.md).
+Source-of-truth recipes for sign-in, analytics events, and the signed-in editor, driven against the full local stack from [the verify-editor skill](../SKILL.md).
 
 ## Baseline preconditions
 
@@ -28,6 +28,7 @@ Source-of-truth recipes for the signed-in editor and sign-in, driven against the
 ## Features
 
 - [Sign in with email OTP](./sign-in-email-otp.md): `/sign-in` → code → signed-in landing.
+- [Analytics events](./analytics-events.md): successful sign-in, page creation, public link clicks, and Creem checkout and payment.
 - [Add an item](./editor-add-item.md): toolbar `Add text` / `Add section` / `Add link` / `Add map`, then delete.
 - [Media upload and cancel](./editor-media-upload.md): toolbar `Add media`, upload to local R2, delete mid-upload.
 - [Profile and handle](./editor-profile-and-handle.md): edit the name, bio, profile image, image crop, and page handle.

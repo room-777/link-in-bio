@@ -14,6 +14,7 @@ import { CheckCircle } from "reicon-react/icons/CheckCircle";
 
 import { authClient, getAuthErrorMessage } from "@/lib/auth-client";
 import { getSignInHref } from "@/lib/auth-redirect";
+import { trackGoogleAnalyticsEvent } from "@/lib/google-analytics";
 
 type EmailOtpVerificationFormProps = {
 	email: string;
@@ -56,7 +57,7 @@ export default function EmailOtpVerificationForm({
 	const handleVerifyCode = async () => {
 		setErrorMessage("");
 		setIsSigningIn(true);
-		const { error } = await authClient.signIn.emailOtp({
+		const { data, error } = await authClient.signIn.emailOtp({
 			email,
 			otp,
 		});
@@ -66,7 +67,13 @@ export default function EmailOtpVerificationForm({
 			setErrorMessage(getAuthErrorMessage(error));
 			return;
 		}
-		window.location.replace(getSignInHref(returnTo));
+		const isNewUser = Boolean(
+			data && "isNewUser" in data && data.isNewUser === true,
+		);
+		trackGoogleAnalyticsEvent(isNewUser ? "sign_up" : "login", {
+			method: "email",
+		});
+		window.location.replace(isNewUser ? "/create" : getSignInHref(returnTo));
 	};
 
 	return (
