@@ -1,7 +1,5 @@
-import type {
-	BentoCommand,
-	BentoItem,
-} from "@/features/page/editor/state/bento-types";
+import type { BentoItem } from "@/features/page/bento-item";
+import type { BentoCommand } from "@/features/page/editor/types";
 import { normalizeHttpsUrl } from "@/lib/normalize-https-url";
 
 type UpdateDataCommand = Extract<BentoCommand, { type: "update-data" }>;

@@ -3,7 +3,8 @@ import {
 	type PageItemBatchRequest,
 	type PageItemResponse,
 } from "@grabbin/api";
-import type { BentoBatchItem, BentoItem } from "./bento-types";
+import type { BentoItem } from "@/features/page/bento-item";
+import type { BentoBatchItem } from "../types";
 
 type LinkResponse = Extract<PageItemResponse, { type: "link" }>;
 
@@ -11,10 +12,6 @@ function toRequestMetadata(metadata: LinkResponse["data"]["metadata"]) {
 	if (!metadata) return undefined;
 	const { presentation: _presentation, ...requestMetadata } = metadata;
 	return requestMetadata;
-}
-
-export function toBentoItem(item: PageItemResponse): BentoItem {
-	return { ...item, preset: null };
 }
 
 function toBatchItem(item: BentoItem): BentoBatchItem {

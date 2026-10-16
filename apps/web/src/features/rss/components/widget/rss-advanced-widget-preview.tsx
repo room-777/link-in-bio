@@ -3,7 +3,7 @@ import { getAllowedPresets, getPresetGeometry } from "@grabbin/bento-layout";
 import { AdvancedWidgetPresetControls } from "@/components/page/editor/advanced-widget-preset-controls";
 import { AdvancedWidgetPreviewFrame } from "@/components/page/editor/advanced-widgets/advanced-widget-preview-frame";
 import { useAdvancedWidgetPreset } from "@/components/page/editor/advanced-widgets/use-advanced-widget-preset";
-import type { BentoItem } from "@/features/page/editor/state/bento-types";
+import type { BentoItem } from "@/features/page/bento-item";
 import { RssFeedWidget } from "./rss-feed-widget";
 
 export default function RssAdvancedWidgetPreview({

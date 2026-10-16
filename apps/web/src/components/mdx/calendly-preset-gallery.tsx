@@ -17,7 +17,7 @@ import {
 	type CalendlyPreset,
 	CalendlyWidget,
 } from "@/features/calendly/components/widget/calendly-widget";
-import type { BentoItem } from "@/features/page/editor/state/bento-types";
+import type { BentoItem } from "@/features/page/bento-item";
 
 const calendlyPresets: CalendlyPreset[] = [
 	"squareSmall",

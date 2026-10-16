@@ -25,18 +25,18 @@ import { overlay } from "overlay-kit";
 import { Activity, useLayoutEffect, useRef, useState } from "react";
 import { openPlanDialog } from "@/components/billing/plan-picker";
 import { advancedWidgetModules } from "@/constant/widget/advanced-widget-registry";
-import {
-	AdvancedWidgetActionsContext,
-	useAdvancedWidgetActions,
-} from "@/features/page/editor/contexts/advanced-widget-actions-context";
+import type { AdvancedWidgetActions } from "@/features/page/editor/types";
 import { authClient } from "@/lib/auth-client";
 import AdvancedWidgetActivity from "./advanced-widget-activity";
 import { AdvancedWidgetIcon } from "./advanced-widget-icon";
 import AdvancedWidgetList from "./advanced-widget-list";
 
-export default function AdvancedWidgetsDialog() {
+export default function AdvancedWidgetsDialog({
+	actions,
+}: {
+	actions: AdvancedWidgetActions;
+}) {
 	const isMobile = useIsMobile();
-	const widgetActions = useAdvancedWidgetActions();
 	const {
 		data: session,
 		error,
@@ -57,15 +57,14 @@ export default function AdvancedWidgetsDialog() {
 			onClick={() => {
 				if (isSessionUnavailable) return;
 				overlay.open(({ isOpen, close, unmount }) => (
-					<AdvancedWidgetActionsContext.Provider value={widgetActions}>
-						<AdvancedWidgetsOverlay
-							isMobile={isMobile}
-							isPro={isPro}
-							open={isOpen}
-							onClose={close}
-							onExit={unmount}
-						/>
-					</AdvancedWidgetActionsContext.Provider>
+					<AdvancedWidgetsOverlay
+						actions={actions}
+						isMobile={isMobile}
+						isPro={isPro}
+						open={isOpen}
+						onClose={close}
+						onExit={unmount}
+					/>
 				));
 			}}
 		>
@@ -82,12 +81,14 @@ function getDrawerBottomOffset() {
 }
 
 function AdvancedWidgetsOverlay({
+	actions,
 	isMobile,
 	isPro,
 	open,
 	onClose,
 	onExit,
 }: {
+	actions: AdvancedWidgetActions;
 	isMobile: boolean;
 	isPro: boolean;
 	open: boolean;
@@ -285,6 +286,7 @@ function AdvancedWidgetsOverlay({
 					{widgetId && (
 						<div className="min-h-0 flex-1">
 							<AdvancedWidgetActivity
+								actions={actions}
 								widgetId={widgetId}
 								onClose={() => handleOpenChange(false)}
 							/>

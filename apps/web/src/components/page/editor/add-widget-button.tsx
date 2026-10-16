@@ -13,16 +13,17 @@ import {
 	PopoverTrigger,
 } from "@grabbin/ui/components/popover";
 import { useRef, useState } from "react";
-import { useAdvancedWidgetActions } from "@/features/page/editor/contexts/advanced-widget-actions-context";
+import type { AdvancedWidgetActions } from "@/features/page/editor/types";
 import { normalizeHttpsUrl } from "@/lib/normalize-https-url";
 import AdvancedWidgetsDialog from "./advanced-widgets-dialog";
 
 export default function AddWidgetButton({
+	actions,
 	demoMode = false,
 }: {
+	actions: AdvancedWidgetActions;
 	demoMode?: boolean;
 }) {
-	const actions = useAdvancedWidgetActions();
 	const fileInputRef = useRef<HTMLInputElement>(null);
 	const [linkPopoverOpen, setLinkPopoverOpen] = useState(false);
 	const [linkValue, setLinkValue] = useState("");
@@ -131,7 +132,7 @@ export default function AddWidgetButton({
 					</form>
 				</PopoverContent>
 			</Popover>
-			{!demoMode ? <AdvancedWidgetsDialog /> : null}
+			{!demoMode ? <AdvancedWidgetsDialog actions={actions} /> : null}
 		</div>
 	);
 }

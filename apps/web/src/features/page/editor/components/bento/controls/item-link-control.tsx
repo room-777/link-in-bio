@@ -1,12 +1,10 @@
 "use client";
 
 import { useState } from "react";
+import type { BentoItem } from "@/features/page/bento-item";
 import LinkControl from "@/features/page/editor/components/bento/controls/link-control";
-import type {
-	BentoCommand,
-	BentoItem,
-} from "@/features/page/editor/state/bento-types";
-import { createItemLinkCommand } from "@/features/page/editor/state/item-link-command";
+import type { BentoCommand } from "@/features/page/editor/types";
+import { createItemLinkCommand } from "@/features/page/editor/utils/item-link-command";
 
 type LinkItem = Extract<BentoItem, { type: "link" | "media" }>;
 

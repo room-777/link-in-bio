@@ -13,11 +13,9 @@ import {
 	useRef,
 	useState,
 } from "react";
-
-import type {
-	BentoCommand,
-	BentoItem,
-} from "@/features/page/editor/state/bento-types";
+import type { BentoCommand } from "@/features/page/bento-command";
+import type { BentoItem } from "@/features/page/bento-item";
+import type { MediaCrop } from "@/features/page/editor/hooks/use-media-crop";
 import { getPageMediaUrl } from "@/lib/page-media-url";
 import { ExternalAction } from "./external-action";
 import { MediaCaption } from "./media-caption";
@@ -25,11 +23,13 @@ import { getScrollTarget } from "./shared";
 import { useMediaCropEditor } from "./use-media-crop-editor";
 
 export default function MediaItem({
+	crop,
 	item,
 	preset,
 	mode,
 	onCommand,
 }: {
+	crop: MediaCrop;
 	item: Extract<BentoItem, { type: "media" }>;
 	preset: PresetName;
 	mode: "view" | "edit";
@@ -60,7 +60,7 @@ export default function MediaItem({
 		handleCropPointerDown,
 		handleCropPointerMove,
 		handleCropPointerEnd,
-	} = useMediaCropEditor({ item, mode, onCommand });
+	} = useMediaCropEditor({ item, mode, onCommand, crop });
 	const originalMediaUrl = item.data.mediaUrl;
 	const externalUrl = item.data.url;
 	const transformedMediaUrl = originalMediaUrl

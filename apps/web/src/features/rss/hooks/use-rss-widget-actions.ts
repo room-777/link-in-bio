@@ -1,13 +1,12 @@
 import type { WidgetPreview } from "@grabbin/api";
 import { toast } from "@grabbin/ui/components/toast";
 import { useCallback, useRef } from "react";
-import type { useBentoStore } from "@/features/page/editor/state/bento-store";
 import { getErrorMessage } from "@/lib/error-message";
 import { useRssFeedPreviewMutation } from "../mutations/preview";
 
-type DispatchCommand = ReturnType<typeof useBentoStore>["dispatchCommand"];
-
-export function useRssWidgetActions(dispatchCommand: DispatchCommand) {
+export function useRssWidgetActions(
+	onAdd: (preview: WidgetPreview<"rss">) => void,
+) {
 	const previewMutation = useRssFeedPreviewMutation();
 	const requestRef = useRef<{
 		url: string;
@@ -39,10 +38,7 @@ export function useRssWidgetActions(dispatchCommand: DispatchCommand) {
 					throw new Error("Enter a supported RSS feed URL.");
 				}
 				const preview = await getRssPreview(parsedUrl.toString());
-				dispatchCommand({
-					type: "add-widget",
-					widget: { type: "rss", data: preview },
-				});
+				onAdd(preview);
 				return true;
 			} catch (error) {
 				toast({
@@ -52,7 +48,7 @@ export function useRssWidgetActions(dispatchCommand: DispatchCommand) {
 				return false;
 			}
 		},
-		[getRssPreview, dispatchCommand],
+		[getRssPreview, onAdd],
 	);
 
 	return { addRssFeed, previewRssFeed };

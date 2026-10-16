@@ -1,14 +1,4 @@
-import {
-	createContext,
-	type Dispatch,
-	type ReactNode,
-	type SetStateAction,
-	useCallback,
-	useContext,
-	useMemo,
-	useRef,
-	useState,
-} from "react";
+import { useCallback, useMemo, useRef, useState } from "react";
 import type { MapSearchResult } from "@/lib/mapbox-geocoding";
 
 type MapItemController = {
@@ -18,25 +8,9 @@ type MapItemController = {
 	selectLocation(result: MapSearchResult): void;
 };
 
-type MapItemInteractionContextValue = {
-	isLocationEditing: boolean;
-	disableLocationSearch: boolean;
-	setLocationEditing: Dispatch<SetStateAction<boolean>>;
-	registerController(controller: MapItemController | null): void;
-	zoomIn(): void;
-	zoomOut(): void;
-	locate(): void;
-	selectLocation(result: MapSearchResult): void;
-};
-
-const MapItemInteractionContext =
-	createContext<MapItemInteractionContextValue | null>(null);
-
-export default function MapItemInteractionProvider({
-	children,
+export function useMapItemInteraction({
 	disableLocationSearch = false,
 }: {
-	children: ReactNode;
 	disableLocationSearch?: boolean;
 }) {
 	const [isLocationEditing, setLocationEditing] = useState(false);
@@ -54,7 +28,7 @@ export default function MapItemInteractionProvider({
 		(result: MapSearchResult) => controllerRef.current?.selectLocation(result),
 		[],
 	);
-	const value = useMemo(
+	return useMemo(
 		() => ({
 			isLocationEditing,
 			disableLocationSearch,
@@ -75,26 +49,6 @@ export default function MapItemInteractionProvider({
 			selectLocation,
 		],
 	);
-
-	return (
-		<MapItemInteractionContext.Provider value={value}>
-			{children}
-		</MapItemInteractionContext.Provider>
-	);
 }
 
-export function useMapItemInteraction() {
-	const context = useOptionalMapItemInteraction();
-	if (!context) {
-		throw new Error(
-			"useMapItemInteraction must be used inside MapItemInteractionProvider",
-		);
-	}
-	return context;
-}
-
-function useOptionalMapItemInteraction() {
-	return useContext(MapItemInteractionContext);
-}
-
-export { MapItemInteractionProvider };
+export type MapItemInteraction = ReturnType<typeof useMapItemInteraction>;

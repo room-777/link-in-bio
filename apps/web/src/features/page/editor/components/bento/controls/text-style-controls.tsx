@@ -21,11 +21,9 @@ import {
 	Ellipsis,
 } from "lucide-react";
 import { useEffect, useState } from "react";
-import type {
-	BentoCommand,
-	BentoItem,
-} from "@/features/page/editor/state/bento-types";
-import { createItemLinkCommand } from "@/features/page/editor/state/item-link-command";
+import type { BentoItem } from "@/features/page/bento-item";
+import type { BentoCommand } from "@/features/page/editor/types";
+import { createItemLinkCommand } from "@/features/page/editor/utils/item-link-command";
 import LinkControl from "./link-control";
 
 const backgroundColorOptions = [

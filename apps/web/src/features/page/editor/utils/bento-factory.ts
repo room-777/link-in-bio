@@ -6,7 +6,8 @@ import {
 	getPresetGeometry,
 	placeAtFirstAvailable,
 } from "@grabbin/bento-layout";
-import type { BentoItem, WidgetContent } from "./bento-types";
+import type { BentoItem } from "@/features/page/bento-item";
+import type { WidgetContent } from "../types";
 
 const breakpoints: BentoBreakpoint[] = ["wide", "compact"];
 

@@ -4,10 +4,10 @@ import type { PresetName } from "@grabbin/bento-layout";
 import dynamic from "next/dynamic";
 import type { ReactNode } from "react";
 import { CalendlyItem } from "@/features/calendly/components/widget/calendly-item";
-import type {
-	BentoCommand,
-	BentoItem,
-} from "@/features/page/editor/state/bento-types";
+import type { BentoCommand } from "@/features/page/bento-command";
+import type { BentoItem } from "@/features/page/bento-item";
+import type { MapItemInteraction } from "@/features/page/editor/hooks/use-map-item-interaction";
+import type { MediaCrop } from "@/features/page/editor/hooks/use-media-crop";
 import { RssFeedItem } from "@/features/rss/components/widget/rss-feed-item";
 import { SpotifyItem } from "@/features/spotify/components/widget/spotify-item";
 import { TweetItem } from "@/features/tweet/components/widget/tweet-item";
@@ -22,6 +22,8 @@ const LazyMapItem = dynamic(
 );
 
 type ItemRendererOptions = {
+	mediaCrop: MediaCrop;
+	mapInteraction: MapItemInteraction;
 	handle?: string;
 	mode: "view" | "edit";
 	autoFocus: boolean;
@@ -44,6 +46,7 @@ export function renderItem(
 		case "media":
 			return (
 				<MediaItem
+					crop={options.mediaCrop}
 					item={item}
 					preset={preset}
 					mode={options.mode}
@@ -53,6 +56,7 @@ export function renderItem(
 		case "map":
 			return (
 				<LazyMapItem
+					interaction={options.mapInteraction}
 					item={item}
 					preset={preset}
 					mode={options.mode}

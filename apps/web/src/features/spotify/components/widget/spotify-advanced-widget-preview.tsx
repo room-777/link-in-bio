@@ -10,7 +10,7 @@ import { Skeleton } from "@grabbin/ui/components/skeleton";
 import { AdvancedWidgetPresetControls } from "@/components/page/editor/advanced-widget-preset-controls";
 import { AdvancedWidgetPreviewFrame } from "@/components/page/editor/advanced-widgets/advanced-widget-preview-frame";
 import { useAdvancedWidgetPreset } from "@/components/page/editor/advanced-widgets/use-advanced-widget-preset";
-import type { BentoItem } from "@/features/page/editor/state/bento-types";
+import type { BentoItem } from "@/features/page/bento-item";
 import { normalizeHttpsUrl } from "@/lib/normalize-https-url";
 import { SpotifyWidget } from "./spotify-widget";
 

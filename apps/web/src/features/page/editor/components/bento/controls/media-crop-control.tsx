@@ -3,13 +3,18 @@
 import { Button } from "@grabbin/ui/components/button";
 import { cn } from "@grabbin/ui/lib/utils";
 import { Crop } from "lucide-react";
-import { useOptionalMediaCrop } from "@/features/page/editor/contexts/media-crop-provider";
-import type { BentoItem } from "@/features/page/editor/state/bento-types";
+import type { BentoItem } from "@/features/page/bento-item";
+import type { MediaCrop } from "../../../hooks/use-media-crop";
 
-export default function MediaCropControl({ item }: { item: BentoItem }) {
-	const mediaCrop = useOptionalMediaCrop();
-	if (item.type !== "media" || !item.data.mediaUrl || !mediaCrop) return null;
-	const { isOpen, canApply, apply, open } = mediaCrop;
+export default function MediaCropControl({
+	item,
+	crop,
+}: {
+	item: BentoItem;
+	crop: MediaCrop;
+}) {
+	if (item.type !== "media" || !item.data.mediaUrl) return null;
+	const { isOpen, canApply, apply, open } = crop;
 
 	return (
 		<Button
