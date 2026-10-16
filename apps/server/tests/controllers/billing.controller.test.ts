@@ -60,15 +60,7 @@ async function startCheckout() {
 }
 
 describe("billing controller GA events", () => {
-	/**
-	 * Case ID: BILLING-GA-001
-	 * Given: Creem returns a checkout URL for the selected plan.
-	 * When: the authenticated checkout endpoint returns the URL.
-	 * Then: begin_checkout is sent with the selected product and no purchase event.
-	 * Evidence: HTTP response and captured server event.
-	 * Result: Pass | Fail | Blocked | Not Run
-	 */
-	it("BILLING-GA-001 sends begin_checkout only when the checkout URL is returned", async () => {
+	it("sends begin_checkout only when the checkout URL is returned", async () => {
 		events.length = 0;
 		checkoutResult = {
 			kind: "checkout",
@@ -96,15 +88,7 @@ describe("billing controller GA events", () => {
 		});
 	});
 
-	/**
-	 * Case ID: BILLING-GA-002
-	 * Given: Creem confirms an already-completed checkout with a paid order.
-	 * When: the API returns to the success page.
-	 * Then: the completed checkout is returned without sending another purchase event.
-	 * Evidence: HTTP response and empty captured server event list.
-	 * Result: Pass | Fail | Blocked | Not Run
-	 */
-	it("BILLING-GA-002 does not record a purchase during checkout reconciliation", async () => {
+	it("does not record a purchase during checkout reconciliation", async () => {
 		events.length = 0;
 		checkoutResult = {
 			kind: "completed",

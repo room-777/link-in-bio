@@ -352,17 +352,7 @@ describe("page items controller", () => {
 });
 
 describe("page items controller GA events", () => {
-	/**
-	 * Case ID: PAGE-ITEM-API-GA-001
-	 * Given: the owner saves a batch whose first upsert is a link, then a
-	 *   batch with only deletes.
-	 * When: PATCH /pages/jane/batch succeeds.
-	 * Then: first_link_added is queued once (the database decides if it is
-	 *   the first) with item_type text; a delete-only batch and a blank text item queue nothing.
-	 * Evidence: HTTP 200 and the recorded tracker calls.
-	 * Result: Pass | Fail | Blocked | Not Run
-	 */
-	it("PAGE-ITEM-API-GA-001 queues first_link_added for saved items", async () => {
+	it("queues first_link_added only after a link is saved", async () => {
 		const tracked: Array<Record<string, unknown>> = [];
 		const app = new Hono<AppEnv>().route(
 			"/pages",
@@ -402,7 +392,7 @@ describe("page items controller GA events", () => {
 				bindings,
 			);
 
-		const response = await save({
+		const textResponse = await save({
 			upserts: [
 				{
 					id: "item-1",
@@ -417,9 +407,27 @@ describe("page items controller GA events", () => {
 			],
 			deletes: [],
 		});
+		assert.equal(textResponse.status, 200, await textResponse.text());
+		assert.equal(tracked.length, 0);
+
+		const response = await save({
+			upserts: [
+				{
+					id: "item-2",
+					type: "link",
+					data: { url: "https://example.com" },
+					style: {},
+					layouts: {
+						wide: { x: 0, y: 0, w: 1, h: 2 },
+						compact: { x: 0, y: 0, w: 1, h: 2 },
+					},
+				},
+			],
+			deletes: [],
+		});
 		assert.equal(response.status, 200, await response.text());
 		assert.equal(
-			(await save({ upserts: [], deletes: ["item-1"] })).status,
+			(await save({ upserts: [], deletes: ["item-2"] })).status,
 			200,
 		);
 
@@ -427,7 +435,7 @@ describe("page items controller GA events", () => {
 		assert.equal(tracked[0]?.name, "first_link_added");
 		assert.equal(tracked[0]?.once, "first_link_added");
 		assert.equal(tracked[0]?.userId, "user-1");
-		assert.deepEqual(tracked[0]?.params, { item_type: "text" });
+		assert.deepEqual(tracked[0]?.params, { item_type: "link" });
 		assert.equal(
 			(tracked[0]?.headers as Headers | undefined)?.get("cookie"),
 			"_ga=GA1.1.1.2",

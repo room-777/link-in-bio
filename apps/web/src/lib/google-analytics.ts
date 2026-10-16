@@ -148,11 +148,12 @@ export function trackGoogleAnalyticsEvent(
 	if (!window.gtag) return;
 	const path = window.location.pathname;
 	const pageType = getGoogleAnalyticsPageType(path, window.location.hostname);
+	const safePath = pageType === "home" ? "/" : `/${pageType}`;
 	const eventParams: GoogleAnalyticsEventParams = {
 		...pageContext,
 		...params,
-		page_location: `${window.location.origin}${path}`,
-		page_path: path,
+		page_location: `${window.location.origin}${safePath}`,
+		page_path: safePath,
 		page_title:
 			typeof params.page_title === "string" ? params.page_title : pageType,
 	};

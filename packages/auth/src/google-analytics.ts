@@ -185,7 +185,6 @@ export type TrackServerEventInput = {
 	| { name: "purchase"; params: PurchaseEventParams; once?: never }
 	| {
 			name: Exclude<ServerEventName, "purchase">;
-			/** Event params, or a function that reads them after the claim. */
 			params?:
 				| AnalyticsEventParams
 				| ((db: DatabaseClient) => Promise<AnalyticsEventParams>);
@@ -237,7 +236,6 @@ export function createServerEventTracker(deps: ServerEventTrackerDeps) {
 			logSent(input.name, config, browser, result);
 			return { sent: true as const, ...result };
 		} catch (error) {
-			// Release a failed once-only event so a later attempt can send it.
 			if (db && claimed) {
 				if (input.once) {
 					await releaseAnalyticsEvent(db, input.userId, input.once).catch(

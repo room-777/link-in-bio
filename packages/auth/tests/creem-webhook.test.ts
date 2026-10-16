@@ -76,15 +76,7 @@ describe("Creem webhook synchronization", () => {
 		assert.equal(saved[0]?.lastWebhookId, "event-new");
 	});
 
-	/**
-	 * Case ID: CREEM-WEBHOOK-002
-	 * Given: checkout.completed omits the subscription and the pending row has a stale product ID.
-	 * When: checkout retrieval confirms its request, owner, and completed subscription.
-	 * Then: the subscription and user customer ID are saved from the verified checkout.
-	 * Evidence: persisted subscription status, checkout IDs, and customer ID.
-	 * Result: Pass | Fail | Blocked | Not Run
-	 */
-	it("CREEM-WEBHOOK-002 retrieves a completed checkout when its webhook omits the subscription", async () => {
+	it("CREEM-WEBHOOK-002 finds a completed checkout after its pending row is removed", async () => {
 		const values: Record<string, unknown>[] = [];
 		let queryCount = 0;
 		const update = {
@@ -103,15 +95,16 @@ describe("Creem webhook synchronization", () => {
 				creemSubscription: {
 					findFirst: async () => {
 						queryCount += 1;
+						if (queryCount === 1) return undefined;
 						return {
-							id: "checkout-request-1",
+							id: "subscription-row-1",
 							referenceId: "user-1",
-							productId: "pro-monthly",
-							checkoutId: "checkout-1",
-							checkoutUrl: "https://checkout.creem.io/checkout-1",
-							creemSubscriptionId: null,
-							creemCustomerId: null,
-							creemOrderId: null,
+							productId: "pro-yearly",
+							checkoutId: null,
+							checkoutUrl: null,
+							creemSubscriptionId: "subscription-1",
+							creemCustomerId: "customer-1",
+							creemOrderId: "order-1",
 							periodStart: null,
 							periodEnd: null,
 							lastWebhookId: null,
@@ -169,7 +162,7 @@ describe("Creem webhook synchronization", () => {
 			}),
 		);
 
-		assert.equal(queryCount, 2);
+		assert.equal(queryCount, 3);
 		assert.equal(result?.accepted, true);
 		assert.equal(values[0]?.status, "active");
 		assert.equal(values[0]?.productId, "pro-yearly");
@@ -191,6 +184,7 @@ describe("Creem webhook synchronization", () => {
 		});
 
 		orderStatus = "pending";
+		queryCount = 0;
 		const retry = await syncCreemCheckout(
 			db,
 			{
