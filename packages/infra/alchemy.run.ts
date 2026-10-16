@@ -6,21 +6,25 @@ import * as Config from "effect/Config";
 import * as Effect from "effect/Effect";
 import * as Redacted from "effect/Redacted";
 
-config({ path: "./.env" });
-config({ path: "../../apps/web/.env" });
+const isFeatureMap = process.env.CLOUD_AGENT_FEATURE_MAP === "true";
+if (!isFeatureMap) {
+	config({ path: "./.env" });
+	config({ path: "../../apps/web/.env" });
+}
 const isAlchemyDev = process.env.ALCHEMY_DEV === "true";
-const localHost =
-	process.env.CLOUD_AGENT_FEATURE_MAP === "true" ? "127.0.0.1" : "localhost";
+const localHost = isFeatureMap ? "127.0.0.1" : "localhost";
 const localWebUrl = `http://${localHost}:3000`;
 const localServerUrl = `http://${localHost}:3001`;
 const localPageDomain = `${localHost}:3000`;
 
-if (isAlchemyDev || process.env.NODE_ENV !== "production") {
-	config({ path: "../../apps/server/.env" });
-}
-if (!isAlchemyDev && process.env.NODE_ENV === "production") {
-	config({ path: "../../apps/server/.env.production" });
-	config({ path: "../../apps/web/.env.production" });
+if (!isFeatureMap) {
+	if (isAlchemyDev || process.env.NODE_ENV !== "production") {
+		config({ path: "../../apps/server/.env" });
+	}
+	if (!isAlchemyDev && process.env.NODE_ENV === "production") {
+		config({ path: "../../apps/server/.env.production" });
+		config({ path: "../../apps/web/.env.production" });
+	}
 }
 
 const serverUsesUploadedBuild = process.env.SENTRY_UPLOAD_SOURCE_MAPS === "1";
@@ -198,6 +202,9 @@ export const server = Cloudflare.Worker("server", {
 		),
 		GITHUB_TOKEN: Config.Redacted("GITHUB_TOKEN").pipe(Config.withDefault("")),
 		PRODUCT_HUNT_TOKEN: Config.Redacted("PRODUCT_HUNT_TOKEN").pipe(
+			Config.withDefault(""),
+		),
+		INSTAGRAM_SESSION_ID: Config.Redacted("INSTAGRAM_SESSION_ID").pipe(
 			Config.withDefault(""),
 		),
 		CLOUDFLARE_SAAS_ZONE_ID: Config.String("CLOUDFLARE_SAAS_ZONE_ID").pipe(

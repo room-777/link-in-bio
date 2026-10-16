@@ -56,55 +56,32 @@ start_dockerd() {
 	exit 1
 }
 
-write_local_env() {
-	# Rebuild both ignored env files from the tracked templates on every run so
-	# provider-specific local overrides cannot drift across agent environments.
-	cp apps/server/.env.example apps/server/.env
-	cp apps/web/.env.example apps/web/.env
-	python3 - <<'PY'
-from pathlib import Path
+load_feature_map_env() {
+	# Load tracked feature-map values; never read or rewrite a developer's .env.
+	set -a
+	. apps/server/.env.example
+	. apps/web/.env.example
+	set +a
 
-def update_env(path, values, template=None):
-    path = Path(path)
-    if not path.exists():
-        path.write_text(Path(template).read_text())
-    lines = path.read_text().splitlines()
-    seen = set()
-    result = []
-    for line in lines:
-        key = line.partition("=")[0]
-        if key in values:
-            result.append(f"{key}={values[key]}")
-            seen.add(key)
-        else:
-            result.append(line)
-    for key, value in values.items():
-        if key not in seen:
-            result.append(f"{key}={value}")
-    path.write_text("\n".join(result) + "\n")
-
-update_env("apps/server/.env", {
-    "BETTER_AUTH_URL": "http://127.0.0.1:3001",
-    "CORS_ORIGIN": "http://127.0.0.1:3000",
-    "CREEM_SUCCESS_URL": "http://127.0.0.1:3000/",
-    "DATABASE_URL": "postgres://postgres:postgres@127.0.0.1:5432/postgres",
-    "DATABASE_URL_LOCAL": "postgres://postgres:postgres@127.0.0.1:5432/postgres",
-    "PAGE_DOMAIN": "127.0.0.1:3000",
-    # Keep local verification isolated from mail, billing, SaaS, and telemetry APIs.
-    "RESEND_API_KEY": "",
-    "CREEM_API_KEY": "local-verification-key",
-    "CREEM_WEBHOOK_SECRET": "local-verification-secret",
-    "CLOUDFLARE_SAAS_API_TOKEN": "",
-    "SENTRY_AUTH_TOKEN": "",
-    "CREEM_PRO_MONTHLY_PRODUCT_ID": "local-pro",
-    "CREEM_PRO_YEARLY_PRODUCT_ID": "",
-}, "apps/server/.env.example")
-update_env("apps/web/.env", {
-    "NEXT_PUBLIC_SERVER_URL": "http://127.0.0.1:3001",
-    "NEXT_PUBLIC_PAGE_DOMAIN": "127.0.0.1:3000",
-    "NEXT_PUBLIC_R2_PUBLIC_URL": "http://127.0.0.1:3001",
-}, "apps/web/.env.example")
-PY
+	export BETTER_AUTH_URL=http://127.0.0.1:3001
+	export CORS_ORIGIN=http://127.0.0.1:3000
+	export CREEM_SUCCESS_URL=http://127.0.0.1:3000/
+	export DATABASE_URL=postgres://postgres:postgres@127.0.0.1:5432/postgres
+	export DATABASE_URL_LOCAL=postgres://postgres:postgres@127.0.0.1:5432/postgres
+	export PAGE_DOMAIN=127.0.0.1:3000
+	# Keep local verification isolated from mail, billing, SaaS, and telemetry APIs.
+	export RESEND_API_KEY=
+	export CREEM_API_KEY=local-verification-key
+	export CREEM_WEBHOOK_SECRET=local-verification-secret
+	export CLOUDFLARE_SAAS_API_TOKEN=
+	export SENTRY_AUTH_TOKEN=
+	export CREEM_PRO_MONTHLY_PRODUCT_ID=local-pro
+	export CREEM_PRO_YEARLY_PRODUCT_ID=
+	export NEXT_PUBLIC_SERVER_URL=http://127.0.0.1:3001
+	export NEXT_PUBLIC_PAGE_DOMAIN=127.0.0.1:3000
+	export NEXT_PUBLIC_R2_PUBLIC_URL=http://127.0.0.1:3001
+	export R2_PUBLIC_URL=http://127.0.0.1:3001
+	export CLOUD_AGENT_FEATURE_MAP=true
 }
 
 start_postgres() {
@@ -217,20 +194,8 @@ assert_ports_free() {
 }
 
 start_dockerd
-write_local_env
+load_feature_map_env
 start_postgres
-
-export BETTER_AUTH_URL=http://127.0.0.1:3001
-export CORS_ORIGIN=http://127.0.0.1:3000
-export CREEM_SUCCESS_URL=http://127.0.0.1:3000/
-export DATABASE_URL=postgres://postgres:postgres@127.0.0.1:5432/postgres
-export DATABASE_URL_LOCAL=postgres://postgres:postgres@127.0.0.1:5432/postgres
-export NEXT_PUBLIC_SERVER_URL=http://127.0.0.1:3001
-export NEXT_PUBLIC_PAGE_DOMAIN=127.0.0.1:3000
-export NEXT_PUBLIC_R2_PUBLIC_URL=http://127.0.0.1:3001
-export PAGE_DOMAIN=127.0.0.1:3000
-export R2_PUBLIC_URL=http://127.0.0.1:3001
-export CLOUD_AGENT_FEATURE_MAP=true
 
 NODE_ENV=development \
 	DATABASE_URL_LOCAL=postgres://postgres:postgres@127.0.0.1:5432/postgres \
