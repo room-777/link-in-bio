@@ -9,6 +9,11 @@ import * as Redacted from "effect/Redacted";
 config({ path: "./.env" });
 config({ path: "../../apps/web/.env" });
 const isAlchemyDev = process.env.ALCHEMY_DEV === "true";
+const localHost =
+	process.env.CLOUD_AGENT_FEATURE_MAP === "true" ? "127.0.0.1" : "localhost";
+const localWebUrl = `http://${localHost}:3000`;
+const localServerUrl = `http://${localHost}:3001`;
+const localPageDomain = `${localHost}:3000`;
 
 if (isAlchemyDev || process.env.NODE_ENV !== "production") {
 	config({ path: "../../apps/server/.env" });
@@ -84,7 +89,7 @@ export const grabbinBucket = Cloudflare.R2.Bucket("grabbin", {
 		{
 			allowedMethods: ["PUT", "HEAD"],
 			allowedOrigins: [
-				...(isAlchemyDev ? ["http://127.0.0.1:3000"] : []),
+				...(isAlchemyDev ? [localWebUrl] : []),
 				"https://grabbin.me",
 			],
 			allowedHeaders: ["content-type"],
@@ -114,19 +119,17 @@ export const server = Cloudflare.Worker("server", {
 		R2_LOCAL_MODE: isAlchemyDev ? "true" : "false",
 		LOCAL_OUTBOUND_PROXY_URL: isAlchemyDev ? "http://127.0.0.1:3002" : "",
 		R2_PUBLIC_URL: isAlchemyDev
-			? "http://127.0.0.1:3001"
+			? localServerUrl
 			: Config.String("R2_PUBLIC_URL").pipe(
 					Config.orElse(() => Config.String("NEXT_PUBLIC_R2_PUBLIC_URL")),
 					Config.withDefault(""),
 				),
-		CORS_ORIGIN: Config.String("CORS_ORIGIN"),
+		CORS_ORIGIN: isAlchemyDev ? localWebUrl : Config.String("CORS_ORIGIN"),
 		SENTRY_DSN: isAlchemyDev
 			? ""
 			: Config.String("SENTRY_DSN").pipe(Config.withDefault("")),
 		BETTER_AUTH_SECRET: Config.Redacted("BETTER_AUTH_SECRET"),
-		BETTER_AUTH_URL: isAlchemyDev
-			? "http://127.0.0.1:3001"
-			: Cloudflare.Worker.URL,
+		BETTER_AUTH_URL: isAlchemyDev ? localServerUrl : Cloudflare.Worker.URL,
 		GOOGLE_CLIENT_ID: Config.String("GOOGLE_CLIENT_ID").pipe(
 			Config.withDefault(""),
 		),
@@ -148,7 +151,9 @@ export const server = Cloudflare.Worker("server", {
 		CREEM_API_KEY: Config.Redacted("CREEM_API_KEY"),
 		CREEM_WEBHOOK_SECRET: Config.Redacted("CREEM_WEBHOOK_SECRET"),
 		CREEM_TEST_MODE: Config.String("CREEM_TEST_MODE"),
-		CREEM_SUCCESS_URL: Config.String("CREEM_SUCCESS_URL"),
+		CREEM_SUCCESS_URL: isAlchemyDev
+			? `${localWebUrl}/`
+			: Config.String("CREEM_SUCCESS_URL"),
 		CREEM_PRO_MONTHLY_PRODUCT_ID: Config.String(
 			"CREEM_PRO_MONTHLY_PRODUCT_ID",
 		).pipe(Config.withDefault("")),
@@ -204,9 +209,9 @@ export const server = Cloudflare.Worker("server", {
 		CUSTOM_DOMAIN_TARGET: Config.String("CUSTOM_DOMAIN_TARGET").pipe(
 			Config.withDefault("custom.grabbin.me"),
 		),
-		PAGE_DOMAIN: Config.String("PAGE_DOMAIN").pipe(
-			Config.withDefault("grabbin.me"),
-		),
+		PAGE_DOMAIN: isAlchemyDev
+			? localPageDomain
+			: Config.String("PAGE_DOMAIN").pipe(Config.withDefault("grabbin.me")),
 		GA_MEASUREMENT_ID: Config.String("GA_MEASUREMENT_ID").pipe(
 			Config.withDefault(""),
 		),
@@ -251,9 +256,9 @@ export const cron = Cloudflare.Worker("cron", {
 		CLOUDFLARE_SAAS_API_TOKEN: Config.Redacted(
 			"CLOUDFLARE_SAAS_API_TOKEN",
 		).pipe(Config.withDefault("")),
-		PAGE_DOMAIN: Config.String("PAGE_DOMAIN").pipe(
-			Config.withDefault("grabbin.me"),
-		),
+		PAGE_DOMAIN: isAlchemyDev
+			? localPageDomain
+			: Config.String("PAGE_DOMAIN").pipe(Config.withDefault("grabbin.me")),
 		CUSTOM_DOMAIN_TARGET: Config.String("CUSTOM_DOMAIN_TARGET").pipe(
 			Config.withDefault("custom.grabbin.me"),
 		),
@@ -277,16 +282,17 @@ export default Alchemy.Stack(
 				cwd: "../..",
 			});
 			yield* Command.Dev("web-dev", {
-				command: "bun run dev:bare -- --hostname 127.0.0.1",
+				command: `bun run dev:bare -- --hostname ${localHost}`,
 				cwd: "../../apps/web",
 				env: {
-					NEXT_PUBLIC_SERVER_URL: "http://127.0.0.1:3001",
-					NEXT_PUBLIC_R2_PUBLIC_URL: "http://127.0.0.1:3001",
+					NEXT_PUBLIC_SERVER_URL: localServerUrl,
+					NEXT_PUBLIC_PAGE_DOMAIN: localPageDomain,
+					NEXT_PUBLIC_R2_PUBLIC_URL: localServerUrl,
 				},
 			});
 			return {
-				web: new URL("http://127.0.0.1:3000"),
-				server: new URL("http://127.0.0.1:3001"),
+				web: new URL(localWebUrl),
+				server: new URL(localServerUrl),
 			};
 		}
 

@@ -230,6 +230,7 @@ export NEXT_PUBLIC_PAGE_DOMAIN=127.0.0.1:3000
 export NEXT_PUBLIC_R2_PUBLIC_URL=http://127.0.0.1:3001
 export PAGE_DOMAIN=127.0.0.1:3000
 export R2_PUBLIC_URL=http://127.0.0.1:3001
+export CLOUD_AGENT_FEATURE_MAP=true
 
 NODE_ENV=development \
 	DATABASE_URL_LOCAL=postgres://postgres:postgres@127.0.0.1:5432/postgres \
