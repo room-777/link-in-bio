@@ -69,10 +69,16 @@ export default function LoginForm({ returnTo }: { returnTo?: string | null }) {
 		setSocialLoginProvider(provider);
 		const webOrigin = window.location.origin;
 		try {
+			const callbackURL = new URL(signInHref, webOrigin);
+			callbackURL.searchParams.set("ga_event", "login");
+			callbackURL.searchParams.set("ga_method", provider);
+			const newUserCallbackURL = new URL("/create", webOrigin);
+			newUserCallbackURL.searchParams.set("ga_event", "sign_up");
+			newUserCallbackURL.searchParams.set("ga_method", provider);
 			const { error } = await authClient.signIn.social({
 				provider,
-				callbackURL: new URL(signInHref, webOrigin).toString(),
-				newUserCallbackURL: new URL("/create", webOrigin).toString(),
+				callbackURL: callbackURL.toString(),
+				newUserCallbackURL: newUserCallbackURL.toString(),
 			});
 
 			if (error) {

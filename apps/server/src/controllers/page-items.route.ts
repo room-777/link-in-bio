@@ -1,4 +1,3 @@
-import { serverEvents } from "@grabbin/auth/server-events";
 import { requiredSession } from "../middlewares/session.middleware";
 import { enrichPageItemMetadata } from "../services/link-metadata.service";
 import { persistPageItemBatch } from "../services/page-item.service";
@@ -8,5 +7,4 @@ export const pageItemsController = createPageItemsController({
 	sessionMiddleware: requiredSession,
 	persist: persistPageItemBatch,
 	enrichMetadata: enrichPageItemMetadata,
-	serverEvents,
 });

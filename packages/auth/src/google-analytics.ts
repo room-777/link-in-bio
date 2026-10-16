@@ -1,16 +1,5 @@
-import type { DatabaseClient } from "@grabbin/db";
-import { analyticsEvents } from "@grabbin/db/schema/index";
-import { and, eq } from "drizzle-orm";
-
 /** GA4 events sent from the server with the Measurement Protocol. */
-export type ServerEventName =
-	| "purchase"
-	| "sign_up"
-	| "login"
-	| "first_link_added";
-
-/** Account milestones that happen once. Payments are recurring and are not included. */
-export type FirstTimeEventName = "sign_up" | "first_link_added";
+export type ServerEventName = "purchase";
 
 export type AnalyticsItem = {
 	item_id: string;
@@ -88,23 +77,6 @@ export function readBrowserAnalyticsContext(
 	};
 }
 
-/**
- * Records a first-time account milestone. Returns true only for the first caller: the
- * check and the write are one INSERT ... ON CONFLICT DO NOTHING.
- */
-export async function claimAnalyticsEvent(
-	db: DatabaseClient,
-	userId: string,
-	eventName: FirstTimeEventName,
-) {
-	const rows = await db
-		.insert(analyticsEvents)
-		.values({ userId, eventName })
-		.onConflictDoNothing()
-		.returning({ userId: analyticsEvents.userId });
-	return rows.length > 0;
-}
-
 function randomClientId() {
 	const random = crypto.getRandomValues(new Uint32Array(1))[0] ?? 0;
 	return `${random}.${Math.floor(Date.now() / 1000)}`;
@@ -166,7 +138,6 @@ export async function sendMeasurementProtocolEvent(
 
 export type ServerEventTrackerDeps = {
 	config: GoogleAnalyticsConfig | null;
-	createDb: () => Promise<DatabaseClient>;
 	waitUntil: (promise: Promise<unknown>) => void;
 	fetch?: typeof fetch;
 	log?: (message: string, detail: Record<string, unknown>) => void;
@@ -175,16 +146,9 @@ export type ServerEventTrackerDeps = {
 export type TrackServerEventInput = {
 	userId: string;
 	headers?: Headers;
-	firstTime?: FirstTimeEventName;
-} & (
-	| { name: "purchase"; params: PurchaseEventParams; firstTime?: never }
-	| {
-			name: Exclude<ServerEventName, "purchase">;
-			params?:
-				| AnalyticsEventParams
-				| ((db: DatabaseClient) => Promise<AnalyticsEventParams>);
-	  }
-);
+	name: "purchase";
+	params: PurchaseEventParams;
+};
 
 /**
  * Sends GA events in the background. Nothing here can slow down or fail the
@@ -200,48 +164,16 @@ export function createServerEventTracker(deps: ServerEventTrackerDeps) {
 			input.headers,
 			config.measurementId,
 		);
-		const db =
-			input.firstTime || typeof input.params === "function"
-				? await deps.createDb()
-				: null;
-		let claimed = false;
-		try {
-			if (db && input.firstTime) {
-				claimed = await claimAnalyticsEvent(db, input.userId, input.firstTime);
-				if (!claimed) {
-					log("ga server event skipped", {
-						event: input.name,
-						reason: "already_sent",
-					});
-					return { sent: false, reason: "already_sent" as const };
-				}
-			}
-			const params =
-				typeof input.params === "function" && db
-					? await input.params(db)
-					: (input.params as AnalyticsEventParams | undefined);
-			const result = await sendMeasurementProtocolEvent(
-				config,
-				{ name: input.name, userId: input.userId, browser, params },
-				deps.fetch,
-			);
-			if (result.status < 200 || result.status >= 300) {
-				throw new Error(`GA responded with ${result.status}`);
-			}
-			logSent(input.name, config, browser, result);
-			return { sent: true as const, ...result };
-		} catch (error) {
-			if (db && claimed) {
-				if (input.firstTime) {
-					await releaseAnalyticsEvent(db, input.userId, input.firstTime).catch(
-						() => undefined,
-					);
-				}
-			}
-			throw error;
-		} finally {
-			await db?.$client.end().catch(() => undefined);
+		const result = await sendMeasurementProtocolEvent(
+			config,
+			{ name: input.name, userId: input.userId, browser, params: input.params },
+			deps.fetch,
+		);
+		if (result.status < 200 || result.status >= 300) {
+			throw new Error(`GA responded with ${result.status}`);
 		}
+		logSent(input.name, config, browser, result);
+		return { sent: true as const, ...result };
 	}
 
 	function logSent(
@@ -278,55 +210,7 @@ export function createServerEventTracker(deps: ServerEventTrackerDeps) {
 		return task;
 	}
 
-	/**
-	 * A new session is a sign_up the first time this user ever signs in
-	 * (claimed in the database) and a login every time after that.
-	 */
-	function trackSignIn(input: {
-		userId: string;
-		headers?: Headers;
-		method: string;
-	}) {
-		const params = { method: input.method };
-		const task = run({
-			...input,
-			name: "sign_up",
-			firstTime: "sign_up",
-			params,
-		})
-			.then((result) =>
-				result.sent === false && result.reason === "already_sent"
-					? run({ ...input, name: "login", params })
-					: result,
-			)
-			.catch((error: unknown) => {
-				log("ga server event failed", {
-					event: "sign_up",
-					error: error instanceof Error ? error.message : String(error),
-				});
-				return { sent: false, reason: "error" as const };
-			});
-		deps.waitUntil(task);
-		return task;
-	}
-
-	return { track, trackSignIn, run };
-}
-
-/** Forgets a claim whose event could not be delivered. */
-export async function releaseAnalyticsEvent(
-	db: DatabaseClient,
-	userId: string,
-	eventName: FirstTimeEventName,
-) {
-	await db
-		.delete(analyticsEvents)
-		.where(
-			and(
-				eq(analyticsEvents.userId, userId),
-				eq(analyticsEvents.eventName, eventName),
-			),
-		);
+	return { track, run };
 }
 
 export type ServerEventTracker = ReturnType<typeof createServerEventTracker>;

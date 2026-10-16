@@ -28,8 +28,11 @@ import {
 	syncCreemRefund,
 	syncCreemWebhook,
 } from "./creem-webhook";
+import {
+	createEmailOtpSignupHooks,
+	emailOtpSignupStatusPlugin,
+} from "./email-otp-signup-status";
 import { serverEvents } from "./server-events";
-import { createSignInDatabaseHooks } from "./sign-in-method";
 
 type CreemEventData = {
 	webhookId: string;
@@ -294,9 +297,9 @@ export async function createAuth(
 			...authOptions.plugins.filter((plugin) => plugin.id !== "custom-session"),
 			planSession(() => resolvedDatabase),
 			createCreemPlugin(resolvedDatabase, options?.onSubscriptionChange),
+			emailOtpSignupStatusPlugin,
 		],
-		// GA sign_up for a new account, login for an existing one.
-		databaseHooks: createSignInDatabaseHooks(serverEvents),
+		databaseHooks: createEmailOtpSignupHooks(),
 		database: drizzleAdapter(resolvedDatabase, {
 			provider: "pg",
 			schema: {

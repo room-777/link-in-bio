@@ -22,10 +22,26 @@ export default async function LoginPage({
 		? params.returnTo[0]
 		: params?.returnTo;
 	const returnTo = sanitizeAuthRedirect(rawReturnTo);
+	const gaEvent = params?.ga_event === "login" ? "login" : null;
+	const rawGaMethod = Array.isArray(params?.ga_method)
+		? params.ga_method[0]
+		: params?.ga_method;
+	const gaMethod = ["google", "github", "twitter"].includes(rawGaMethod ?? "")
+		? rawGaMethod
+		: null;
 	const session = await makeQueryClient().query(
 		getCurrentSessionQueryOptions((await headers()).get("cookie")),
 	);
-	if (session) redirect(returnTo ?? getOwnPagePath(session));
+	if (session) {
+		const destination = returnTo ?? getOwnPagePath(session);
+		if (gaEvent) {
+			const url = new URL(destination, "https://grabbin.invalid");
+			url.searchParams.set("ga_event", gaEvent);
+			if (gaMethod) url.searchParams.set("ga_method", gaMethod);
+			redirect(`${url.pathname}${url.search}${url.hash}`);
+		}
+		redirect(destination);
+	}
 
 	return (
 		<main className="relative grid min-h-svh w-full place-items-center">

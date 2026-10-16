@@ -12,6 +12,7 @@ import {
 	sendGoogleAnalyticsPageView,
 	setGoogleAnalyticsUserId,
 	setGoogleAnalyticsUserType,
+	trackGoogleAnalyticsEvent,
 } from "@/lib/google-analytics";
 
 export default function GoogleAnalyticsRouteTracker() {
@@ -38,6 +39,23 @@ export default function GoogleAnalyticsRouteTracker() {
 		);
 		return () => cancelAnimationFrame(frame);
 	}, [enabled, pathname]);
+
+	useEffect(() => {
+		if (!enabled) return;
+		const url = new URL(window.location.href);
+		const eventName = url.searchParams.get("ga_event");
+		if (eventName !== "sign_up" && eventName !== "login") return;
+
+		const method = url.searchParams.get("ga_method");
+		trackGoogleAnalyticsEvent(eventName, method ? { method } : {});
+		url.searchParams.delete("ga_event");
+		url.searchParams.delete("ga_method");
+		window.history.replaceState(
+			window.history.state,
+			"",
+			`${url.pathname}${url.search}${url.hash}`,
+		);
+	}, [enabled]);
 
 	if (!enabled) return null;
 

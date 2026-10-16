@@ -12,7 +12,6 @@ import {
 	pageItemUploadRequestSchema,
 } from "@grabbin/api";
 import { registerPendingPageMedia } from "@grabbin/application/media-assets";
-import type { ServerEventTracker } from "@grabbin/auth/google-analytics";
 import type { DatabaseClient } from "@grabbin/db";
 import type { Context, MiddlewareHandler } from "hono";
 import { Hono } from "hono";
@@ -103,15 +102,12 @@ export type PageItemsControllerOptions = {
 	sessionMiddleware: MiddlewareHandler<AppEnv>;
 	persist: PersistPageItemBatch;
 	enrichMetadata: EnrichPageItemMetadata;
-	/** Background GA events; omitted in tests that do not check them. */
-	serverEvents?: Pick<ServerEventTracker, "track">;
 };
 
 export function createPageItemsController({
 	sessionMiddleware,
 	persist,
 	enrichMetadata,
-	serverEvents,
 }: PageItemsControllerOptions) {
 	return new Hono<AppEnv>()
 		.post("/:handle/metadata", sessionMiddleware, async (c) => {
@@ -341,19 +337,6 @@ export function createPageItemsController({
 					].filter(Boolean),
 					publicBaseUrl: c.env?.R2_PUBLIC_URL,
 				});
-				// Only items that are actually saved: blank text is dropped.
-				const firstLink = parsed.output.upserts.find(
-					(item) => item.type === "link",
-				);
-				if (firstLink) {
-					serverEvents?.track({
-						name: "first_link_added",
-						firstTime: "first_link_added",
-						userId: session.user.id,
-						headers: c.req.raw.headers,
-						params: { item_type: firstLink.type },
-					});
-				}
 				return c.json(saved);
 			} catch (error) {
 				if (error instanceof PageItemServiceError) {

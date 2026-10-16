@@ -262,31 +262,37 @@ function getPurchaseParams(
 	event: CreemEvent,
 	transaction: PaidTransaction,
 ): PurchaseEventParams | null {
-	const units = event.items?.[0]?.units ?? 1;
 	const product = event.product;
+	const item = event.items?.[0];
+	const units = item?.units ?? 1;
 	if (
 		transaction.status !== "paid" ||
-		transaction.id !== event.last_transaction_id ||
-		!product.name ||
+		transaction.id !== event.last_transaction_id
+	)
+		return null;
+	if (!product.name || (item?.product_id && item.product_id !== product.id))
+		return null;
+	if (
 		!Number.isSafeInteger(transaction.amount) ||
 		transaction.amount <= 0 ||
+		!/^[A-Z]{3}$/.test(transaction.currency) ||
 		!Number.isSafeInteger(units) ||
-		units <= 0 ||
-		(event.items?.[0]?.product_id !== undefined &&
-			event.items[0].product_id !== product.id) ||
-		!/^[A-Z]{3}$/.test(transaction.currency)
+		units <= 0
 	)
 		return null;
 
+	// Creem gives the amount in cents; GA4 expects whole currency units.
+	const value = transaction.amount / 100;
+
 	return {
 		transaction_id: transaction.id,
-		value: transaction.amount / 100,
+		value,
 		currency: transaction.currency,
 		items: [
 			{
 				item_id: product.id,
 				item_name: product.name,
-				price: transaction.amount / units / 100,
+				price: value / units,
 				quantity: units,
 			},
 		],
