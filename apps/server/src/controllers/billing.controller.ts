@@ -82,13 +82,7 @@ export const billingController = new Hono<AppEnv>()
 								? "Finish or wait for your current checkout before choosing another plan."
 								: "Checkout is temporarily unavailable. Please try again.",
 			});
-		if (checkoutResult.kind === "completed" && checkoutResult.purchase) {
-			serverEvents.track({
-				name: "purchase",
-				userId: session.user.id,
-				params: checkoutResult.purchase,
-			});
-		} else if (checkoutResult.kind === "checkout") {
+		if (checkoutResult.kind === "checkout") {
 			serverEvents.track({
 				name: "begin_checkout",
 				userId: session.user.id,

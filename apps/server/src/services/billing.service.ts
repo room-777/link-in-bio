@@ -43,9 +43,6 @@ export async function createOrResumeProCheckout({
 	| {
 			kind: "checkout" | "completed";
 			url: string;
-			purchase?: NonNullable<
-				Awaited<ReturnType<typeof syncCreemCheckout>>
-			>["purchase"];
 	  }
 	| {
 			error:
@@ -165,7 +162,6 @@ export async function createOrResumeProCheckout({
 			return {
 				kind: "completed",
 				url: successUrl,
-				purchase: synced?.purchase ?? undefined,
 			};
 		return { error: "CHECKOUT_PROCESSING" as const };
 	}

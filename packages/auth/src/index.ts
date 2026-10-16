@@ -25,7 +25,6 @@ import {
 	syncCreemCheckout,
 	syncCreemDispute,
 	syncCreemRefund,
-	syncCreemSubscriptionPaid,
 	syncCreemWebhook,
 } from "./creem-webhook";
 import { serverEvents } from "./server-events";
@@ -106,24 +105,7 @@ function createCreemPlugin(
 		onSubscriptionTrialing: syncEvent,
 		onSubscriptionScheduledCancel: syncEvent,
 		onSubscriptionCanceled: syncEvent,
-		onSubscriptionPaid: async (data) => {
-			const result = await syncCreemSubscriptionPaid(db, data, (id) => {
-				const client = createCreemClient({
-					apiKey: env.CREEM_API_KEY,
-					testMode: env.CREEM_TEST_MODE === "true",
-				});
-				return client.transactions.getById(id);
-			});
-			if (!result) return;
-			if (result.purchase) {
-				serverEvents.track({
-					name: "purchase",
-					userId: result.userId,
-					params: result.purchase,
-				});
-			}
-			await onSubscriptionChange?.(result.userId);
-		},
+		onSubscriptionPaid: syncEvent,
 		onSubscriptionExpired: syncEvent,
 		onSubscriptionUnpaid: syncEvent,
 		onSubscriptionUpdate: syncEvent,

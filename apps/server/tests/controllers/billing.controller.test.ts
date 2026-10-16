@@ -100,39 +100,20 @@ describe("billing controller GA events", () => {
 	 * Case ID: BILLING-GA-002
 	 * Given: Creem confirms an already-completed checkout with a paid order.
 	 * When: the API returns to the success page.
-	 * Then: purchase is sent from the validated order and begin_checkout is not sent.
-	 * Evidence: HTTP response and captured server event.
+	 * Then: the completed checkout is returned without sending another purchase event.
+	 * Evidence: HTTP response and empty captured server event list.
 	 * Result: Pass | Fail | Blocked | Not Run
 	 */
-	it("BILLING-GA-002 records only the completed purchase on reconciliation", async () => {
+	it("BILLING-GA-002 does not record a purchase during checkout reconciliation", async () => {
 		events.length = 0;
-		const purchase = {
-			transaction_id: "order-1",
-			value: 120,
-			currency: "USD",
-			items: [
-				{
-					item_id: "pro-yearly",
-					item_name: "Grabbin Pro Yearly",
-					price: 120,
-					quantity: 1,
-				},
-			],
-		};
 		checkoutResult = {
 			kind: "completed",
 			url: "https://grabbin.me/billing",
-			purchase,
 		};
 
 		const response = await startCheckout();
 
 		assert.equal(response.status, 200);
-		assert.equal(events.length, 1);
-		const event = events[0];
-		assert.ok(event);
-		assert.equal(event.name, "purchase");
-		assert.equal(event.userId, "user-1");
-		assert.deepEqual(event.params, purchase);
+		assert.equal(events.length, 0);
 	});
 });
