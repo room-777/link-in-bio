@@ -14,13 +14,15 @@ type CreemEvent = {
 	webhookCreatedAt: number;
 	id: string;
 	status: string;
-	product: { id: string };
+	product: { id: string; name?: string };
 	customer?: { id: string } | null;
 	metadata?: Record<string, unknown> | null;
 	current_period_start_date?: Date | number | string | null;
 	current_period_end_date?: Date | number | string | null;
 	cancel_at_period_end?: boolean;
 	order?: { id: string } | string | null;
+	last_transaction_id?: string;
+	items?: { product_id?: string; units?: number }[];
 };
 
 type SavedWebhookState = {
@@ -170,20 +172,7 @@ type CompletedCheckout = {
 	units?: number;
 	customer?: { id: string } | string | null;
 	metadata?: Record<string, unknown> | null;
-	order?:
-		| {
-				id: string;
-				product: string;
-				transaction?: string | null;
-				amount?: number;
-				discountAmount?: number;
-				taxAmount?: number;
-				amountPaid?: number;
-				currency: string;
-				status: string;
-		  }
-		| string
-		| null;
+	order?: { id: string } | string | null;
 	subscription?:
 		| {
 				id: string;
@@ -197,51 +186,6 @@ type CompletedCheckout = {
 		  }
 		| string;
 };
-
-function getPurchaseParams(
-	checkout: CompletedCheckout,
-): PurchaseEventParams | null {
-	const order = typeof checkout.order === "object" ? checkout.order : null;
-	const product =
-		typeof checkout.product === "object" ? checkout.product : null;
-	const units = checkout.units;
-	const taxAmount = order?.taxAmount;
-	const valueAmount = (order?.amountPaid ?? Number.NaN) - (taxAmount ?? 0);
-	if (
-		order?.status.toLowerCase() !== "paid" ||
-		!order.id ||
-		!product?.name ||
-		order.product !== product.id ||
-		typeof units !== "number" ||
-		!Number.isSafeInteger(units) ||
-		units <= 0 ||
-		typeof order.amountPaid !== "number" ||
-		!Number.isSafeInteger(order.amountPaid) ||
-		order.amountPaid <= 0 ||
-		(product.taxMode === "inclusive" && taxAmount == null) ||
-		(taxAmount != null &&
-			(!Number.isSafeInteger(taxAmount) || taxAmount < 0)) ||
-		!Number.isSafeInteger(valueAmount) ||
-		valueAmount <= 0 ||
-		order.currency !== product.currency ||
-		!/^[A-Z]{3}$/.test(order.currency)
-	)
-		return null;
-
-	return {
-		transaction_id: order.id,
-		value: valueAmount / 100,
-		currency: order.currency,
-		items: [
-			{
-				item_id: product.id,
-				item_name: product.name,
-				price: valueAmount / units / 100,
-				quantity: units,
-			},
-		],
-	};
-}
 
 export async function syncCreemCheckout(
 	db: DatabaseClient,
@@ -290,7 +234,6 @@ export async function syncCreemCheckout(
 		(pending && checkout.requestId && checkout.requestId !== pending.id)
 	)
 		return null;
-	const purchase = getPurchaseParams(checkout);
 	const eventData = {
 		webhookId: event.webhookId,
 		webhookCreatedAt: event.webhookCreatedAt,
@@ -305,7 +248,61 @@ export async function syncCreemCheckout(
 		order: checkout.order,
 	};
 	const synced = await syncCreemWebhook(db, eventData, event.id);
-	return synced ? { ...synced, purchase } : null;
+	return synced;
+}
+
+type PaidTransaction = {
+	id: string;
+	status: string;
+	amount: number;
+	currency: string;
+};
+
+function getPurchaseParams(
+	event: CreemEvent,
+	transaction: PaidTransaction,
+): PurchaseEventParams | null {
+	const units = event.items?.[0]?.units ?? 1;
+	const product = event.product;
+	if (
+		transaction.status !== "paid" ||
+		transaction.id !== event.last_transaction_id ||
+		!product.name ||
+		!Number.isSafeInteger(transaction.amount) ||
+		transaction.amount <= 0 ||
+		!Number.isSafeInteger(units) ||
+		units <= 0 ||
+		(event.items?.[0]?.product_id !== undefined &&
+			event.items[0].product_id !== product.id) ||
+		!/^[A-Z]{3}$/.test(transaction.currency)
+	)
+		return null;
+
+	return {
+		transaction_id: transaction.id,
+		value: transaction.amount / 100,
+		currency: transaction.currency,
+		items: [
+			{
+				item_id: product.id,
+				item_name: product.name,
+				price: transaction.amount / units / 100,
+				quantity: units,
+			},
+		],
+	};
+}
+
+export async function syncCreemPaidWebhook(
+	db: DatabaseClient,
+	event: CreemEvent,
+	retrieveTransaction: (id: string) => Promise<PaidTransaction>,
+) {
+	const synced = await syncCreemWebhook(db, event);
+	if (!synced) return null;
+	if (!event.last_transaction_id) return { ...synced, purchase: null };
+	const transaction = await retrieveTransaction(event.last_transaction_id);
+	return { ...synced, purchase: getPurchaseParams(event, transaction) };
 }
 
 type RevokingEvent = {

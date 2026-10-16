@@ -3,6 +3,7 @@ import { describe, it } from "node:test";
 import type { DatabaseClient } from "@grabbin/db";
 import {
 	syncCreemCheckout,
+	syncCreemPaidWebhook,
 	syncCreemRefund,
 	syncCreemWebhook,
 } from "../src/creem-webhook";
@@ -169,19 +170,7 @@ describe("Creem webhook synchronization", () => {
 		assert.equal(values[0]?.creemSubscriptionId, "subscription-1");
 		assert.equal(values[0]?.creemCustomerId, "customer-1");
 		assert.deepEqual(values[1], { creemCustomerId: "customer-1" });
-		assert.deepEqual(result?.purchase, {
-			transaction_id: "order-1",
-			value: 120,
-			currency: "USD",
-			items: [
-				{
-					item_id: "pro-yearly",
-					item_name: "Grabbin Pro Yearly",
-					price: 120,
-					quantity: 1,
-				},
-			],
-		});
+		assert.equal("purchase" in (result ?? {}), false);
 
 		orderStatus = "pending";
 		queryCount = 0;
@@ -224,7 +213,82 @@ describe("Creem webhook synchronization", () => {
 				},
 			}),
 		);
-		assert.equal(retry?.purchase, null);
+		assert.equal("purchase" in (retry ?? {}), false);
+	});
+
+	it("records each successful subscription payment by its transaction ID", async () => {
+		const update = {
+			set() {
+				return update;
+			},
+			where: async () => undefined,
+		};
+		const tx = {
+			execute: async () => undefined,
+			delete: () => ({ where: async () => undefined }),
+		};
+		const db = {
+			query: {
+				creemSubscription: {
+					findFirst: async () => ({
+						id: "subscription-row-1",
+						referenceId: "user-1",
+						creemSubscriptionId: "subscription-1",
+						creemCustomerId: "customer-1",
+						lastWebhookId: null,
+						lastWebhookCreatedAt: null,
+						lastWebhookState: null,
+					}),
+				},
+			},
+			update: () => update,
+			transaction: async (callback: (value: typeof tx) => unknown) =>
+				callback(tx),
+		} as unknown as DatabaseClient;
+		const event = {
+			webhookId: "paid-event-1",
+			webhookCreatedAt: new Date("2026-09-20T00:00:00.000Z").getTime(),
+			id: "subscription-1",
+			status: "active",
+			product: { id: "pro-monthly", name: "Grabbin Pro Monthly" },
+			customer: { id: "customer-1" },
+			metadata: { referenceId: "user-1" },
+			last_transaction_id: "transaction-1",
+			items: [{ product_id: "pro-monthly", units: 1 }],
+		};
+		const getTransaction = async (id: string) => ({
+			id,
+			status: "paid",
+			amount: 1200,
+			currency: "USD",
+		});
+
+		const firstPayment = await syncCreemPaidWebhook(db, event, getTransaction);
+		const retry = await syncCreemPaidWebhook(db, event, getTransaction);
+		const renewal = await syncCreemPaidWebhook(
+			db,
+			{
+				...event,
+				webhookId: "paid-event-2",
+				last_transaction_id: "transaction-2",
+			},
+			getTransaction,
+		);
+		const failedPayment = await syncCreemPaidWebhook(db, event, async (id) => ({
+			...(await getTransaction(id)),
+			status: "pending",
+		}));
+
+		assert.equal(firstPayment?.purchase?.transaction_id, "transaction-1");
+		assert.equal(firstPayment?.purchase?.value, 12);
+		assert.equal(firstPayment?.purchase?.currency, "USD");
+		assert.equal(
+			firstPayment?.purchase?.items[0]?.item_name,
+			"Grabbin Pro Monthly",
+		);
+		assert.equal(renewal?.purchase?.transaction_id, "transaction-2");
+		assert.equal(retry?.purchase?.transaction_id, "transaction-1");
+		assert.equal(failedPayment?.purchase, null);
 	});
 
 	/**
