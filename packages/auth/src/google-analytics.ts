@@ -1,10 +1,6 @@
 import type { DatabaseClient } from "@grabbin/db";
-import {
-	analyticsEvents,
-	analyticsPurchases,
-	user,
-} from "@grabbin/db/schema/index";
-import { and, eq, sql } from "drizzle-orm";
+import { analyticsEvents, user } from "@grabbin/db/schema/index";
+import { and, eq } from "drizzle-orm";
 
 /** GA4 events sent from the server with the Measurement Protocol. */
 export type ServerEventName =
@@ -206,14 +202,12 @@ export function createServerEventTracker(deps: ServerEventTrackerDeps) {
 	async function run(input: TrackServerEventInput) {
 		const config = deps.config;
 		if (!config) return { sent: false, reason: "disabled" as const };
-		const orderId =
-			input.name === "purchase" ? input.params.transaction_id : null;
 		const browser = readBrowserAnalyticsContext(
 			input.headers,
 			config.measurementId,
 		);
 		const db =
-			input.once || orderId || typeof input.params === "function"
+			input.once || typeof input.params === "function"
 				? await deps.createDb()
 				: null;
 		let claimed = false;
@@ -232,40 +226,6 @@ export function createServerEventTracker(deps: ServerEventTrackerDeps) {
 				typeof input.params === "function" && db
 					? await input.params(db)
 					: (input.params as AnalyticsEventParams | undefined);
-			if (db && orderId) {
-				return await db.transaction(async (tx) => {
-					await tx.execute(
-						sql`select pg_advisory_xact_lock(hashtextextended(${orderId}, 0))`,
-					);
-					const rows = await tx
-						.insert(analyticsPurchases)
-						.values({ userId: input.userId, orderId })
-						.onConflictDoNothing()
-						.returning({ orderId: analyticsPurchases.orderId });
-					if (rows.length === 0) {
-						log("ga server event skipped", {
-							event: input.name,
-							reason: "already_sent",
-						});
-						return { sent: false as const, reason: "already_sent" as const };
-					}
-					const result = await sendMeasurementProtocolEvent(
-						config,
-						{
-							name: input.name,
-							userId: input.userId,
-							browser,
-							params,
-						},
-						deps.fetch,
-					);
-					if (result.status < 200 || result.status >= 300) {
-						throw new Error(`GA responded with ${result.status}`);
-					}
-					logSent(input.name, config, browser, result);
-					return { sent: true as const, ...result };
-				});
-			}
 			const result = await sendMeasurementProtocolEvent(
 				config,
 				{ name: input.name, userId: input.userId, browser, params },
