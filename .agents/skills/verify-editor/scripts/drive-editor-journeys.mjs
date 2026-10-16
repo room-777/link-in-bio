@@ -117,40 +117,41 @@ if (authState) {
 } else {
 	({ ctx, p } = await login(b));
 }
-// shortcut: CI uses a fixed Seoul result and blank basemap, add live Mapbox checks separately if provider behavior is in scope.
-await ctx.route("https://api.mapbox.com/**", async (route) => {
-	const url = new URL(route.request().url());
-	if (url.pathname === "/search/geocode/v6/forward") {
-		await route.fulfill({
-			json: {
-				features: [
-					{
-						id: "mapbox-ci-seoul",
-						geometry: { type: "Point", coordinates: [126.978, 37.5665] },
-						properties: {
-							mapbox_id: "mapbox-ci-seoul",
-							name: "Seoul",
-							place_formatted: "Seoul, Korea",
+if (process.env.NEXT_PUBLIC_MAPBOX_ACCESS_TOKEN === "feature-map-ci") {
+	await ctx.route("https://api.mapbox.com/**", async (route) => {
+		const url = new URL(route.request().url());
+		if (url.pathname === "/search/geocode/v6/forward") {
+			await route.fulfill({
+				json: {
+					features: [
+						{
+							id: "mapbox-ci-seoul",
+							geometry: { type: "Point", coordinates: [126.978, 37.5665] },
+							properties: {
+								mapbox_id: "mapbox-ci-seoul",
+								name: "Seoul",
+								place_formatted: "Seoul, Korea",
+							},
 						},
-					},
-				],
-			},
-		});
-		return;
-	}
-	if (url.pathname.startsWith("/styles/v1/")) {
-		await route.fulfill({
-			json: {
-				version: 8,
-				name: "Feature map CI",
-				sources: {},
-				layers: [{ id: "background", type: "background" }],
-			},
-		});
-		return;
-	}
-	await route.fulfill({ status: 204 });
-});
+					],
+				},
+			});
+			return;
+		}
+		if (url.pathname.startsWith("/styles/v1/")) {
+			await route.fulfill({
+				json: {
+					version: 8,
+					name: "Feature map CI",
+					sources: {},
+					layers: [{ id: "background", type: "background" }],
+				},
+			});
+			return;
+		}
+		await route.fulfill({ status: 204 });
+	});
+}
 // Network log of API + R2 requests
 let netlog = null;
 p.on("requestfinished", async (r) => {
@@ -217,6 +218,7 @@ async function cleanupNewItems(beforeIds, step) {
 }
 async function journey(id, fn) {
 	if (only.length && !only.includes(id) && !only.includes("all")) return;
+	const cloudR2Count = cloudR2.length;
 	const dir = `${EV}/${id}`;
 	mkdirSync(dir, { recursive: true });
 	const beforeIds = new Set(itemIds());
@@ -236,6 +238,10 @@ async function journey(id, fn) {
 		step(`db before: ${items() || "(none)"}`);
 		await p.screenshot({ path: `${dir}/before.png`, fullPage: true });
 		await fn(step, dir);
+		if (cloudR2.length > cloudR2Count)
+			throw new Error(
+				`cloud R2 requests: ${cloudR2.slice(cloudR2Count).join(", ")}`,
+			);
 		await p.screenshot({ path: `${dir}/after.png`, fullPage: true });
 		writeFileSync(
 			`${dir}/after.aria.txt`,
@@ -338,8 +344,6 @@ await journey("media-upload", async (step, dir) => {
 	if (!src) throw new Error("uploaded image not rendered after reload");
 	if (!(await localObject(key)).startsWith("EXISTS"))
 		throw new Error("object missing in local bucket");
-	if (cloudR2.length)
-		throw new Error(`cloud R2 requests: ${cloudR2.join(", ")}`);
 	step("no request to *.r2.cloudflarestorage.com");
 });
 
@@ -390,8 +394,6 @@ await journey("media-cancel", async (step, dir) => {
 	step(`local bucket object for held key: ${held}`);
 	if (held.startsWith("EXISTS"))
 		throw new Error("orphan object in local bucket");
-	if (cloudR2.length)
-		throw new Error(`cloud R2 requests: ${cloudR2.join(", ")}`);
 	step("no request to *.r2.cloudflarestorage.com");
 	if (!req) throw new Error("app sent no cancel request");
 });
@@ -885,6 +887,20 @@ await journey("inline-destination-url", async (step) => {
 		"https://example.com/featuremap-text"
 	)
 		throw new Error("text destination did not open its saved URL");
+	await textShell.getByRole("button", { name: "Edit text link" }).click();
+	const textUrl = p.getByRole("textbox", { name: "Link URL" });
+	await textUrl.fill("not a url");
+	await textUrl.press("Enter");
+	if ((await textUrl.getAttribute("aria-invalid")) !== "true")
+		throw new Error("invalid text destination was not rejected");
+	if (
+		!sql(`select data::text from page_items where id='${textId}'`).includes(
+			"featuremap-text",
+		)
+	)
+		throw new Error("invalid text destination replaced the saved URL");
+	await textUrl.fill("https://example.com/featuremap-text-edited");
+	await textUrl.press("Enter");
 	const mediaId = await addMedia();
 	const mediaShell = content.locator(`[data-bento-item-id="${mediaId}"]`);
 	await mediaShell.hover();
@@ -893,25 +909,84 @@ await journey("inline-destination-url", async (step) => {
 		.getByRole("textbox", { name: "Link URL" })
 		.fill("https://example.com/featuremap-media");
 	await p.keyboard.press("Enter");
+	await mediaShell.getByRole("button", { name: "Edit media link" }).click();
+	const mediaUrl = p.getByRole("textbox", { name: "Link URL" });
+	await mediaUrl.fill("not a url");
+	await mediaUrl.press("Enter");
+	if ((await mediaUrl.getAttribute("aria-invalid")) !== "true")
+		throw new Error("invalid media destination was not rejected");
+	if (
+		!sql(`select data::text from page_items where id='${mediaId}'`).includes(
+			"featuremap-media",
+		)
+	)
+		throw new Error("invalid media destination replaced the saved URL");
+	await mediaUrl.fill("https://example.com/featuremap-media-edited");
+	await mediaUrl.press("Enter");
 	await until(
 		() =>
 			sql(`select data::text from page_items where id='${textId}'`).includes(
-				"featuremap-text",
+				"featuremap-text-edited",
 			) &&
 			sql(`select data::text from page_items where id='${mediaId}'`).includes(
-				"featuremap-media",
+				"featuremap-media-edited",
 			),
-		"text and media destinations saved",
+		"edited text and media destinations saved",
 	);
 	for (const [id, url] of [
-		[textId, "featuremap-text"],
-		[mediaId, "featuremap-media"],
+		[textId, "featuremap-text-edited"],
+		[mediaId, "featuremap-media-edited"],
 	]) {
 		const data = sql(`select data::text from page_items where id='${id}'`);
 		if (!data.includes(url)) throw new Error(`destination URL missing ${url}`);
 	}
 	await p.reload({ waitUntil: "networkidle" });
-	step("text and media destinations saved in page_items");
+	for (const [id, url] of [
+		[textId, "https://example.com/featuremap-text-edited"],
+		[mediaId, "https://example.com/featuremap-media-edited"],
+	]) {
+		const shell = content.locator(`[data-bento-item-id="${id}"]`);
+		const actionName = id === textId ? "Open text link" : "Open media";
+		if (
+			(await shell
+				.getByRole("link", { name: actionName })
+				.getAttribute("href")) !== url
+		)
+			throw new Error(`destination did not persist after reload: ${url}`);
+		await shell
+			.getByRole("button", {
+				name: id === textId ? "Edit text link" : "Edit media link",
+			})
+			.click();
+		const input = p.getByRole("textbox", { name: "Link URL" });
+		await input.fill("");
+		await input.press("Enter");
+	}
+	await until(
+		() =>
+			![textId, mediaId].some((id) =>
+				sql(`select data->>'url' from page_items where id='${id}'`),
+			),
+		"cleared text and media destinations",
+	);
+	await p.reload({ waitUntil: "networkidle" });
+	for (const [id, actionName] of [
+		[textId, "Open text link"],
+		[mediaId, "Open media"],
+	]) {
+		if (
+			await content
+				.locator(`[data-bento-item-id="${id}"]`)
+				.getByRole("link", { name: actionName })
+				.count()
+		)
+			throw new Error(`cleared destination action remains for ${id}`);
+		if (sql(`select data->>'url' from page_items where id='${id}'`))
+			throw new Error(`cleared destination remains in page_items for ${id}`);
+	}
+	step(
+		"text and media destinations were added, edited, rejected when invalid, persisted, and cleared",
+	);
 });
 
 await journey("tweet", async (step) => {

@@ -44,7 +44,7 @@ Source-of-truth recipes for the signed-in editor and sign-in, driven against the
 
 ## CI coverage
 
-The `feature-map` job in `.github/workflows/ci.yml` runs a browser journey for every recipe above using Chromium only. It signs in once, saves the session under the runner's temporary directory, and reuses it for account setup and editor journeys. Browser contexts request reduced motion to limit animation-related clicks. Editor journeys retry twice after a failed run, keeping each attempt's evidence under `artifacts/verify-editor/`. Mapbox's geocoder and basemap are stubbed in CI with a fixed Seoul result so the map flows do not need a live Mapbox token.
+The `feature-map` job in `.github/workflows/ci.yml` runs a browser journey for every recipe above using Chromium only. It signs in once, saves the session under the runner's temporary directory, and reuses it for account setup and editor journeys. Browser contexts request reduced motion to limit animation-related clicks. Editor journeys retry twice after a failed run, keeping each attempt's evidence under `artifacts/verify-editor/`. The Mapbox stub activates only when `NEXT_PUBLIC_MAPBOX_ACCESS_TOKEN=feature-map-ci`; other runs use the configured Mapbox service.
 
 | Feature map | CI journey |
 | --- | --- |
