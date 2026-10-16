@@ -73,9 +73,10 @@ export default function HandlePage({
 	const handleBentoLinkClick = (event: MouseEvent<HTMLElement>) => {
 		if (event.type === "auxclick" && event.button !== 1) return;
 		const target = event.target as Element;
-		const itemElement = target
-			.closest("a[href]")
-			?.closest<HTMLElement>("[data-bento-item-id]");
+		const anchor = target.closest("a[href]");
+		const itemElement = anchor?.closest<HTMLElement>(
+			'[data-ga-event="profile_link_click"]',
+		);
 		if (!itemElement) return;
 		const itemId = itemElement.dataset.bentoItemId;
 		const orderedIds = [...pageResponse.items]

@@ -12,6 +12,8 @@ An owner adds a block (text, section, link, map) from the editor toolbar, edits 
 - `delete-item` removes a block with `Delete item`.
 - `item-persist` (owner only) saves the change and shows it after reload.
 
+Public visitors clicking a link inside an item are measured separately in [the analytics event map](./analytics-events.md). Adding or editing an item does not send a click event.
+
 ## How to get to it (user POV)
 
 - `/demo` (no account): the toolbar is `group "Page editor toolbar"` at the bottom.

@@ -7,19 +7,22 @@ import {
 	type SubscriptionStatus,
 } from "@grabbin/plan";
 import { and, eq, isNull, sql } from "drizzle-orm";
+import type { PurchaseEventParams } from "./google-analytics";
 
 type CreemEvent = {
 	webhookId: string;
 	webhookCreatedAt: number;
 	id: string;
 	status: string;
-	product: { id: string };
+	product: { id: string; name?: string };
 	customer?: { id: string } | null;
 	metadata?: Record<string, unknown> | null;
 	current_period_start_date?: Date | number | string | null;
 	current_period_end_date?: Date | number | string | null;
 	cancel_at_period_end?: boolean;
 	order?: { id: string } | string | null;
+	last_transaction_id?: string;
+	items?: { product_id?: string; units?: number }[];
 };
 
 type SavedWebhookState = {
@@ -157,7 +160,16 @@ type CompletedCheckout = {
 	id: string;
 	status: string;
 	requestId?: string;
-	product: { id: string } | string;
+	product:
+		| {
+				id: string;
+				name: string;
+				price: number;
+				currency: string;
+				taxMode: "inclusive" | "exclusive";
+		  }
+		| string;
+	units?: number;
 	customer?: { id: string } | string | null;
 	metadata?: Record<string, unknown> | null;
 	order?: { id: string } | string | null;
@@ -186,8 +198,6 @@ export async function syncCreemCheckout(
 	const pending = await db.query.creemSubscription.findFirst({
 		where: eq(creemSubscription.checkoutId, event.id),
 	});
-	if (!pending || pending.creemSubscriptionId) return null;
-
 	const checkout = await retrieveCheckout(event.id);
 	const productId =
 		typeof checkout.product === "string"
@@ -195,10 +205,8 @@ export async function syncCreemCheckout(
 			: checkout.product.id;
 	const referenceId = checkout.metadata?.referenceId;
 	if (
-		checkout.id !== pending.checkoutId ||
+		checkout.id !== event.id ||
 		checkout.status.toLowerCase() !== "completed" ||
-		(checkout.requestId && checkout.requestId !== pending.id) ||
-		referenceId !== pending.referenceId ||
 		!checkout.subscription
 	)
 		return null;
@@ -215,7 +223,17 @@ export async function syncCreemCheckout(
 	const customer = subscription.customer ?? checkout.customer;
 	const customerId = typeof customer === "string" ? customer : customer?.id;
 	if (subscriptionProductId !== productId || !customerId) return null;
-
+	const linkedSubscription =
+		pending ??
+		(await db.query.creemSubscription.findFirst({
+			where: eq(creemSubscription.creemSubscriptionId, subscription.id),
+		}));
+	if (
+		!linkedSubscription ||
+		referenceId !== linkedSubscription.referenceId ||
+		(pending && checkout.requestId && checkout.requestId !== pending.id)
+	)
+		return null;
 	const eventData = {
 		webhookId: event.webhookId,
 		webhookCreatedAt: event.webhookCreatedAt,
@@ -229,7 +247,68 @@ export async function syncCreemCheckout(
 		cancel_at_period_end: subscription.cancelAtPeriodEnd,
 		order: checkout.order,
 	};
-	return syncCreemWebhook(db, eventData, event.id);
+	const synced = await syncCreemWebhook(db, eventData, event.id);
+	return synced;
+}
+
+type PaidTransaction = {
+	id: string;
+	status: string;
+	amount: number;
+	currency: string;
+};
+
+function getPurchaseParams(
+	event: CreemEvent,
+	transaction: PaidTransaction,
+): PurchaseEventParams | null {
+	const product = event.product;
+	const item = event.items?.[0];
+	const units = item?.units ?? 1;
+	if (
+		transaction.status !== "paid" ||
+		transaction.id !== event.last_transaction_id
+	)
+		return null;
+	if (!product.name || (item?.product_id && item.product_id !== product.id))
+		return null;
+	if (
+		!Number.isSafeInteger(transaction.amount) ||
+		transaction.amount <= 0 ||
+		!/^[A-Z]{3}$/.test(transaction.currency) ||
+		!Number.isSafeInteger(units) ||
+		units <= 0
+	)
+		return null;
+
+	// Creem gives the amount in cents; GA4 expects whole currency units.
+	const value = transaction.amount / 100;
+
+	return {
+		transaction_id: transaction.id,
+		value,
+		currency: transaction.currency,
+		items: [
+			{
+				item_id: product.id,
+				item_name: product.name,
+				price: value / units,
+				quantity: units,
+			},
+		],
+	};
+}
+
+export async function syncCreemPaidWebhook(
+	db: DatabaseClient,
+	event: CreemEvent,
+	retrieveTransaction: (id: string) => Promise<PaidTransaction>,
+) {
+	const synced = await syncCreemWebhook(db, event);
+	if (!synced) return null;
+	if (!event.last_transaction_id) return { ...synced, purchase: null };
+	const transaction = await retrieveTransaction(event.last_transaction_id);
+	return { ...synced, purchase: getPurchaseParams(event, transaction) };
 }
 
 type RevokingEvent = {

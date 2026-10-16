@@ -1,12 +1,13 @@
 # Sign in with email OTP
 
-A visitor enters an email, receives a 6-digit code, enters it, and lands signed in: on `/create` when the account has no page yet, otherwise on their own `/{handle}` editor.
+A visitor enters an email, receives a 6-digit code, and signs in. A newly created account goes straight to `/create`; an existing account returns through `/sign-in` and then continues to its requested page or its own editor.
 
 ## Sub-features
 
 - `otp-request` sends a code and shows the "Check your inbox" step.
 - `otp-verify` accepts the code and sets the `better-auth.session_token` cookie.
-- `otp-landing` moves the signed-in user off `/sign-in` to `/create` or `/{handle}`.
+- `otp-landing` sends a new account to `/create`; an existing account continues to its requested page or `/{handle}`.
+- `otp-analytics` sends `sign_up` for a newly created account or `login` for an existing account after verification succeeds. A rejected code sends neither event.
 - `otp-change-email` returns to the email step via `Use a different email`.
 
 ## How to get to it (user POV)
@@ -22,10 +23,11 @@ Preconditions:
 
 - **Request code.** Fill `textbox "Email"` with `featuremap@example.com`, click `button "Send OTP"`. `heading "Check your inbox"` appears with the address in bold.
 - **Read code.** Run `scripts/otp.sh featuremap@example.com`. It prints 6 digits.
-- **Verify.** Fill the single unnamed textbox in the code group, click `button "Verify code"` (disabled until 6 digits). `POST /auth/sign-in/email-otp` returns 200 and the context gains `better-auth.session_token`.
-- **Landing.** The page does `location.replace` back through `/sign-in`, whose server render redirects a signed-in user to `/create` or `/{handle}`. Wait up to 3 min on first compile.
+- **Verify.** Fill the single unnamed textbox in the code group, click `button "Verify code"` (disabled until 6 digits). `POST /auth/sign-in/email-otp` returns 200, reports whether it created an account, and the context gains `better-auth.session_token`.
+- **Landing.** With the shared existing account, the page returns through `/sign-in` and continues to its own page. A new account goes straight to `/create`. Wait up to 3 min on first compile.
+- **Analytics.** After a successful code, a new account sends `sign_up`; the shared existing account sends `login`. A bad code sends neither. The shared cloud-agent stack runs the web app in development mode, where Google Analytics is disabled, so this stack can verify routing but cannot prove the GA event arrived.
 - **Scripted.** `node scripts/drive-sign-in.mjs "$EVIDENCE_DIR/sign-in" featuremap@example.com` from `$PW_DIR`.
-- **Proof.** `otp-sent.png`, `after-verify.png`, `after-verify.aria.txt`, `actions.md`; plus `select id, email from "user" where email = 'featuremap@example.com'` and a `session` row for that user.
+- **Proof.** `otp-sent.png`, `after-verify.png`, `after-verify.aria.txt`, `actions.md`; plus `select id, email from "user" where email = 'featuremap@example.com'` and a `session` row for that user. The local auth test checks both new and existing account responses and rejects an invalid code without an event flag.
 
 ## Gotchas
 

@@ -355,6 +355,7 @@ export default function BentoItemShell({
 			data-bento-item-controls-open={controlsOpen ? "true" : undefined}
 			data-bento-item-id={item.id}
 			data-bento-item-type={item.type}
+			data-ga-event="profile_link_click"
 			data-bento-item-preset={preset ?? "unsupported"}
 			onPointerEnter={handleOpenControls}
 			onPointerLeave={(event) => {

@@ -6,7 +6,6 @@ const { mock } = require("bun:test") as {
 	mock: { module: (specifier: string, factory: () => unknown) => void };
 };
 
-const tracked: Array<Record<string, unknown>> = [];
 let userHasPage = false;
 
 /** Enough of Drizzle for createPage: a free handle and one transaction. */
@@ -29,14 +28,6 @@ const fakeDb = {
 } as unknown as DatabaseClient;
 
 mock.module("cloudflare:workers", () => ({ env: {}, waitUntil: () => {} }));
-mock.module("@grabbin/auth/server-events", () => ({
-	serverEvents: {
-		track: (input: Record<string, unknown>) => {
-			tracked.push(input);
-			return Promise.resolve({ sent: true });
-		},
-	},
-}));
 mock.module("../../src/middlewares/session.middleware", () => {
 	const withSession = async (
 		c: { set: (key: string, value: unknown) => void },
@@ -60,43 +51,33 @@ function createPageRequest(cookie = "_ga=GA1.1.5.6") {
 	});
 }
 
-describe("pages controller GA events", () => {
+describe("pages controller", () => {
 	/**
 	 * Case ID: PAGE-API-GA-001
 	 * Given: a signed-in user whose page creation succeeds.
 	 * When: POST /pages returns 201.
-	 * Then: page_created is queued once as a once-only event for that user,
-	 *   with the request headers (GA cookies) and a time_since_signup reader.
-	 * Evidence: HTTP 201 and the recorded tracker call.
+	 * Then: the new page is returned to the browser.
+	 * Evidence: HTTP 201 and the returned page handle.
 	 * Result: Pass | Fail | Blocked | Not Run
 	 */
-	it("PAGE-API-GA-001 queues page_created after a successful create", async () => {
-		tracked.length = 0;
+	it("PAGE-API-GA-001 returns the page after a successful create", async () => {
 		userHasPage = false;
 		const response = await createPageRequest();
 
 		assert.equal(response.status, 201);
-		assert.equal(tracked.length, 1);
-		assert.equal(tracked[0]?.name, "page_created");
-		assert.equal(tracked[0]?.once, "page_created");
-		assert.equal(tracked[0]?.userId, "user-1");
-		assert.equal(typeof tracked[0]?.params, "function");
-		assert.equal(
-			(tracked[0]?.headers as Headers | undefined)?.get("cookie"),
-			"_ga=GA1.1.5.6",
-		);
+		const body = (await response.json()) as { page: { handle: string } };
+		assert.equal(body.page.handle, "jane");
 	});
 
 	/**
 	 * Case ID: PAGE-API-GA-002
 	 * Given: page creation fails (the user already has a page, or bad input).
 	 * When: POST /pages returns an error.
-	 * Then: no GA event is queued.
-	 * Evidence: HTTP 409/400 and an empty tracker log.
+	 * Then: the server returns an error instead of creating a page.
+	 * Evidence: HTTP 409/400.
 	 * Result: Pass | Fail | Blocked | Not Run
 	 */
-	it("PAGE-API-GA-002 queues nothing when creation fails", async () => {
-		tracked.length = 0;
+	it("PAGE-API-GA-002 returns an error when creation fails", async () => {
 		userHasPage = true;
 		assert.equal((await createPageRequest()).status, 409);
 		const invalid = await pagesController.request("/", {
@@ -105,6 +86,5 @@ describe("pages controller GA events", () => {
 			body: "{}",
 		});
 		assert.equal(invalid.status, 400);
-		assert.equal(tracked.length, 0);
 	});
 });

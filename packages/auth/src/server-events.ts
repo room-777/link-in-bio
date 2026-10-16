@@ -1,5 +1,4 @@
 import { waitUntil } from "cloudflare:workers";
-import { createDb } from "@grabbin/db";
 import { env } from "@grabbin/env/server";
 import {
 	createServerEventTracker,
@@ -25,6 +24,5 @@ export const serverEvents = createServerEventTracker({
 	get config() {
 		return getConfig();
 	},
-	createDb,
 	waitUntil,
 });

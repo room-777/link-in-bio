@@ -18,7 +18,7 @@ An owner adds a custom image to a link card, replaces it, or removes it. The ima
 
 Preconditions:
 
-- Run the `verify-editor` doctor, sign in as `featuremap@example.com`, and open its `featuremap-test` page with the local Pro grant. Use the local stack with its local R2 binding.
+- Run the `verify-editor` doctor, sign in as `featuremap@example.com`, and open its `featuremap-test` page. Pro access is not required for link-card images. Use the local stack with its local R2 binding.
 - Keep two valid image fixtures smaller than the upload limit, one for the first image and one for replacement.
 - Record the link item `id`, `data.imageKey`, and `data.imageUrl` before editing.
 

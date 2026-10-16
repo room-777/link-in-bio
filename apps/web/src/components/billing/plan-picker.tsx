@@ -14,6 +14,7 @@ import { overlay } from "overlay-kit";
 import { useState } from "react";
 import { authClient, getAuthErrorMessage } from "@/lib/auth-client";
 import { getSignInHref } from "@/lib/auth-redirect";
+import { trackGoogleAnalyticsEvent } from "@/lib/google-analytics";
 import {
 	type BillingPeriod,
 	PlanCard,
@@ -103,8 +104,14 @@ function PlanPickerContent({
 				toast({ message: getAuthErrorMessage(error), state: "error" });
 				return;
 			}
-			if (data?.url) window.location.assign(data.url);
-			else
+			if (data?.url) {
+				if (data.checkoutStarted) {
+					trackGoogleAnalyticsEvent("begin_checkout", {
+						items: [{ item_id: productId, item_name: "Grabbin Pro" }],
+					});
+				}
+				window.location.assign(data.url);
+			} else
 				toast({
 					message: "Could not start checkout. Please try again.",
 					state: "error",

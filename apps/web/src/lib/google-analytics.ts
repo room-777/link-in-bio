@@ -17,7 +17,11 @@ export const GA_MEASUREMENT_ID =
 /** 이벤트 이름과 파라미터의 기준은 GA4 이벤트 스펙 문서다. 이름은 바꾸지 않는다. */
 type GoogleAnalyticsEventParams = Record<
 	string,
-	string | number | boolean | undefined
+	| string
+	| number
+	| boolean
+	| { item_id: string; item_name?: string }[]
+	| undefined
 >;
 
 export type GoogleAnalyticsPageContext = {
@@ -132,6 +136,11 @@ export function setGoogleAnalyticsUserType(userType: "creator" | "visitor") {
 	flushPendingEvents();
 }
 
+/** Sets the same internal account ID used by server events, or clears it on logout. */
+export function setGoogleAnalyticsUserId(userId: string | null) {
+	window.gtag?.("set", { user_id: userId });
+}
+
 /**
  * 첫 이벤트에도 user_type이 붙도록 로그인 확인이 끝날 때까지 모아 둔다.
  * 확인이 늦어지면 USER_TYPE_WAIT_MS 뒤에 user_type 없이 보낸다.
@@ -141,11 +150,16 @@ export function trackGoogleAnalyticsEvent(
 	params: GoogleAnalyticsEventParams = {},
 ) {
 	if (!window.gtag) return;
+	const path = window.location.pathname;
+	const pageType = getGoogleAnalyticsPageType(path, window.location.hostname);
+	const safePath = pageType === "home" ? "/" : `/${pageType}`;
 	const eventParams: GoogleAnalyticsEventParams = {
-		page_location: window.location.href,
-		page_title: document.title,
 		...pageContext,
 		...params,
+		page_location: `${window.location.origin}${safePath}`,
+		page_path: safePath,
+		page_title:
+			typeof params.page_title === "string" ? params.page_title : pageType,
 	};
 	if (!pendingEvents) {
 		window.gtag("event", name, eventParams);
@@ -169,9 +183,7 @@ export function sendGoogleAnalyticsPageView(pageType: string) {
 	lastPageType = pageType;
 	trackGoogleAnalyticsEvent("page_view", {
 		page_type: pageType,
-		page_path: path,
-		page_location: window.location.href,
-		page_title: document.title,
+		page_title: pageType,
 	});
 }
 
