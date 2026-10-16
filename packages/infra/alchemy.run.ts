@@ -151,7 +151,9 @@ export const server = Cloudflare.Worker("server", {
 		CREEM_API_KEY: Config.Redacted("CREEM_API_KEY"),
 		CREEM_WEBHOOK_SECRET: Config.Redacted("CREEM_WEBHOOK_SECRET"),
 		CREEM_TEST_MODE: Config.String("CREEM_TEST_MODE"),
-		CREEM_SUCCESS_URL: Config.String("CREEM_SUCCESS_URL"),
+		CREEM_SUCCESS_URL: isAlchemyDev
+			? `${localWebUrl}/`
+			: Config.String("CREEM_SUCCESS_URL"),
 		CREEM_PRO_MONTHLY_PRODUCT_ID: Config.String(
 			"CREEM_PRO_MONTHLY_PRODUCT_ID",
 		).pipe(Config.withDefault("")),
