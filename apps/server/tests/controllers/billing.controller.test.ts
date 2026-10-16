@@ -10,15 +10,9 @@ const { mock } = require("bun:test") as {
 };
 
 let checkoutResult: unknown;
-const events: Record<string, unknown>[] = [];
 
 mock.module("@grabbin/auth/creem-server", () => ({
 	createCreemClient: () => ({}),
-}));
-mock.module("@grabbin/auth/server-events", () => ({
-	serverEvents: {
-		track: (event: Record<string, unknown>) => events.push(event),
-	},
 }));
 mock.module("../../src/middlewares/session.middleware", () => ({
 	requiredSession: (async (c: Context<AppEnv>, next: Next) => {
@@ -59,9 +53,8 @@ async function startCheckout() {
 	);
 }
 
-describe("billing controller GA events", () => {
-	it("sends begin_checkout only when the checkout URL is returned", async () => {
-		events.length = 0;
+describe("billing controller checkout", () => {
+	it("tells the browser when a new checkout starts", async () => {
 		checkoutResult = {
 			kind: "checkout",
 			url: "https://checkout.creem.io/ch-1",
@@ -73,23 +66,11 @@ describe("billing controller GA events", () => {
 		assert.deepEqual(await response.json(), {
 			url: "https://checkout.creem.io/ch-1",
 			redirect: false,
-		});
-		assert.equal(events.length, 1);
-		const event = events[0];
-		assert.ok(event);
-		assert.equal(event.name, "begin_checkout");
-		assert.equal(event.userId, "user-1");
-		assert.equal(
-			(event.headers as Headers).get("content-type"),
-			"application/json",
-		);
-		assert.deepEqual(event.params, {
-			items: [{ item_id: "pro-monthly", item_name: "Grabbin Pro" }],
+			checkoutStarted: true,
 		});
 	});
 
-	it("does not record a purchase during checkout reconciliation", async () => {
-		events.length = 0;
+	it("does not report a new checkout when reconciling a completed one", async () => {
 		checkoutResult = {
 			kind: "completed",
 			url: "https://grabbin.me/billing",
@@ -98,6 +79,10 @@ describe("billing controller GA events", () => {
 		const response = await startCheckout();
 
 		assert.equal(response.status, 200);
-		assert.equal(events.length, 0);
+		assert.deepEqual(await response.json(), {
+			url: "https://grabbin.me/billing",
+			redirect: false,
+			checkoutStarted: false,
+		});
 	});
 });

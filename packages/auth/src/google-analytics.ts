@@ -1,21 +1,16 @@
 import type { DatabaseClient } from "@grabbin/db";
-import { analyticsEvents, user } from "@grabbin/db/schema/index";
+import { analyticsEvents } from "@grabbin/db/schema/index";
 import { and, eq } from "drizzle-orm";
 
 /** GA4 events sent from the server with the Measurement Protocol. */
 export type ServerEventName =
-	| "begin_checkout"
 	| "purchase"
 	| "sign_up"
 	| "login"
-	| "page_created"
 	| "first_link_added";
 
-/** Events that may be sent only once per user, decided by the database. */
-export type OnceEventName = Exclude<
-	ServerEventName,
-	"begin_checkout" | "login" | "purchase"
->;
+/** Account milestones that happen once. Payments are recurring and are not included. */
+export type FirstTimeEventName = "sign_up" | "first_link_added";
 
 export type AnalyticsItem = {
 	item_id: string;
@@ -94,13 +89,13 @@ export function readBrowserAnalyticsContext(
 }
 
 /**
- * Records a once-only event. Returns true only for the first caller: the
+ * Records a first-time account milestone. Returns true only for the first caller: the
  * check and the write are one INSERT ... ON CONFLICT DO NOTHING.
  */
 export async function claimAnalyticsEvent(
 	db: DatabaseClient,
 	userId: string,
-	eventName: OnceEventName,
+	eventName: FirstTimeEventName,
 ) {
 	const rows = await db
 		.insert(analyticsEvents)
@@ -180,9 +175,9 @@ export type ServerEventTrackerDeps = {
 export type TrackServerEventInput = {
 	userId: string;
 	headers?: Headers;
-	once?: OnceEventName;
+	firstTime?: FirstTimeEventName;
 } & (
-	| { name: "purchase"; params: PurchaseEventParams; once?: never }
+	| { name: "purchase"; params: PurchaseEventParams; firstTime?: never }
 	| {
 			name: Exclude<ServerEventName, "purchase">;
 			params?:
@@ -206,13 +201,13 @@ export function createServerEventTracker(deps: ServerEventTrackerDeps) {
 			config.measurementId,
 		);
 		const db =
-			input.once || typeof input.params === "function"
+			input.firstTime || typeof input.params === "function"
 				? await deps.createDb()
 				: null;
 		let claimed = false;
 		try {
-			if (db && input.once) {
-				claimed = await claimAnalyticsEvent(db, input.userId, input.once);
+			if (db && input.firstTime) {
+				claimed = await claimAnalyticsEvent(db, input.userId, input.firstTime);
 				if (!claimed) {
 					log("ga server event skipped", {
 						event: input.name,
@@ -237,8 +232,8 @@ export function createServerEventTracker(deps: ServerEventTrackerDeps) {
 			return { sent: true as const, ...result };
 		} catch (error) {
 			if (db && claimed) {
-				if (input.once) {
-					await releaseAnalyticsEvent(db, input.userId, input.once).catch(
+				if (input.firstTime) {
+					await releaseAnalyticsEvent(db, input.userId, input.firstTime).catch(
 						() => undefined,
 					);
 				}
@@ -293,7 +288,12 @@ export function createServerEventTracker(deps: ServerEventTrackerDeps) {
 		method: string;
 	}) {
 		const params = { method: input.method };
-		const task = run({ ...input, name: "sign_up", once: "sign_up", params })
+		const task = run({
+			...input,
+			name: "sign_up",
+			firstTime: "sign_up",
+			params,
+		})
 			.then((result) =>
 				result.sent === false && result.reason === "already_sent"
 					? run({ ...input, name: "login", params })
@@ -317,7 +317,7 @@ export function createServerEventTracker(deps: ServerEventTrackerDeps) {
 export async function releaseAnalyticsEvent(
 	db: DatabaseClient,
 	userId: string,
-	eventName: OnceEventName,
+	eventName: FirstTimeEventName,
 ) {
 	await db
 		.delete(analyticsEvents)
@@ -327,18 +327,6 @@ export async function releaseAnalyticsEvent(
 				eq(analyticsEvents.eventName, eventName),
 			),
 		);
-}
-
-/** Seconds between account creation and now, for page_created. */
-export async function readTimeSinceSignup(db: DatabaseClient, userId: string) {
-	const [row] = await db
-		.select({ createdAt: user.createdAt })
-		.from(user)
-		.where(eq(user.id, userId));
-	const seconds = row
-		? Math.max(0, Math.round((Date.now() - row.createdAt.getTime()) / 1000))
-		: 0;
-	return { time_since_signup_sec: seconds };
 }
 
 export type ServerEventTracker = ReturnType<typeof createServerEventTracker>;

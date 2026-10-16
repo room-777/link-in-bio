@@ -17,7 +17,11 @@ export const GA_MEASUREMENT_ID =
 /** 이벤트 이름과 파라미터의 기준은 GA4 이벤트 스펙 문서다. 이름은 바꾸지 않는다. */
 type GoogleAnalyticsEventParams = Record<
 	string,
-	string | number | boolean | undefined
+	| string
+	| number
+	| boolean
+	| { item_id: string; item_name?: string }[]
+	| undefined
 >;
 
 export type GoogleAnalyticsPageContext = {

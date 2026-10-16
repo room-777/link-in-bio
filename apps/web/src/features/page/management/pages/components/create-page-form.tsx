@@ -5,6 +5,7 @@ import { cn } from "@grabbin/ui/lib/utils";
 import { motion, useReducedMotion } from "motion/react";
 import { useRouter } from "next/navigation";
 import { Activity, useState } from "react";
+import { trackGoogleAnalyticsEvent } from "@/lib/google-analytics";
 import { useCreatePage } from "../mutations/create";
 import { PageHandleForm } from "./page-handle-form";
 import { PageOnboardingComplete } from "./page-onboarding-complete";
@@ -85,6 +86,7 @@ export default function CreatePageForm({
 							buttonClassName="drop-shadow-md"
 							onSubmit={async (handle) => {
 								const createdHandle = await createPage.mutateAsync(handle);
+								trackGoogleAnalyticsEvent("page_created");
 								setCreatedPage({ handle: createdHandle });
 								setActivity("exiting");
 							}}

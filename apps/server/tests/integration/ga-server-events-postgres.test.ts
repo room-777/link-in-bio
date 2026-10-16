@@ -12,7 +12,6 @@ import { after, before, beforeEach, describe, it as test } from "node:test";
 import {
 	createServerEventTracker,
 	type GoogleAnalyticsConfig,
-	readTimeSinceSignup,
 } from "@grabbin/auth/google-analytics";
 import type { DatabaseClient } from "@grabbin/db";
 import { drizzle } from "@grabbin/db/drizzle";
@@ -122,8 +121,8 @@ describe("GA server events against local Postgres", () => {
 	 * Case ID: GA-SRV-001
 	 * Given: a user with a page and items exists before the migration.
 	 * When: the GA migration runs.
-	 * Then: sign_up, page_created and first_link_added are marked as sent for
-	 *   that user, so none is reported later; running the backfill twice is safe.
+	 * Then: sign_up and first_link_added are marked as sent for that user,
+	 *   so neither is reported later; running the backfill twice is safe.
 	 * Evidence: analytics_events rows after the migration.
 	 * Result: Pass | Fail | Blocked | Not Run
 	 */
@@ -149,7 +148,6 @@ describe("GA server events against local Postgres", () => {
 		assert.deepEqual(rows, [
 			{ user_id: "no-page-user", event_name: "sign_up" },
 			{ user_id: "old-user", event_name: "first_link_added" },
-			{ user_id: "old-user", event_name: "page_created" },
 			{ user_id: "old-user", event_name: "sign_up" },
 		]);
 		const { tracker, calls } = createTracker();
@@ -214,32 +212,22 @@ describe("GA server events against local Postgres", () => {
 	/**
 	 * Case ID: GA-SRV-003
 	 * Given: a new account that creates its page and saves items.
-	 * When: page_created and first_link_added are tracked twice each (a retry).
-	 * Then: each is sent once; the retry is suppressed by the database.
+	 * When: first_link_added is tracked twice (a retry).
+	 * Then: it is sent once; the retry is suppressed by the database.
 	 * Evidence: fetch call count/body, tracker results, analytics_events rows.
 	 * Result: Pass | Fail | Blocked | Not Run
 	 */
-	it("GA-SRV-003 sends once-only events a single time", async () => {
+	it("GA-SRV-003 sends first_link_added only once", async () => {
 		await insertUser("creator", new Date(Date.now() - 90_000));
 		const { tracker, calls } = createTracker();
-		const pageCreated = () =>
-			tracker.track({
-				name: "page_created",
-				once: "page_created",
-				userId: "creator",
-				headers,
-				params: (database) => readTimeSinceSignup(database, "creator"),
-			});
 		const firstLink = () =>
 			tracker.track({
 				name: "first_link_added",
-				once: "first_link_added",
+				firstTime: "first_link_added",
 				userId: "creator",
 				headers,
 				params: { item_type: "link" },
 			});
-		const results = await Promise.all([pageCreated(), pageCreated()]);
-		assert.deepEqual(results.map((r) => r.sent).sort(), [false, true]);
 		assert.equal((await firstLink()).sent, true);
 		assert.deepEqual(await firstLink(), {
 			sent: false,
@@ -248,15 +236,7 @@ describe("GA server events against local Postgres", () => {
 
 		assert.deepEqual(
 			calls.map((call) => sentEvent(call)?.name),
-			["page_created", "first_link_added"],
-		);
-		const params = sentEvent(calls[0])?.params as
-			| { time_since_signup_sec: number }
-			| undefined;
-		assert.ok(
-			params &&
-				params.time_since_signup_sec >= 89 &&
-				params.time_since_signup_sec < 120,
+			["first_link_added"],
 		);
 	});
 
@@ -283,8 +263,8 @@ describe("GA server events against local Postgres", () => {
 		});
 		assert.deepEqual(
 			await tracker.track({
-				name: "page_created",
-				once: "page_created",
+				name: "sign_up",
+				firstTime: "sign_up",
 				userId: "offline",
 			}),
 			{ sent: false, reason: "error" },
@@ -325,7 +305,7 @@ describe("GA server events against local Postgres", () => {
 		const firstLink = () =>
 			tracker.track({
 				name: "first_link_added",
-				once: "first_link_added",
+				firstTime: "first_link_added",
 				userId: "retry",
 				params: { item_type: "link" },
 			});

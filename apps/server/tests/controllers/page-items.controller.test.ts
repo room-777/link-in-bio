@@ -433,7 +433,7 @@ describe("page items controller GA events", () => {
 
 		assert.equal(tracked.length, 1);
 		assert.equal(tracked[0]?.name, "first_link_added");
-		assert.equal(tracked[0]?.once, "first_link_added");
+		assert.equal(tracked[0]?.firstTime, "first_link_added");
 		assert.equal(tracked[0]?.userId, "user-1");
 		assert.deepEqual(tracked[0]?.params, { item_type: "link" });
 		assert.equal(

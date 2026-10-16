@@ -348,7 +348,7 @@ export function createPageItemsController({
 				if (firstLink) {
 					serverEvents?.track({
 						name: "first_link_added",
-						once: "first_link_added",
+						firstTime: "first_link_added",
 						userId: session.user.id,
 						headers: c.req.raw.headers,
 						params: { item_type: firstLink.type },
