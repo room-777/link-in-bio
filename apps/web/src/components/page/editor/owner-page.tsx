@@ -184,7 +184,6 @@ export default function OwnerPage({
 			>
 				<AddWidgetButton actions={widgetActions} demoMode={demoMode} />
 			</PageEditorToolbar>
-
 		</div>
 	);
 }
