@@ -8,7 +8,7 @@
 import assert from "node:assert/strict";
 import { readdirSync, readFileSync } from "node:fs";
 import { join } from "node:path";
-import { after, before, beforeEach, describe, it } from "node:test";
+import { after, before, beforeEach, describe, it as test } from "node:test";
 import {
 	createServerEventTracker,
 	type GoogleAnalyticsConfig,
@@ -30,6 +30,7 @@ const config: GoogleAnalyticsConfig = {
 };
 const cookie =
 	"_ga=GA1.1.111.222; _ga_TEST123=GS2.1.s1760000000$o3$g1$t1760000100; grabbin_ga_internal=1";
+const it = local ? test : test.skip;
 
 let client: Client;
 let db: DatabaseClient;
@@ -102,16 +103,18 @@ function sentEvent(call: { body: Record<string, unknown> } | undefined) {
 	return (call?.body.events as SentEvent[] | undefined)?.[0];
 }
 
-describe("GA server events against local Postgres", { skip: !local }, () => {
+describe("GA server events against local Postgres", () => {
 	before(async () => {
+		if (!local) return;
 		client = new Client({ connectionString: url });
 		await client.connect();
 		db = drizzle({ client, schema }) as unknown as DatabaseClient;
 	});
 	after(async () => {
-		await client?.end();
+		if (client) await client.end();
 	});
 	beforeEach(async () => {
+		if (!local) return;
 		await migrate();
 	});
 
@@ -344,5 +347,78 @@ describe("GA server events against local Postgres", { skip: !local }, () => {
 			reason: "already_sent",
 		});
 		assert.equal(fetches, 3);
+	});
+
+	/**
+	 * Case ID: GA-SRV-006
+	 * Given: one paid order is delivered by both webhook and reconciliation paths.
+	 * When: both paths claim the purchase concurrently.
+	 * Then: the provider order ID is claimed once and GA receives one purchase with its verified values.
+	 * Evidence: fetch body, tracker results, and analytics_purchases row count.
+	 * Result: Pass | Fail | Blocked | Not Run
+	 */
+	it("GA-SRV-006 sends one purchase for concurrent retries of one transaction", async () => {
+		await insertUser("purchase-user");
+		const calls: Array<{ body: Record<string, unknown> }> = [];
+		const tracker = createServerEventTracker({
+			config,
+			createDb: async () => {
+				const connection = new Client({ connectionString: url });
+				await connection.connect();
+				return drizzle({
+					client: connection,
+					schema,
+				}) as unknown as DatabaseClient;
+			},
+			waitUntil: () => undefined,
+			fetch: (async (_input: URL | string, init?: RequestInit) => {
+				calls.push({ body: JSON.parse(String(init?.body)) });
+				return new Response('{"validationMessages":[]}', { status: 200 });
+			}) as typeof fetch,
+			log: () => undefined,
+		});
+		const purchase = {
+			transaction_id: "transaction-1",
+			value: 120,
+			currency: "USD",
+			items: [
+				{
+					item_id: "pro-yearly",
+					item_name: "Grabbin Pro Yearly",
+					price: 120,
+					quantity: 1,
+				},
+			],
+		};
+		const send = () =>
+			tracker.track({
+				name: "purchase",
+				userId: "purchase-user",
+				params: purchase,
+			});
+
+		const results = await Promise.all([send(), send()]);
+
+		assert.deepEqual(results.map((result) => result.sent).sort(), [
+			false,
+			true,
+		]);
+		assert.equal(calls.length, 1);
+		assert.equal(calls[0]?.body.user_id, "purchase-user");
+		assert.ok(
+			!JSON.stringify(calls[0]?.body).includes("purchase-user@example.com"),
+		);
+		assert.deepEqual(sentEvent(calls[0]), {
+			name: "purchase",
+			params: { ...purchase, engagement_time_msec: 1 },
+		});
+		assert.equal(
+			(
+				await client.query(
+					"select count(*)::int as n from analytics_purchases where transaction_id = 'transaction-1'",
+				)
+			).rows[0]?.n,
+			1,
+		);
 	});
 });

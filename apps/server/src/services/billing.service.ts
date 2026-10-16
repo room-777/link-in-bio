@@ -40,7 +40,13 @@ export async function createOrResumeProCheckout({
 	productId: string;
 	successUrl: string;
 }): Promise<
-	| { url: string }
+	| {
+			kind: "checkout" | "completed";
+			url: string;
+			purchase?: NonNullable<
+				Awaited<ReturnType<typeof syncCreemCheckout>>
+			>["purchase"];
+	  }
 	| {
 			error:
 				| "SUBSCRIPTION_EXISTS"
@@ -108,6 +114,7 @@ export async function createOrResumeProCheckout({
 			try {
 				const checkout = await creem.checkouts.create({
 					productId,
+					units: 1,
 					requestId: checkoutRequestId,
 					customer: { email },
 					successUrl,
@@ -130,23 +137,21 @@ export async function createOrResumeProCheckout({
 		},
 	);
 	if (result.kind === "completed") {
-		let synced = false;
+		let synced: Awaited<ReturnType<typeof syncCreemCheckout>> = null;
 		try {
-			synced = Boolean(
-				await syncCreemCheckout(
-					db,
-					{
-						id: result.checkoutId,
-						webhookId: `checkout-reconcile-${crypto.randomUUID()}`,
-						webhookCreatedAt: Date.now(),
-					},
-					async (id) => {
-						const checkout = await creem.checkouts.retrieve(id);
-						if (!checkout) throw new Error("Checkout not found.");
-						return checkout;
-					},
-					async (id) => creem.subscriptions.get(id),
-				),
+			synced = await syncCreemCheckout(
+				db,
+				{
+					id: result.checkoutId,
+					webhookId: `checkout-reconcile-${crypto.randomUUID()}`,
+					webhookCreatedAt: Date.now(),
+				},
+				async (id) => {
+					const checkout = await creem.checkouts.retrieve(id);
+					if (!checkout) throw new Error("Checkout not found.");
+					return checkout;
+				},
+				async (id) => creem.subscriptions.get(id),
 			);
 		} catch {
 			return { error: "CHECKOUT_PROCESSING" as const };
@@ -156,10 +161,17 @@ export async function createOrResumeProCheckout({
 			userId,
 			proProductIds: [productId],
 		});
-		if (synced || currentPlan.hasAccess) return { url: successUrl };
+		if (synced || currentPlan.hasAccess)
+			return {
+				kind: "completed",
+				url: successUrl,
+				purchase: synced?.purchase ?? undefined,
+			};
 		return { error: "CHECKOUT_PROCESSING" as const };
 	}
-	return result.kind === "url" ? { url: result.url } : { error: result.error };
+	return result.kind === "url"
+		? { kind: "checkout", url: result.url }
+		: { error: result.error };
 }
 
 export async function scheduleProCancellation({

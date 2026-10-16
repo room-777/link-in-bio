@@ -25,6 +25,7 @@ import {
 	syncCreemCheckout,
 	syncCreemDispute,
 	syncCreemRefund,
+	syncCreemSubscriptionPaid,
 	syncCreemWebhook,
 } from "./creem-webhook";
 import { serverEvents } from "./server-events";
@@ -67,21 +68,6 @@ function createCreemPlugin(
 			if (result) await onSubscriptionChange?.(result.userId);
 		},
 		onCheckoutCompleted: async (data) => {
-			const directResult = data.subscription
-				? await syncCreemWebhook(db, {
-						...data.subscription,
-						webhookId: data.webhookId,
-						webhookCreatedAt: data.webhookCreatedAt,
-						product: data.product,
-						customer: data.customer,
-						metadata: data.metadata,
-						order: data.order,
-					})
-				: null;
-			if (directResult) {
-				await onSubscriptionChange?.(directResult.userId);
-				return;
-			}
 			const result = await syncCreemCheckout(
 				db,
 				{
@@ -106,13 +92,38 @@ function createCreemPlugin(
 					);
 				},
 			);
-			if (result) await onSubscriptionChange?.(result.userId);
+			if (!result) return;
+			if (result.purchase) {
+				serverEvents.track({
+					name: "purchase",
+					userId: result.userId,
+					params: result.purchase,
+				});
+			}
+			await onSubscriptionChange?.(result.userId);
 		},
 		onSubscriptionActive: syncEvent,
 		onSubscriptionTrialing: syncEvent,
 		onSubscriptionScheduledCancel: syncEvent,
 		onSubscriptionCanceled: syncEvent,
-		onSubscriptionPaid: syncEvent,
+		onSubscriptionPaid: async (data) => {
+			const result = await syncCreemSubscriptionPaid(db, data, (id) => {
+				const client = createCreemClient({
+					apiKey: env.CREEM_API_KEY,
+					testMode: env.CREEM_TEST_MODE === "true",
+				});
+				return client.transactions.getById(id);
+			});
+			if (!result) return;
+			if (result.purchase) {
+				serverEvents.track({
+					name: "purchase",
+					userId: result.userId,
+					params: result.purchase,
+				});
+			}
+			await onSubscriptionChange?.(result.userId);
+		},
 		onSubscriptionExpired: syncEvent,
 		onSubscriptionUnpaid: syncEvent,
 		onSubscriptionUpdate: syncEvent,

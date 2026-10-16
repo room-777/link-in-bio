@@ -157,10 +157,32 @@ type CompletedCheckout = {
 	id: string;
 	status: string;
 	requestId?: string;
-	product: { id: string } | string;
+	product:
+		| {
+				id: string;
+				name: string;
+				price: number;
+				currency: string;
+				taxMode: "inclusive" | "exclusive";
+		  }
+		| string;
+	units?: number;
 	customer?: { id: string } | string | null;
 	metadata?: Record<string, unknown> | null;
-	order?: { id: string } | string | null;
+	order?:
+		| {
+				id: string;
+				product: string;
+				transaction?: string | null;
+				amount?: number;
+				discountAmount?: number;
+				taxAmount?: number;
+				amountPaid?: number;
+				currency: string;
+				status: string;
+		  }
+		| string
+		| null;
 	subscription?:
 		| {
 				id: string;
@@ -186,7 +208,7 @@ export async function syncCreemCheckout(
 	const pending = await db.query.creemSubscription.findFirst({
 		where: eq(creemSubscription.checkoutId, event.id),
 	});
-	if (!pending || pending.creemSubscriptionId) return null;
+	if (!pending) return null;
 
 	const checkout = await retrieveCheckout(event.id);
 	const productId =
@@ -215,6 +237,86 @@ export async function syncCreemCheckout(
 	const customer = subscription.customer ?? checkout.customer;
 	const customerId = typeof customer === "string" ? customer : customer?.id;
 	if (subscriptionProductId !== productId || !customerId) return null;
+	const order = typeof checkout.order === "object" ? checkout.order : null;
+	const product =
+		typeof checkout.product === "object" ? checkout.product : null;
+	const units = checkout.units;
+	const amount = order?.amount;
+	const discountAmount = order?.discountAmount;
+	const amountPaid = order?.amountPaid;
+	const currency = order?.currency;
+	const grossAmount =
+		product && typeof units === "number" && Number.isSafeInteger(units)
+			? product.price * units
+			: Number.NaN;
+	const taxAmount = order?.taxAmount;
+	const validTaxAmount =
+		(taxAmount == null && product?.taxMode === "exclusive") ||
+		(typeof taxAmount === "number" &&
+			Number.isSafeInteger(taxAmount) &&
+			taxAmount >= 0);
+	const valueAmount =
+		product?.taxMode === "inclusive" && validTaxAmount
+			? amount === undefined
+				? Number.NaN
+				: amount - (taxAmount ?? 0)
+			: product?.taxMode === "exclusive"
+				? (amount ?? Number.NaN)
+				: Number.NaN;
+	const validPaidAmount =
+		product?.taxMode === "inclusive"
+			? amountPaid === amount
+			: product?.taxMode === "exclusive" &&
+				typeof amountPaid === "number" &&
+				amountPaid >= (amount ?? Number.NaN) &&
+				(taxAmount == null ||
+					amountPaid === (amount ?? Number.NaN) + taxAmount);
+	const validDiscount =
+		discountAmount === undefined ||
+		(Number.isSafeInteger(discountAmount) &&
+			discountAmount >= 0 &&
+			discountAmount === grossAmount - (amount ?? Number.NaN));
+	const purchase =
+		order?.status.toLowerCase() === "paid" &&
+		order.product === product?.id &&
+		product?.name &&
+		Number.isSafeInteger(product.price) &&
+		product.price > 0 &&
+		typeof units === "number" &&
+		Number.isSafeInteger(units) &&
+		units > 0 &&
+		typeof amount === "number" &&
+		Number.isSafeInteger(amount) &&
+		amount > 0 &&
+		Number.isSafeInteger(grossAmount) &&
+		amount <= grossAmount &&
+		amount % units === 0 &&
+		validDiscount &&
+		typeof amountPaid === "number" &&
+		Number.isSafeInteger(amountPaid) &&
+		validTaxAmount &&
+		amountPaid >= amount &&
+		validPaidAmount &&
+		Number.isSafeInteger(valueAmount) &&
+		valueAmount > 0 &&
+		valueAmount % units === 0 &&
+		currency === product.currency &&
+		/^[A-Z]{3}$/.test(currency)
+			? {
+					transaction_id: order.transaction ?? "",
+					value: valueAmount / 100,
+					currency,
+					items: [
+						{
+							item_id: product.id,
+							item_name: product.name,
+							price: valueAmount / units / 100,
+							quantity: units,
+						},
+					],
+				}
+			: null;
+	const validPurchase = purchase?.transaction_id ? purchase : null;
 
 	const eventData = {
 		webhookId: event.webhookId,
@@ -229,7 +331,134 @@ export async function syncCreemCheckout(
 		cancel_at_period_end: subscription.cancelAtPeriodEnd,
 		order: checkout.order,
 	};
-	return syncCreemWebhook(db, eventData, event.id);
+	const synced = await syncCreemWebhook(db, eventData, event.id);
+	return synced ? { ...synced, purchase: validPurchase } : null;
+}
+
+type PaidSubscriptionEvent = CreemEvent & {
+	product: {
+		id: string;
+		name: string;
+		price: number;
+		currency: string;
+		tax_mode: "inclusive" | "exclusive";
+	};
+	customer: { id: string };
+	items?: Array<{ product_id?: string; units?: number }>;
+	last_transaction_id?: string;
+};
+
+type CreemTransaction = {
+	id: string;
+	status: string;
+	type: string;
+	amount: number;
+	amountPaid?: number | null;
+	discountAmount?: number | null;
+	taxAmount?: number | null;
+	currency: string;
+	order?: string | null;
+	subscription?: string | null;
+	customer?: string | null;
+};
+
+/**
+ * Synchronizes a paid subscription and returns a purchase only when Creem
+ * confirms the exact invoice transaction and its pre-tax line-item amount.
+ */
+export async function syncCreemSubscriptionPaid(
+	db: DatabaseClient,
+	event: PaidSubscriptionEvent,
+	retrieveTransaction: (id: string) => Promise<CreemTransaction>,
+) {
+	const synced = await syncCreemWebhook(db, event);
+	if (!synced) return null;
+	if (!event.last_transaction_id) return { ...synced, purchase: null };
+
+	const transaction = await retrieveTransaction(event.last_transaction_id);
+	const item =
+		event.items?.length === 1 && event.items[0]?.product_id === event.product.id
+			? event.items[0]
+			: event.items?.length
+				? null
+				: { product_id: event.product.id, units: 1 };
+	// Grabbin sells one Pro seat per checkout and sets units explicitly to 1.
+	// Creem may omit items from subscription webhooks, so use that fixed unit
+	// only when no item data was sent; malformed or multiple items are skipped.
+	const units = item?.units ?? 1;
+	const grossAmount =
+		typeof units === "number" && Number.isSafeInteger(units)
+			? event.product.price * units
+			: Number.NaN;
+	const taxAmount = transaction.taxAmount;
+	const validTaxAmount =
+		(taxAmount == null && event.product.tax_mode === "exclusive") ||
+		(typeof taxAmount === "number" &&
+			Number.isSafeInteger(taxAmount) &&
+			taxAmount >= 0);
+	const valueAmount =
+		event.product.tax_mode === "inclusive" && validTaxAmount
+			? transaction.amount - (taxAmount ?? 0)
+			: event.product.tax_mode === "exclusive"
+				? transaction.amount
+				: Number.NaN;
+	const validPaidAmount =
+		transaction.amountPaid == null
+			? true
+			: event.product.tax_mode === "inclusive"
+				? transaction.amountPaid === transaction.amount
+				: event.product.tax_mode === "exclusive" &&
+					transaction.amountPaid >= transaction.amount &&
+					(taxAmount == null ||
+						transaction.amountPaid === transaction.amount + taxAmount);
+	const discountAmount = transaction.discountAmount;
+	const validDiscount =
+		discountAmount == null ||
+		(Number.isSafeInteger(discountAmount) &&
+			discountAmount >= 0 &&
+			discountAmount === grossAmount - transaction.amount);
+	const purchase =
+		transaction.id === event.last_transaction_id &&
+		transaction.status.toLowerCase() === "paid" &&
+		transaction.type === "invoice" &&
+		transaction.subscription === event.id &&
+		transaction.customer === event.customer.id &&
+		typeof transaction.order === "string" &&
+		/^[A-Z]{3}$/.test(transaction.currency) &&
+		transaction.currency === event.product.currency &&
+		event.product.name.length > 0 &&
+		Number.isSafeInteger(event.product.price) &&
+		event.product.price > 0 &&
+		item !== null &&
+		typeof units === "number" &&
+		Number.isSafeInteger(units) &&
+		units > 0 &&
+		Number.isSafeInteger(grossAmount) &&
+		Number.isSafeInteger(transaction.amount) &&
+		transaction.amount > 0 &&
+		transaction.amount <= grossAmount &&
+		transaction.amount % units === 0 &&
+		validDiscount &&
+		validTaxAmount &&
+		validPaidAmount &&
+		Number.isSafeInteger(valueAmount) &&
+		valueAmount > 0 &&
+		valueAmount % units === 0
+			? {
+					transaction_id: transaction.id,
+					value: valueAmount / 100,
+					currency: transaction.currency,
+					items: [
+						{
+							item_id: event.product.id,
+							item_name: event.product.name,
+							price: valueAmount / units / 100,
+							quantity: units,
+						},
+					],
+				}
+			: null;
+	return { ...synced, purchase };
 }
 
 type RevokingEvent = {

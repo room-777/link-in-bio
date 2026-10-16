@@ -13,6 +13,7 @@ function setup(inputRows: Record<string, unknown>[] = []) {
 	const rows = [...inputRows];
 	let createCalls = 0;
 	let retrieveCalls = 0;
+	let createdCheckoutInput: Record<string, unknown> | null = null;
 	let retrieveStatus = "pending";
 	let retrieveUrl: string | undefined = "https://checkout.creem.io/ch_existing";
 	let retrieveError: unknown;
@@ -36,8 +37,9 @@ function setup(inputRows: Record<string, unknown>[] = []) {
 	} as unknown as DatabaseClient;
 	const creem = {
 		checkouts: {
-			create: async () => {
+			create: async (input: Record<string, unknown>) => {
 				createCalls += 1;
+				createdCheckoutInput = input;
 				return {
 					id: "ch_new",
 					checkoutUrl: "https://checkout.creem.io/ch_new",
@@ -62,6 +64,9 @@ function setup(inputRows: Record<string, unknown>[] = []) {
 		},
 		get retrieveCalls() {
 			return retrieveCalls;
+		},
+		get createdCheckoutInput() {
+			return createdCheckoutInput;
 		},
 		set retrieveStatus(value: string) {
 			retrieveStatus = value;
@@ -99,10 +104,14 @@ describe("billing service", () => {
 		const state = setup();
 		const result = await run(state);
 
-		assert.deepEqual(result, { url: "https://checkout.creem.io/ch_new" });
+		assert.deepEqual(result, {
+			kind: "checkout",
+			url: "https://checkout.creem.io/ch_new",
+		});
 		assert.equal(state.createCalls, 1);
 		assert.equal(state.rows[0]?.checkoutId, "ch_new");
 		assert.equal(state.rows[0]?.status, null);
+		assert.equal(state.createdCheckoutInput?.units, 1);
 	});
 
 	/**
@@ -128,7 +137,10 @@ describe("billing service", () => {
 		state.retrieveUrl = undefined;
 		const result = await run(state);
 
-		assert.deepEqual(result, { url: "https://checkout.creem.io/ch_existing" });
+		assert.deepEqual(result, {
+			kind: "checkout",
+			url: "https://checkout.creem.io/ch_existing",
+		});
 		assert.equal(state.retrieveCalls, 1);
 		assert.equal(state.createCalls, 0);
 	});
@@ -181,7 +193,10 @@ describe("billing service", () => {
 		state.retrieveStatus = "expired";
 		const result = await run(state);
 
-		assert.deepEqual(result, { url: "https://checkout.creem.io/ch_new" });
+		assert.deepEqual(result, {
+			kind: "checkout",
+			url: "https://checkout.creem.io/ch_new",
+		});
 		assert.equal(state.retrieveCalls, 1);
 		assert.equal(state.createCalls, 1);
 		assert.equal(state.rows[0]?.checkoutId, "ch_new");
@@ -213,7 +228,10 @@ describe("billing service", () => {
 
 		const result = await run(state);
 
-		assert.deepEqual(result, { url: "https://checkout.creem.io/ch_new" });
+		assert.deepEqual(result, {
+			kind: "checkout",
+			url: "https://checkout.creem.io/ch_new",
+		});
 		assert.equal(state.retrieveCalls, 1);
 		assert.equal(state.createCalls, 1);
 		assert.equal(state.rows[0]?.checkoutId, "ch_new");

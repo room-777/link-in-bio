@@ -141,11 +141,14 @@ export function trackGoogleAnalyticsEvent(
 	params: GoogleAnalyticsEventParams = {},
 ) {
 	if (!window.gtag) return;
+	const path = window.location.pathname;
+	const pageType = getGoogleAnalyticsPageType(path, window.location.hostname);
 	const eventParams: GoogleAnalyticsEventParams = {
-		page_location: window.location.href,
-		page_title: document.title,
 		...pageContext,
 		...params,
+		page_location: `${window.location.origin}${path}`,
+		page_path: path,
+		page_title: pageType,
 	};
 	if (!pendingEvents) {
 		window.gtag("event", name, eventParams);
@@ -169,9 +172,6 @@ export function sendGoogleAnalyticsPageView(pageType: string) {
 	lastPageType = pageType;
 	trackGoogleAnalyticsEvent("page_view", {
 		page_type: pageType,
-		page_path: path,
-		page_location: window.location.href,
-		page_title: document.title,
 	});
 }
 

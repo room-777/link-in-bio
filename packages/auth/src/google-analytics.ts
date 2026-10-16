@@ -1,16 +1,48 @@
 import type { DatabaseClient } from "@grabbin/db";
-import { analyticsEvents, user } from "@grabbin/db/schema/index";
+import {
+	analyticsEvents,
+	analyticsPurchases,
+	user,
+} from "@grabbin/db/schema/index";
 import { and, eq } from "drizzle-orm";
 
 /** GA4 events sent from the server with the Measurement Protocol. */
 export type ServerEventName =
+	| "begin_checkout"
+	| "purchase"
 	| "sign_up"
 	| "login"
 	| "page_created"
 	| "first_link_added";
 
 /** Events that may be sent only once per user, decided by the database. */
-export type OnceEventName = Exclude<ServerEventName, "login">;
+export type OnceEventName = Exclude<
+	ServerEventName,
+	"begin_checkout" | "login" | "purchase"
+>;
+
+export type AnalyticsItem = {
+	item_id: string;
+	item_name?: string;
+	price?: number;
+	quantity?: number;
+};
+
+export type AnalyticsEventParams = Record<
+	string,
+	string | number | boolean | AnalyticsItem[]
+>;
+
+export type PurchaseEventParams = AnalyticsEventParams & {
+	transaction_id: string;
+	value: number;
+	currency: string;
+	items: (AnalyticsItem & {
+		item_name: string;
+		price: number;
+		quantity: number;
+	})[];
+};
 
 export type GoogleAnalyticsConfig = {
 	measurementId: string;
@@ -82,6 +114,19 @@ export async function claimAnalyticsEvent(
 	return rows.length > 0;
 }
 
+export async function claimAnalyticsPurchase(
+	db: DatabaseClient,
+	userId: string,
+	transactionId: string,
+) {
+	const rows = await db
+		.insert(analyticsPurchases)
+		.values({ userId, transactionId })
+		.onConflictDoNothing()
+		.returning({ transactionId: analyticsPurchases.transactionId });
+	return rows.length > 0;
+}
+
 function randomClientId() {
 	const random = crypto.getRandomValues(new Uint32Array(1))[0] ?? 0;
 	return `${random}.${Math.floor(Date.now() / 1000)}`;
@@ -91,7 +136,7 @@ export type MeasurementProtocolEvent = {
 	name: ServerEventName;
 	userId: string;
 	browser: BrowserAnalyticsContext;
-	params?: Record<string, string | number>;
+	params?: AnalyticsEventParams;
 };
 
 /** Builds the Measurement Protocol body. Only internal ids are sent. */
@@ -150,16 +195,19 @@ export type ServerEventTrackerDeps = {
 };
 
 export type TrackServerEventInput = {
-	name: ServerEventName;
 	userId: string;
 	headers?: Headers;
-	/** Event params, or a function that reads them after the claim. */
-	params?:
-		| Record<string, string | number>
-		| ((db: DatabaseClient) => Promise<Record<string, string | number>>);
-	/** Claim this once-only event first; skip sending if it was already sent. */
 	once?: OnceEventName;
-};
+} & (
+	| { name: "purchase"; params: PurchaseEventParams; once?: never }
+	| {
+			name: Exclude<ServerEventName, "purchase">;
+			/** Event params, or a function that reads them after the claim. */
+			params?:
+				| AnalyticsEventParams
+				| ((db: DatabaseClient) => Promise<AnalyticsEventParams>);
+	  }
+);
 
 /**
  * Sends GA events in the background. Nothing here can slow down or fail the
@@ -171,12 +219,14 @@ export function createServerEventTracker(deps: ServerEventTrackerDeps) {
 	async function run(input: TrackServerEventInput) {
 		const config = deps.config;
 		if (!config) return { sent: false, reason: "disabled" as const };
+		const transactionId =
+			input.name === "purchase" ? input.params.transaction_id : null;
 		const browser = readBrowserAnalyticsContext(
 			input.headers,
 			config.measurementId,
 		);
 		const db =
-			input.once || typeof input.params === "function"
+			input.once || transactionId || typeof input.params === "function"
 				? await deps.createDb()
 				: null;
 		let claimed = false;
@@ -191,10 +241,20 @@ export function createServerEventTracker(deps: ServerEventTrackerDeps) {
 					return { sent: false, reason: "already_sent" as const };
 				}
 			}
+			if (db && transactionId) {
+				claimed = await claimAnalyticsPurchase(db, input.userId, transactionId);
+				if (!claimed) {
+					log("ga server event skipped", {
+						event: input.name,
+						reason: "already_sent",
+					});
+					return { sent: false, reason: "already_sent" as const };
+				}
+			}
 			const params =
 				typeof input.params === "function" && db
 					? await input.params(db)
-					: (input.params as Record<string, string | number> | undefined);
+					: (input.params as AnalyticsEventParams | undefined);
 			const result = await sendMeasurementProtocolEvent(
 				config,
 				{ name: input.name, userId: input.userId, browser, params },
@@ -207,10 +267,17 @@ export function createServerEventTracker(deps: ServerEventTrackerDeps) {
 			return { sent: true as const, ...result };
 		} catch (error) {
 			// Delivery failed: release the claim so a later attempt can send it.
-			if (db && claimed && input.once) {
-				await releaseAnalyticsEvent(db, input.userId, input.once).catch(
-					() => undefined,
-				);
+			if (db && claimed) {
+				if (input.once) {
+					await releaseAnalyticsEvent(db, input.userId, input.once).catch(
+						() => undefined,
+					);
+				}
+				if (transactionId) {
+					await releaseAnalyticsPurchase(db, transactionId).catch(
+						() => undefined,
+					);
+				}
 			}
 			throw error;
 		} finally {
@@ -296,6 +363,15 @@ export async function releaseAnalyticsEvent(
 				eq(analyticsEvents.eventName, eventName),
 			),
 		);
+}
+
+export async function releaseAnalyticsPurchase(
+	db: DatabaseClient,
+	transactionId: string,
+) {
+	await db
+		.delete(analyticsPurchases)
+		.where(eq(analyticsPurchases.transactionId, transactionId));
 }
 
 /** Seconds between account creation and now, for page_created. */
