@@ -204,6 +204,9 @@ export const server = Cloudflare.Worker("server", {
 		PRODUCT_HUNT_TOKEN: Config.Redacted("PRODUCT_HUNT_TOKEN").pipe(
 			Config.withDefault(""),
 		),
+		INSTAGRAM_SESSION_ID: Config.Redacted("INSTAGRAM_SESSION_ID").pipe(
+			Config.withDefault(""),
+		),
 		CLOUDFLARE_SAAS_ZONE_ID: Config.String("CLOUDFLARE_SAAS_ZONE_ID").pipe(
 			Config.withDefault(""),
 		),
