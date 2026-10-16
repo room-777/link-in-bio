@@ -19,4 +19,4 @@ export const analyticsEvents = pgTable(
 			.defaultNow(),
 	},
 	(table) => [primaryKey({ columns: [table.userId, table.eventName] })],
-);
+).enableRLS();

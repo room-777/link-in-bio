@@ -4,10 +4,8 @@
 	"type": "module",
 	"exports": {
 		".": {
+			"types": "./src/index.ts",
 			"default": "./src/index.ts"
-		},
-		"./*": {
-			"default": "./src/*.ts"
 		}
 	},
 	"scripts": {

@@ -1,4 +1,4 @@
-import type { DatabaseClient } from "@grabbin/db";
+import type { DatabaseQueryClient } from "@grabbin/db";
 import { creemSubscription } from "@grabbin/db/schema/index";
 import { getPlanAccess } from "@grabbin/plan";
 import { eq } from "drizzle-orm";
@@ -9,7 +9,7 @@ export async function getAccountPlan({
 	proProductIds,
 	now = new Date(),
 }: {
-	db: Pick<DatabaseClient, "query">;
+	db: DatabaseQueryClient;
 	userId: string;
 	proProductIds: readonly string[];
 	now?: Date;
