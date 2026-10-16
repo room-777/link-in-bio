@@ -360,6 +360,14 @@ describe("GA server events against local Postgres", () => {
 	it("GA-SRV-006 sends one purchase for concurrent retries of one transaction", async () => {
 		await insertUser("purchase-user");
 		const calls: Array<{ body: Record<string, unknown> }> = [];
+		let firstFetchStarted!: () => void;
+		let failFirstFetch!: () => void;
+		const firstStarted = new Promise<void>((resolve) => {
+			firstFetchStarted = resolve;
+		});
+		const releaseFirst = new Promise<void>((resolve) => {
+			failFirstFetch = resolve;
+		});
 		const tracker = createServerEventTracker({
 			config,
 			createDb: async () => {
@@ -373,12 +381,17 @@ describe("GA server events against local Postgres", () => {
 			waitUntil: () => undefined,
 			fetch: (async (_input: URL | string, init?: RequestInit) => {
 				calls.push({ body: JSON.parse(String(init?.body)) });
+				if (calls.length === 1) {
+					firstFetchStarted();
+					await releaseFirst;
+					throw new Error("network down");
+				}
 				return new Response('{"validationMessages":[]}', { status: 200 });
 			}) as typeof fetch,
 			log: () => undefined,
 		});
 		const purchase = {
-			transaction_id: "transaction-1",
+			transaction_id: "order-1",
 			value: 120,
 			currency: "USD",
 			items: [
@@ -397,25 +410,27 @@ describe("GA server events against local Postgres", () => {
 				params: purchase,
 			});
 
-		const results = await Promise.all([send(), send()]);
+		const first = send();
+		await firstStarted;
+		const second = send();
+		failFirstFetch();
+		const results = await Promise.all([first, second]);
 
-		assert.deepEqual(results.map((result) => result.sent).sort(), [
-			false,
-			true,
-		]);
-		assert.equal(calls.length, 1);
-		assert.equal(calls[0]?.body.user_id, "purchase-user");
+		assert.deepEqual(results[0], { sent: false, reason: "error" });
+		assert.equal(results[1]?.sent, true);
+		assert.equal(calls.length, 2);
+		assert.equal(calls[1]?.body.user_id, "purchase-user");
 		assert.ok(
-			!JSON.stringify(calls[0]?.body).includes("purchase-user@example.com"),
+			!JSON.stringify(calls[1]?.body).includes("purchase-user@example.com"),
 		);
-		assert.deepEqual(sentEvent(calls[0]), {
+		assert.deepEqual(sentEvent(calls[1]), {
 			name: "purchase",
 			params: { ...purchase, engagement_time_msec: 1 },
 		});
 		assert.equal(
 			(
 				await client.query(
-					"select count(*)::int as n from analytics_purchases where transaction_id = 'transaction-1'",
+					"select count(*)::int as n from analytics_purchases where order_id = 'order-1'",
 				)
 			).rows[0]?.n,
 			1,

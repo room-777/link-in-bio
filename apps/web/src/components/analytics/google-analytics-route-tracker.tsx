@@ -10,6 +10,7 @@ import {
 	initGoogleAnalytics,
 	isGoogleAnalyticsEnabled,
 	sendGoogleAnalyticsPageView,
+	setGoogleAnalyticsUserId,
 	setGoogleAnalyticsUserType,
 } from "@/lib/google-analytics";
 
@@ -54,11 +55,13 @@ export default function GoogleAnalyticsRouteTracker() {
 function GoogleAnalyticsUserType() {
 	const { data: session, isPending } = authClient.useSession();
 	const isSignedIn = Boolean(session);
+	const userId = session?.user.id ?? null;
 
 	useEffect(() => {
 		if (isPending) return;
+		setGoogleAnalyticsUserId(userId);
 		setGoogleAnalyticsUserType(isSignedIn ? "creator" : "visitor");
-	}, [isPending, isSignedIn]);
+	}, [isPending, isSignedIn, userId]);
 
 	return null;
 }

@@ -4,7 +4,7 @@ import {
 	analyticsPurchases,
 	user,
 } from "@grabbin/db/schema/index";
-import { and, eq } from "drizzle-orm";
+import { and, eq, sql } from "drizzle-orm";
 
 /** GA4 events sent from the server with the Measurement Protocol. */
 export type ServerEventName =
@@ -114,19 +114,6 @@ export async function claimAnalyticsEvent(
 	return rows.length > 0;
 }
 
-export async function claimAnalyticsPurchase(
-	db: DatabaseClient,
-	userId: string,
-	transactionId: string,
-) {
-	const rows = await db
-		.insert(analyticsPurchases)
-		.values({ userId, transactionId })
-		.onConflictDoNothing()
-		.returning({ transactionId: analyticsPurchases.transactionId });
-	return rows.length > 0;
-}
-
 function randomClientId() {
 	const random = crypto.getRandomValues(new Uint32Array(1))[0] ?? 0;
 	return `${random}.${Math.floor(Date.now() / 1000)}`;
@@ -219,14 +206,14 @@ export function createServerEventTracker(deps: ServerEventTrackerDeps) {
 	async function run(input: TrackServerEventInput) {
 		const config = deps.config;
 		if (!config) return { sent: false, reason: "disabled" as const };
-		const transactionId =
+		const orderId =
 			input.name === "purchase" ? input.params.transaction_id : null;
 		const browser = readBrowserAnalyticsContext(
 			input.headers,
 			config.measurementId,
 		);
 		const db =
-			input.once || transactionId || typeof input.params === "function"
+			input.once || orderId || typeof input.params === "function"
 				? await deps.createDb()
 				: null;
 		let claimed = false;
@@ -241,20 +228,44 @@ export function createServerEventTracker(deps: ServerEventTrackerDeps) {
 					return { sent: false, reason: "already_sent" as const };
 				}
 			}
-			if (db && transactionId) {
-				claimed = await claimAnalyticsPurchase(db, input.userId, transactionId);
-				if (!claimed) {
-					log("ga server event skipped", {
-						event: input.name,
-						reason: "already_sent",
-					});
-					return { sent: false, reason: "already_sent" as const };
-				}
-			}
 			const params =
 				typeof input.params === "function" && db
 					? await input.params(db)
 					: (input.params as AnalyticsEventParams | undefined);
+			if (db && orderId) {
+				return await db.transaction(async (tx) => {
+					await tx.execute(
+						sql`select pg_advisory_xact_lock(hashtextextended(${orderId}, 0))`,
+					);
+					const rows = await tx
+						.insert(analyticsPurchases)
+						.values({ userId: input.userId, orderId })
+						.onConflictDoNothing()
+						.returning({ orderId: analyticsPurchases.orderId });
+					if (rows.length === 0) {
+						log("ga server event skipped", {
+							event: input.name,
+							reason: "already_sent",
+						});
+						return { sent: false as const, reason: "already_sent" as const };
+					}
+					const result = await sendMeasurementProtocolEvent(
+						config,
+						{
+							name: input.name,
+							userId: input.userId,
+							browser,
+							params,
+						},
+						deps.fetch,
+					);
+					if (result.status < 200 || result.status >= 300) {
+						throw new Error(`GA responded with ${result.status}`);
+					}
+					logSent(input.name, config, browser, result);
+					return { sent: true as const, ...result };
+				});
+			}
 			const result = await sendMeasurementProtocolEvent(
 				config,
 				{ name: input.name, userId: input.userId, browser, params },
@@ -266,15 +277,10 @@ export function createServerEventTracker(deps: ServerEventTrackerDeps) {
 			logSent(input.name, config, browser, result);
 			return { sent: true as const, ...result };
 		} catch (error) {
-			// Delivery failed: release the claim so a later attempt can send it.
+			// Release a failed once-only event so a later attempt can send it.
 			if (db && claimed) {
 				if (input.once) {
 					await releaseAnalyticsEvent(db, input.userId, input.once).catch(
-						() => undefined,
-					);
-				}
-				if (transactionId) {
-					await releaseAnalyticsPurchase(db, transactionId).catch(
 						() => undefined,
 					);
 				}
@@ -363,15 +369,6 @@ export async function releaseAnalyticsEvent(
 				eq(analyticsEvents.eventName, eventName),
 			),
 		);
-}
-
-export async function releaseAnalyticsPurchase(
-	db: DatabaseClient,
-	transactionId: string,
-) {
-	await db
-		.delete(analyticsPurchases)
-		.where(eq(analyticsPurchases.transactionId, transactionId));
 }
 
 /** Seconds between account creation and now, for page_created. */

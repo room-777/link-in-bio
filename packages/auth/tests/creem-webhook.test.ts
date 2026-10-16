@@ -178,7 +178,7 @@ describe("Creem webhook synchronization", () => {
 		assert.equal(values[0]?.creemCustomerId, "customer-1");
 		assert.deepEqual(values[1], { creemCustomerId: "customer-1" });
 		assert.deepEqual(result?.purchase, {
-			transaction_id: "transaction-1",
+			transaction_id: "order-1",
 			value: 120,
 			currency: "USD",
 			items: [
@@ -352,7 +352,7 @@ describe("Creem webhook synchronization", () => {
 			async () => transaction,
 		);
 		assert.deepEqual(result?.purchase, {
-			transaction_id: "transaction-renewal-1",
+			transaction_id: "renewal-order-1",
 			value: 120,
 			currency: "USD",
 			items: [

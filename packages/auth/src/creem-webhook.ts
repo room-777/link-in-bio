@@ -278,6 +278,8 @@ export async function syncCreemCheckout(
 			discountAmount === grossAmount - (amount ?? Number.NaN));
 	const purchase =
 		order?.status.toLowerCase() === "paid" &&
+		typeof order.id === "string" &&
+		order.id.length > 0 &&
 		order.product === product?.id &&
 		product?.name &&
 		Number.isSafeInteger(product.price) &&
@@ -303,7 +305,7 @@ export async function syncCreemCheckout(
 		currency === product.currency &&
 		/^[A-Z]{3}$/.test(currency)
 			? {
-					transaction_id: order.transaction ?? "",
+					transaction_id: order.id,
 					value: valueAmount / 100,
 					currency,
 					items: [
@@ -445,7 +447,7 @@ export async function syncCreemSubscriptionPaid(
 		valueAmount > 0 &&
 		valueAmount % units === 0
 			? {
-					transaction_id: transaction.id,
+					transaction_id: transaction.order,
 					value: valueAmount / 100,
 					currency: transaction.currency,
 					items: [
