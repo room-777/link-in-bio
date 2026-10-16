@@ -21,7 +21,10 @@ const browser = await chromium.launch({
 	executablePath: process.env.CHROMIUM_PATH,
 });
 const page = await (
-	await browser.newContext({ viewport: { width: 1280, height: 900 } })
+	await browser.newContext({
+		viewport: { width: 1280, height: 900 },
+		reducedMotion: "reduce",
+	})
 ).newPage();
 const apiRequests = [];
 page.on("request", (request) => {

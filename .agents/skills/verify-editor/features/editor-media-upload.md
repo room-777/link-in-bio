@@ -27,7 +27,7 @@ Preconditions:
 - **Choose file.** Click toolbar `Add media` and answer the file chooser. A media block (`textbox "Media caption"`) appears.
 - **Upload completes.** `page_items` gets a `type='media'` row with `data->>'objectKey'` and the asset row becomes `attached`. `GET {server}/media/<key>` returns the bytes, and after reload the `<img>` src is `{server}/media/<key>`.
 - **Cancel.** Hold the local `PUT` with a Playwright route, click `Delete item` on the uploading block, then abort the `PUT`. The app sends `POST .../items/upload/cancel` (204), the asset becomes `pending_delete`, no item is added, and `GET {server}/media/<key>` is 404.
-- **Link image.** Hover a link card's image area; use `Add link image` or `Replace link image`, choose an image, and confirm it remains after reload. Use `Remove link image` and confirm it disappears after reload. This uses the page media asset flow but is not covered by `drive-editor-journeys.mjs` yet.
+- **Link image.** Hover a link card's image area; use `Add link image` or `Replace link image`, choose an image, and confirm it remains after reload. Use `Remove link image` and confirm it disappears after reload. The `link-card-images` journey covers this flow.
 - **No cloud.** No request may go to `*.r2.cloudflarestorage.com`; the driver fails the journey if one does.
 - **Scripted.** `RUN_DIR=<scratch> [WEB_URL=http://127.0.0.1:3000 SERVER_URL=http://127.0.0.1:3001] node scripts/drive-editor-journeys.mjs "$EVIDENCE_DIR" media-upload,media-cancel` from `$PW_DIR`.
 - **Proof.** `actions.md`, `network.txt`, before/after screenshots + ARIA, `img-srcs.txt`.

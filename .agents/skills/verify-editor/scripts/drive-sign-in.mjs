@@ -30,7 +30,7 @@ const step = (line) => {
 const browser = await chromium.launch({
 	executablePath: process.env.CHROMIUM_PATH,
 });
-const context = await browser.newContext();
+const context = await browser.newContext({ reducedMotion: "reduce" });
 const page = await context.newPage();
 try {
 	await page.goto("http://127.0.0.1:3000/sign-in", {
@@ -43,6 +43,14 @@ try {
 		.getByRole("heading", { name: "Check your inbox" })
 		.waitFor({ timeout: 30_000 });
 	await page.screenshot({ path: `${evidence}/otp-sent.png` });
+	await page.getByRole("button", { name: "Use a different email" }).click();
+	await page.getByRole("textbox", { name: "Email" }).waitFor();
+	await page.getByRole("textbox", { name: "Email" }).fill(email);
+	await page.getByRole("button", { name: "Send OTP" }).click();
+	await page
+		.getByRole("heading", { name: "Check your inbox" })
+		.waitFor({ timeout: 30_000 });
+	step("Use a different email returned to the email step");
 	const otp = execFileSync(otpScript, [email]).toString().trim();
 	step(`OTP read from local DB (length ${otp.length})`);
 	await page.getByRole("textbox").first().fill(otp);
@@ -67,6 +75,8 @@ try {
 	step(`landed on ${landed}`);
 	if (landed.startsWith("/sign-in"))
 		throw new Error("signed-in user was not redirected away from /sign-in");
+	if (process.env.FEATURE_MAP_AUTH_STATE)
+		await context.storageState({ path: process.env.FEATURE_MAP_AUTH_STATE });
 	step("RESULT: PASS");
 } catch (error) {
 	step(

@@ -14,11 +14,11 @@ import { requireEvidenceDir } from "./evidence-path.mjs";
 const SCRIPTS = dirname(fileURLToPath(import.meta.url));
 const EMAIL = "featuremap@example.com";
 const WEB = process.env.WEB_URL || "http://127.0.0.1:3000";
-async function login() {
-	const b = await chromium.launch({
-		executablePath: process.env.CHROMIUM_PATH,
+async function login(b) {
+	const ctx = await b.newContext({
+		viewport: { width: 1280, height: 900 },
+		reducedMotion: "reduce",
 	});
-	const ctx = await b.newContext({ viewport: { width: 1280, height: 900 } });
 	const p = await ctx.newPage();
 	await p.goto(`${WEB}/sign-in`, {
 		waitUntil: "networkidle",
@@ -34,6 +34,8 @@ async function login() {
 		timeout: 240000,
 	});
 	await p.waitForLoadState("networkidle", { timeout: 240000 });
+	if (process.env.FEATURE_MAP_AUTH_STATE)
+		await ctx.storageState({ path: process.env.FEATURE_MAP_AUTH_STATE });
 	return { b, ctx, p };
 }
 const evidenceArgument = process.argv[2];
@@ -101,7 +103,54 @@ writeFileSync(
 		"base64",
 	),
 );
-const { b, ctx, p } = await login();
+const b = await chromium.launch({ executablePath: process.env.CHROMIUM_PATH });
+const authState = process.env.FEATURE_MAP_AUTH_STATE;
+let ctx;
+let p;
+if (authState) {
+	ctx = await b.newContext({
+		storageState: authState,
+		viewport: { width: 1280, height: 900 },
+		reducedMotion: "reduce",
+	});
+	p = await ctx.newPage();
+} else {
+	({ ctx, p } = await login(b));
+}
+// shortcut: CI uses a fixed Seoul result and blank basemap, add live Mapbox checks separately if provider behavior is in scope.
+await ctx.route("https://api.mapbox.com/**", async (route) => {
+	const url = new URL(route.request().url());
+	if (url.pathname === "/search/geocode/v6/forward") {
+		await route.fulfill({
+			json: {
+				features: [
+					{
+						id: "mapbox-ci-seoul",
+						geometry: { type: "Point", coordinates: [126.978, 37.5665] },
+						properties: {
+							mapbox_id: "mapbox-ci-seoul",
+							name: "Seoul",
+							place_formatted: "Seoul, Korea",
+						},
+					},
+				],
+			},
+		});
+		return;
+	}
+	if (url.pathname.startsWith("/styles/v1/")) {
+		await route.fulfill({
+			json: {
+				version: 8,
+				name: "Feature map CI",
+				sources: {},
+				layers: [{ id: "background", type: "background" }],
+			},
+		});
+		return;
+	}
+	await route.fulfill({ status: 204 });
+});
 // Network log of API + R2 requests
 let netlog = null;
 p.on("requestfinished", async (r) => {
@@ -167,7 +216,7 @@ async function cleanupNewItems(beforeIds, step) {
 	);
 }
 async function journey(id, fn) {
-	if (only.length && !only.includes(id)) return;
+	if (only.length && !only.includes(id) && !only.includes("all")) return;
 	const dir = `${EV}/${id}`;
 	mkdirSync(dir, { recursive: true });
 	const beforeIds = new Set(itemIds());
@@ -232,16 +281,36 @@ const until = async (pred, what, ms = 30000) => {
 	const t = Date.now();
 	while (Date.now() - t < ms) {
 		if (pred()) return;
-		await p.waitForTimeout(500);
+		await new Promise((resolve) => setTimeout(resolve, 100));
 	}
 	throw new Error(`timeout: ${what}; items=${items()}`);
 };
 const reloadCheck = async (step, t, n) => {
-	await p.waitForTimeout(2500);
+	await until(() => count(t) === n, `${t} saved as ${n}`);
 	await p.reload({ waitUntil: "networkidle" });
 	const c = count(t);
 	step(`after reload: ${t} rows = ${c}`);
 	if (c !== n) throw new Error(`${t} expected ${n}, got ${c}`);
+};
+const addMedia = async () => {
+	const before = count("media");
+	const chooser = p.waitForEvent("filechooser");
+	await toolbar.getByRole("button", { name: "Add media" }).click();
+	await (await chooser).setFiles(FIXTURE);
+	await until(() => count("media") > before, "media row");
+	return sql(
+		`select id from page_items where page_id='${PAGE}' and type='media' order by created_at desc limit 1`,
+	);
+};
+const addLink = async (url) => {
+	const before = count("link");
+	await toolbar.getByRole("button", { name: "Add link" }).click();
+	await p.getByRole("textbox", { name: "Link URL" }).fill(url);
+	await p.keyboard.press("Enter");
+	await until(() => count("link") > before, "link row");
+	return sql(
+		`select id from page_items where page_id='${PAGE}' and type='link' order by created_at desc limit 1`,
+	);
 };
 
 await journey("media-upload", async (step, dir) => {
@@ -297,14 +366,20 @@ await journey("media-cancel", async (step, dir) => {
 	const n = await del.count();
 	await del.nth(n - 1).click({ force: true });
 	step(`clicked Delete item on the uploading block (${n} of ${n})`);
-	await p.waitForTimeout(1000);
+	const req = await cancelReq;
 	release("abort");
 	step("released the held PUT as aborted (never reached the local bucket)");
-	const req = await cancelReq;
+	const cancelResponse = req ? await req.response() : null;
 	step(
-		`cancel request: ${req ? `${req.method()} ${new URL(req.url()).pathname} -> ${(await req.response())?.status()}` : "none"}`,
+		`cancel request: ${req ? `${req.method()} ${new URL(req.url()).pathname} -> ${cancelResponse?.status()}` : "none"}`,
 	);
-	await p.waitForTimeout(4000);
+	await until(
+		() =>
+			sql(
+				`select status from page_media_assets where object_key='${heldKey}'`,
+			) === "pending_delete",
+		"cancelled upload marked for deletion",
+	);
 	step(
 		`page_media_assets for key: ${sql(`select status || ' delete_after_set=' || (delete_after is not null) from page_media_assets where object_key='${heldKey}'`) || "(no row)"}`,
 	);
@@ -323,6 +398,11 @@ await journey("media-cancel", async (step, dir) => {
 
 await journey("link-refresh", async (step, dir) => {
 	const before = count("link");
+	const metadataReady = p.waitForResponse(
+		(response) =>
+			new URL(response.url()).pathname.endsWith(`/pages/${HANDLE}/metadata`),
+		{ timeout: 30_000 },
+	);
 	await toolbar.getByRole("button", { name: "Add link" }).click();
 	await p
 		.getByRole("textbox", { name: "Link URL" })
@@ -330,7 +410,7 @@ await journey("link-refresh", async (step, dir) => {
 	await p.keyboard.press("Enter");
 	step("toolbar Add link → https://github.com/microsoft/playwright + Enter");
 	await until(() => count("link") > before, "link row");
-	await p.waitForTimeout(6000);
+	await metadataReady;
 	const id = sql(
 		`select id from page_items where page_id='${PAGE}' and type='link' order by created_at desc limit 1`,
 	);
@@ -388,15 +468,8 @@ await journey("link-refresh", async (step, dir) => {
 
 await journey("item-add", async (step, dir) => {
 	for (const btn of ["Add text", "Add section", "Add link", "Add map"]) {
-		const types = sql(
-			`select string_agg(type||'='||c, ',') from (select type, count(*) c from page_items where page_id='${PAGE}' group by type) x`,
-		);
+		const beforeIds = new Set(itemIds());
 		await toolbar.getByRole("button", { name: btn }).click();
-		await p.waitForTimeout(1500);
-		writeFileSync(
-			`${dir}/${btn.replace(" ", "-")}.aria.txt`,
-			await p.locator("body").ariaSnapshot(),
-		);
 		if (btn === "Add link") {
 			await p
 				.getByRole("textbox", { name: "Link URL" })
@@ -415,11 +488,15 @@ await journey("item-add", async (step, dir) => {
 				.last()
 				.fill("Verify text");
 		}
-		await p.waitForTimeout(3000);
-		const after = sql(
-			`select string_agg(type||'='||c, ',') from (select type, count(*) c from page_items where page_id='${PAGE}' group by type) x`,
+		await until(
+			() => itemIds().some((itemId) => !beforeIds.has(itemId)),
+			`${btn} saved`,
 		);
-		step(`${btn}: types ${types} -> ${after}`);
+		writeFileSync(
+			`${dir}/${btn.replace(" ", "-")}.aria.txt`,
+			await p.locator("body").ariaSnapshot(),
+		);
+		step(`${btn}: saved ${items()}`);
 	}
 	await p.reload({ waitUntil: "networkidle" });
 	step(`after reload DB: ${items()}`);
@@ -440,7 +517,12 @@ await journey("item-add", async (step, dir) => {
 	step(
 		"hovered the map block → clicked its Delete item (normal click, no force)",
 	);
-	await p.waitForTimeout(3000);
+	await until(
+		() =>
+			Number(sql(`select count(*) from page_items where page_id='${PAGE}'`)) ===
+			before - 1,
+		"deleted map row",
+	);
 	await p.reload({ waitUntil: "networkidle" });
 	const after = Number(
 		sql(`select count(*) from page_items where page_id='${PAGE}'`),
@@ -450,5 +532,479 @@ await journey("item-add", async (step, dir) => {
 		throw new Error("Delete item did not remove the DB row");
 });
 
+await journey("profile-and-handle", async (step) => {
+	const before = sql(
+		`select coalesce(name, '') || '|' || coalesce(bio, '') from pages where id='${PAGE}'`,
+	);
+	if (sql(`select image_key from pages where id='${PAGE}'`))
+		throw new Error(
+			"profile map needs a clean fixture without a profile image",
+		);
+	const [name, bio] = before.split("|");
+	const changeHandle = async (nextHandle) => {
+		await p.getByRole("button", { name: "Open page options" }).click();
+		await p.getByRole("button", { name: /Change handle/ }).click();
+		const form = p.getByRole("dialog", { name: "Change your handle" });
+		await form.getByRole("textbox", { name: "Handle" }).fill(nextHandle);
+		await form.getByLabel("Handle available").waitFor({ timeout: 30000 });
+		await form.getByRole("button", { name: "Change handle" }).click();
+		await p.waitForURL(new RegExp(`/${nextHandle}$`), { timeout: 30000 });
+	};
+	let restoreError;
+	try {
+		await p.getByRole("textbox", { name: "Name" }).fill("Feature Map CI");
+		await p.getByRole("textbox", { name: "Bio" }).fill("Temporary CI profile");
+		await until(
+			() =>
+				sql(`select name || '|' || bio from pages where id='${PAGE}'`) ===
+				"Feature Map CI|Temporary CI profile",
+			"temporary profile saved",
+		);
+		await p.reload({ waitUntil: "networkidle" });
+		if (
+			(await p.getByRole("textbox", { name: "Name" }).inputValue()) !==
+			"Feature Map CI"
+		)
+			throw new Error("profile name did not persist");
+		step("profile name and bio saved and survived reload");
+		const profileImage = content.getByRole("button", {
+			name: "Change profile image",
+		});
+		const imageChooser = p.waitForEvent("filechooser");
+		await profileImage.click();
+		await (await imageChooser).setFiles(FIXTURE);
+		await until(
+			() => Boolean(sql(`select image_key from pages where id='${PAGE}'`)),
+			"profile image upload",
+		);
+		await content.getByRole("button", { name: "Change profile image" }).hover();
+		await content.getByRole("button", { name: "Crop profile image" }).click();
+		await p.getByRole("button", { name: "Apply profile image crop" }).click();
+		await content.getByRole("button", { name: "Change profile image" }).hover();
+		await content.getByRole("button", { name: "Remove profile image" }).click();
+		await until(
+			() => !sql(`select image_key from pages where id='${PAGE}'`),
+			"profile image removal",
+		);
+		step("uploaded, applied a crop, and removed the profile image");
+		const temporaryHandle = `featuremap-ci-${Date.now().toString().slice(-6)}`;
+		await changeHandle(temporaryHandle);
+		if (sql(`select handle from pages where id='${PAGE}'`) !== temporaryHandle)
+			throw new Error("page handle change did not persist");
+		await changeHandle(HANDLE);
+		if (sql(`select handle from pages where id='${PAGE}'`) !== HANDLE)
+			throw new Error("feature-map handle was not restored");
+		step(
+			"changed the handle through page options, then restored featuremap-test",
+		);
+	} finally {
+		const currentHandle = sql(`select handle from pages where id='${PAGE}'`);
+		await p.goto(`${WEB}/${currentHandle}`, { waitUntil: "networkidle" });
+		if (currentHandle !== HANDLE) await changeHandle(HANDLE);
+		if (sql(`select image_key from pages where id='${PAGE}'`)) {
+			await content
+				.getByRole("button", { name: "Change profile image" })
+				.hover();
+			await content
+				.getByRole("button", { name: "Remove profile image" })
+				.click();
+			await until(
+				() => !sql(`select image_key from pages where id='${PAGE}'`),
+				"profile image cleanup",
+			);
+		}
+		await p.goto(`${WEB}/${HANDLE}`, { waitUntil: "networkidle" });
+		await p.getByRole("textbox", { name: "Name" }).fill(name);
+		await p.getByRole("textbox", { name: "Bio" }).fill(bio);
+		await until(
+			() =>
+				sql(
+					`select coalesce(name, '') || '|' || coalesce(bio, '') from pages where id='${PAGE}'`,
+				) === before,
+			"original profile restored",
+		);
+		if (
+			sql(
+				`select coalesce(name, '') || '|' || coalesce(bio, '') from pages where id='${PAGE}'`,
+			) !== before
+		)
+			restoreError = new Error("profile fixture was not restored");
+		else step("restored original name, bio, profile image, and handle");
+	}
+	if (restoreError) throw restoreError;
+});
+
+await journey("layout", async (step) => {
+	const textId = await (async () => {
+		const before = count("text");
+		await toolbar.getByRole("button", { name: "Add text" }).click();
+		await until(() => count("text") > before, "text row");
+		return sql(
+			`select id from page_items where page_id='${PAGE}' and type='text' order by created_at desc limit 1`,
+		);
+	})();
+	await toolbar.getByRole("button", { name: "Edit compact layout" }).click();
+	await toolbar.getByRole("button", { name: "Edit wide layout" }).click();
+	step("switched between compact and wide layouts");
+	const shell = content.locator(`[data-bento-item-id="${textId}"]`);
+	const beforeLayouts = sql(
+		`select layouts::text from page_items where id='${textId}'`,
+	);
+	await shell.hover();
+	await shell.getByRole("button", { name: "Wide" }).click();
+	await until(
+		() =>
+			sql(`select layouts::text from page_items where id='${textId}'`) !==
+			beforeLayouts,
+		"wide item layout saved",
+	);
+	await p.reload({ waitUntil: "networkidle" });
+	const layouts = sql(
+		`select layouts::text from page_items where id='${textId}'`,
+	);
+	step(`saved layouts: ${layouts}`);
+	if (!layouts || layouts === beforeLayouts)
+		throw new Error("item size preset did not change its saved layout");
+});
+
+await journey("text-formatting", async (step) => {
+	const before = count("text");
+	await toolbar.getByRole("button", { name: "Add text" }).click();
+	await until(() => count("text") > before, "text row");
+	const id = sql(
+		`select id from page_items where page_id='${PAGE}' and type='text' order by created_at desc limit 1`,
+	);
+	const textbox = content.getByRole("textbox", { name: "Text content" }).last();
+	await textbox.fill("Feature map formatting");
+	const shell = content.locator(`[data-bento-item-id="${id}"]`);
+	await shell.hover();
+	await shell.getByRole("button", { name: "Open text style options" }).click();
+	await p.getByRole("button", { name: "Align text center" }).click();
+	await p.getByRole("button", { name: "Align text to the bottom" }).click();
+	await p
+		.getByRole("button", { name: "Toggle text background color options" })
+		.click();
+	await p.getByRole("radio", { name: "Blue" }).click();
+	await p
+		.getByRole("textbox", { name: "Text background hex color" })
+		.fill("#123abc");
+	await p.keyboard.press("Enter");
+	await until(() => {
+		const row = sql(
+			`select data::text || '|' || style::text from page_items where id='${id}'`,
+		);
+		return ["Feature map formatting", "center", "bottom", "#123abc"].every(
+			(value) => row.includes(value),
+		);
+	}, "text formatting saved");
+	await p.reload({ waitUntil: "networkidle" });
+	const row = sql(
+		`select data::text || '|' || style::text from page_items where id='${id}'`,
+	);
+	step(`saved formatted text: ${row}`);
+	for (const value of ["Feature map formatting", "center", "bottom", "#123abc"])
+		if (!row.includes(value))
+			throw new Error(`text formatting missing ${value}`);
+});
+
+await journey("media-editing", async (step) => {
+	const id = await addMedia();
+	const shell = content.locator(`[data-bento-item-id="${id}"]`);
+	await shell
+		.getByRole("textbox", { name: "Media caption" })
+		.fill("Feature map media");
+	await shell.hover();
+	await shell.getByRole("button", { name: "Crop media" }).click();
+	const cropHandle = shell.getByRole("button", { name: "Drag media to crop" });
+	const cropBox = await cropHandle.boundingBox();
+	if (!cropBox) throw new Error("media crop control has no visible bounds");
+	await p.mouse.move(
+		cropBox.x + cropBox.width / 2,
+		cropBox.y + cropBox.height / 2,
+	);
+	await p.mouse.down();
+	await p.mouse.move(
+		cropBox.x + cropBox.width / 2 + 24,
+		cropBox.y + cropBox.height / 2 + 16,
+		{ steps: 4 },
+	);
+	await p.mouse.up();
+	await shell.getByRole("button", { name: "Apply media crop" }).click();
+	await until(
+		() =>
+			sql(`select data::text from page_items where id='${id}'`).includes(
+				"crop",
+			),
+		"media crop saved",
+	);
+	await shell.hover();
+	await shell.getByRole("button", { name: "Add media link" }).click();
+	await p
+		.getByRole("textbox", { name: "Link URL" })
+		.fill("https://example.com/featuremap-media");
+	await p.keyboard.press("Enter");
+	await until(() => {
+		const data = sql(`select data::text from page_items where id='${id}'`);
+		return (
+			data.includes("Feature map media") &&
+			data.includes("https://example.com/featuremap-media")
+		);
+	}, "media caption and destination saved");
+	await p.reload({ waitUntil: "networkidle" });
+	const data = sql(`select data::text from page_items where id='${id}'`);
+	step(`saved media edits: ${data}`);
+	for (const value of [
+		"Feature map media",
+		"https://example.com/featuremap-media",
+		"crop",
+	])
+		if (!data.includes(value)) throw new Error(`media edit missing ${value}`);
+});
+
+await journey("map-editing", async (step) => {
+	const before = count("map");
+	await toolbar.getByRole("button", { name: "Add map" }).click();
+	await until(() => count("map") > before, "map row");
+	const id = sql(
+		`select id from page_items where page_id='${PAGE}' and type='map' order by created_at desc limit 1`,
+	);
+	const shell = content.locator(`[data-bento-item-id="${id}"]`);
+	await shell
+		.getByRole("textbox", { name: "Media caption" })
+		.fill("Feature map location");
+	await shell.hover();
+	await shell.getByRole("button", { name: "Search location" }).click();
+	const search = p.getByRole("combobox", { name: "Search location" });
+	if (await search.count()) {
+		await search.fill("Seoul");
+		if (process.env.NEXT_PUBLIC_MAPBOX_ACCESS_TOKEN) {
+			const list = p.getByRole("listbox", { name: "Location results" });
+			await list.waitFor();
+			await list.getByRole("option").first().click();
+			await p.getByRole("button", { name: "Open map controls" }).click();
+			await p.getByRole("button", { name: "Zoom in" }).click();
+			await p.getByRole("button", { name: "Close map controls" }).click();
+			step("selected a Mapbox location and changed its zoom");
+		} else {
+			throw new Error("MAPBOX_ACCESS_TOKEN is required for map search");
+		}
+	}
+	await until(() => {
+		const [latitude, longitude, zoom] = sql(
+			`select data->>'latitude' || '|' || data->>'longitude' || '|' || data->>'zoom' from page_items where id='${id}'`,
+		).split("|");
+		return (
+			sql(`select data::text from page_items where id='${id}'`).includes(
+				"Feature map location",
+			) &&
+			Number(latitude) === 37.5665 &&
+			Number(longitude) === 126.978 &&
+			Number(zoom) > 12
+		);
+	}, "map search, zoom, and caption saved");
+	await p.reload({ waitUntil: "networkidle" });
+	const data = sql(`select data::text from page_items where id='${id}'`);
+	const [latitude, longitude, zoom] = sql(
+		`select data->>'latitude' || '|' || data->>'longitude' || '|' || data->>'zoom' from page_items where id='${id}'`,
+	).split("|");
+	if (
+		!data.includes("Feature map location") ||
+		Number(latitude) !== 37.5665 ||
+		Number(longitude) !== 126.978 ||
+		Number(zoom) <= 12
+	)
+		throw new Error("map search, zoom, or caption did not persist");
+	step(`map caption persisted: ${data}`);
+});
+
+await journey("link-card-images", async (step) => {
+	const id = await addLink("https://github.com/microsoft/playwright");
+	const shell = content.locator(`[data-bento-item-id="${id}"]`);
+	const upload = async (label, previousKey) => {
+		const chooser = p.waitForEvent("filechooser");
+		await shell.getByRole("button", { name: label }).click();
+		await (await chooser).setFiles(FIXTURE);
+		await until(() => {
+			const key = sql(
+				`select data->>'imageKey' from page_items where id='${id}'`,
+			);
+			return Boolean(key) && key !== previousKey;
+		}, `${label} saved`);
+	};
+	await shell.hover();
+	await upload("Add link image", null);
+	const first = sql(
+		`select data->>'imageKey' from page_items where id='${id}'`,
+	);
+	if (!first) throw new Error("link image was not saved");
+	await shell.hover();
+	await upload("Replace link image", first);
+	const replacement = sql(
+		`select data->>'imageKey' from page_items where id='${id}'`,
+	);
+	if (!replacement || replacement === first)
+		throw new Error("link image was not replaced");
+	await p.reload({ waitUntil: "networkidle" });
+	if (
+		sql(`select data->>'imageKey' from page_items where id='${id}'`) !==
+		replacement
+	)
+		throw new Error("replaced link image did not persist after reload");
+	await shell.hover();
+	await shell.getByRole("button", { name: "Remove link image" }).click();
+	await until(
+		() => !sql(`select data->>'imageKey' from page_items where id='${id}'`),
+		"link image removed",
+	);
+	if (sql(`select data->>'imageKey' from page_items where id='${id}'`))
+		throw new Error("link image was not removed");
+	step("added, replaced, then removed the link image");
+});
+
+await journey("inline-destination-url", async (step) => {
+	const textBefore = count("text");
+	await toolbar.getByRole("button", { name: "Add text" }).click();
+	await until(() => count("text") > textBefore, "text row");
+	const textId = sql(
+		`select id from page_items where page_id='${PAGE}' and type='text' order by created_at desc limit 1`,
+	);
+	const textShell = content.locator(`[data-bento-item-id="${textId}"]`);
+	await content
+		.getByRole("textbox", { name: "Text content" })
+		.last()
+		.fill("Feature map text destination");
+	await textShell.hover();
+	await textShell.getByRole("button", { name: "Add text link" }).click();
+	await p
+		.getByRole("textbox", { name: "Link URL" })
+		.fill("https://example.com/featuremap-text");
+	await p.keyboard.press("Enter");
+	const textAction = textShell.getByRole("link", { name: "Open text link" });
+	if (
+		(await textAction.getAttribute("href")) !==
+		"https://example.com/featuremap-text"
+	)
+		throw new Error("text destination did not open its saved URL");
+	const mediaId = await addMedia();
+	const mediaShell = content.locator(`[data-bento-item-id="${mediaId}"]`);
+	await mediaShell.hover();
+	await mediaShell.getByRole("button", { name: "Add media link" }).click();
+	await p
+		.getByRole("textbox", { name: "Link URL" })
+		.fill("https://example.com/featuremap-media");
+	await p.keyboard.press("Enter");
+	await until(
+		() =>
+			sql(`select data::text from page_items where id='${textId}'`).includes(
+				"featuremap-text",
+			) &&
+			sql(`select data::text from page_items where id='${mediaId}'`).includes(
+				"featuremap-media",
+			),
+		"text and media destinations saved",
+	);
+	for (const [id, url] of [
+		[textId, "featuremap-text"],
+		[mediaId, "featuremap-media"],
+	]) {
+		const data = sql(`select data::text from page_items where id='${id}'`);
+		if (!data.includes(url)) throw new Error(`destination URL missing ${url}`);
+	}
+	await p.reload({ waitUntil: "networkidle" });
+	step("text and media destinations saved in page_items");
+});
+
+await journey("tweet", async (step) => {
+	await toolbar.getByRole("button", { name: "Advanced" }).click();
+	const catalog = p.getByRole("dialog", { name: "Advanced widgets" });
+	await catalog.getByRole("button", { name: "Tweet" }).click();
+	const dialog = p.getByRole("dialog", { name: "Tweet" });
+	await dialog
+		.getByRole("textbox", { name: "Tweet ID or URL" })
+		.fill("https://x.com/jack/status/20");
+	await dialog.getByRole("button", { name: "Add" }).click();
+	await until(() => count("tweet") > 0, "tweet row", 60000);
+	step("added the public X post through the widget flow");
+	const beforeInvalid = count("tweet");
+	await toolbar.getByRole("button", { name: "Advanced" }).click();
+	await p
+		.getByRole("dialog", { name: "Advanced widgets" })
+		.getByRole("button", { name: "Tweet", exact: true })
+		.click();
+	const retry = p.getByRole("dialog", { name: "Tweet" });
+	await retry
+		.getByRole("textbox", { name: "Tweet ID or URL" })
+		.fill("https://x.com/i/status/1");
+	await retry.getByRole("button", { name: "Add" }).click();
+	await p
+		.getByText("Unable to load this Tweet. Try again.")
+		.waitFor({ timeout: 60000 });
+	if (count("tweet") !== beforeInvalid)
+		throw new Error("invalid Tweet created a row");
+	step("invalid Tweet showed a recoverable error and added no row");
+});
+
+await journey("advanced-widgets", async (step) => {
+	await toolbar.getByRole("button", { name: "Advanced" }).click();
+	const catalog = p.getByRole("dialog", { name: "Advanced widgets" });
+	for (const name of ["Tweet", "Spotify", "RSS Feed", "Calendly"])
+		await catalog.getByRole("button", { name, exact: true }).waitFor();
+	await catalog
+		.getByRole("textbox", { name: "Search widgets" })
+		.fill("no matching widget");
+	await p.getByText("No widgets found.").waitFor();
+	await catalog.getByRole("textbox", { name: "Search widgets" }).fill("");
+	for (const name of ["SoundCloud", "Apple Music", "Signature"]) {
+		await catalog.getByRole("button", { name, exact: true }).click();
+		await p
+			.getByText("Sipping coffee while crafting a polished widget...")
+			.waitFor();
+		await p.getByRole("button", { name: "Back to widgets" }).click();
+	}
+	for (const [name, field, value, type] of [
+		[
+			"Spotify",
+			"Spotify URL",
+			"https://open.spotify.com/track/4iV5W9uYEdYUVa79Axb7Rh",
+			"spotify",
+		],
+		[
+			"RSS Feed",
+			"RSS feed URL",
+			"https://feeds.bbci.co.uk/news/rss.xml",
+			"rss",
+		],
+	]) {
+		const before = count(type);
+		await catalog.getByRole("button", { name, exact: true }).click();
+		const form = p.getByRole("dialog", { name });
+		await form.getByRole("textbox", { name: field }).fill(value);
+		await form.getByRole("button", { name: "Add" }).click();
+		await until(() => count(type) > before, `${type} widget`, 60000);
+		step(`${name} widget added and saved`);
+		await p.reload({ waitUntil: "networkidle" });
+		await toolbar.getByRole("button", { name: "Advanced" }).click();
+	}
+	await catalog.getByRole("button", { name: "Calendly", exact: true }).click();
+	await p.getByRole("button", { name: "Connect to Calendly" }).waitFor();
+	step("Calendly connect flow is shown; OAuth needs a test account");
+});
+
+await journey("page-sharing", async (step) => {
+	await ctx.grantPermissions(["clipboard-read", "clipboard-write"], {
+		origin: WEB,
+	});
+	await p.getByRole("button", { name: "Share page" }).click();
+	await p.getByRole("dialog", { name: "Share your page" }).waitFor();
+	await p.getByRole("img", { name: "QR code for your page" }).waitFor();
+	await p.getByRole("button", { name: "Copy Link" }).click();
+	await p.getByRole("button", { name: "Copied Link" }).waitFor();
+	const copied = await p.evaluate(() => navigator.clipboard.readText());
+	if (!copied.endsWith(`/${HANDLE}`))
+		throw new Error(`unexpected copied URL: ${copied}`);
+	step(`QR displayed and clipboard copied ${copied}`);
+});
+
 console.log(results.join("\n"));
+if (results.some((result) => result.includes(": FAIL"))) process.exitCode = 1;
 await b.close();

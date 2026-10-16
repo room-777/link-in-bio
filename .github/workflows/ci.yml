@@ -53,3 +53,80 @@ jobs:
         env:
           AUTH_SMOKE_TEST_DATABASE_URL: postgres://postgres:postgres@127.0.0.1:5432/grabbin_smoke_test
         run: bun test tests/integration/auth-session-smoke-postgres.test.ts
+
+  feature-map:
+    name: feature-map
+    if: github.event_name != 'pull_request' || (github.event.pull_request.head.repo.full_name == github.repository && github.actor != 'dependabot[bot]')
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version-file: .node-version
+      - uses: oven-sh/setup-bun@v2
+        with:
+          bun-version-file: package.json
+      - run: bun install --frozen-lockfile
+      - name: Install headless Chromium
+        run: bunx playwright install --with-deps chromium
+      - name: Start the local feature-map stack
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          NEXT_PUBLIC_MAPBOX_ACCESS_TOKEN: feature-map-ci
+          ALCHEMY_TELEMETRY_DISABLED: "1"
+        run: |
+          test -n "$CLOUDFLARE_API_TOKEN" || { echo "CLOUDFLARE_API_TOKEN secret is missing" >&2; exit 1; }
+          RUN_ID="ci-${GITHUB_RUN_ID}-${GITHUB_RUN_ATTEMPT}"
+          RUN_DIR="/tmp/grabbin-verify-editor/$RUN_ID"
+          EVIDENCE_DIR="$GITHUB_WORKSPACE/artifacts/verify-editor/$RUN_ID"
+          mkdir -p "$RUN_DIR" "$EVIDENCE_DIR"
+          echo "RUN_DIR=$RUN_DIR" >> "$GITHUB_ENV"
+          echo "EVIDENCE_DIR=$EVIDENCE_DIR" >> "$GITHUB_ENV"
+          git rev-parse HEAD > "$EVIDENCE_DIR/revision"
+          scripts/cloud-agent-start.sh > "$RUN_DIR/stack.log" 2>&1 &
+          echo $! > "$RUN_DIR/stack.pid"
+          for attempt in $(seq 1 180); do
+            if .agents/skills/verify-editor/scripts/doctor.sh "$RUN_DIR"; then
+              exit 0
+            fi
+            if ! kill -0 "$(cat "$RUN_DIR/stack.pid")" 2>/dev/null; then
+              cat "$RUN_DIR/stack.log"
+              exit 1
+            fi
+            sleep 5
+          done
+          cat "$RUN_DIR/stack.log"
+          echo "Feature-map stack did not become healthy" >&2
+          exit 1
+      - name: Drive the feature maps
+        env:
+          NEXT_PUBLIC_MAPBOX_ACCESS_TOKEN: feature-map-ci
+        run: |
+          node .agents/skills/verify-editor/scripts/drive-demo-add-text.mjs "$EVIDENCE_DIR/demo-add-item"
+          FEATURE_MAP_AUTH_STATE="$RUN_DIR/auth.json" node .agents/skills/verify-editor/scripts/drive-sign-in.mjs "$EVIDENCE_DIR/sign-in" featuremap@example.com
+          export FEATURE_MAP_AUTH_STATE="$RUN_DIR/auth.json"
+          node .agents/skills/verify-editor/scripts/drive-create-page.mjs "$EVIDENCE_DIR/account"
+          for attempt in 1 2 3; do
+            if RUN_DIR="$RUN_DIR" node .agents/skills/verify-editor/scripts/drive-editor-journeys.mjs "$EVIDENCE_DIR/editor/attempt-$attempt" all; then
+              exit 0
+            fi
+            echo "Feature-map browser run $attempt failed"
+          done
+          exit 1
+      - name: Upload feature-map evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: feature-map-${{ github.run_id }}-${{ github.run_attempt }}
+          path: artifacts/verify-editor/ci-${{ github.run_id }}-${{ github.run_attempt }}
+          if-no-files-found: warn
+          retention-days: 14
+      - name: Stop the local stack
+        if: always()
+        run: |
+          if [ -n "${RUN_DIR:-}" ] && [ -f "$RUN_DIR/stack.pid" ]; then
+            kill "$(cat "$RUN_DIR/stack.pid")" 2>/dev/null || true
+          fi
+          docker rm --force grabbin-featuremap-postgres 2>/dev/null || true

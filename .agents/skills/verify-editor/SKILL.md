@@ -62,8 +62,10 @@ Harness: headless Playwright (Chromium), one fresh browser context per run, loca
 ```sh
 cd "$PW_DIR"
 node "$REPO/.agents/skills/verify-editor/scripts/drive-demo-add-text.mjs" "$EVIDENCE_DIR/editor-add-item"
-node "$REPO/.agents/skills/verify-editor/scripts/drive-sign-in.mjs" "$EVIDENCE_DIR/sign-in" featuremap@example.com
-RUN_DIR="$RUN_DIR" node "$REPO/.agents/skills/verify-editor/scripts/drive-editor-journeys.mjs" "$EVIDENCE_DIR/editor" media-upload,media-cancel,link-refresh,item-add
+FEATURE_MAP_AUTH_STATE="$RUN_DIR/auth.json" node "$REPO/.agents/skills/verify-editor/scripts/drive-sign-in.mjs" "$EVIDENCE_DIR/sign-in" featuremap@example.com
+export FEATURE_MAP_AUTH_STATE="$RUN_DIR/auth.json"
+node "$REPO/.agents/skills/verify-editor/scripts/drive-create-page.mjs" "$EVIDENCE_DIR/account"
+RUN_DIR="$RUN_DIR" node "$REPO/.agents/skills/verify-editor/scripts/drive-editor-journeys.mjs" "$EVIDENCE_DIR/editor" all
 ```
 
 Each script prints its steps, ends with `RESULT: PASS` or `RESULT: FAIL <reason>`, sets the exit code, and writes `actions.md` plus screenshots/ARIA snapshots into the given directory. For journeys without a script, follow the matching file in `features/` and use the same conventions.
@@ -104,8 +106,8 @@ Never kill by process name. Leave the PostgreSQL container running so later runs
 | `scripts/otp.sh <email>` | Print the newest sign-in OTP for an `@example.com` address from local Postgres. |
 | `scripts/drive-demo-add-text.mjs <dir>` | Prove `editor-add-item` on `/demo` (add text block, then delete it). |
 | `scripts/drive-sign-in.mjs <dir> [email]` | Drive email-OTP sign-in and check the post-sign-in landing page. |
-| `scripts/drive-create-page.mjs <dir>` | Sign in and create `featuremap-test` through `/create` if it does not exist. |
-| `scripts/drive-editor-journeys.mjs <dir> [ids]` | Owner editor journeys on the real `/{handle}`: `media-upload`, `media-cancel`, `link-refresh`, `item-add`. Env: `RUN_DIR`, optional `WEB_URL`/`SERVER_URL` (default `127.0.0.1`). Fails on any cloud R2 request. |
+| `scripts/drive-create-page.mjs <dir>` | Create `featuremap-test` through `/create` if it does not exist. Set `FEATURE_MAP_AUTH_STATE` to reuse the sign-in driver's session. |
+| `scripts/drive-editor-journeys.mjs <dir> [all|ids]` | Owner journeys for every editor feature map on the real `/{handle}`. Pass `all` to run them together or comma-separated IDs to select journeys. Env: `RUN_DIR`, optional `FEATURE_MAP_AUTH_STATE`, `WEB_URL`, and `SERVER_URL` (default `127.0.0.1`). Fails on any cloud R2 request. |
 | `scripts/server.wrangler.jsonc` | Local API worker config used by `start-local.sh`. |
 
 ## Known gotchas (environment)
