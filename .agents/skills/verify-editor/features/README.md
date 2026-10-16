@@ -1,6 +1,6 @@
 # Grabbin editor verification map
 
-Maintained recipes for the signed-in editor and sign-in, driven against the full local stack from [the verify-editor skill](../SKILL.md). The demo-only map lives in [`../../verify/features`](../../verify/features/README.md).
+Source-of-truth recipes for the signed-in editor and sign-in, driven against the full local stack from [the verify-editor skill](../SKILL.md).
 
 ## Baseline preconditions
 

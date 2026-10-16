@@ -1,11 +1,11 @@
 ---
 name: verify-editor
-description: Drive Grabbin's full local stack (web :3000, Hono API :3001, local PostgreSQL) with headless Playwright to prove page-editor and email-OTP sign-in behavior. Use after changes to the Bento editor, its state/mutations, or auth, when the demo-only `verify` skill is not enough.
+description: Drive Grabbin's full local stack (web :3000, Hono API :3001, local PostgreSQL) with headless Playwright to prove page-editor and email-OTP sign-in behavior. Use this as the source of truth for feature-map verification.
 ---
 
 # Verify the Grabbin editor (full stack)
 
-The `verify` skill covers `/demo` with no backend. This skill runs the API and database too, so editor and sign-in journeys can be driven against real storage. Feature recipes live in [`features/README.md`](features/README.md).
+This skill is the source of truth for feature verification. It runs the API and database so editor and sign-in journeys are driven against real storage. Feature recipes live in [`features/README.md`](features/README.md).
 
 Commands below run from the repo root. To verify a different checkout, use its own dependencies and local `.env` files. The feature-map fixture is local to each agent's disposable Postgres instance but has the same email, handle, and Pro plan everywhere.
 
