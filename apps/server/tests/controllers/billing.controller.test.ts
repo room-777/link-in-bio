@@ -26,6 +26,8 @@ mock.module("../../src/middlewares/session.middleware", () => ({
 		c.set("session", { user: { id: "user-1", email: "user@example.com" } });
 		await next();
 	}) as MiddlewareHandler<AppEnv>,
+	optionalSession: async (_context: unknown, next: () => Promise<void>) =>
+		next(),
 }));
 mock.module("../../src/services/billing.service", () => ({
 	createOrResumeProCheckout: async () => checkoutResult,
