@@ -10,7 +10,7 @@ An owner adds an X post as a large card by giving its status URL; the post is lo
 
 ## How to get to it (user POV)
 
-- Owner view or `/demo` → toolbar `Advanced` → `Tweet` (Pro only) → paste a status URL → `Add`.
+- Signed-in Pro owner view → toolbar `Advanced` → `Tweet` → paste a status URL → `Add`.
 
 ## Driving it with Playwright
 

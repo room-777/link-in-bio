@@ -22,7 +22,7 @@ Preconditions:
 - Grant clipboard read and write permissions to the local browser context.
 
 - **Open the dialog.** On desktop, click `button "Share page"`. On mobile, click `button "Share link"`. Confirm `dialog "Share your page"` opens.
-- **Check the QR code.** Confirm `img "QR code for your page"` is visible and the QR value corresponds to the current page URL.
+- **Check the QR code.** Confirm the graphic named `QR code for your page` is visible and its value corresponds to the current page URL.
 - **Copy the URL.** Click `button "Copy Link"`, confirm it changes to `Copied Link`, and read the browser clipboard. The clipboard URL must equal the current page URL.
 - **Proof.** Save screenshots and ARIA snapshots of the dialog, plus the current page URL and clipboard value. This flow has no database write.
 
