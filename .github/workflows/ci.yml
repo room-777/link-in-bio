@@ -53,3 +53,36 @@ jobs:
         env:
           AUTH_SMOKE_TEST_DATABASE_URL: postgres://postgres:postgres@127.0.0.1:5432/grabbin_smoke_test
         run: bun test tests/integration/auth-session-smoke-postgres.test.ts
+
+  feature-map-e2e:
+    name: feature-map-e2e
+    runs-on: ubuntu-latest
+    timeout-minutes: 35
+    env:
+      CLOUDFLARE_API_TOKEN: ${{ secrets.FEATURE_MAP_CLOUDFLARE_API_TOKEN }}
+      CLOUDFLARE_ACCOUNT_ID: ${{ secrets.FEATURE_MAP_CLOUDFLARE_ACCOUNT_ID }}
+      FEATURE_MAP_PROVIDER_TESTS: true
+      FEATURE_MAP_TWEET_TESTS: true
+      FEATURE_MAP_RUN_ID: ci-${{ github.run_id }}-${{ github.run_attempt }}
+      CI: true
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version-file: .node-version
+      - uses: oven-sh/setup-bun@v2
+        with:
+          bun-version-file: package.json
+      - run: bun install --frozen-lockfile
+      - name: Install Chromium
+        run: bunx playwright install --with-deps chromium
+      - name: Run the full local stack and feature map
+        run: .agents/skills/verify-editor/scripts/run-feature-map-playwright.sh
+      - name: Upload feature-map evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: feature-map-${{ github.run_id }}-${{ github.run_attempt }}
+          path: artifacts/verify-editor/ci-${{ github.run_id }}-${{ github.run_attempt }}/
+          if-no-files-found: warn
+          retention-days: 14

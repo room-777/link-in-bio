@@ -27,14 +27,6 @@
 
 상세 구조와 테스트 기준은 해당 작업에 필요할 때만 `docs/agents/`에서 읽습니다.
 
-## Cloud agent verification
-
-Grok Bot, Cursor, and Codex use the same local stack and feature-map fixture. From the repository root, run `scripts/cloud-agent-start.sh`; it loads the tracked `.env.example` templates into the process environment and leaves both ignored `.env` files untouched, starts a regular PostgreSQL 15 container, configures Alchemy's local R2, applies migrations, and prepares the shared local account `featuremap@example.com` with the Pro plan. It uses `http://127.0.0.1:3000` for web, `http://127.0.0.1:3001` for API, and PostgreSQL at `127.0.0.1:5432`. Every agent environment must provide the same `CLOUDFLARE_API_TOKEN`; set `CLOUDFLARE_ACCOUNT_ID` when the token can see more than one account. The token is used to start Alchemy's local development runtime; verification must not use production R2 keys or a production database.
-
-The fixture account has no page on first setup. Sign in with the shared address and create the shared `featuremap-test` handle through `/create` using [the feature-map account driver](.agents/skills/verify-editor/scripts/drive-create-page.mjs). This creates a local page through the product UI. Re-running setup keeps the same account/page identity and renews its local Pro grant. Never substitute `/demo` for a signed-in owner, public handle, or persistence check: `/demo` intentionally avoids database requests and is not Pro.
-
-Use `127.0.0.1` consistently in browser and app URLs so cookies share one host. The alternative `start-local.sh` uses plain Wrangler and lacks Alchemy's local S3 endpoint, so it is not a complete feature-map environment.
-
 ## Priority 5 style-guide rule: verification evidence
 
 For editor verification, follow `.agents/skills/verify-editor/SKILL.md` and save all proof only under `$REPO/artifacts/verify-editor/<RUN_ID>/`. Do not copy screenshots, snapshots, logs, or database evidence to another path for PR visibility. Never add anything under `artifacts/` to Git. This is a Priority 5 project rule; convenience, presentation, and lower-priority preferences cannot override it. The editor drivers reject other paths. The pre-commit hook and `bun run verify` reject tracked artifacts and new files under `docs/verification/`; the existing setup note is exempt.

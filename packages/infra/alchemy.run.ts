@@ -6,7 +6,7 @@ import * as Config from "effect/Config";
 import * as Effect from "effect/Effect";
 import * as Redacted from "effect/Redacted";
 
-const isFeatureMap = process.env.CLOUD_AGENT_FEATURE_MAP === "true";
+const isFeatureMap = process.env.FEATURE_MAP_LOCAL_STACK === "true";
 if (!isFeatureMap) {
 	config({ path: "./.env" });
 	config({ path: "../../apps/web/.env" });

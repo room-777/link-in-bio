@@ -1,9 +1,9 @@
 #!/usr/bin/env bash
-# Create the deterministic, local-only identity used by every agent's feature-map run.
+# Create the deterministic, local-only identity used by the feature-map suite.
 set -euo pipefail
 
 if ! docker exec grabbin-featuremap-postgres pg_isready -U postgres >/dev/null 2>&1; then
-	printf '%s\n' "Local PostgreSQL is not ready; run scripts/cloud-agent-start.sh first." >&2
+	printf '%s\n' "Local PostgreSQL is not ready; run .agents/skills/verify-editor/scripts/feature-map-start.sh first." >&2
 	exit 1
 fi
 

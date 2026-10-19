@@ -25,7 +25,7 @@ This map explains when Grabbin sends its main GA4 events. Browser events mark a 
 
 Preconditions:
 
-- Run the full cloud-agent stack and its doctor as described in `../SKILL.md`.
+- Run the full local feature-map stack and its doctor as described in `../SKILL.md`.
 - Use the shared local account for existing-user sign-in. Use a disposable `@example.com` address for a new-account OTP check; read its code from the local database with `scripts/otp.sh`.
 - Use a public page with at least one link item. Do not use a real paid checkout.
 - Social sign-in needs working provider test credentials; do not treat a redirect to the provider as a completed sign-in.

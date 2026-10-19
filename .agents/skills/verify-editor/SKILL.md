@@ -5,21 +5,29 @@ description: Drive Grabbin's full local stack (web :3000, Hono API :3001, local 
 
 # Verify the Grabbin editor (full stack)
 
-This skill is the source of truth for feature verification. It runs the API and database so editor and sign-in journeys are driven against real storage. Feature recipes live in [`features/README.md`](features/README.md).
+The browser journeys run as Playwright tests in [`tests/feature-map.spec.ts`](tests/feature-map.spec.ts). A Playwright setup project signs in once, creates the shared page if needed, and saves the session state outside the evidence folder. The feature tests reuse that state. The feature notes in [`features/README.md`](features/README.md) describe their user paths and prerequisites. The tests use the real local API and database, not `/demo`.
 
-Commands below run from the repo root. To verify a different checkout, use its own dependencies and local `.env` files. The feature-map fixture is local to each agent's disposable Postgres instance but has the same email, handle, and Pro plan everywhere.
+Commands below run from the repo root. To verify a different checkout, use its own dependencies and local `.env` files. The feature-map fixture is local to each run's disposable Postgres instance and uses the same email, handle, and Pro plan.
 
 ## Launch
 
-Use the shared cloud-agent entrypoint for Grok Bot, Cursor, and Codex. Each environment needs Docker, Bun dependencies, `CLOUDFLARE_API_TOKEN`, and `CLOUDFLARE_ACCOUNT_ID` when the token can see multiple accounts. From the repository root run:
+For the CI-equivalent run, use:
 
 ```sh
-scripts/cloud-agent-start.sh
+.agents/skills/verify-editor/scripts/run-feature-map-playwright.sh
 ```
 
-It configures loopback URLs, starts a regular PostgreSQL 15 container on `127.0.0.1:5432`, applies migrations, registers the Alchemy Cloudflare profile non-interactively, and prepares the same local Pro account in each agent's disposable database. Alchemy provides local R2 and the local S3 endpoint; no R2 keys go in `.env`. Stop it with Ctrl-C in the terminal that owns `bun run dev`.
+The command needs Docker, Bun, Chromium, and a non-production `CLOUDFLARE_API_TOKEN` for Alchemy's local R2 runtime. Set `CLOUDFLARE_ACCOUNT_ID` when the token can access more than one account. CI reads these from the separate `FEATURE_MAP_CLOUDFLARE_API_TOKEN` and optional `FEATURE_MAP_CLOUDFLARE_ACCOUNT_ID` secrets. It leaves `.env` files untouched, uses only the local PostgreSQL and local R2 fixture, and writes browser evidence under `artifacts/verify-editor/<RUN_ID>/`.
 
-Run the account driver after startup from the repository root. In a second terminal, change to that root first. The driver signs in as `featuremap@example.com`, creates `featuremap-test` through the visible `/create` form if needed, and saves screenshots and actions:
+Start the local feature-map stack from the repository root. It needs Docker, Bun dependencies, `CLOUDFLARE_API_TOKEN`, and `CLOUDFLARE_ACCOUNT_ID` when the token can see multiple accounts:
+
+```sh
+.agents/skills/verify-editor/scripts/feature-map-start.sh
+```
+
+It configures loopback URLs, starts a regular PostgreSQL 15 container on `127.0.0.1:5432`, applies migrations, registers the Alchemy Cloudflare profile non-interactively, and prepares the local Pro account in the disposable test database. Alchemy provides local R2 and the local S3 endpoint; no R2 keys go in `.env`. Stop it with Ctrl-C in the terminal that owns `bun run dev`.
+
+For a manual one-off account check, run the account driver after startup from the repository root. The CI-equivalent Playwright run does not need this separate step:
 
 ```sh
 REPO="$(git rev-parse --show-toplevel)"
@@ -40,7 +48,7 @@ EVIDENCE_DIR="$REPO/artifacts/verify-editor/$RUN_ID"   # proof: survives cleanup
 mkdir -p "$RUN_DIR" "$EVIDENCE_DIR"
 git -C "$REPO" rev-parse HEAD > "$EVIDENCE_DIR/revision"
 
-cd "$REPO" && scripts/cloud-agent-start.sh             # full shared stack + local Pro account
+cd "$REPO" && .agents/skills/verify-editor/scripts/feature-map-start.sh # local stack + local Pro account
 ```
 
 The shared launcher owns the foreground `bun run dev` process. It uses `127.0.0.1` URLs and fails if another stack is occupying the app ports.
@@ -53,11 +61,11 @@ Run before every drive and whenever something looks off. It is read-only.
 .agents/skills/verify-editor/scripts/doctor.sh "$RUN_DIR"
 ```
 
-It checks: Postgres container ready and migrated (`page_items` exists), API `/` returns `OK`, `/auth/get-session` answers, web serves `/demo`, and port 3000 is owned by a process inside this checkout. Anything else prints `FAIL: ...` and exits 1. Do not drive an instance you did not start (another agent's or the user's).
+It checks: Postgres container ready and migrated (`page_items` exists), API `/` returns `OK`, `/auth/get-session` answers, web serves `/demo`, and port 3000 is owned by a process inside this checkout. Anything else prints `FAIL: ...` and exits 1. Do not drive an instance you did not start.
 
 ## Drive
 
-Harness: headless Playwright (Chromium), one fresh browser context per run, locators by ARIA role and accessible name only.
+Harness: headless Playwright (Chromium), one saved shared-account session per run, locators by ARIA role and accessible name where practical. Screenshots are retained for every test, and traces on failures.
 
 ```sh
 cd "$PW_DIR"

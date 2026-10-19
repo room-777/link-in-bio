@@ -1,9 +1,9 @@
 #!/usr/bin/env bash
-# Boot the shared local stack used by every cloud coding agent: standard
-# PostgreSQL and `bun run dev` (alchemy dev) on 127.0.0.1. Alchemy supplies local R2.
+# Boot the local feature-map stack: PostgreSQL and `bun run dev` (alchemy dev)
+# on 127.0.0.1. Alchemy supplies local R2.
 set -euo pipefail
 
-ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
+ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/../../../.." && pwd)"
 cd "$ROOT"
 
 BUN_VERSION="1.4.0"
@@ -27,7 +27,7 @@ ensure_bun
 bun install --frozen-lockfile
 
 if [[ -z "${CLOUDFLARE_API_TOKEN:-}" ]]; then
-	printf '%s\n' "CLOUDFLARE_API_TOKEN is required for bun run dev; configure it as a cloud environment secret and rerun." >&2
+	printf '%s\n' "CLOUDFLARE_API_TOKEN is required for bun run dev; provide a non-production token and rerun." >&2
 	exit 1
 fi
 
@@ -81,7 +81,7 @@ load_feature_map_env() {
 	export NEXT_PUBLIC_PAGE_DOMAIN=127.0.0.1:3000
 	export NEXT_PUBLIC_R2_PUBLIC_URL=http://127.0.0.1:3001
 	export R2_PUBLIC_URL=http://127.0.0.1:3001
-	export CLOUD_AGENT_FEATURE_MAP=true
+	export FEATURE_MAP_LOCAL_STACK=true
 }
 
 start_postgres() {
@@ -201,7 +201,7 @@ NODE_ENV=development \
 	DATABASE_URL_LOCAL=postgres://postgres:postgres@127.0.0.1:5432/postgres \
 	DATABASE_URL=postgres://postgres:postgres@127.0.0.1:5432/postgres \
 	bun run --filter @grabbin/db db:migrate:deploy
-scripts/prepare-feature-map-account.sh
+.agents/skills/verify-editor/scripts/prepare-feature-map-account.sh
 
 if stack_ready && [[ ! -e /tmp/grabbin-dev/server.pid && ! -e /tmp/grabbin-dev/web.pid ]]; then
 	log "grabbin already ready: web http://127.0.0.1:3000  api http://127.0.0.1:3001"

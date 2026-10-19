@@ -1,21 +1,27 @@
 # Grabbin editor verification map
 
-Source-of-truth recipes for sign-in, analytics events, and the signed-in editor, driven against the full local stack from [the verify-editor skill](../SKILL.md).
+The Playwright suite is the CI entry point for these journeys. Run `.agents/skills/verify-editor/scripts/run-feature-map-playwright.sh` to start the local stack and run the suite. Its setup project signs in once, prepares the shared owner page, and saves session state in a temporary file; the feature tests reuse it. CI uploads screenshots and traces from `artifacts/verify-editor/<RUN_ID>/` even when tests fail. To rerun tests against an already prepared stack, set `PLAYWRIGHT_STORAGE_STATE` and run `bun run test:feature-map`. Keep the journey notes below in sync with [`tests/feature-map.spec.ts`](../tests/feature-map.spec.ts), including any prerequisite that causes a test to skip.
+
+## CI test conditions
+
+- CI uses the local PostgreSQL and Alchemy local R2 service, with a non-production Cloudflare token. It also enables the public Spotify, RSS, and Tweet preview checks.
+- Mapbox search, zoom, and location checks skip unless `NEXT_PUBLIC_MAPBOX_ACCESS_TOKEN` is set. Calendly and the Free plan gate need separate connected/test accounts, configured with `FEATURE_MAP_CALENDLY_TESTS` or `FEATURE_MAP_FREE_STORAGE_STATE` plus `FEATURE_MAP_FREE_HANDLE`.
+- Social login, GA collection, and Creem checkout/purchase stay skipped because they need external test accounts. The suite records local sign-in, page creation, share, and public-link analytics calls without sending data to GA.
 
 ## Baseline preconditions
 
-- Stack launched with `scripts/cloud-agent-start.sh` and `scripts/doctor.sh` prints `OK: stack healthy`.
+- Stack launched with `.agents/skills/verify-editor/scripts/feature-map-start.sh` and the doctor prints `OK: stack healthy`.
 - Every provider uses web `http://127.0.0.1:3000`, API `http://127.0.0.1:3001`, and local PostgreSQL at `127.0.0.1:5432`.
-- Shared identity: `featuremap@example.com`, handle `featuremap-test`, and local Pro product `local-pro`. The launcher creates the same user and Pro grant in each disposable local database. `drive-create-page.mjs` signs in and creates the handle through `/create` on first run.
+- Shared identity: `featuremap@example.com`, handle `featuremap-test`, and local Pro product `local-pro`. The launcher creates the same user and Pro grant in each disposable local database. The Playwright setup signs in and creates the handle through `/create` on first run.
 - `/demo` is intentionally database-free and Free. It can prove demo interactions only; it never counts as proof for owner access, Pro widgets, persistence, or a public stored page.
 - Media upload/cancel require the shared Alchemy local R2 endpoint. Never use real R2 keys or a production database.
 
 ## Driving conventions
 
-- Headless Playwright, a fresh context per run, ARIA role + accessible name locators.
-- Use the same account (`featuremap@example.com`), handle (`featuremap-test`), and local Pro grant (`local-pro`) in Grok Bot, Cursor, and Codex.
+- Headless Playwright, one saved shared-account session per run, ARIA role + accessible name locators.
+- Use the shared account (`featuremap@example.com`), handle (`featuremap-test`), and local Pro grant (`local-pro`) for the suite.
 - Editor controls live in the `group "Page editor toolbar"` (buttons `Add media`, `Add map`, `Add text`, `Add section`, `Add link`, `Advanced`) and on each item. Item controls include `Delete item`, size presets (`Small square`, `Half banner`, `Wide`, `Portrait`, `Full square`), `Edit link URL`, `Add/Edit text link`, `Add/Edit media link`, `Refresh link metadata`, text style, media crop, map search and navigation, and media or link captions.
-- The owner editor saves automatically ~1.5 s after the last change. Wait for that before reloading.
+- The owner editor saves automatically after the last change. Tests wait for the save response before reloading.
 - Restore what you change; keep the evidence.
 
 ## Proof and skip reporting

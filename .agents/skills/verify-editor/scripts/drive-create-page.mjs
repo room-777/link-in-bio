@@ -51,9 +51,6 @@ try {
 		timeout: 180_000,
 	});
 	if (new URL(page.url()).pathname === "/create") {
-		await page.waitForLoadState("networkidle");
-		// Client components may hydrate after the signed-in route becomes visible.
-		await page.waitForTimeout(3_000);
 		const handleInput = page.getByRole("textbox", { name: "Handle" });
 		const handleCheck = page.waitForResponse(
 			(response) =>
@@ -85,6 +82,9 @@ try {
 		`${evidence}/owner-page.aria.txt`,
 		await page.locator("body").ariaSnapshot(),
 	);
+	if (process.env.PLAYWRIGHT_STORAGE_STATE) {
+		await context.storageState({ path: process.env.PLAYWRIGHT_STORAGE_STATE });
+	}
 	step(`RESULT: PASS ${handle}`);
 } catch (error) {
 	step(
