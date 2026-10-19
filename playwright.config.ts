@@ -29,6 +29,7 @@ export default defineConfig({
 				...devices["Desktop Chrome"],
 				baseURL: "http://127.0.0.1:3000",
 				storageState: undefined,
+				trace: "retain-on-failure",
 				screenshot: "on",
 				reducedMotion: "reduce",
 			},

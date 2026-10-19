@@ -51,7 +51,11 @@ test("sign in once and save the shared owner session", async ({ page }) => {
 		new URL(response.url()).pathname.endsWith("/auth/sign-in/email-otp"),
 	);
 	await page.getByRole("button", { name: "Verify code" }).click();
-	await verified;
+	const verificationResponse = await verified;
+	expect(
+		verificationResponse.ok(),
+		`email OTP sign-in failed (${verificationResponse.status()}): ${await verificationResponse.text()}`,
+	).toBe(true);
 	await page.waitForURL((url) => !url.pathname.startsWith("/sign-in"));
 	expect(
 		(await page.context().cookies()).some((cookie) =>
