@@ -32,7 +32,7 @@ function sql(statement: string) {
 
 async function openOwner(page: Page) {
 	watchSaves(page);
-	await page.goto(`/${handle}`, { waitUntil: "networkidle" });
+	await page.goto(`/${handle}`, { waitUntil: "domcontentloaded" });
 	await expect(
 		page.getByRole("group", { name: "Page editor toolbar" }),
 	).toBeVisible();
@@ -95,7 +95,7 @@ async function deleteItem(shell: Locator) {
 test.beforeEach(async ({ page }) => {
 	await page.route("https://example.com/**", (route) =>
 		route.fulfill({
-			path: ".agents/skills/verify-editor/tests/test-fixtures/feature-map-64.png",
+			path: "test-fixtures/feature-map-64.png",
 			contentType: "image/png",
 		}),
 	);
@@ -160,7 +160,7 @@ test("editor-add-item: add, save, reload, and delete a text item", async ({
 	await linkUrl.fill("https://example.com/feature-map-add-item");
 	await linkUrl.press("Enter");
 	await waitForSave(page);
-	await page.reload({ waitUntil: "networkidle" });
+	await page.reload({ waitUntil: "domcontentloaded" });
 	const textId = sql(
 		`select id from page_items where page_id=(select id from pages where handle='${handle}') and type='text' and data->>'text'='Playwright feature map text' order by created_at desc limit 1`,
 	);
@@ -206,12 +206,13 @@ test("editor-inline-destination-url: a text card opens and keeps its optional de
 	const itemId = await shell.getAttribute("data-bento-item-id");
 	if (!itemId) throw new Error("text item has no id");
 	await shell.hover();
+	await shell.getByRole("button", { name: "Open text style options" }).click();
 	await shell.getByRole("button", { name: "Add text link" }).click();
 	const destination = page.getByRole("textbox", { name: "Link URL" }).last();
 	await destination.fill("https://example.com/feature-map");
 	await destination.press("Enter");
 	await waitForSave(page);
-	await page.reload({ waitUntil: "networkidle" });
+	await page.reload({ waitUntil: "domcontentloaded" });
 	const link = page.locator('a[href="https://example.com/feature-map"]');
 	await expect(link).toHaveAttribute("href", "https://example.com/feature-map");
 	const saved = page.locator(`[data-bento-item-id="${itemId}"]`);
@@ -227,7 +228,7 @@ test("editor-inline-destination-url: a text card opens and keeps its optional de
 	await edited.fill("");
 	await edited.press("Enter");
 	await waitForSave(page);
-	await page.reload({ waitUntil: "networkidle" });
+	await page.reload({ waitUntil: "domcontentloaded" });
 	expect(
 		sql(
 			`select coalesce(data->>'url', '') from page_items where id='${itemId}'`,
@@ -386,7 +387,7 @@ test("analytics-events: public link clicks send a safe click event", async ({
 		});
 		const publicPage = await visitor.newPage();
 		await publicPage.goto(`http://127.0.0.1:3000/${handle}`, {
-			waitUntil: "networkidle",
+			waitUntil: "domcontentloaded",
 		});
 		const link = publicPage.locator(
 			'[data-bento-item-id="' +
@@ -449,7 +450,7 @@ test("editor-link-metadata: editing a URL keeps the card's new destination", asy
 	sql(
 		`update page_items set data=jsonb_set(coalesce(data, '{}'::jsonb), '{metadata}', jsonb_set(coalesce(data->'metadata', '{}'::jsonb), '{title}', '"Old title"'::jsonb, true), true) where id='${itemId}'`,
 	);
-	await page.reload({ waitUntil: "networkidle" });
+	await page.reload({ waitUntil: "domcontentloaded" });
 	const shell = content.locator(`[data-bento-item-id="${itemId}"]`);
 	await shell.hover();
 	await shell.getByRole("button", { name: "Edit link URL" }).click();
@@ -462,7 +463,7 @@ test("editor-link-metadata: editing a URL keeps the card's new destination", asy
 	});
 	await page.getByRole("button", { name: "Refresh link metadata" }).click();
 	expect((await refresh).ok()).toBe(true);
-	await page.reload({ waitUntil: "networkidle" });
+	await page.reload({ waitUntil: "domcontentloaded" });
 	expect(
 		sql(
 			`select data->'metadata'->>'title' from page_items where id='${itemId}'`,
@@ -526,7 +527,7 @@ test("editor-layout: dragging a card saves its position in the active layout", a
 			),
 		)
 		.not.toBe(before);
-	await page.reload({ waitUntil: "networkidle" });
+	await page.reload({ waitUntil: "domcontentloaded" });
 	expect(
 		sql(`select (layouts->'wide')::text from page_items where id='${firstId}'`),
 	).not.toBe(before);
@@ -549,7 +550,7 @@ test("editor-layout: a size preset persists after reload", async ({ page }) => {
 	await shell.getByRole("button", { name: "Wide" }).click();
 	await expect(shell).toHaveAttribute("data-bento-item-preset", "landscape");
 	await waitForSave(page);
-	await page.reload({ waitUntil: "networkidle" });
+	await page.reload({ waitUntil: "domcontentloaded" });
 	const saved = page.locator(`[data-bento-item-id="${itemId}"]`);
 	await expect(saved).toHaveAttribute("data-bento-item-preset", "landscape");
 	expect(
@@ -579,7 +580,7 @@ test("editor-profile-and-handle: profile fields save and can be restored", async
 			.toBe(
 				"Playwright Profile Check|Profile changes saved by the feature map test.",
 			);
-		await page.reload({ waitUntil: "networkidle" });
+		await page.reload({ waitUntil: "domcontentloaded" });
 		await expect(page.getByRole("textbox", { name: "Name" })).toHaveValue(
 			"Playwright Profile Check",
 		);
@@ -624,7 +625,7 @@ test("editor-profile-and-handle: change to an available handle and restore the f
 		expect(sql(`select count(*) from pages where handle='${nextHandle}'`)).toBe(
 			"1",
 		);
-		await page.reload({ waitUntil: "networkidle" });
+		await page.reload({ waitUntil: "domcontentloaded" });
 		await expect(
 			page.getByRole("group", { name: "Page editor toolbar" }),
 		).toBeVisible();
@@ -656,7 +657,10 @@ test("editor-profile-and-handle: upload, crop, and remove a profile image", asyn
 		.not.toBe("");
 	await page.getByRole("button", { name: "Change profile image" }).hover();
 	await page.getByRole("button", { name: "Crop profile image" }).click();
-	const image = page.getByRole("dialog").locator("img").first();
+	const image = page
+		.locator('[data-page-image-crop-open="true"]')
+		.locator("img")
+		.first();
 	const box = await image.boundingBox();
 	if (!box) throw new Error("profile image crop preview is missing");
 	await page.mouse.move(box.x + box.width / 2, box.y + box.height / 2);
@@ -673,7 +677,7 @@ test("editor-profile-and-handle: upload, crop, and remove a profile image", asyn
 	await page.getByRole("button", { name: "Change profile image" }).hover();
 	await page.getByRole("button", { name: "Remove profile image" }).click();
 	await waitForSave(page);
-	await page.reload({ waitUntil: "networkidle" });
+	await page.reload({ waitUntil: "domcontentloaded" });
 	expect(
 		sql(
 			`select coalesce(image_key, '') || '|' || coalesce(image_crop::text, '') from pages where handle='${handle}'`,
@@ -706,7 +710,7 @@ test("editor-text-formatting: text alignment and color controls save", async ({
 	await hex.fill("#123abc");
 	await hex.press("Enter");
 	await waitForSave(page);
-	await page.reload({ waitUntil: "networkidle" });
+	await page.reload({ waitUntil: "domcontentloaded" });
 	const saved = page.locator(`[data-bento-item-id="${itemId}"]`);
 	await expect(
 		saved.getByRole("textbox", { name: "Text content" }),
@@ -743,7 +747,7 @@ test("editor-map-editing: location search selects and saves a place", async ({
 			sql(`select data->>'latitude' from page_items where id='${itemId}'`),
 		)
 		.toBe("37.5665");
-	await page.reload({ waitUntil: "networkidle" });
+	await page.reload({ waitUntil: "domcontentloaded" });
 	expect(
 		sql(`select data->>'longitude' from page_items where id='${itemId}'`),
 	).toBe("126.978");
@@ -763,7 +767,7 @@ test("editor-map-editing: caption and open-map link persist", async ({
 		.fill("Playwright map caption");
 	await map.hover();
 	await waitForSave(page);
-	await page.reload({ waitUntil: "networkidle" });
+	await page.reload({ waitUntil: "domcontentloaded" });
 	expect(
 		sql(`select data->>'caption' from page_items where id='${itemId}'`),
 	).toBe("Playwright map caption");
@@ -789,13 +793,13 @@ test("editor-map-editing: current location updates and persists the map position
 	if (!itemId) throw new Error("new map item has no id");
 	await map.hover();
 	await map.getByRole("button", { name: "Open map controls" }).click();
-	await map.getByRole("button", { name: "Use current location" }).click();
+	await page.getByRole("button", { name: "Use current location" }).click();
 	await expect
 		.poll(() =>
 			sql(`select data->>'latitude' from page_items where id='${itemId}'`),
 		)
 		.toBe("37.5665");
-	await page.reload({ waitUntil: "networkidle" });
+	await page.reload({ waitUntil: "domcontentloaded" });
 	expect(
 		sql(`select data->>'longitude' from page_items where id='${itemId}'`),
 	).toBe("126.978");
@@ -813,13 +817,13 @@ test("editor-map-editing: zoom changes and persists", async ({ page }) => {
 	const beforeZoom = sql(
 		`select data->>'zoom' from page_items where id='${itemId}'`,
 	);
-	await map.getByRole("button", { name: "Zoom in" }).click();
+	await page.getByRole("button", { name: "Zoom in" }).click();
 	await expect
 		.poll(() =>
 			sql(`select data->>'zoom' from page_items where id='${itemId}'`),
 		)
 		.not.toBe(beforeZoom);
-	await page.reload({ waitUntil: "networkidle" });
+	await page.reload({ waitUntil: "domcontentloaded" });
 	expect(
 		sql(`select data->>'zoom' from page_items where id='${itemId}'`),
 	).not.toBe(beforeZoom);
@@ -849,7 +853,7 @@ test("editor-media-upload: local R2 upload completes and renders after reload", 
 		content.getByRole("textbox", { name: "Media caption" }).last(),
 	).toBeVisible();
 	await waitForSave(page);
-	await page.reload({ waitUntil: "networkidle" });
+	await page.reload({ waitUntil: "domcontentloaded" });
 	expect(
 		Number(
 			sql(
@@ -973,7 +977,7 @@ test("editor-tweet: invalid and public post URLs show the right result", async (
 		`select id from page_items where page_id=(select id from pages where handle='${handle}') and type='tweet' and data->>'url'='https://x.com/i/status/20' order by created_at desc limit 1`,
 	);
 	expect(itemId).not.toBe("");
-	await page.reload({ waitUntil: "networkidle" });
+	await page.reload({ waitUntil: "domcontentloaded" });
 	await expect(page.locator(`[data-bento-item-id="${itemId}"]`)).toBeVisible();
 	await deleteItem(page.locator(`[data-bento-item-id="${itemId}"]`));
 });
@@ -995,7 +999,7 @@ test("editor-media-editing: saved media caption remains after reload", async ({
 	const before = await caption.inputValue();
 	await caption.fill("Feature map media caption");
 	await waitForSave(page);
-	await page.reload({ waitUntil: "networkidle" });
+	await page.reload({ waitUntil: "domcontentloaded" });
 	const saved = page
 		.locator(`[data-bento-item-id="${itemId}"]`)
 		.getByRole("textbox", { name: "Media caption" });
@@ -1018,6 +1022,7 @@ test("editor-media-editing: media crop and destination save and can be cleared",
 	const shell = caption.locator("xpath=ancestor::*[@data-bento-item-id][1]");
 	const itemId = await shell.getAttribute("data-bento-item-id");
 	if (!itemId) throw new Error("new media item has no id");
+	await shell.hover();
 	await expect(shell.getByRole("button", { name: "Crop media" })).toBeVisible();
 	await shell.getByRole("button", { name: "Crop media" }).click();
 	const crop = shell.getByRole("button", { name: "Drag media to crop" });
@@ -1042,7 +1047,7 @@ test("editor-media-editing: media crop and destination save and can be cleared",
 	await destination.fill("https://example.com/featuremap-media");
 	await destination.press("Enter");
 	await waitForSave(page);
-	await page.reload({ waitUntil: "networkidle" });
+	await page.reload({ waitUntil: "domcontentloaded" });
 	const saved = page.locator(`[data-bento-item-id="${itemId}"]`);
 	expect(
 		sql(
@@ -1064,7 +1069,7 @@ test("editor-media-editing: media crop and destination save and can be cleared",
 	await destinationEdit.fill("");
 	await destinationEdit.press("Enter");
 	await waitForSave(page);
-	await page.reload({ waitUntil: "networkidle" });
+	await page.reload({ waitUntil: "domcontentloaded" });
 	expect(
 		sql(
 			`select coalesce(data->>'url', '') from page_items where id='${itemId}'`,
@@ -1085,6 +1090,9 @@ test("editor-link-card-images: local R2 image picker is available", async ({
 	await expect(card).toBeVisible();
 	const itemId = await card.getAttribute("data-bento-item-id");
 	if (!itemId) throw new Error("new link card has no item id");
+	await card.hover();
+	await card.getByRole("button", { name: "Wide" }).click();
+	await expect(card.locator('[class~="group/link-image"]')).toBeVisible();
 	await card.locator('[class~="group/link-image"]').hover();
 	const firstPicker = page.waitForEvent("filechooser");
 	await card.getByRole("button", { name: "Add link image" }).click();
@@ -1135,7 +1143,7 @@ test("editor-advanced-widgets: Spotify and RSS previews can be added and saved",
 		`select id from page_items where page_id=(select id from pages where handle='${handle}') and type='spotify' and data->>'url'='https://open.spotify.com/track/4uLU6hMCjMI75M1A2tKUQC' order by created_at desc limit 1`,
 	);
 	expect(spotifyId).not.toBe("");
-	await page.reload({ waitUntil: "networkidle" });
+	await page.reload({ waitUntil: "domcontentloaded" });
 	await expect(
 		page.locator(`[data-bento-item-id="${spotifyId}"]`),
 	).toBeVisible();
@@ -1152,7 +1160,7 @@ test("editor-advanced-widgets: Spotify and RSS previews can be added and saved",
 		`select id from page_items where page_id=(select id from pages where handle='${handle}') and type='rss' and data->>'url'='https://feeds.bbci.co.uk/news/world/rss.xml' order by created_at desc limit 1`,
 	);
 	expect(rssId).not.toBe("");
-	await page.reload({ waitUntil: "networkidle" });
+	await page.reload({ waitUntil: "domcontentloaded" });
 	await expect(page.locator(`[data-bento-item-id="${rssId}"]`)).toBeVisible();
 	await deleteItem(page.locator(`[data-bento-item-id="${rssId}"]`));
 });
@@ -1179,7 +1187,7 @@ test("editor-advanced-widgets: Calendly can add an event when a test connection 
 		`select id from page_items where page_id=(select id from pages where handle='${handle}') and type='calendly' order by created_at desc limit 1`,
 	);
 	expect(itemId).not.toBe("");
-	await page.reload({ waitUntil: "networkidle" });
+	await page.reload({ waitUntil: "domcontentloaded" });
 	await expect(page.locator(`[data-bento-item-id="${itemId}"]`)).toBeVisible();
 	expect(
 		sql(`select data->>'eventTypeUri' from page_items where id='${itemId}'`),
@@ -1202,7 +1210,7 @@ test("editor-advanced-widgets: the Pro gate works with a separate Free account",
 	try {
 		const page = await context.newPage();
 		await page.goto(`http://127.0.0.1:3000/${freeHandle}`, {
-			waitUntil: "networkidle",
+			waitUntil: "domcontentloaded",
 		});
 		const before = sql(
 			`select count(*) from page_items where page_id=(select id from pages where handle='${freeHandle}')`,

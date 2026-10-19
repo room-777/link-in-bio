@@ -65,6 +65,7 @@ test("analytics-events: a new local user creates a page through /create", async 
 		await page.getByRole("textbox").first().fill(otp);
 		await page.getByRole("button", { name: "Verify code" }).click();
 		await page.waitForURL("**/create");
+		await page.waitForLoadState("networkidle");
 		await expect(page.getByRole("textbox", { name: "Handle" })).toBeVisible();
 		const available = page.waitForResponse((response) => {
 			const url = new URL(response.url());
@@ -74,6 +75,10 @@ test("analytics-events: a new local user creates a page through /create", async 
 			);
 		});
 		await page.getByRole("textbox", { name: "Handle" }).fill(newHandle);
+		await expect(page.locator("#handle-status-icon")).toHaveAttribute(
+			"aria-label",
+			"Handle available",
+		);
 		const availability = await available;
 		expect(availability.ok()).toBe(true);
 		expect(await availability.json()).toMatchObject({ available: true });
@@ -118,7 +123,7 @@ test("analytics-events: a new local user creates a page through /create", async 
 			)
 			.toBe(true);
 	} finally {
-		await context.close();
+		await context.close().catch(() => {});
 		sql(`delete from "user" where email='${newEmail}'`);
 	}
 });
