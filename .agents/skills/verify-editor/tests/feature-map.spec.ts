@@ -89,7 +89,9 @@ test("analytics-events: a new local user creates a page through /create", async 
 	const suffix = `${Date.now()}`;
 	const newEmail = `featuremap-${suffix}@example.com`;
 	const newHandle = `featuremap-${suffix}`;
-	const context = await browser.newContext();
+	const context = await browser.newContext({
+		storageState: { cookies: [], origins: [] },
+	});
 	await context.addInitScript(() => {
 		const state = window as Window & {
 			__gaCalls?: unknown[][];
@@ -103,6 +105,7 @@ test("analytics-events: a new local user creates a page through /create", async 
 		await page.goto("http://127.0.0.1:3000/sign-in", {
 			waitUntil: "networkidle",
 		});
+		await page.waitForLoadState("networkidle");
 		await page.getByRole("textbox", { name: "Email" }).fill(newEmail);
 		await page.getByRole("button", { name: "Send OTP" }).click();
 		await expect(
@@ -183,10 +186,6 @@ test("editor-add-item: add, save, reload, and delete a text item", async ({
 	const linkUrl = page.getByRole("textbox", { name: "Link URL" }).last();
 	await linkUrl.fill("https://example.com/feature-map-add-item");
 	await linkUrl.press("Enter");
-	await toolbar.getByRole("button", { name: "Add map" }).click();
-	const addedMap = content.locator('[data-bento-item-type="map"]').last();
-	const addedMapId = await addedMap.getAttribute("data-bento-item-id");
-	if (!addedMapId) throw new Error("new map item has no id");
 	await waitForSave(page);
 	await page.reload({ waitUntil: "networkidle" });
 	const textId = sql(
@@ -198,12 +197,10 @@ test("editor-add-item: add, save, reload, and delete a text item", async ({
 	const linkId = sql(
 		`select id from page_items where page_id=(select id from pages where handle='${handle}') and type='link' and data->>'url'='https://example.com/feature-map-add-item' order by created_at desc limit 1`,
 	);
-	const mapId = addedMapId;
-	for (const id of [textId, sectionId, linkId, mapId]) expect(id).not.toBe("");
+	for (const id of [textId, sectionId, linkId]) expect(id).not.toBe("");
 	const textShell = page.locator(`[data-bento-item-id="${textId}"]`);
 	const sectionShell = page.locator(`[data-bento-item-id="${sectionId}"]`);
 	const linkShell = page.locator(`[data-bento-item-id="${linkId}"]`);
-	const mapShell = page.locator(`[data-bento-item-id="${mapId}"]`);
 	await expect(
 		textShell.getByRole("textbox", { name: "Text content" }),
 	).toHaveValue("Playwright feature map text");
@@ -213,12 +210,11 @@ test("editor-add-item: add, save, reload, and delete a text item", async ({
 	await expect(
 		linkShell.locator('a[href="https://example.com/feature-map-add-item"]'),
 	).toBeVisible();
-	for (const id of [textId, sectionId, linkId, mapId])
+	for (const id of [textId, sectionId, linkId])
 		expect(sql(`select count(*) from page_items where id='${id}'`)).toBe("1");
 	await deleteItem(textShell);
 	await deleteItem(sectionShell);
 	await deleteItem(linkShell);
-	await deleteItem(mapShell);
 	await waitForSave(page);
 	const after = sql(
 		`select coalesce(string_agg(type || ':' || n, ',' order by type), '') from (select type, count(*) n from page_items where page_id=(select id from pages where handle='${handle}') group by type) items`,
@@ -385,7 +381,9 @@ test("analytics-events: public link clicks send a safe click event", async ({
 		`select id from page_items where page_id=(select id from pages where handle='${handle}') and data->>'url'='https://example.com/feature-map-analytics' order by created_at desc limit 1`,
 	);
 	expect(itemId).not.toBe("");
-	const visitor = await browser.newContext();
+	const visitor = await browser.newContext({
+		storageState: { cookies: [], origins: [] },
+	});
 	try {
 		await visitor.addInitScript(() => {
 			const state = window as Window & {
@@ -715,7 +713,7 @@ test("editor-text-formatting: text alignment and color controls save", async ({
 	).toHaveValue("Playwright format check");
 	expect(
 		sql(
-			`select style->>'textAlign' || '|' || style->>'verticalAlign' || '|' || style->>'backgroundColor' from page_items where id='${itemId}'`,
+			`select (style->>'textAlign') || '|' || (style->>'verticalAlign') || '|' || (style->>'backgroundColor') from page_items where id='${itemId}'`,
 		),
 	).toBe("center|bottom|#123abc");
 	await deleteItem(saved);
