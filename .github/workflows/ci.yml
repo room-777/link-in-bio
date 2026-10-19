@@ -58,6 +58,7 @@ jobs:
     name: feature-map-e2e
     runs-on: ubuntu-latest
     timeout-minutes: 35
+    environment: production
     env:
       CLOUDFLARE_API_TOKEN: ${{ secrets.FEATURE_MAP_CLOUDFLARE_API_TOKEN }}
       CLOUDFLARE_ACCOUNT_ID: ${{ secrets.FEATURE_MAP_CLOUDFLARE_ACCOUNT_ID }}
