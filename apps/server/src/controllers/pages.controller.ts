@@ -28,6 +28,7 @@ import {
 	createPresignedPutUrl,
 	isOwnedPageMediaKey,
 } from "../services/media.service";
+import { createOutboundFetch } from "../services/outbound-fetch";
 import {
 	completePage,
 	createPage,
@@ -99,7 +100,9 @@ export const pagesController = new Hono<AppEnv>()
 			return jsonApiError(c, { status: 400, detail: "Invalid timezone." });
 		}
 		c.header("Cache-Control", "private, no-store");
-		return c.json(await getPublicViews(page.id, timezone));
+		return c.json(
+			await getPublicViews(page.id, timezone, createOutboundFetch(c.env)),
+		);
 	})
 	.get("/:handle", optionalSession, async (c) => {
 		const page = await getPublicPageWithPlan(

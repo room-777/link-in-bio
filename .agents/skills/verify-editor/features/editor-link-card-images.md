@@ -1,36 +1,33 @@
-# Edit a link card image
+# Add images to link cards
 
-An owner adds a custom image to a link card, replaces it, or removes it. The image choice persists with the link item.
+An owner can add an image to a link card, replace it, or remove it. The selected image is uploaded through the page media flow and saved with the link item.
 
 ## Sub-features
 
-- `link-image-add` uploads a local image to a link card.
-- `link-image-replace` changes the card's custom image.
-- `link-image-remove` removes the custom image and returns to the metadata image when one exists.
-- `link-image-persist` restores the custom image after reload.
+- `link-image-add`: attach an image to a link card.
+- `link-image-replace`: replace its current image.
+- `link-image-remove`: clear its image.
+- `link-image-persist`: confirm the image remains after reload.
 
 ## How to get to it (user POV)
 
-- Sign in as `featuremap@example.com` and open `/featuremap-test`.
-- Add a link card if needed. Hover or focus its image area to show `Add link image`, `Replace link image`, and `Remove link image`.
+- Sign in and open your `/{handle}` page.
+- Hover or focus a link card's image area and choose `Add link image`, `Replace link image`, or `Remove link image`.
 
 ## Driving it with Playwright
 
 Preconditions:
 
-- Run the `verify-editor` doctor, sign in as `featuremap@example.com`, and open its `featuremap-test` page. Pro access is not required for link-card images. Use the local stack with its local R2 binding.
-- Keep two valid image fixtures smaller than the upload limit, one for the first image and one for replacement.
-- Record the link item `id`, `data.imageKey`, and `data.imageUrl` before editing.
+- Use the runner's local media route and isolated Wrangler R2 bucket. Never configure or use production R2 credentials.
+- Keep an accepted image fixture and record the link item's original data for cleanup.
 
-- **Add.** Focus the link card image area and click `button "Add link image"`. Choose the first fixture. Wait for upload to finish, then confirm the chosen image appears on the card.
-- **Replace.** Click `button "Replace link image"` and choose the second fixture. Confirm the card displays the second image.
-- **Reload and inspect.** Wait for saving, reload, and confirm the replacement remains. Read `select id, data from page_items where id = '<item-id>'`; confirm the `imageKey` changed and resolves to the displayed image.
-- **Remove.** Click `button "Remove link image"`, wait for saving, and reload. Confirm the custom image is gone. If link metadata provides an image, confirm the card falls back to that image; otherwise confirm its empty image treatment. The saved `imageKey` is null.
-- **Proof.** Save screenshots, ARIA snapshots, upload completion evidence, and the read-only item row before and after.
+- **Add.** Choose `Add link image`, select the fixture, and wait for upload completion. Confirm the image appears and the link item remains after reload.
+- **Replace.** Choose `Replace link image` and select a second fixture. Confirm the new image appears after reload.
+- **Remove.** Choose `Remove link image`. Confirm the image is gone after reload and the link item's image field is cleared.
+- **Check storage.** Confirm the link item in `page_items` references the new image after add/replace and no longer references it after removal. Check local media requests; no request may reach Cloudflare R2.
+- **Proof.** Capture each action/result, screenshots, ARIA snapshots, network outcomes, and read-only item rows.
 
 ## Gotchas
 
-- The image controls appear when the card image area is hovered or focused. Do not query them before focusing the correct link card.
-- Uploads require the local R2 binding described in `editor-media-upload.md`. Do not use production R2 credentials.
-- A link card may have several provider images. Removing the custom image can reveal the provider image instead of a blank card.
-- Keep the link URL and metadata fixed during this journey so the test isolates the image change.
+- `/demo` uses a local blob preview and cannot prove upload or persistence.
+- Stop if the upload target is not `127.0.0.1`. Never use the production bucket.

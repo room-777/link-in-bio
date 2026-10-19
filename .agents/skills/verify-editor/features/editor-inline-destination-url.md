@@ -1,41 +1,35 @@
 # Add links to text and media cards
 
-An owner can make a text or media card open an external URL. These optional destinations are saved as `data.url`; link cards keep their separate required URL and metadata flow.
+An owner can give a text or media card an optional destination URL. Link cards have their own required destination and are covered by the link metadata map.
 
 ## Sub-features
 
-- `text-destination-add` adds a destination to a text card.
-- `media-destination-add` adds a destination to a media card.
-- `destination-edit` changes a saved destination.
-- `destination-clear` clears an optional destination.
-- `destination-validation` rejects an invalid URL without replacing the saved value.
-- `destination-persist` restores the destination after reload.
-- `destination-open` opens the saved URL from the card action.
+- `text-destination-add` and `media-destination-add`: add an external destination.
+- `destination-edit`: change a saved destination.
+- `destination-clear`: remove the optional destination.
+- `destination-validation`: reject invalid input without replacing the saved value.
+- `destination-persist`: restore the destination after reload.
 
 ## How to get to it (user POV)
 
-- Sign in as `featuremap@example.com` and open `/featuremap-test`.
-- Add a text or media card if needed. Hover the card to reveal its controls.
-- Choose `Add text link` or `Add media link`. After saving, use `Edit text link` or `Edit media link` to change it.
+- Sign in and open your `/{handle}` page.
+- Add a text or uploaded media card if needed, focus or hover it, then choose `Add text link` or `Add media link`.
 
 ## Driving it with Playwright
 
 Preconditions:
 
-- Run the `verify-editor` doctor and open the signed-in owner page.
-- For a media card, finish uploading an image before testing its destination.
+- Use the local signed-in owner page. Finish media upload before testing a media destination.
+- Record the original item data and restore the test values after proof.
 
-- **Text destination.** Hover the text card, choose `Add text link`, enter `https://example.com/featuremap-text`, and press Enter. Confirm `Open text link` points to that URL.
-- **Media destination.** Hover the media card, choose `Add media link`, enter `https://example.com/featuremap-media`, and press Enter. Confirm `Open media` points to that URL.
-- **Validation.** Edit each destination, enter `not a url`, and move focus away. Confirm the field is invalid and the previously saved destination remains.
-- **Persistence.** Wait for autosave, reload in a fresh browser context, and confirm each card action still points to its URL. Read `page_items.data` and confirm the destination is stored in `data.url`.
-- **Clear.** Empty each `Link URL` field, commit, and reload. Confirm the external card action is gone and `data.url` is absent.
-- **Proof.** Save before/after screenshots, ARIA snapshots, observed URLs, and read-only database rows under `$EVIDENCE_DIR/editor-inline-destination-url/`.
+- **Add and open.** Enter `https://example.com/featuremap-text` or `https://example.com/featuremap-media` in the matching `Link URL` field. Confirm the card action points to that URL.
+- **Edit and validate.** Change the destination, then try `not a url`. Confirm invalid input is rejected and the previously saved URL remains.
+- **Persist.** Wait for autosave and reload in a new context. Confirm the card action still points to the saved URL and the matching `page_items.data.url` is present.
+- **Clear.** Empty the field and commit. Reload and confirm the external card action and `data.url` are gone.
+- **Proof.** Capture before/after screenshots, ARIA snapshots, observed URLs, and read-only item rows.
 
 ## Gotchas
 
-- `/demo` does not persist changes; use the signed-in owner page for persistence proof.
-- The controls appear on hover or focus. Focus the intended card before querying its link control.
-- Text and media destinations accept HTTPS URLs and share the `Link URL` field label, so scope each locator to its open popover.
-- Older rows may use `data.link`; the current API and migration store these destinations as `data.url`.
-- Link-card destinations are covered by [Link metadata refresh](./editor-link-metadata.md); `Add link` does not test text or media destinations.
+- `/demo` does not persist changes; use the owner page for persistence.
+- Controls appear on hover or focus. Scope the shared `Link URL` field to its open editor.
+- Older stored rows may use `data.link`; check the current API representation when reading old data.

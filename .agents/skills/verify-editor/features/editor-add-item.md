@@ -1,45 +1,37 @@
-# Add an item
+# Add and remove page items
 
-An owner adds a block (text, section, link, map) from the editor toolbar, edits it, and can delete it again. The same Bento editor store backs `/demo` (no saving) and the owner view of `/{handle}` (auto-saves to `page_items`).
+An owner adds text, section, link, or map items from the editor toolbar, edits their content, and removes them. `/demo` supports interaction only; an owner page also saves changes.
 
 ## Sub-features
 
-- `add-text` adds a `Text content` block.
-- `add-section` adds a `Section title` block.
-- `section-title-edit` changes the text in an existing section block.
-- `add-link` opens the `Link URL` field and adds a link card for the URL.
-- `add-map` adds a map block (`region "Map"`).
-- `delete-item` removes a block with `Delete item`.
-- `item-persist` (owner only) saves the change and shows it after reload.
-
-Public visitors clicking a link inside an item are measured separately in [the analytics event map](./analytics-events.md). Adding or editing an item does not send a click event.
+- `add-text`: creates a `Text content` item.
+- `add-section`: creates and saves a section after its `Section title` is filled.
+- `add-link`: creates a link card from a URL.
+- `add-map`: creates a map item.
+- `delete-item`: removes an item using its hover controls.
+- `item-persist`: the owner's change remains after reload.
 
 ## How to get to it (user POV)
 
-- `/demo` (no account): the toolbar is `group "Page editor toolbar"` at the bottom.
-- Owner view: sign in, open your `/{handle}`; the same toolbar appears.
+- Open `/demo` to try the editor without an account.
+- For saved items, sign in and open your `/{handle}` page. Use the `Page editor toolbar` at the bottom.
 
 ## Driving it with Playwright
 
 Preconditions:
 
-- `doctor.sh` OK. For `item-persist`: sign in as `featuremap@example.com` and use its `featuremap-test` page.
+- For persistence, use the local `featuremap@example.com` account and `featuremap-test` page on the full local stack.
+- Start with a recorded item count and restore every change after capturing proof.
 
-- **Count before.** Count `textbox "Text content"` (demo seed has 2).
-- **Add.** Click toolbar `button "Add text"`. One more `Text content` textbox exists; fill it with `Verification note`.
-- **Delete.** Click `button "Delete item"` of that block. The count returns to the original.
-- **Persist (owner).** After adding, wait ≥2 s (auto-save), reload in a new context, confirm the block, and read `select type, data from page_items where page_id = ... order by created_at desc limit 1`.
-- **Edit a section title.** Focus `textbox "Section title"` in the section block, replace its value, and wait for saving. Reload `/featuremap-test`; the new section heading remains. Read the item's `data` in `page_items` and confirm `title` matches.
-- **Owner (scripted).** `node scripts/drive-editor-journeys.mjs "$EVIDENCE_DIR" item-add` adds `text` (filled "Verify text"), `section` (`Section title` "Verify section"), `link` (`https://example.com/`), and `map` (Seoul default). It checks each `page_items` type after reload, then hovers the map block, deletes it, and checks the row is gone after reload.
-- **Scripted (demo).** `node scripts/drive-demo-add-text.mjs "$EVIDENCE_DIR/editor-add-item"` from `$PW_DIR`.
-- **Proof.** `before.png/.aria.txt`, `after-add.png/.aria.txt`, `after-delete.png`, `actions.md`; for owner runs also the DB row.
+- **Add text.** Click `button "Add text"`, fill the focused `textbox "Text content"`, wait for autosave, then reload in a new context. The item and matching `page_items` row remain.
+- **Add section.** Click `button "Add section"`, fill `textbox "Section title"`, wait for autosave, reload, and confirm its heading and row remain.
+- **Add link or map.** Use `button "Add link"` or `button "Add map"`. Confirm the card appears; for an owner, confirm the corresponding `page_items` row after reload.
+- **Delete.** Hover the target item, click its `button "Delete item"`, then reload. The item and row are gone.
+- **Proof.** Capture before and after ARIA snapshots and screenshots, `actions.md`, and read-only database rows for owner persistence.
 
 ## Gotchas
 
-- `/demo` never calls the API; it proves `add-text`/`delete-item` interaction only, not `item-persist`.
-- A section row is only saved once it has a title. An empty `Add section` block does not create a `page_items` row, so fill `Section title`.
-- An existing section title stays editable as `textbox "Section title"`; the view heading after reload shows the saved text.
-- `Delete item` is hover-revealed. Hover the block, then click normally. `click({ force: true })` on the hidden button hits nothing: no `PATCH` and no DB change.
-- Verified Oct 14 2026 (PR #1 + `main`): text/section/link/map each persisted after reload, and `Delete item` removed the row (6 → 5).
-- `Add text` and `Add section` focus the new block; typing right after the click goes into it.
-- `Add link` and `Add map` need network for previews (link metadata, Mapbox). Without `NEXT_PUBLIC_MAPBOX_ACCESS_TOKEN` the map renders without tiles.
+- `/demo` intentionally makes no API calls. It cannot prove saved items or Pro access.
+- An empty section is not saved; enter a title first.
+- Delete controls appear on hover or focus. Do not force-click a hidden button.
+- Link previews and map tiles need their external services and local configuration.

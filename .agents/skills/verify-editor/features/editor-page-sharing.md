@@ -1,33 +1,31 @@
 # Share the page
 
-An owner opens the share dialog, scans the page QR code, or copies the page URL. The copy button reports whether the link copied.
+An owner can open the share dialog, see its QR graphic, and copy the public page URL.
 
 ## Sub-features
 
-- `share-open` opens the share dialog from the owner controls.
-- `share-qr` renders a QR code for the current page URL.
-- `share-copy` copies that URL and changes the button text to `Copied Link`.
-- `share-mobile` opens the same dialog from the mobile share button.
+- `share-open`: open the share dialog from desktop or mobile controls.
+- `share-copy`: copy the page URL and show success feedback.
+- `share-mobile`: reach the same dialog from a compact viewport.
 
 ## How to get to it (user POV)
 
-- On a wide owner page, click `button "Share page"` in the owner footer.
-- On a compact viewport, click `Share link`.
+- On a wide owner page, choose `Share page` in the owner controls.
+- On a compact viewport, choose `Share link`.
 
 ## Driving it with Playwright
 
 Preconditions:
 
-- Run the `verify-editor` doctor, sign in as `featuremap@example.com`, and open `/featuremap-test` with the local Pro grant.
-- Grant clipboard read and write permissions to the local browser context.
+- Sign in to the local `featuremap-test` owner page.
+- Grant clipboard read/write permission for the local browser context.
 
-- **Open the dialog.** On desktop, click `button "Share page"`. On mobile, click `button "Share link"`. Confirm `dialog "Share your page"` opens.
-- **Check the QR code.** Confirm the graphic named `QR code for your page` is visible and its value corresponds to the current page URL.
-- **Copy the URL.** Click `button "Copy Link"`, confirm it changes to `Copied Link`, and read the browser clipboard. The clipboard URL must equal the current page URL.
-- **Proof.** Save screenshots and ARIA snapshots of the dialog, plus the current page URL and clipboard value. This flow has no database write.
+- **Open.** Click `button "Share page"` on desktop or `button "Share link"` on mobile. Confirm `dialog "Share your page"` appears.
+- **QR.** Confirm the graphic `QR code for your page` is visible. Do not inspect or decode its address content.
+- **Copy.** Click `button "Copy Link"`. Confirm it changes to `Copied Link` and clipboard content equals the page URL.
+- **Proof.** Capture the action and dialog result with screenshots and ARIA snapshots, plus the clipboard value. No database write is expected.
 
 ## Gotchas
 
-- The mobile share button is hidden in a wide viewport. Use a compact viewport for the mobile path.
-- Copy requires browser clipboard permission and a secure browser context. Report permission denial as an environment block.
-- The QR encodes `window.location.href`. Open the owner page directly so the code does not include an unrelated route.
+- The mobile control is hidden at desktop width; set a compact viewport for that path.
+- Clipboard access can be blocked by browser permissions. Record that as an environment block.

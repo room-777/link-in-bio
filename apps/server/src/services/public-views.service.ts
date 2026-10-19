@@ -40,7 +40,12 @@ function getLocalDates(timezone: string) {
 	};
 }
 
-async function getPageviews(pageId: string, timezone: string, date: string) {
+async function getPageviews(
+	pageId: string,
+	timezone: string,
+	date: string,
+	fetcher: typeof fetch,
+) {
 	if (new URL(`http://${env.PAGE_DOMAIN}`).hostname === "localhost") {
 		return null;
 	}
@@ -56,7 +61,7 @@ async function getPageviews(pageId: string, timezone: string, date: string) {
 		timezone,
 	}).toString();
 
-	const response = await fetch(url);
+	const response = await fetcher(url);
 	if (!response.ok) throw new Error("Simple Analytics request failed.");
 	const data: unknown = await response.json();
 	if (typeof data !== "object" || data === null || !("pageviews" in data)) {
@@ -69,15 +74,19 @@ async function getPageviews(pageId: string, timezone: string, date: string) {
 	throw new Error("Simple Analytics response is invalid.");
 }
 
-export async function getPublicViews(pageId: string, timezone: string) {
+export async function getPublicViews(
+	pageId: string,
+	timezone: string,
+	fetcher: typeof fetch = fetch,
+) {
 	const dates = getLocalDates(timezone);
 	const key = `${pageId}:${dates.timezone}:${dates.localDate}`;
 	const cached = cache.get(key);
 	if (cached && cached.expiresAt > Date.now()) return cached.value;
 
 	const [todayViews, yesterdayViews] = await Promise.all([
-		getPageviews(pageId, dates.timezone, dates.localDate),
-		getPageviews(pageId, dates.timezone, dates.yesterdayDate),
+		getPageviews(pageId, dates.timezone, dates.localDate, fetcher),
+		getPageviews(pageId, dates.timezone, dates.yesterdayDate, fetcher),
 	]);
 	const value = { todayViews, yesterdayViews };
 	cache.set(key, { value, expiresAt: Date.now() + CACHE_TTL_MS });

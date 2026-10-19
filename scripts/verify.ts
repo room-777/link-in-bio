@@ -47,8 +47,8 @@ const steps: Array<[name: string, command: string[]]> = [
 	["Biome (format + lint, whole repo)", ["bunx", "biome", "ci", "."]],
 	["Typecheck (every package)", ["bun", "run", "check-types"]],
 	[
-		"Web lint (Biome + callback names)",
-		["bun", "run", "--filter", "web", "lint"],
+		"Web callback names",
+		["bun", "apps/web/scripts/check-architecture.ts", "callbacks"],
 	],
 	["Production keys", ["bun", "run", "check:prod-keys"]],
 	["Tests (every package)", ["bun", "test"]],

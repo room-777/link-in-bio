@@ -1,44 +1,35 @@
-# Grabbin editor verification map
+# Grabbin feature verification map
 
-Source-of-truth recipes for sign-in, analytics events, and the signed-in editor, driven against the full local stack from [the verify-editor skill](../SKILL.md).
+This is the full maintained list of the mapped user journeys. Use the matching file for steps and proof standards. All browser journeys should use the actual user path and ARIA names below; a visible success message alone does not prove a saved change.
 
 ## Baseline preconditions
 
-- Stack launched with `scripts/cloud-agent-start.sh` and `scripts/doctor.sh` prints `OK: stack healthy`.
-- Every provider uses web `http://127.0.0.1:3000`, API `http://127.0.0.1:3001`, and local PostgreSQL at `127.0.0.1:5432`.
-- Shared identity: `featuremap@example.com`, handle `featuremap-test`, and local Pro product `local-pro`. The launcher creates the same user and Pro grant in each disposable local database. `drive-create-page.mjs` signs in and creates the handle through `/create` on first run.
-- `/demo` is intentionally database-free and Free. It can prove demo interactions only; it never counts as proof for owner access, Pro widgets, persistence, or a public stored page.
-- Media upload/cancel require the shared Alchemy local R2 endpoint. Never use real R2 keys or a production database.
+- Run only against a local stack at web `http://127.0.0.1:3000`, API `http://127.0.0.1:3001`, and the dedicated disposable PostgreSQL container on `127.0.0.1:15432`.
+- For owner journeys, use local `featuremap@example.com`, handle `featuremap-test`, and the local Pro grant. Reuse the saved owner browser state at `~/.cache/grabbin-featuremap/owner-session.json`; recreate it only if it is missing or expired. Verify the target database and storage before changing data.
+- Use a fresh browser context per journey. Load the saved owner state for protected journeys; the sign-in journey must start with an empty context. Never drive an instance you did not start or use production database/R2 credentials.
+- `/demo` is database-free and Free. It proves editor interactions only, never sign-in, saving, Pro access, uploads, or a public stored page.
 
 ## Driving conventions
 
-- Headless Playwright, a fresh context per run, ARIA role + accessible name locators.
-- Use the same account (`featuremap@example.com`), handle (`featuremap-test`), and local Pro grant (`local-pro`) in Grok Bot, Cursor, and Codex.
-- Editor controls live in the `group "Page editor toolbar"` (buttons `Add media`, `Add map`, `Add text`, `Add section`, `Add link`, `Advanced`) and on each item. Item controls include `Delete item`, size presets (`Small square`, `Half banner`, `Wide`, `Portrait`, `Full square`), `Edit link URL`, `Add/Edit text link`, `Add/Edit media link`, `Refresh link metadata`, text style, media crop, map search and navigation, and media or link captions.
-- The owner editor saves automatically ~1.5 s after the last change. Wait for that before reloading.
-- Restore what you change; keep the evidence.
-
-## Proof and skip reporting
-
-- Capture the action and the resulting state (before/after ARIA snapshot + screenshot), plus `actions.md`.
-- Persistence needs a second view: reload in a new context and read `page_items` from Postgres.
-- A `/demo` run proves editor interaction only (persistence is off there). Never report it as a save proof or a Pro-gated feature proof.
-- If a precondition is missing, report the journey as blocked with the reason. Do not substitute another entry point.
+- Use Playwright with Chromium, fresh context, accessible roles/names, and stable page routes. Prefer the exact names listed in each journey over coordinates.
+- Capture the action and resulting state: `actions.md`, before/after ARIA snapshots and screenshots, relevant request outcomes, and read-only database rows for persisted data.
+- Wait for the save request to finish before reload. Confirm persisted changes from a new context and a database readback.
+- Restore changed profile values, handle, items, layouts, and media after proof. Keep evidence under `artifacts/verify-editor/<RUN_ID>/<feature-id>/`; never commit it.
+- When an external service or fixture is unavailable, report the journey as blocked with the unmet precondition. Do not substitute `/demo` or a different path.
 
 ## Features
 
-- [Sign in with email OTP](./sign-in-email-otp.md): `/sign-in` → code → signed-in landing.
-- [Analytics events](./analytics-events.md): successful sign-in, page creation, public link clicks, and Creem checkout and payment.
-- [Add an item](./editor-add-item.md): toolbar `Add text` / `Add section` / `Add link` / `Add map`, then delete.
-- [Media upload and cancel](./editor-media-upload.md): toolbar `Add media`, upload to local R2, delete mid-upload.
-- [Profile and handle](./editor-profile-and-handle.md): edit the name, bio, profile image, image crop, and page handle.
-- [Layout and item placement](./editor-layout.md): switch compact and wide layouts, drag items, and apply size presets.
-- [Text formatting](./editor-text-formatting.md): edit text and section content, alignment, and background colors.
-- [Media editing](./editor-media-editing.md): edit captions and crop uploaded media.
-- [Map editing](./editor-map-editing.md): search for a location and adjust the map view.
-- [Link card images](./editor-link-card-images.md): add, replace, and remove a link card image.
-- [Link metadata refresh](./editor-link-metadata.md): `Add link` and `Refresh link metadata`.
-- [Text and media destination URLs](./editor-inline-destination-url.md): add, edit, clear, and confirm optional destinations.
-- [Add a Tweet (X post)](./editor-tweet.md): `Advanced` → X widget with a status URL.
-- [Advanced widgets](./editor-advanced-widgets.md): browse the catalog and add Spotify, RSS, or Calendly widgets.
-- [Share the page](./editor-page-sharing.md): open the share dialog, copy the page link, and read its QR code.
+- [Email OTP sign-in](./sign-in-email-otp.md): request and verify a code, then reach the right account page.
+- [Add and remove page items](./editor-add-item.md): text, section, link, map, delete, and owner persistence.
+- [Media upload and cancel](./editor-media-upload.md): upload through local R2 and cancel a pending upload.
+- [Profile and handle](./editor-profile-and-handle.md): profile text/image, crop, removal, and handle change.
+- [Layout](./editor-layout.md): compact/wide layouts, drag, size presets, and persistence.
+- [Text formatting](./editor-text-formatting.md): content, alignment, color, and persistence.
+- [Media editing](./editor-media-editing.md): captions, crop, and persistence.
+- [Map editing](./editor-map-editing.md): add a map and search for a place.
+- [Link card images](./editor-link-card-images.md): add, replace, remove, and persistence.
+- [Link metadata](./editor-link-metadata.md): add a URL and refresh fetched details.
+- [Text/media destinations](./editor-inline-destination-url.md): add, edit, validate, clear, and persist optional URLs.
+- [X post](./editor-tweet.md): add a public post and reject an unavailable post.
+- [Advanced widgets](./editor-advanced-widgets.md): browse, search, plan gate, provider add flows, and placeholders.
+- [Page sharing](./editor-page-sharing.md): open the share dialog, show its QR graphic, copy the page URL, and open the dialog on mobile.

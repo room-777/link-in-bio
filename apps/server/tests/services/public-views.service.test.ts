@@ -58,6 +58,23 @@ describe("public views service", () => {
 		}
 	});
 
+	it("PUBLIC-VIEWS-005 uses the supplied local outbound fetcher", async () => {
+		const requestedUrls: string[] = [];
+		const fetcher = (async (input: URL | RequestInfo) => {
+			requestedUrls.push(new URL(input.toString()).hostname);
+			return Response.json({ pageviews: 7 });
+		}) as typeof fetch;
+
+		assert.deepEqual(await getPublicViews("case-page-005", "UTC", fetcher), {
+			todayViews: 7,
+			yesterdayViews: 7,
+		});
+		assert.deepEqual(requestedUrls, [
+			"simpleanalytics.com",
+			"simpleanalytics.com",
+		]);
+	});
+
 	/**
 	 * Case ID: PUBLIC-VIEWS-002
 	 * Given: Simple Analytics returns null counts for both dates.

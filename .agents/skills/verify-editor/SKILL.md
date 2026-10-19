@@ -1,134 +1,75 @@
 ---
 name: verify-editor
-description: Drive Grabbin's full local stack (web :3000, Hono API :3001, local PostgreSQL) with headless Playwright to prove page-editor and email-OTP sign-in behavior. Use this as the source of truth for feature-map verification.
+description: "Run Grabbin's mapped web journeys in an isolated local stack with visible Chrome, a persistent owner account, and saved browser evidence. Use for feature-map verification or when a real local browser flow needs proof."
 ---
 
-# Verify the Grabbin editor (full stack)
-
-This skill is the source of truth for feature verification. It runs the API and database so editor and sign-in journeys are driven against real storage. Feature recipes live in [`features/README.md`](features/README.md).
-
-Commands below run from the repo root. To verify a different checkout, use its own dependencies and local `.env` files. The feature-map fixture is local to each agent's disposable Postgres instance but has the same email, handle, and Pro plan everywhere.
+# Verify Grabbin features
 
 ## Launch
 
-Use the shared cloud-agent entrypoint for Grok Bot, Cursor, and Codex. Each environment needs Docker, Bun dependencies, `CLOUDFLARE_API_TOKEN`, and `CLOUDFLARE_ACCOUNT_ID` when the token can see multiple accounts. From the repository root run:
+Run from the repository root. Choose a new run id, then start the local web/API processes against the dedicated PostgreSQL container:
 
 ```sh
-scripts/cloud-agent-start.sh
+RUN_ID="local-$(date +%Y%m%d-%H%M%S)"
+RUN_DIR="artifacts/verify-editor/$RUN_ID"
+.agents/skills/verify-editor/scripts/start-local.sh "$RUN_DIR"
 ```
 
-It configures loopback URLs, starts a regular PostgreSQL 15 container on `127.0.0.1:5432`, applies migrations, registers the Alchemy Cloudflare profile non-interactively, and prepares the same local Pro account in each agent's disposable database. Alchemy provides local R2 and the local S3 endpoint; no R2 keys go in `.env`. Stop it with Ctrl-C in the terminal that owns `bun run dev`.
-
-Run the account driver after startup from the repository root. In a second terminal, change to that root first. The driver signs in as `featuremap@example.com`, creates `featuremap-test` through the visible `/create` form if needed, and saves screenshots and actions:
-
-```sh
-REPO="$(git rev-parse --show-toplevel)"
-ACCOUNT_EVIDENCE_DIR="$REPO/artifacts/verify-editor/account-$(date +%Y%m%d-%H%M%S)-$$"
-mkdir -p "$ACCOUNT_EVIDENCE_DIR"
-node "$REPO/.agents/skills/verify-editor/scripts/drive-create-page.mjs" "$ACCOUNT_EVIDENCE_DIR"
-```
-
-The driver needs Playwright installed in the current directory (or run it from the configured Playwright directory). Later runs reuse the same account and page. `start-local.sh` is a limited fallback without local S3 and must not be used to claim media upload/cancel passed. The sign-in driver always uses `http://127.0.0.1:3000`.
-
-Steps:
-
-```sh
-REPO="$(git rev-parse --show-toplevel)"
-RUN_ID="$(date +%Y%m%d-%H%M%S)-$$"
-RUN_DIR="/tmp/grabbin-verify-editor/$RUN_ID"          # scratch: pids, logs, wrangler state
-EVIDENCE_DIR="$REPO/artifacts/verify-editor/$RUN_ID"   # proof: survives cleanup (artifacts/ is gitignored)
-mkdir -p "$RUN_DIR" "$EVIDENCE_DIR"
-git -C "$REPO" rev-parse HEAD > "$EVIDENCE_DIR/revision"
-
-cd "$REPO" && scripts/cloud-agent-start.sh             # full shared stack + local Pro account
-```
-
-The shared launcher owns the foreground `bun run dev` process. It uses `127.0.0.1` URLs and fails if another stack is occupying the app ports.
-
-## Doctor
-
-Run before every drive and whenever something looks off. It is read-only.
+`start-local.sh` uses `apps/server/.env` for migrations and `apps/web/.env` for the web process. It starts the API with isolated local bindings, so provider credentials from `apps/server/.env` never reach the API. Local database, API, page, billing and storage bindings point to the dedicated stack. It starts the mock outbound server on port 3002, which never connects to the internet. Wait for its `ready web=...` line, then in another terminal run:
 
 ```sh
 .agents/skills/verify-editor/scripts/doctor.sh "$RUN_DIR"
 ```
 
-It checks: Postgres container ready and migrated (`page_items` exists), API `/` returns `OK`, `/auth/get-session` answers, web serves `/demo`, and port 3000 is owned by a process inside this checkout. Anything else prints `FAIL: ...` and exits 1. Do not drive an instance you did not start (another agent's or the user's).
+The doctor must print `OK`. Web is `http://127.0.0.1:3000`, API is `http://127.0.0.1:3001`, the fake provider is `http://127.0.0.1:3002`, and the dedicated database is `grabbin_featuremap` on port `15432`. The scripts refuse occupied ports and only use their labeled `grabbin-featuremap` container. They read but never change either `.env` file.
+
+## Doctor
+
+Run the command above before driving the browser and after any server restart. It checks that the owned database has its page-items table, the API and mock server answer, and the sign-in page is served. If it fails, inspect only this run's logs, then stop and repair this run before continuing.
 
 ## Drive
 
-Harness: headless Playwright (Chromium), one fresh browser context per run, locators by ARIA role and accessible name only.
+Create the test account and page once, only if `featuremap@example.com` and `featuremap-test` are absent from the dedicated local database:
 
 ```sh
-cd "$PW_DIR"
-node "$REPO/.agents/skills/verify-editor/scripts/drive-demo-add-text.mjs" "$EVIDENCE_DIR/editor-add-item"
-node "$REPO/.agents/skills/verify-editor/scripts/drive-sign-in.mjs" "$EVIDENCE_DIR/sign-in" featuremap@example.com
-RUN_DIR="$RUN_DIR" node "$REPO/.agents/skills/verify-editor/scripts/drive-editor-journeys.mjs" "$EVIDENCE_DIR/editor" media-upload,media-cancel,link-refresh,item-add
+node .agents/skills/verify-editor/scripts/setup-account.mjs "$RUN_DIR"
 ```
 
-Each script prints its steps, ends with `RESULT: PASS` or `RESULT: FAIL <reason>`, sets the exit code, and writes `actions.md` plus screenshots/ARIA snapshots into the given directory. For journeys without a script, follow the matching file in `features/` and use the same conventions.
+This uses a fresh visible Chrome context to sign in through `/sign-in` and create the page through `/create`. It grants the configured local-only `local-pro` product in the dedicated database and saves the owner's browser state at `~/.cache/grabbin-featuremap/owner-session.json`. Keep that database volume and state file for later runs. Never replace them with an account or credentials from another environment.
 
-Sign-in: the shared launcher blanks `RESEND_API_KEY`; only use `featuremap@example.com` and read its code from the local database:
+Run the full feature driver in visible Chrome:
 
 ```sh
-.agents/skills/verify-editor/scripts/otp.sh featuremap@example.com   # prints the newest 6-digit code
+node .agents/skills/verify-editor/scripts/drive-all.mjs "$RUN_DIR"
 ```
+
+The login map must use a fresh context with no saved browser state. Protected editor maps use the one saved owner state. `/demo` is not a substitute for account, save, Pro, upload, or public-page checks. The driver writes `results.md`, `results.json`, screenshots, ARIA snapshots, action notes, and observed local API responses under the run directory. Use the feature files in `features/` as the complete journey list. Update the driver and maps together when a mapped journey changes.
 
 ## Evidence
 
-Proof goes only to `$EVIDENCE_DIR/<feature-id>/` (under `artifacts/verify-editor/`, gitignored). Keep screenshots, snapshots, logs, and database evidence there. Do not copy proof to another path or commit it for PR visibility. The Priority 5 rule in `AGENTS.md` is enforced by the pre-commit hook and `bun run verify`. Standards:
-
-- Drive the real user path (toolbar buttons, forms), never internal setters or test-only endpoints.
-- Capture the action and the result: a before snapshot/screenshot, the after state, and `actions.md` with each step and observed value.
-- For anything that should persist, verify the side effect separately: reload in a new context and read the row back (`docker exec grabbin-featuremap-postgres psql -U postgres -c "select id, type from page_items where ..."`). A toast or "saved" status alone is not proof.
-- `/demo` runs the same Bento editor store with persistence off and without Pro access; its driver records API traffic and fails if any request reaches the API. A `/demo` proof covers interaction only, not saving or gated features.
-- Record the revision (`$EVIDENCE_DIR/revision`) and the feature/sub-feature IDs used.
+Use the real browser controls and routes listed in each feature map. Browser HTTPS requests are blocked by default; Playwright supplies local Mapbox, Google Analytics and asset fixtures. Server metadata, RSS and view-count requests go through the fake outbound server. Browser uploads are stored in the isolated Wrangler R2 bucket. No provider call reaches the internet. Capture visible results, verify saved changes after reload or a new context, then read the matching row from the isolated test database. A mocked integration may pass only for local UI/API behavior and saved results. It does not prove delivery to a real provider. Record mock requests at `mock-requests.log` and `mock-browser-requests.log` in the run directory.
 
 ## Cleanup
 
+Stop only the local processes started by this run:
+
 ```sh
-.agents/skills/verify-editor/scripts/stop-local.sh "$RUN_DIR"   # kills only the process groups recorded in RUN_DIR
-rm -rf "$RUN_DIR"
-ls "$EVIDENCE_DIR"                                               # proof must still be there
+.agents/skills/verify-editor/scripts/stop-local.sh "$RUN_DIR"
 ```
 
-Never kill by process name. Leave the PostgreSQL container running so later runs can reuse the local fixture. Keep the shared fixture intact; evidence stays.
+This stops the run's web/API/mock processes. It keeps the labeled test database, its named volume, and the saved browser state for reuse. Evidence under `artifacts/verify-editor/$RUN_ID/` remains after cleanup. Never stop a process or container unless this run created and owns it.
 
 ## Helpers
 
-| Script | Use |
-| --- | --- |
-| `scripts/start-local.sh <RUN_DIR>` | Fallback: API + web on 127.0.0.1 without Cloudflare credentials (no media upload). |
-| `scripts/stop-local.sh <RUN_DIR>` | Stop exactly what `start-local.sh` started. |
-| `scripts/doctor.sh [RUN_DIR]` | Read-only health/ownership check. |
-| `scripts/otp.sh <email>` | Print the newest sign-in OTP for an `@example.com` address from local Postgres. |
-| `scripts/drive-demo-add-text.mjs <dir>` | Prove `editor-add-item` on `/demo` (add text block, then delete it). |
-| `scripts/drive-sign-in.mjs <dir> [email]` | Drive email-OTP sign-in and check the post-sign-in landing page. |
-| `scripts/drive-create-page.mjs <dir>` | Sign in and create `featuremap-test` through `/create` if it does not exist. |
-| `scripts/drive-editor-journeys.mjs <dir> [ids]` | Owner editor journeys on the real `/{handle}`: `media-upload`, `media-cancel`, `link-refresh`, `item-add`. Env: `RUN_DIR`, optional `WEB_URL`/`SERVER_URL` (default `127.0.0.1`). Fails on any cloud R2 request. |
-| `scripts/server.wrangler.jsonc` | Local API worker config used by `start-local.sh`. |
+The runnable helpers are `scripts/start-local.sh`, `scripts/doctor.sh`, `scripts/stop-local.sh`, `scripts/mock-outbound.mjs`, `scripts/setup-account.mjs`, `scripts/drive-all.mjs`, `scripts/drive-delete-check.mjs`, and `scripts/drive-widget-check.mjs`. Shared URLs, fixture identity, database readback, and evidence capture live in `scripts/local.mjs`.
 
-## Known gotchas (environment)
+For a focused follow-up after the full run, execute the delete check first, then refresh the widget placeholder evidence and summary:
 
-- Use `127.0.0.1` for browser, API, and app URLs with either launcher. In some sandboxes `localhost` resolves to `::1` only while the API binds IPv4; mixing hosts also splits auth cookies.
-- Exported shell variables (`NEXT_PUBLIC_SERVER_URL`, ...) override `.env`; `start-local.sh` unsets them. If the browser calls the wrong API origin, check `env`.
-- In Docker without systemd, start `dockerd` yourself; if containers cannot reach each other, the host FORWARD policy may be dropping bridge traffic.
+```sh
+node .agents/skills/verify-editor/scripts/drive-delete-check.mjs "$RUN_DIR"
+node .agents/skills/verify-editor/scripts/drive-widget-check.mjs "$RUN_DIR"
+```
 
-- `GRABBIN_REPO` stays exported in your shell; unset or re-export it before starting a different checkout, and check the `checkout:` line `start-local.sh` prints.
-- Use the shared `featuremap@example.com` account only; its OTP is read locally with `scripts/otp.sh`.
-- `start-local.sh` only: `apps/server/.env` (`--env-file`) overrides `vars` in `scripts/server.wrangler.jsonc`, even with an empty value.
-- `GET /pages/{handle}/views` returns 500 locally ("Simple Analytics request failed"); the footer shows "Views on break". Expected without analytics access; ignore it.
+## Feature map
 
-## Last verification run (Oct 14 2026, PR #1 `refactor/web-bento-data-layer` + `main` c80d21e)
-
-| Journey | Result | Note |
-|---|---|---|
-| doctor | OK | |
-| sign-in-email-otp | PASS | needs PR #5 (on `main`) |
-| editor-add-item (owner) | PASS | text/section/link/map persisted; delete removed the row |
-| editor-media-upload | PASS | `bun run dev`, local bucket via `/cdn-cgi/local/r2/s3`, no cloud R2 requests |
-| editor-media-cancel | PASS | `upload/cancel` 204, `pending_delete`, no item, no local object |
-| editor-link-metadata refresh | PASS (flaky upstream) | 4/6 runs; failures returned 200 with the old title |
-| editor-tweet | PASS after local Pro grant | Oct 13 run |
-
-After the stack changes (new routes, renamed buttons, new env vars), keep this skill honest with `/maintain-verification-skill`.
+Read `features/README.md` and the linked feature files before selecting journeys. The README is the index of all currently mapped browser behavior.
