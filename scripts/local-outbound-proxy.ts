@@ -134,7 +134,10 @@ function featureMapResponse(url: URL) {
 			{ headers: { "Content-Type": "application/rss+xml; charset=utf-8" } },
 		);
 	}
-	if (url.hostname === "open.spotify.com") {
+	if (
+		url.hostname === "open.spotify.com" ||
+		url.hostname === "embed.spotify.com"
+	) {
 		const data = {
 			type: "track",
 			uri: "spotify:track:4uLU6hMCjMI75M1A2tKUQC",
@@ -147,10 +150,9 @@ function featureMapResponse(url: URL) {
 				{ url: "https://example.com/feature-map-cover.jpg", width: 640 },
 			],
 		};
-		const resource = JSON.stringify(data);
-		const encoded = btoa(resource);
+		const resource = btoa(JSON.stringify(data));
 		return new Response(
-			`<!doctype html><html><head><meta property="og:title" content="Never Gonna Give You Up"><meta property="og:description" content="Rick Astley"><meta property="og:image" content="https://example.com/feature-map-cover.jpg"><meta name="resource" content="${encoded}"></head><body><script id="resource" type="application/json">${resource}</script></body></html>`,
+			`<!doctype html><html><head><meta property="og:title" content="Never Gonna Give You Up"><meta property="og:description" content="Rick Astley"><meta property="og:image" content="https://example.com/feature-map-cover.jpg"></head><body><script id="resource">${resource}</script></body></html>`,
 			{ headers: { "Content-Type": "text/html; charset=utf-8" } },
 		);
 	}
