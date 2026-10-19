@@ -1,6 +1,7 @@
 import * as Alchemy from "alchemy";
 import * as Cloudflare from "alchemy/Cloudflare";
 import * as Command from "alchemy/Command";
+import * as State from "alchemy/State";
 import { config } from "dotenv";
 import * as Config from "effect/Config";
 import * as Effect from "effect/Effect";
@@ -278,7 +279,7 @@ export default Alchemy.Stack(
 	"grabbin",
 	{
 		providers: Cloudflare.providers(),
-		state: Cloudflare.state(),
+		state: isFeatureMap ? State.localState() : Cloudflare.state(),
 	},
 	Effect.gen(function* () {
 		const serverWorker = yield* server;
