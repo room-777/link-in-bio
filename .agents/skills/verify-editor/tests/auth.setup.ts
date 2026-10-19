@@ -72,6 +72,8 @@ test("sign in once and save the shared owner session", async ({ page }) => {
 	).toBe(true);
 	if (new URL(page.url()).pathname === "/create") {
 		const handleInput = page.getByRole("textbox", { name: "Handle" });
+		await handleInput.fill(`${handle}-check`);
+		await page.locator('#handle-status-icon[data-state="checking"]').waitFor();
 		const available = page.waitForResponse((response) => {
 			const url = new URL(response.url());
 			return (
