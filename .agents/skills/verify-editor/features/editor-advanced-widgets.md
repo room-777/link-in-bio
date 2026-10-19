@@ -1,47 +1,38 @@
 # Browse and add advanced widgets
 
-An owner browses the advanced widget catalog, searches for a widget, and opens its add flow. The catalog changes to a drawer on mobile and shows a Pro upgrade prompt to Free accounts.
+An owner can browse the widget catalog, search for a widget, and start its add flow. Pro access gates widget use; some catalog entries are placeholders.
 
 ## Sub-features
 
-- `widget-catalog` lists the configured advanced widgets.
-- `widget-search` filters by the widget's displayed name and reports no matches.
-- `widget-detail-navigation` opens a widget, returns to the catalog, and closes the picker.
-- `widget-mobile-picker` displays the same flow in a mobile drawer.
-- `widget-plan-gate` opens the upgrade dialog for a Free account.
-- `widget-coming-soon` shows the current placeholder for SoundCloud, Apple Music, and Signature.
-- `widget-add-spotify` previews and adds a Spotify item.
-- `widget-add-rss` adds a supported RSS feed.
-- `widget-add-calendly` connects Calendly, selects an event, and adds it.
+- `widget-catalog`: lists the current widget choices.
+- `widget-search`: filters by displayed name and shows an empty result state.
+- `widget-navigation`: opens a widget detail, returns to the catalog, or closes it.
+- `widget-mobile-picker`: presents the picker as a mobile drawer.
+- `widget-plan-gate`: shows the upgrade dialog to a Free account.
+- `widget-coming-soon`: shows placeholders for SoundCloud, Apple Music, and Signature.
+- `widget-add-spotify`, `widget-add-rss`: add supported provider items.
 
 ## How to get to it (user POV)
 
-- Sign in as `featuremap@example.com`, open `/featuremap-test`, and click `Advanced`.
-- Search by a displayed name such as `Spotify`. Select a result to open its details.
-- On mobile, the picker is a drawer. On a Free page, selecting a widget opens `Upgrade to Pro`.
+- Sign in, open your `/{handle}` page, and choose `Advanced` in the editor toolbar.
+- Search the catalog or choose a widget. Use a narrow viewport to check the mobile drawer.
 
 ## Driving it with Playwright
 
 Preconditions:
 
-- Run the `verify-editor` doctor and use the local `featuremap@example.com` page with its Pro grant.
-- For the Free plan gate, use a separate local Free account. Do not alter the shared Pro fixture to simulate Free.
-- Spotify and RSS add flows need their provider preview requests to succeed. Calendly add needs an authorized Calendly connection and at least one event.
+- Use the local Pro fixture for add flows. Use a separate local Free account for the upgrade gate.
+- Provider previews need the local fixture responses.
 
-- **Catalog and search.** Click `button "Advanced"` and confirm `dialog "Advanced widgets"` includes `Tweet`, `Spotify`, `RSS Feed`, and `Calendly`. Fill `textbox "Search widgets"` with `spotify`, select `button "Spotify"`, and confirm the detail view. Search for an unmatched string and confirm `No widgets found.`
-- **Back and close.** Click `button "Back to widgets"` and confirm the catalog returns. Click `button "Spotify"` again, press Escape, and confirm the dialog closes. Repeat on a mobile viewport and confirm the picker is exposed as a drawer with the `Advanced widgets` name, and that Back and Escape return or close it.
-- **Free plan gate.** On the separate local Free account, click `Advanced`, select a widget, and confirm `dialog "Upgrade to Pro"`. Confirm no widget row was added.
-- **Spotify.** On the Pro fixture, open Spotify, fill `textbox "Spotify URL"` with a supported public track or album URL, wait for its preview, and click `Add`. Confirm the card appears and survives reload. Read its `page_items` row and confirm `type = 'spotify'` and its provider data.
-- **RSS.** Open `RSS Feed`, fill `textbox "RSS feed URL"` with a supported feed URL, and click `Add`. Confirm the feed card appears and survives reload. Read its `page_items` row and confirm `type = 'rss'` and its feed URL.
-- **Calendly.** Open `Calendly`. If disconnected, click `Connect to Calendly` and complete the real OAuth flow. Select an event under `Select your event`, click `Add`, and confirm the calendar card remains after reload. Read the row and confirm `type = 'calendly'` and the selected event data.
-- **Coming Soon.** Open `SoundCloud`, `Apple Music`, and `Signature`. Confirm each detail view shows `Sipping coffee while crafting a polished widget...`; do not expect an add control or a saved row.
-- **Proof.** Save screenshots, ARIA snapshots, network results for provider previews, and read-only `page_items` rows for successful adds. Keep Free, Pro, and third-party authentication evidence separate.
+- **Catalog and search.** Click `button "Advanced"`; confirm `dialog "Advanced widgets"` shows the catalog. Fill `textbox "Search widgets"` with `spotify`, open `button "Spotify"`, then return with `button "Back to widgets"`. Search a missing name and confirm `No widgets found.`
+- **Close and mobile.** Press Escape to close. Repeat at a mobile viewport and confirm the picker opens as a drawer and can be closed.
+- **Free gate.** On the Free fixture, choose a widget. Confirm `dialog "Upgrade to Pro"` appears and no item is saved.
+- **Add providers.** On Pro, add a supported Spotify URL and RSS feed URL. Confirm each card after reload and check its `page_items` row.
+- **Placeholders.** Open SoundCloud, Apple Music, and Signature. Confirm the current placeholder message and no Add action or saved row.
+- **Proof.** Capture action/result screenshots and ARIA snapshots, provider request outcomes, and read-only rows for successful adds.
 
 ## Gotchas
 
-- The catalog button is disabled while session state is pending or unavailable. Run the doctor before treating that as a picker failure.
-- `No widgets found.` reflects the current client-side label filter. Clear `Search widgets` before opening an item.
-- The shared feature map account has Pro. The Free plan gate needs a separate local Free account; do not change the shared fixture's subscription.
-- Spotify, RSS, and Calendly depend on external services. A blocked preview, unsupported feed, or missing Calendly connection is not a successful add.
-- Calendly's OAuth cannot be proven without an authorized external account. Mark that journey blocked if no test connection is available.
-- SoundCloud, Apple Music, and Signature use the same placeholder activity today. Record that visible state only; do not claim they are implemented.
+- A blocked preview or unavailable provider is an environment block, not a successful add.
+- Do not change the shared Pro fixture to test the Free gate.
+- A placeholder proves only the current visible state, not a working integration.

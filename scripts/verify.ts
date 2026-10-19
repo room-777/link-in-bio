@@ -47,11 +47,24 @@ const steps: Array<[name: string, command: string[]]> = [
 	["Biome (format + lint, whole repo)", ["bunx", "biome", "ci", "."]],
 	["Typecheck (every package)", ["bun", "run", "check-types"]],
 	[
-		"Web lint (Biome + callback names)",
-		["bun", "run", "--filter", "web", "lint"],
+		"Web callback names",
+		["bun", "apps/web/scripts/check-architecture.ts", "callbacks"],
 	],
 	["Production keys", ["bun", "run", "check:prod-keys"]],
-	["Tests (every package)", ["bun", "test"]],
+	[
+		"Tests (every package, excluding isolated billing service)",
+		[
+			"bun",
+			"test",
+			"--path-ignore-patterns=**/dist/**",
+			"--path-ignore-patterns=**/node_modules/**",
+			"--path-ignore-patterns=**/billing.service.test.ts",
+		],
+	],
+	[
+		"Billing service tests (isolated)",
+		["bun", "test", "apps/server/tests/services/billing.service.test.ts"],
+	],
 	["Plan boundary", ["bun", "run", "check:plan-boundary"]],
 ];
 

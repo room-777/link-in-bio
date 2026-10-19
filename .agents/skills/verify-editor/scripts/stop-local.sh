@@ -1,16 +1,11 @@
 #!/usr/bin/env bash
-# Stop only the process groups start-local.sh recorded in RUN_DIR. Evidence is never touched.
-set -uo pipefail
+set -euo pipefail
 RUN_DIR="${1:?usage: stop-local.sh <RUN_DIR>}"
-for name in web server; do
-  pidfile="$RUN_DIR/$name.pid"
-  [ -f "$pidfile" ] || continue
-  pid="$(cat "$pidfile")"
-  kill -TERM -- "-$pid" 2>/dev/null || kill -TERM "$pid" 2>/dev/null || true
-  rm -f "$pidfile"
+for name in web server mock-outbound; do
+	file="$RUN_DIR/$name.pid"
+	if [[ -f "$file" ]]; then
+		pid="$(cat "$file")"
+		if kill -0 "$pid" 2>/dev/null; then pkill -TERM -P "$pid" 2>/dev/null || true; kill -TERM "$pid" 2>/dev/null || true; fi
+	fi
 done
-sleep 3
-for port in 3000 3001; do
-  ss -ltn "sport = :$port" | grep -q LISTEN && echo "port $port still in use" >&2
-done
-exit 0
+echo "stopped run-owned web/API/mock; persistent labeled test DB remains available for the next run"

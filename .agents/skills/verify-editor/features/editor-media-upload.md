@@ -1,41 +1,32 @@
-# Media upload and cancel
+# Upload media and cancel an upload
 
-An owner adds a photo/video from the toolbar; a placeholder appears immediately, the file uploads, and the block switches to the stored media. Deleting the block while it uploads cancels the upload.
+An owner adds an image to a media card, and can cancel while its upload is still pending. Upload proof requires the isolated local object store.
 
 ## Sub-features
 
-- `media-add` shows a local preview block right after the file is chosen.
-- `media-upload` gets a presigned PUT URL from the API, uploads the file to R2, and sets the item's `objectKey`.
-- `media-cancel` deleting during upload aborts it and marks the unfinished upload for cleanup.
-- `link-image-add` adds an image to a link card (`Add link image`).
-- `link-image-replace` replaces a link card image (`Replace link image`).
-- `link-image-remove` clears the image with `Remove link image`.
+- `media-add`: choose an image and show its local preview.
+- `media-upload`: upload the bytes and attach the object to a saved media item.
+- `media-cancel`: abort a pending upload and leave no item or stored object.
 
 ## How to get to it (user POV)
 
-- Owner view of `/{handle}` → toolbar `Add media` → pick a file.
-- On a link card: `Replace link image` / `Remove link image`.
+- Sign in, open your `/{handle}` page, and choose `Add media` in the editor toolbar.
+- Choose an image file. To test cancel, delete the item while the upload is pending.
 
 ## Driving it with Playwright
 
 Preconditions:
 
-- Signed-in owner with a page. Start the shared full stack with `scripts/cloud-agent-start.sh` (`alchemy dev`). No R2 keys go in `.env`.
-- Under `alchemy dev` the server's `R2_S3_CREDENTIALS` is alchemy's dev-only `r2_s3_credentials` binding. It points at the worker's own local S3 endpoint `{server url}/cdn-cgi/local/r2/s3` with fixed local credentials, and `R2_LOCAL_MODE=true` / `R2_PUBLIC_URL={server url}` are set by `packages/infra/alchemy.run.ts`. Uploads land in the local bucket; nothing reaches Cloudflare.
+- Use the local fake upload URL and isolated Wrangler R2 bucket. Choose a disposable image fixture.
+- Never use production R2 credentials or a real production bucket.
 
-- **Flow.** `POST /pages/{handle}/items/upload` (presigned URL, asset row `pending`) → browser `PUT {server}/cdn-cgi/local/r2/s3/<dev bucket>/<key>` → `POST .../items/upload/complete` (API `HEAD`s via `R2_BUCKET`) → `PATCH .../batch` saves the `media` item.
-- **Choose file.** Click toolbar `Add media` and answer the file chooser. A media block (`textbox "Media caption"`) appears.
-- **Upload completes.** `page_items` gets a `type='media'` row with `data->>'objectKey'` and the asset row becomes `attached`. `GET {server}/media/<key>` returns the bytes, and after reload the `<img>` src is `{server}/media/<key>`.
-- **Cancel.** Hold the local `PUT` with a Playwright route, click `Delete item` on the uploading block, then abort the `PUT`. The app sends `POST .../items/upload/cancel` (204), the asset becomes `pending_delete`, no item is added, and `GET {server}/media/<key>` is 404.
-- **Link image.** Hover a link card's image area; use `Add link image` or `Replace link image`, choose an image, and confirm it remains after reload. Use `Remove link image` and confirm it disappears after reload. This uses the page media asset flow but is not covered by `drive-editor-journeys.mjs` yet.
-- **No cloud.** No request may go to `*.r2.cloudflarestorage.com`; the driver fails the journey if one does.
-- **Scripted.** `RUN_DIR=<scratch> [WEB_URL=http://127.0.0.1:3000 SERVER_URL=http://127.0.0.1:3001] node scripts/drive-editor-journeys.mjs "$EVIDENCE_DIR" media-upload,media-cancel` from `$PW_DIR`.
-- **Proof.** `actions.md`, `network.txt`, before/after screenshots + ARIA, `img-srcs.txt`.
+- **Upload.** Choose `button "Add media"`, select the image, and wait for completion. Confirm a media card appears and survives reload. Check its `page_items` row and local `/media/<key>` response.
+- **Cancel.** Hold the local upload with a browser route, delete the pending item, and release the request. Confirm the cancel request succeeds, no item row remains, and the local media URL returns not found.
+- **Boundary.** Record network requests and confirm none went to `*.r2.cloudflarestorage.com`.
+- **Proof.** Capture actions, before/after screenshots and ARIA snapshots, network outcomes, and read-only asset/item rows.
 
 ## Gotchas
 
-- `/demo` keeps media local (`blob:` preview only); it cannot prove upload or cancel.
-- Never put real R2 keys in `apps/server/.env`. The only bucket in `alchemy.run.ts` (`grabbin`) is the production bucket. Plain `wrangler dev` with real S3 credentials uploads to production. That happened once on Oct 14 2026; the test objects were deleted.
-- `scripts/start-local.sh` (plain `wrangler dev`, no Cloudflare login) has no local S3 endpoint, so upload/cancel are **blocked** there (`POST .../items/upload` 500 "R2 upload credentials are invalid"). Use the shared `scripts/cloud-agent-start.sh` environment.
-- `network.txt` may log the routed local `PUT` as `FAILED net::ERR_ABORTED` even when it succeeded. Trust `upload/complete` 200 and the `/media/<key>` check.
-- Verified Oct 14 2026 (PR #1 + `main`, `alchemy dev`): upload PASS, cancel PASS, no cloud R2 requests.
+- `/demo` uses a browser-only blob preview; it cannot prove upload or cancel.
+- The runner's local media route accepts uploads only when `R2_LOCAL_MODE=true` and only for its named local bucket.
+- Stop immediately if the upload URL is not on `127.0.0.1`.

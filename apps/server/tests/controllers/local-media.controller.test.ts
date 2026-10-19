@@ -5,6 +5,42 @@ import { localMediaController } from "../../src/controllers/local-media.controll
 import type { AppEnv } from "../../src/types";
 
 describe("local media controller", () => {
+	it("LOCAL-MEDIA-003 stores bounded uploads only in the feature-map bucket", async () => {
+		let storedKey = "";
+		let storedType = "";
+		let storedBytes = 0;
+		const app = new Hono<AppEnv>().route("/media", localMediaController);
+		const env = {
+			R2_LOCAL_MODE: "true",
+			R2_BUCKET: {
+				put: async (key: string, body: ArrayBuffer, options: R2PutOptions) => {
+					storedKey = key;
+					const metadata = options.httpMetadata;
+					storedType =
+						metadata instanceof Headers
+							? (metadata.get("content-type") ?? "")
+							: (metadata?.contentType ?? "");
+					storedBytes = body.byteLength;
+				},
+			} as unknown as R2Bucket,
+		} as AppEnv["Bindings"];
+
+		const response = await app.request(
+			"/media/featuremap-agent-local/users/user-1/pages/page-1/items/image.png",
+			{
+				method: "PUT",
+				headers: { "content-type": "image/png" },
+				body: "png-bytes",
+			},
+			env,
+		);
+
+		assert.equal(response.status, 200);
+		assert.equal(storedKey, "users/user-1/pages/page-1/items/image.png");
+		assert.equal(storedType, "image/png");
+		assert.equal(storedBytes, 9);
+	});
+
 	/**
 	 * Case ID: LOCAL-MEDIA-001
 	 * Given: local mode has an image in the R2 bucket.
