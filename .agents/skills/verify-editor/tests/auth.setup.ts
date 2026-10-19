@@ -65,6 +65,7 @@ test("sign in once and save the shared owner session", async ({ page }) => {
 		);
 	}
 	await page.waitForURL((url) => !url.pathname.startsWith("/sign-in"));
+	await page.waitForLoadState("networkidle");
 	expect(
 		(await page.context().cookies()).some((cookie) =>
 			cookie.name.includes("session_token"),
