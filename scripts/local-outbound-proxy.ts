@@ -99,6 +99,68 @@ function toBase64(bytes: Uint8Array) {
 	return btoa(binary);
 }
 
+function featureMapResponse(url: URL) {
+	if (url.hostname === "react-tweet.vercel.app") {
+		const id = url.pathname.split("/").at(-1) ?? "";
+		if (id === "1") return new Response("Not found", { status: 404 });
+		return Response.json({
+			data: {
+				id_str: id,
+				text: "Feature map test post",
+				created_at: "Mon Jan 01 00:00:00 +0000 2024",
+				display_text_range: [0, 23],
+				favorite_count: 42,
+				user: {
+					name: "Feature Map",
+					screen_name: "featuremap",
+					profile_image_url_https: "https://example.com/feature-map-avatar.png",
+				},
+				entities: {
+					hashtags: [],
+					urls: [],
+					user_mentions: [],
+					symbols: [],
+					media: [],
+				},
+			},
+		});
+	}
+	if (
+		url.hostname === "featuremap-fixture.substack.com" &&
+		url.pathname === "/feed"
+	) {
+		return new Response(
+			`<?xml version="1.0"?><rss version="2.0"><channel><title>Feature map feed</title><link>https://featuremap-fixture.substack.com/</link><description>Test feed</description><item><title>Feature map article</title><link>https://featuremap-fixture.substack.com/p/feature-map-article</link><pubDate>Mon, 01 Jan 2024 00:00:00 GMT</pubDate><description>Fixture article for the browser tests.</description></item></channel></rss>`,
+			{ headers: { "Content-Type": "application/rss+xml; charset=utf-8" } },
+		);
+	}
+	if (url.hostname === "open.spotify.com") {
+		const data = {
+			type: "track",
+			uri: "spotify:track:4uLU6hMCjMI75M1A2tKUQC",
+			name: "Never Gonna Give You Up",
+			title: "Never Gonna Give You Up",
+			subtitle: "Rick Astley",
+			artists: [{ name: "Rick Astley" }],
+			duration: 212000,
+			images: [
+				{ url: "https://example.com/feature-map-cover.jpg", width: 640 },
+			],
+		};
+		const resource = JSON.stringify(data);
+		const encoded = btoa(resource);
+		return new Response(
+			`<!doctype html><html><head><meta property="og:title" content="Never Gonna Give You Up"><meta property="og:description" content="Rick Astley"><meta property="og:image" content="https://example.com/feature-map-cover.jpg"><meta name="resource" content="${encoded}"></head><body><script id="resource" type="application/json">${resource}</script></body></html>`,
+			{ headers: { "Content-Type": "text/html; charset=utf-8" } },
+		);
+	}
+	const title = "Feature map preview";
+	return new Response(
+		`<!doctype html><html><head><title>${title}</title><meta property="og:title" content="${title}"><meta property="og:description" content="Local fixture response"><meta property="og:image" content="https://example.com/feature-map-preview.jpg"></head><body>Feature map fixture</body></html>`,
+		{ headers: { "Content-Type": "text/html; charset=utf-8" } },
+	);
+}
+
 Bun.serve({
 	host: "127.0.0.1",
 	port,
@@ -122,18 +184,24 @@ Bun.serve({
 			return new Response("Invalid outbound request", { status: 400 });
 
 		try {
-			let url = await assertPublicHttpsUrl(input.url);
-			let upstream: Response | undefined;
-			for (let redirects = 0; redirects <= maxRedirects; redirects += 1) {
-				upstream = await fetch(url, {
-					method: input.method,
-					headers: input.headers,
-					redirect: "manual",
-				});
-				if (![301, 302, 303, 307, 308].includes(upstream.status)) break;
-				const location = upstream.headers.get("location");
-				if (!location || redirects === maxRedirects) break;
-				url = await assertPublicHttpsUrl(new URL(location, url).toString());
+			let url = new URL(input.url);
+			let upstream: Response | undefined =
+				process.env.FEATURE_MAP_MOCK_EXTERNAL_APIS === "true"
+					? featureMapResponse(url)
+					: undefined;
+			if (!upstream) url = await assertPublicHttpsUrl(input.url);
+			if (!upstream) {
+				for (let redirects = 0; redirects <= maxRedirects; redirects += 1) {
+					upstream = await fetch(url, {
+						method: input.method,
+						headers: input.headers,
+						redirect: "manual",
+					});
+					if (![301, 302, 303, 307, 308].includes(upstream.status)) break;
+					const location = upstream.headers.get("location");
+					if (!location || redirects === maxRedirects) break;
+					url = await assertPublicHttpsUrl(new URL(location, url).toString());
+				}
 			}
 			if (!upstream) throw new Error("No upstream response");
 			const body =

@@ -62,8 +62,6 @@ jobs:
     env:
       CLOUDFLARE_API_TOKEN: ${{ secrets.FEATURE_MAP_CLOUDFLARE_API_TOKEN }}
       CLOUDFLARE_ACCOUNT_ID: ${{ secrets.FEATURE_MAP_CLOUDFLARE_ACCOUNT_ID }}
-      FEATURE_MAP_PROVIDER_TESTS: true
-      FEATURE_MAP_TWEET_TESTS: true
       FEATURE_MAP_RUN_ID: ci-${{ github.run_id }}-${{ github.run_attempt }}
       CI: true
     steps:

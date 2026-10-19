@@ -1,11 +1,11 @@
 # Grabbin editor verification map
 
-The Playwright suite is the CI entry point for these journeys. Run `.agents/skills/verify-editor/scripts/run-feature-map-playwright.sh` to start the local stack and run the suite. Its setup project signs in once, prepares the shared owner page, and saves session state in a temporary file; the feature tests reuse it. CI uploads screenshots and traces from `artifacts/verify-editor/<RUN_ID>/` even when tests fail. To rerun tests against an already prepared stack, set `PLAYWRIGHT_STORAGE_STATE` and run `bun run test:feature-map`. Keep the journey notes below in sync with [`tests/feature-map.spec.ts`](../tests/feature-map.spec.ts), including any prerequisite that causes a test to skip.
+The Playwright suite is the CI entry point for these journeys. Run `.agents/skills/verify-editor/scripts/run-feature-map-playwright.sh` to start the local stack and run the suite. Its setup project signs in once, prepares the shared owner page, and saves session state in a temporary file; owner tests reuse it. The clean-session signup test runs from a separate file beside the owner journeys. CI uploads screenshots and traces from `artifacts/verify-editor/<RUN_ID>/` even when tests fail. To rerun tests against an already prepared stack, set `PLAYWRIGHT_STORAGE_STATE` and run `bun run test:feature-map`. Keep the journey notes below in sync with [`tests/feature-map.spec.ts`](../tests/feature-map.spec.ts), [`tests/feature-map-signup.spec.ts`](../tests/feature-map-signup.spec.ts), and [`tests/auth.setup.ts`](../tests/auth.setup.ts), including any prerequisite that causes a test to skip.
 
 ## CI test conditions
 
-- CI uses the local PostgreSQL and Alchemy local R2 service, with a non-production Cloudflare token. It also enables the public Spotify, RSS, and Tweet preview checks.
-- Mapbox search, zoom, and location checks skip unless `NEXT_PUBLIC_MAPBOX_ACCESS_TOKEN` is set. Calendly and the Free plan gate need separate connected/test accounts, configured with `FEATURE_MAP_CALENDLY_TESTS` or `FEATURE_MAP_FREE_STORAGE_STATE` plus `FEATURE_MAP_FREE_HANDLE`.
+- CI uses local PostgreSQL and Alchemy local R2. The local outbound proxy returns fixed test responses for Spotify, RSS, Tweets, and link metadata; the browser returns fixed Mapbox search and map-style responses. These journeys do not call those providers.
+- Map search, zoom, and location run against those fixed responses. Calendly and the Free plan gate still need separate connected/test accounts, configured with `FEATURE_MAP_CALENDLY_TESTS` or `FEATURE_MAP_FREE_STORAGE_STATE` plus `FEATURE_MAP_FREE_HANDLE`.
 - Social login, GA collection, and Creem checkout/purchase stay skipped because they need external test accounts. The suite records local sign-in, page creation, share, and public-link analytics calls without sending data to GA.
 
 ## Baseline preconditions
@@ -35,7 +35,7 @@ The Playwright suite is the CI entry point for these journeys. Run `.agents/skil
 
 - [Sign in with email OTP](./sign-in-email-otp.md): `/sign-in` → code → signed-in landing.
 - [Analytics events](./analytics-events.md): successful sign-in, page creation, public link clicks, and Creem checkout and payment.
-- [Add an item](./editor-add-item.md): toolbar `Add text` / `Add section` / `Add link` / `Add map`, then delete.
+- [Add an item](./editor-add-item.md): toolbar `Add text` / `Add section` / `Add link` / `Add map`, then delete. Link and map responses use local fixtures in the suite.
 - [Media upload and cancel](./editor-media-upload.md): toolbar `Add media`, upload to local R2, delete mid-upload.
 - [Profile and handle](./editor-profile-and-handle.md): edit the name, bio, profile image, image crop, and page handle.
 - [Layout and item placement](./editor-layout.md): switch compact and wide layouts, drag items, and apply size presets.

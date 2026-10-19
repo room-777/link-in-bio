@@ -79,9 +79,12 @@ load_feature_map_env() {
 	export CREEM_PRO_YEARLY_PRODUCT_ID=
 	export NEXT_PUBLIC_SERVER_URL=http://127.0.0.1:3001
 	export NEXT_PUBLIC_PAGE_DOMAIN=127.0.0.1:3000
+	export NEXT_PUBLIC_GA_MEASUREMENT_ID=
 	export NEXT_PUBLIC_R2_PUBLIC_URL=http://127.0.0.1:3001
 	export R2_PUBLIC_URL=http://127.0.0.1:3001
 	export FEATURE_MAP_LOCAL_STACK=true
+	export FEATURE_MAP_MOCK_EXTERNAL_APIS=true
+	export NEXT_PUBLIC_MAPBOX_ACCESS_TOKEN=feature-map-test-token
 }
 
 start_postgres() {

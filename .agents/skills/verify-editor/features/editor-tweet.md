@@ -16,7 +16,7 @@ An owner adds an X post as a large card by giving its status URL; the post is lo
 
 Preconditions:
 
-- `doctor.sh` OK, signed-in owner. Outbound HTTPS to `react-tweet.vercel.app` from the API server.
+- `doctor.sh` OK, signed-in owner. The Playwright runner returns a fixed local response for `react-tweet.vercel.app`.
 - **Pro plan.** The shared fixture is granted the local-only `local-pro` product by `.agents/skills/verify-editor/scripts/prepare-feature-map-account.sh`. On a Free account clicking `Tweet` opens `dialog "Upgrade to Pro"` instead (`advanced-widgets-dialog.tsx`, `session.plan.tier === "pro"`).
 
 - **Open.** Click `button "Advanced"` (toolbar) → `dialog "Advanced widgets"` lists buttons `Tweet`, `Spotify`, `SoundCloud`, `Apple Music`, `Signature`, `Calendly`, `RSS Feed` (and `textbox "Search widgets"`; searching `X` finds nothing). Click `button "Tweet"` → `dialog "Tweet"` with `Back to widgets`, `Close`, `group "Preview size"` (`Portrait` / `Full square`), `textbox "Tweet ID or URL"`, `button "Add"` (disabled until filled).
@@ -27,4 +27,4 @@ Preconditions:
 ## Gotchas
 
 - `local-pro` is included in the local worker environment as `CREEM_PRO_MONTHLY_PRODUCT_ID`, and the fixture subscription is renewed by `.agents/skills/verify-editor/scripts/prepare-feature-map-account.sh`. This applies only to the local PostgreSQL database; do not grant or test against a shared/remote or production database.
-- The API server fetches the tweet from `react-tweet.vercel.app`; offline or blocked egress on the server makes `tweet-add` fail for environment reasons.
+- The Playwright runner fakes the `react-tweet.vercel.app` response, so CI checks the app path without contacting X or the public proxy.

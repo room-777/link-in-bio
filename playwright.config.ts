@@ -7,9 +7,9 @@ export default defineConfig({
 	// Keep tests within a file ordered while they update the shared fixture.
 	fullyParallel: false,
 	forbidOnly: Boolean(process.env.CI),
-	retries: process.env.CI ? 2 : 0,
-	// The editor journeys share and update one owner page and local database.
-	workers: 1,
+	retries: 0,
+	// The owner suite shares one page; the clean-session signup file can run beside it.
+	workers: process.env.CI ? 2 : 1,
 	reporter: [
 		["list"],
 		[

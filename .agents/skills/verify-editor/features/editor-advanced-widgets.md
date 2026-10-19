@@ -26,7 +26,7 @@ Preconditions:
 
 - Run the `verify-editor` doctor and use the local `featuremap@example.com` page with its Pro grant.
 - For the Free plan gate, use a separate local Free account. Do not alter the shared Pro fixture to simulate Free.
-- Spotify and RSS add flows need their provider preview requests to succeed. Calendly add needs an authorized Calendly connection and at least one event.
+- Spotify and RSS use fixed local preview responses in the Playwright runner. Calendly add needs an authorized Calendly connection and at least one event.
 
 - **Catalog and search.** Click `button "Advanced"` and confirm `dialog "Advanced widgets"` includes `Tweet`, `Spotify`, `RSS Feed`, and `Calendly`. Fill `textbox "Search widgets"` with `spotify`, select `button "Spotify"`, and confirm the detail view. Search for an unmatched string and confirm `No widgets found.`
 - **Back and close.** Click `button "Back to widgets"` and confirm the catalog returns. Click `button "Spotify"` again, press Escape, and confirm the dialog closes. Repeat on a mobile viewport and confirm the picker is exposed as a drawer with the `Advanced widgets` name, and that Back and Escape return or close it.
@@ -42,6 +42,6 @@ Preconditions:
 - The catalog button is disabled while session state is pending or unavailable. Run the doctor before treating that as a picker failure.
 - `No widgets found.` reflects the current client-side label filter. Clear `Search widgets` before opening an item.
 - The shared feature map account has Pro. The Free plan gate needs a separate local Free account; do not change the shared fixture's subscription.
-- Spotify, RSS, and Calendly depend on external services. A blocked preview, unsupported feed, or missing Calendly connection is not a successful add.
+- The Playwright runner fakes Spotify and RSS responses; it still checks the app's preview, save, and reload paths. Calendly needs its separate connected test account.
 - Calendly's OAuth cannot be proven without an authorized external account. Mark that journey blocked if no test connection is available.
 - SoundCloud, Apple Music, and Signature use the same placeholder activity today. Record that visible state only; do not claim they are implemented.

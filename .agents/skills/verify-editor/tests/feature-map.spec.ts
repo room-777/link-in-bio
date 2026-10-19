@@ -60,7 +60,10 @@ function watchSaves(page: Page) {
 		const url = new URL(response.url());
 		if (
 			response.request().method() !== "PATCH" ||
-			!url.pathname.endsWith(`/pages/${handle}/batch`)
+			!(
+				url.pathname === `/pages/${handle}` ||
+				url.pathname === `/pages/${handle}/batch`
+			)
 		)
 			return;
 		const waiter = queue.waiters.shift();
@@ -79,92 +82,62 @@ async function waitForSave(page: Page) {
 }
 
 async function deleteItem(shell: Locator) {
+	const itemId = await shell.getAttribute("data-bento-item-id");
 	await shell.hover();
 	await shell.getByRole("button", { name: "Delete item" }).click();
+	if (itemId) {
+		await expect
+			.poll(() => sql(`select count(*) from page_items where id='${itemId}'`))
+			.toBe("0");
+	}
 }
 
-test("analytics-events: a new local user creates a page through /create", async ({
-	browser,
-}) => {
-	const suffix = `${Date.now()}`;
-	const newEmail = `featuremap-${suffix}@example.com`;
-	const newHandle = `featuremap-${suffix}`;
-	const context = await browser.newContext({
-		storageState: { cookies: [], origins: [] },
-	});
-	await context.addInitScript(() => {
-		const state = window as Window & {
-			__gaCalls?: unknown[][];
-			gtag?: (...args: unknown[]) => void;
-		};
-		state.__gaCalls = [];
-		state.gtag = (...args) => state.__gaCalls?.push(args);
-	});
-	const page = await context.newPage();
-	try {
-		await page.goto("http://127.0.0.1:3000/sign-in", {
-			waitUntil: "networkidle",
-		});
-		await page.waitForLoadState("networkidle");
-		await page.getByRole("textbox", { name: "Email" }).fill(newEmail);
-		await page.getByRole("button", { name: "Send OTP" }).click();
-		await expect(
-			page.getByRole("heading", { name: "Check your inbox" }),
-		).toBeVisible();
-		const otp = execFileSync(
-			".agents/skills/verify-editor/scripts/otp.sh",
-			[newEmail],
-			{ encoding: "utf8" },
-		).trim();
-		await page.getByRole("textbox").first().fill(otp);
-		await page.getByRole("button", { name: "Verify code" }).click();
-		await page.waitForURL("**/create");
-		await expect(page.getByRole("textbox", { name: "Handle" })).toBeVisible();
-		const available = page.waitForResponse((response) => {
-			const url = new URL(response.url());
-			return (
-				url.pathname === "/pages/check" &&
-				url.searchParams.get("handle") === newHandle
-			);
-		});
-		await page.getByRole("textbox", { name: "Handle" }).fill(newHandle);
-		const availability = await available;
-		expect(availability.ok()).toBe(true);
-		expect(await availability.json()).toMatchObject({ available: true });
-		await page.getByRole("button", { name: "Grab it" }).click();
-		await expect(
-			page.getByRole("heading", { name: "Looking good!" }),
-		).toBeVisible();
-		expect(sql(`select count(*) from "user" where email='${newEmail}'`)).toBe(
-			"1",
-		);
-		expect(sql(`select count(*) from pages where handle='${newHandle}'`)).toBe(
-			"1",
-		);
-		await expect
-			.poll(() =>
-				page.evaluate(() => {
-					const state = window as Window & { __gaCalls?: unknown[][] };
-					return (state.__gaCalls ?? []).some(
-						([kind, name]) => kind === "event" && name === "sign_up",
-					);
-				}),
-			)
-			.toBe(true);
-		await expect
-			.poll(() =>
-				page.evaluate(() => {
-					const state = window as Window & { __gaCalls?: unknown[][] };
-					return (state.__gaCalls ?? []).some(
-						([kind, name]) => kind === "event" && name === "page_created",
-					);
-				}),
-			)
-			.toBe(true);
-	} finally {
-		await context.close();
-		sql(`delete from "user" where email='${newEmail}'`);
-	}
+test.beforeEach(async ({ page }) => {
+	await page.route("https://example.com/**", (route) =>
+		route.fulfill({
+			path: ".agents/skills/verify-editor/tests/test-fixtures/feature-map-64.png",
+			contentType: "image/png",
+		}),
+	);
+	await page.route(
+		/^https:\/\/(?:api|events)\.mapbox\.com\//,
+		async (route) => {
+			const url = new URL(route.request().url());
+			if (url.pathname === "/search/geocode/v6/forward") {
+				return route.fulfill({
+					json: {
+						features: [
+							{
+								id: "featuremap-seoul",
+								geometry: { type: "Point", coordinates: [126.978, 37.5665] },
+								properties: {
+									mapbox_id: "featuremap-seoul",
+									name: "Seoul",
+									place_formatted: "South Korea",
+								},
+							},
+						],
+					},
+				});
+			}
+			if (url.pathname.startsWith("/styles/v1/")) {
+				return route.fulfill({
+					json: {
+						version: 8,
+						sources: {},
+						layers: [
+							{
+								id: "background",
+								type: "background",
+								paint: { "background-color": "#eeeeee" },
+							},
+						],
+					},
+				});
+			}
+			return route.fulfill({ status: 204 });
+		},
+	);
 });
 
 test("editor-add-item: add, save, reload, and delete a text item", async ({
@@ -323,8 +296,17 @@ test("editor-page-sharing: the share dialog shows a page link and QR code", asyn
 			__gaCalls?: unknown[][];
 			gtag?: (...args: unknown[]) => void;
 		};
-		state.__gaCalls = [];
-		state.gtag = (...args) => state.__gaCalls?.push(args);
+		state.__gaCalls = JSON.parse(
+			localStorage.getItem("feature-map-ga-calls") ?? "[]",
+		);
+		state.gtag = (...args) => {
+			state.__gaCalls ??= [];
+			state.__gaCalls.push(args);
+			localStorage.setItem(
+				"feature-map-ga-calls",
+				JSON.stringify(state.__gaCalls),
+			);
+		};
 	});
 	await openOwner(page);
 	await page.context().grantPermissions(["clipboard-read", "clipboard-write"]);
@@ -390,8 +372,17 @@ test("analytics-events: public link clicks send a safe click event", async ({
 				__gaCalls?: unknown[][];
 				gtag?: (...args: unknown[]) => void;
 			};
-			state.__gaCalls = [];
-			state.gtag = (...args) => state.__gaCalls?.push(args);
+			state.__gaCalls = JSON.parse(
+				localStorage.getItem("feature-map-ga-calls") ?? "[]",
+			);
+			state.gtag = (...args) => {
+				state.__gaCalls ??= [];
+				state.__gaCalls.push(args);
+				localStorage.setItem(
+					"feature-map-ga-calls",
+					JSON.stringify(state.__gaCalls),
+				);
+			};
 		});
 		const publicPage = await visitor.newPage();
 		await publicPage.goto(`http://127.0.0.1:3000/${handle}`, {
@@ -579,6 +570,15 @@ test("editor-profile-and-handle: profile fields save and can be restored", async
 		await name.fill("Playwright Profile Check");
 		await bio.fill("Profile changes saved by the feature map test.");
 		await waitForSave(page);
+		await expect
+			.poll(() =>
+				sql(
+					`select name || '|' || coalesce(bio, '') from pages where handle='${handle}'`,
+				),
+			)
+			.toBe(
+				"Playwright Profile Check|Profile changes saved by the feature map test.",
+			);
 		await page.reload({ waitUntil: "networkidle" });
 		await expect(page.getByRole("textbox", { name: "Name" })).toHaveValue(
 			"Playwright Profile Check",
@@ -719,13 +719,9 @@ test("editor-text-formatting: text alignment and color controls save", async ({
 	await deleteItem(saved);
 });
 
-test("editor-map-editing: location search is available when Mapbox is configured", async ({
+test("editor-map-editing: location search selects and saves a place", async ({
 	page,
 }) => {
-	test.skip(
-		!process.env.NEXT_PUBLIC_MAPBOX_ACCESS_TOKEN,
-		"Mapbox search requires the map token described in the feature map.",
-	);
 	const { toolbar } = await openOwner(page);
 	await toolbar.getByRole("button", { name: "Add map" }).click();
 	const map = page.locator('[data-bento-item-type="map"]').last();
@@ -738,10 +734,23 @@ test("editor-map-editing: location search is available when Mapbox is configured
 	await expect(
 		page.getByRole("listbox", { name: "Location results" }),
 	).toBeVisible();
+	await page.getByRole("option", { name: /Seoul/ }).click();
+	await expect(map.getByRole("textbox", { name: "Media caption" })).toHaveValue(
+		"Seoul",
+	);
+	await expect
+		.poll(() =>
+			sql(`select data->>'latitude' from page_items where id='${itemId}'`),
+		)
+		.toBe("37.5665");
+	await page.reload({ waitUntil: "networkidle" });
+	expect(
+		sql(`select data->>'longitude' from page_items where id='${itemId}'`),
+	).toBe("126.978");
 	await deleteItem(page.locator(`[data-bento-item-id="${itemId}"]`));
 });
 
-test("editor-map-editing: caption and open-map link work without a Mapbox token", async ({
+test("editor-map-editing: caption and open-map link persist", async ({
 	page,
 }) => {
 	const { toolbar, content } = await openOwner(page);
@@ -769,10 +778,6 @@ test("editor-map-editing: caption and open-map link work without a Mapbox token"
 test("editor-map-editing: current location updates and persists the map position", async ({
 	page,
 }) => {
-	test.skip(
-		!process.env.NEXT_PUBLIC_MAPBOX_ACCESS_TOKEN,
-		"Map location controls require the Mapbox token described in the feature map.",
-	);
 	await page.context().grantPermissions(["geolocation"]);
 	await page
 		.context()
@@ -797,13 +802,7 @@ test("editor-map-editing: current location updates and persists the map position
 	await deleteItem(page.locator(`[data-bento-item-id="${itemId}"]`));
 });
 
-test("editor-map-editing: zoom changes and persists when Mapbox is configured", async ({
-	page,
-}) => {
-	test.skip(
-		!process.env.NEXT_PUBLIC_MAPBOX_ACCESS_TOKEN,
-		"Map zoom requires the Mapbox token described in the feature map.",
-	);
+test("editor-map-editing: zoom changes and persists", async ({ page }) => {
 	const { toolbar, content } = await openOwner(page);
 	await toolbar.getByRole("button", { name: "Add map" }).click();
 	const map = content.locator('[data-bento-item-type="map"]').last();
@@ -922,7 +921,6 @@ test("editor-media-upload: deleting during a held upload cancels it without addi
 	releasePut();
 	const response = await canceled;
 	expect(response.status()).toBe(204);
-	await waitForSave(page);
 	expect(
 		Number(
 			sql(
@@ -950,10 +948,6 @@ test("editor-tweet: advanced catalog includes the X post widget", async ({
 test("editor-tweet: invalid and public post URLs show the right result", async ({
 	page,
 }) => {
-	test.skip(
-		!process.env.FEATURE_MAP_TWEET_TESTS,
-		"The Tweet preview service must be reachable, as recorded in the feature map.",
-	);
 	const { toolbar } = await openOwner(page);
 	await toolbar.getByRole("button", { name: "Advanced" }).click();
 	await page.getByRole("button", { name: "Tweet" }).click();
@@ -1091,7 +1085,7 @@ test("editor-link-card-images: local R2 image picker is available", async ({
 	await expect(card).toBeVisible();
 	const itemId = await card.getAttribute("data-bento-item-id");
 	if (!itemId) throw new Error("new link card has no item id");
-	await card.hover();
+	await card.locator('[class~="group/link-image"]').hover();
 	const firstPicker = page.waitForEvent("filechooser");
 	await card.getByRole("button", { name: "Add link image" }).click();
 	await (await firstPicker).setFiles("test-fixtures/feature-map-64.png");
@@ -1103,7 +1097,7 @@ test("editor-link-card-images: local R2 image picker is available", async ({
 	const firstKey = sql(
 		`select data->>'imageKey' from page_items where id='${itemId}'`,
 	);
-	await card.hover();
+	await card.locator('[class~="group/link-image"]').hover();
 	const replacePicker = page.waitForEvent("filechooser");
 	await card.getByRole("button", { name: "Replace link image" }).click();
 	await (await replacePicker).setFiles("test-fixtures/feature-map-64.png");
@@ -1112,7 +1106,7 @@ test("editor-link-card-images: local R2 image picker is available", async ({
 			sql(`select data->>'imageKey' from page_items where id='${itemId}'`),
 		)
 		.not.toBe(firstKey);
-	await card.hover();
+	await card.locator('[class~="group/link-image"]').hover();
 	await card.getByRole("button", { name: "Remove link image" }).click();
 	await expect
 		.poll(() =>
@@ -1125,10 +1119,6 @@ test("editor-link-card-images: local R2 image picker is available", async ({
 test("editor-advanced-widgets: Spotify and RSS previews can be added and saved", async ({
 	page,
 }) => {
-	test.skip(
-		!process.env.FEATURE_MAP_PROVIDER_TESTS,
-		"Spotify and RSS preview services must be reachable, as recorded in the feature map.",
-	);
 	const { toolbar } = await openOwner(page);
 	await toolbar.getByRole("button", { name: "Advanced" }).click();
 	await page.getByRole("button", { name: "Spotify" }).click();

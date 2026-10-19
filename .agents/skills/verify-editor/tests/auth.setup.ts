@@ -15,6 +15,18 @@ const readOtp = (address: string) =>
 test("sign in once and save the shared owner session", async ({ page }) => {
 	const statePath = process.env.PLAYWRIGHT_STORAGE_STATE;
 	if (!statePath) throw new Error("PLAYWRIGHT_STORAGE_STATE is required");
+	const analyticsCalls: unknown[][] = [];
+	await page.exposeBinding(
+		"__captureFeatureMapAnalytics",
+		(_source, ...args: unknown[]) => analyticsCalls.push(args),
+	);
+	await page.addInitScript(() => {
+		const state = window as Window & {
+			gtag?: (...args: unknown[]) => void;
+			__captureFeatureMapAnalytics?: (...args: unknown[]) => void;
+		};
+		state.gtag = (...args) => state.__captureFeatureMapAnalytics?.(...args);
+	});
 
 	await page.goto("/sign-in", { waitUntil: "networkidle" });
 	await page.getByRole("textbox", { name: "Email" }).fill(invalidOtpEmail);
@@ -22,6 +34,13 @@ test("sign in once and save the shared owner session", async ({ page }) => {
 	await expect(
 		page.getByRole("heading", { name: "Check your inbox" }),
 	).toBeVisible();
+	await expect
+		.poll(() =>
+			analyticsCalls.some(
+				([kind, name]) => kind === "event" && name === "sign_up_start",
+			),
+		)
+		.toBe(true);
 	const invalidOtp = readOtp(invalidOtpEmail);
 	expect(invalidOtp).toMatch(/^\d{6}$/);
 	const otpInput = page.getByRole("textbox").first();
@@ -37,6 +56,9 @@ test("sign in once and save the shared owner session", async ({ page }) => {
 		(await page.context().cookies()).some((cookie) =>
 			cookie.name.includes("session_token"),
 		),
+	).toBe(false);
+	expect(
+		analyticsCalls.some(([kind, name]) => kind === "event" && name === "login"),
 	).toBe(false);
 	await page.getByRole("button", { name: "Use a different email" }).click();
 	await expect(page.getByRole("textbox", { name: "Email" })).toHaveValue(
@@ -66,6 +88,13 @@ test("sign in once and save the shared owner session", async ({ page }) => {
 	}
 	await page.waitForURL((url) => !url.pathname.startsWith("/sign-in"));
 	await page.waitForLoadState("networkidle");
+	await expect
+		.poll(() =>
+			analyticsCalls.some(
+				([kind, name]) => kind === "event" && name === "login",
+			),
+		)
+		.toBe(true);
 	expect(
 		(await page.context().cookies()).some((cookie) =>
 			cookie.name.includes("session_token"),

@@ -42,4 +42,4 @@ Preconditions:
 - `Delete item` is hover-revealed. Hover the block, then click normally. `click({ force: true })` on the hidden button hits nothing: no `PATCH` and no DB change.
 - Verified Oct 14 2026 (PR #1 + `main`): text/section/link/map each persisted after reload, and `Delete item` removed the row (6 → 5).
 - `Add text` and `Add section` focus the new block; typing right after the click goes into it.
-- `Add link` and `Add map` need network for previews (link metadata, Mapbox). Without `NEXT_PUBLIC_MAPBOX_ACCESS_TOKEN` the map renders without tiles.
+- The Playwright runner fakes link metadata and Mapbox responses. Outside that runner, link previews and map tiles/search need their provider services and a Mapbox token.
