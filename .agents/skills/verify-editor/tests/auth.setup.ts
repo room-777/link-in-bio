@@ -46,7 +46,22 @@ test("sign in once and save the shared owner session", async ({ page }) => {
 			cookie.name.includes("session_token"),
 		),
 	).toBe(false);
-	await otpInput.fill(otp);
+	const resent = page.waitForResponse((response) => {
+		const url = new URL(response.url());
+		return (
+			url.pathname.endsWith("/auth/email-otp/send-verification-otp") &&
+			response.request().method() === "POST"
+		);
+	});
+	await page.getByRole("button", { name: "Resend code" }).click();
+	expect((await resent).ok()).toBe(true);
+	const latestOtp = execFileSync(
+		".agents/skills/verify-editor/scripts/otp.sh",
+		[email],
+		{ encoding: "utf8" },
+	).trim();
+	expect(latestOtp).toMatch(/^\d{6}$/);
+	await otpInput.fill(latestOtp);
 	const verified = page.waitForResponse((response) =>
 		new URL(response.url()).pathname.endsWith("/auth/sign-in/email-otp"),
 	);
