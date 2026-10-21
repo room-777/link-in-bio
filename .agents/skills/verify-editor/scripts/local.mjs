@@ -2,8 +2,8 @@ import { execFileSync } from "node:child_process";
 import { appendFileSync, mkdirSync, writeFileSync } from "node:fs";
 import path from "node:path";
 
-export const WEB = "http://127.0.0.1:3000";
-export const API = "http://127.0.0.1:3001";
+export const WEB = `http://127.0.0.1:${process.env.FEATUREMAP_WEB_PORT ?? 3000}`;
+export const API = `http://127.0.0.1:${process.env.FEATUREMAP_API_PORT ?? 3001}`;
 export const ACCOUNT = "featuremap@example.com";
 export const HANDLE = "featuremap-test";
 export const STATE = path.join(
