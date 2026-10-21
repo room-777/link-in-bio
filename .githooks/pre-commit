@@ -2,4 +2,5 @@
 set -eu
 
 bun scripts/check-verification-artifacts.mjs --staged
+bun scripts/check-feature-drivers.ts
 bunx lint-staged

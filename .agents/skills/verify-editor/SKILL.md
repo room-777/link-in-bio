@@ -21,7 +21,7 @@ RUN_DIR="artifacts/verify-editor/$RUN_ID"
 .agents/skills/verify-editor/scripts/doctor.sh "$RUN_DIR"
 ```
 
-The doctor must print `OK`. Web is `http://127.0.0.1:3000`, API is `http://127.0.0.1:3001`, the fake provider is `http://127.0.0.1:3002`, and the dedicated database is `grabbin_featuremap` on port `15432`. The scripts refuse occupied ports and only use their labeled `grabbin-featuremap` container. They read but never change either `.env` file.
+The doctor must print `OK`. Web is `http://127.0.0.1:3000`, API is `http://127.0.0.1:3001`, the fake provider is `http://127.0.0.1:3002`, and the dedicated database is `grabbin_featuremap` on port `15432`. Set `FEATUREMAP_WEB_PORT`, `FEATUREMAP_API_PORT`, `FEATUREMAP_MOCK_PORT` and `FEATUREMAP_DB_PORT` to run a second stack beside one already on those ports. The scripts refuse occupied ports and only use their labeled `grabbin-featuremap` container. They read but never change either `.env` file.
 
 ## Doctor
 
@@ -37,7 +37,7 @@ node .agents/skills/verify-editor/scripts/setup-account.mjs "$RUN_DIR"
 
 This uses a fresh visible Chrome context to sign in through `/sign-in` and create the page through `/create`. It grants the configured local-only `local-pro` product in the dedicated database and saves the owner's browser state at `~/.cache/grabbin-featuremap/owner-session.json`. Keep that database volume and state file for later runs. Never replace them with an account or credentials from another environment.
 
-Run the full feature driver in visible Chrome:
+Run the full feature driver in visible Chrome (macOS Google Chrome by default, or the binary in `CHROME_PATH`):
 
 ```sh
 node .agents/skills/verify-editor/scripts/drive-all.mjs "$RUN_DIR"
@@ -59,9 +59,18 @@ Stop only the local processes started by this run:
 
 This stops the run's web/API/mock processes. It keeps the labeled test database, its named volume, and the saved browser state for reuse. Evidence under `artifacts/verify-editor/$RUN_ID/` remains after cleanup. Never stop a process or container unless this run created and owns it.
 
+## Writing drivers
+
+Drivers are regenerated often, so the harness owns every browser call and `bun run check:feature-drivers` (in `bun run verify` and the pre-commit hook) rejects anything else:
+
+- Open each feature with `journeys.open(feature, …)` (or the driver's `openOwner(feature)`). Each feature gets a fresh browser context, so a dialog or overlay left by one journey cannot break the next.
+- Find controls with `control(scope, role, name)` from `harness/ui.mjs`. The name must be one the app renders in `apps/web/src` or a workspace package; an unknown name fails the check before any browser starts. Labels that change with state (`Add link image` / `Replace link image`) match every state. A control inside a popover is found from the page and its trigger is opened first. Controls revealed on hover are hovered through their item scope. Every action waits for React hydration.
+- Use `content(scope, role, name)` only for fixture data the driver itself created, and `item`, `marker`, `fileInput`, `otpInput`, `labelled` for the rest.
+- Wait with `settled(page)` after a change (it covers the editor's 1.5 s save delay) and navigate with `gotoReady` / `reloadReady`. Raw `page.getBy*`, `locator`, `goto`, `reload`, `waitForTimeout`, `waitForFunction`, `newContext` and `force: true` are rejected.
+
 ## Helpers
 
-The runnable helpers are `scripts/start-local.sh`, `scripts/doctor.sh`, `scripts/stop-local.sh`, `scripts/mock-outbound.mjs`, `scripts/setup-account.mjs`, `scripts/drive-all.mjs`, `scripts/drive-delete-check.mjs`, and `scripts/drive-widget-check.mjs`. Shared URLs, fixture identity, database readback, and evidence capture live in `scripts/local.mjs`.
+The runnable helpers are `scripts/start-local.sh`, `scripts/doctor.sh`, `scripts/stop-local.sh`, `scripts/mock-outbound.mjs`, `scripts/setup-account.mjs`, `scripts/drive-all.mjs`, `scripts/drive-delete-check.mjs`, and `scripts/drive-widget-check.mjs`. Shared URLs, fixture identity, database readback, and evidence capture live in `scripts/local.mjs`; browser journeys and locators live in `harness/`.
 
 For a focused follow-up after the full run, execute the delete check first, then refresh the widget placeholder evidence and summary:
 

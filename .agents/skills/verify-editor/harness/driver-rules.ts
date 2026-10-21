@@ -1,0 +1,140 @@
+import { parse } from "@babel/parser";
+import type { UiContract } from "./ui-contract.ts";
+
+type Node = { type: string; start: number; [key: string]: unknown };
+
+export const RAW_BROWSER_CALLS: Record<string, string> = {
+	$: "use a harness locator from harness/ui.mjs",
+	$$: "use a harness locator from harness/ui.mjs",
+	getByAltText: "use control() or content() from harness/ui.mjs",
+	getByLabel: "use control() or content() from harness/ui.mjs",
+	getByPlaceholder: "use control() or content() from harness/ui.mjs",
+	getByRole: "use control() for app labels or content() for fixture data",
+	getByTestId: "use control() or content() from harness/ui.mjs",
+	getByText: "use exactText() from harness/ui.mjs",
+	getByTitle: "use control() or content() from harness/ui.mjs",
+	goto: "use journeys.open(feature, { route }) or gotoReady()",
+	locator: "use a named helper from harness/ui.mjs",
+	newContext: "open each feature with journeys.open() so no state leaks",
+	newPage: "open each feature with journeys.open() so no state leaks",
+	reload: "use reloadReady() so the next action waits for hydration",
+	waitForFunction: "wait on a harness locator or settled()",
+	waitForSelector: "wait on a harness locator",
+	waitForTimeout: "use settled() or wait on a harness locator",
+};
+const NAMED_CALLS = new Set(["control", "exactText", "labelled"]);
+const CROSS_JOURNEY_FEATURES = new Set(["analytics-events"]);
+
+export type Violation = { line: number; message: string };
+
+function isNode(value: unknown): value is Node {
+	return typeof value === "object" && value !== null && "type" in value;
+}
+
+function walk(node: Node, visit: (node: Node) => void) {
+	visit(node);
+	for (const [key, value] of Object.entries(node)) {
+		if (key === "loc" || key.endsWith("Comments")) continue;
+		if (Array.isArray(value))
+			for (const child of value) if (isNode(child)) walk(child, visit);
+		if (isNode(value)) walk(value, visit);
+	}
+}
+
+export function knownName(contract: UiContract) {
+	const names = new Set(contract.names);
+	const patterns = contract.patterns.map((pattern) => new RegExp(pattern));
+	return (name: string) =>
+		names.has(name) || patterns.some((pattern) => pattern.test(name));
+}
+
+function literalNames(node: unknown): string[] {
+	if (!isNode(node)) return [];
+	if (node.type === "StringLiteral") return [String(node.value)];
+	if (node.type === "ArrayExpression")
+		return (node.elements as unknown[]).flatMap(literalNames);
+	return [];
+}
+
+export function checkDriverSource(
+	source: string,
+	contract: UiContract,
+): Violation[] {
+	const ast = parse(source, {
+		sourceType: "module",
+		errorRecovery: false,
+	}) as unknown as Node;
+	const isKnown = knownName(contract);
+	const lineOf = (offset: number) => source.slice(0, offset).split("\n").length;
+	const violations: Violation[] = [];
+	const report = (node: Node, message: string) =>
+		violations.push({ line: lineOf(node.start), message });
+	const resultFeatures = new Map<string, Node>();
+	const journeyFeatures = new Set<string>();
+
+	walk(ast, (node) => {
+		if (node.type === "ImportDeclaration") {
+			const from = String((node.source as Node).value);
+			if (from === "playwright" || from.startsWith("playwright/"))
+				report(
+					node,
+					"import browsers through harness/journey.mjs, not playwright directly",
+				);
+		}
+		if (
+			node.type === "ObjectProperty" &&
+			isNode(node.key) &&
+			(node.key.name === "force" || node.key.value === "force") &&
+			isNode(node.value) &&
+			node.value.type === "BooleanLiteral" &&
+			node.value.value === true
+		)
+			report(
+				node,
+				"force: true skips actionability checks; fix what blocks the element",
+			);
+		if (node.type !== "CallExpression") return;
+		const callee = node.callee as Node;
+		const args = node.arguments as Node[];
+		if (callee.type === "MemberExpression" && !callee.computed) {
+			const method = String((callee.property as Node).name);
+			if (method in RAW_BROWSER_CALLS)
+				report(
+					node,
+					`.${method}() is harness-only: ${RAW_BROWSER_CALLS[method]}`,
+				);
+			if (method === "open" && literalNames(args[0])[0])
+				journeyFeatures.add(literalNames(args[0])[0] as string);
+			return;
+		}
+		if (callee.type !== "Identifier") return;
+		const name = String(callee.name);
+		if (NAMED_CALLS.has(name)) {
+			const nameArg = name === "control" ? args[2] : args[1];
+			for (const label of literalNames(nameArg))
+				if (!isKnown(label))
+					report(node, `"${label}" is not an accessible name the app renders`);
+		}
+		if (name === "content")
+			for (const label of literalNames(args[2]))
+				if (isKnown(label))
+					report(
+						node,
+						`"${label}" is an app label; use control() so the contract checks it`,
+					);
+		if (name === "openOwner" && literalNames(args[0])[0])
+			journeyFeatures.add(literalNames(args[0])[0] as string);
+		if (name === "result" && literalNames(args[0])[0]) {
+			const feature = literalNames(args[0])[0] as string;
+			if (!resultFeatures.has(feature)) resultFeatures.set(feature, node);
+		}
+	});
+
+	for (const [feature, node] of resultFeatures)
+		if (!journeyFeatures.has(feature) && !CROSS_JOURNEY_FEATURES.has(feature))
+			report(
+				node,
+				`results for "${feature}" need their own journey: open it with journeys.open("${feature}") or openOwner("${feature}")`,
+			);
+	return violations.sort((a, b) => a.line - b.line);
+}

@@ -72,6 +72,17 @@
 	},
 	"overrides": [
 		{
+			"includes": [".agents/skills/verify-editor/**/*.mjs"],
+			"linter": {
+				"rules": {
+					"correctness": {
+						"noUndeclaredVariables": "error",
+						"noInvalidUseBeforeDeclaration": "error"
+					}
+				}
+			}
+		},
+		{
 			"includes": ["packages/ui/src/**"],
 			"linter": { "enabled": false }
 		},

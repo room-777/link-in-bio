@@ -51,6 +51,7 @@ const steps: Array<[name: string, command: string[]]> = [
 		["bun", "apps/web/scripts/check-architecture.ts", "callbacks"],
 	],
 	["Production keys", ["bun", "run", "check:prod-keys"]],
+	["Feature-map drivers", ["bun", "run", "check:feature-drivers"]],
 	[
 		"Tests (every package, excluding isolated billing service)",
 		[

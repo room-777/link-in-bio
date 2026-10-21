@@ -63,6 +63,7 @@
 		"prepare": "git rev-parse --git-dir >/dev/null 2>&1 && git config core.hooksPath .githooks || true",
 		"check:plan-boundary": "bun scripts/check-plan-boundary.ts",
 		"check:prod-keys": "bun scripts/check-prod-keys.ts",
+		"check:feature-drivers": "bun scripts/check-feature-drivers.ts",
 		"verify": "bun scripts/verify.ts"
 	},
 	"dependencies": {
