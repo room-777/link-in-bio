@@ -70,6 +70,7 @@
 		"dotenv": "catalog:runtime"
 	},
 	"devDependencies": {
+		"@babel/parser": "7.29.8",
 		"@biomejs/biome": "2.5.15",
 		"@cloudflare/workers-types": "catalog:cloudflare",
 		"@grabbin/config": "workspace:*",
@@ -79,6 +80,7 @@
 		"@types/node": "^22.20.1",
 		"conventional-changelog-conventionalcommits": "^9.1.0",
 		"lint-staged": "16.2.6",
+		"playwright": "^1.64.1",
 		"semantic-release": "^25.0.9",
 		"typescript": "catalog:tooling"
 	},
