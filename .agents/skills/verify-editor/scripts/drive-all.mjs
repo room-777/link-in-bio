@@ -1,3 +1,4 @@
+import { execFileSync } from "node:child_process";
 import {
 	appendFileSync,
 	copyFileSync,
@@ -5,7 +6,25 @@ import {
 	writeFileSync,
 } from "node:fs";
 import path from "node:path";
-import { chromium } from "playwright";
+import {
+	createJourneys,
+	gotoReady,
+	launchBrowser,
+	reloadReady,
+	settled,
+} from "../harness/journey.mjs";
+import {
+	blobPreview,
+	body,
+	content,
+	control,
+	exactText,
+	fileInput,
+	item,
+	items,
+	marker,
+	otpInput,
+} from "../harness/ui.mjs";
 import { ACCOUNT, API, capture, db, HANDLE, STATE, WEB } from "./local.mjs";
 
 const runDir = path.resolve(process.argv[2] ?? "");
@@ -110,7 +129,7 @@ async function installLocalApiMocks(context) {
 		);
 		return route.fulfill({ status: 204, body: "" });
 	});
-	await context.route("http://127.0.0.1:3001/media/**", async (route) => {
+	await context.route(`${API}/media/**`, async (route) => {
 		if (route.request().method() === "OPTIONS") {
 			await route.fulfill({
 				status: 204,
@@ -125,7 +144,7 @@ async function installLocalApiMocks(context) {
 		}
 		const response = await route.fetch();
 		fakeBrowserResponses.push(
-			`${route.request().method()} 127.0.0.1:3001${new URL(route.request().url()).pathname} ${response.status()} local-media`,
+			`${route.request().method()} ${new URL(API).host}${new URL(route.request().url()).pathname} ${response.status()} local-media`,
 		);
 		await route.fulfill({
 			response,
@@ -136,13 +155,6 @@ async function installLocalApiMocks(context) {
 			},
 		});
 	});
-}
-async function waitSaved(page) {
-	await page.waitForTimeout(2500);
-}
-async function reloadPage(page) {
-	await page.reload({ waitUntil: "domcontentloaded", timeout: 25000 });
-	await page.waitForTimeout(3000);
 }
 async function waitForDb(
 	query,
@@ -177,22 +189,24 @@ function ownedImageKey(data) {
 async function ownedImageGetStatus(data) {
 	const key = ownedImageKey(data);
 	return key
-		? context.request
-				.get(`${API}/media/${key}`)
+		? page
+				.context()
+				.request.get(`${API}/media/${key}`)
 				.then((response) => response.status())
 				.catch(() => 0)
 		: 0;
 }
 async function removeItem(page, itemId, pageId, feature) {
 	if (!itemId) return false;
-	const item = page.locator(`[data-bento-item-id="${itemId}"]`);
-	if (!(await item.count())) return false;
-	await item.scrollIntoViewIfNeeded();
-	await item.hover();
-	const remove = item.getByRole("button", { name: "Delete item" });
+	const card = item(page, itemId);
+	// After a reload the grid renders items once page data arrives.
+	await card.waitFor({ state: "attached", timeout: 10000 });
+	await card.scrollIntoViewIfNeeded();
+	await card.hover();
+	const remove = control(card, "button", "Delete item");
 	await remove.waitFor({ state: "visible", timeout: 5000 });
 	await remove.click();
-	await item.waitFor({ state: "detached", timeout: 5000 }).catch(() => {});
+	await card.waitFor({ state: "detached", timeout: 5000 }).catch(() => {});
 	const count = Number(
 		await waitForDb(
 			`select count(*) from page_items where id='${itemId}' and page_id='${pageId}'`,
@@ -205,25 +219,56 @@ async function removeItem(page, itemId, pageId, feature) {
 		.slice(-3);
 	write(
 		feature,
-		`Delete item ${itemId}; DOM removed=${!(await item.count())}; database row count after save: ${count}; recent batch responses=${saveResponses.join(",") || "none"}.`,
+		`Delete item ${itemId}; DOM removed=${!(await card.count())}; database row count after save: ${count}; recent batch responses=${saveResponses.join(",") || "none"}.`,
 	);
 	return count === 0;
 }
 
 mkdirSync(runDir, { recursive: true });
-const browser = await chromium.launch({
-	headless: false,
-	executablePath:
-		process.env.CHROME_PATH ??
-		"/Applications/Google Chrome.app/Contents/MacOS/Google Chrome",
+const network = [];
+function watchPage(page) {
+	page.on("response", (response) => {
+		try {
+			const url = new URL(response.url());
+			if (url.origin === API)
+				network.push(
+					`${response.request().method()} ${url.pathname} ${response.status()}`,
+				);
+		} catch {}
+	});
+	page.on("pageerror", (error) =>
+		appendFileSync(
+			path.join(runDir, "browser-errors.txt"),
+			`${redacted(error.message)}\n`,
+		),
+	);
+	page.on("console", (message) => {
+		if (message.type() === "error")
+			appendFileSync(
+				path.join(runDir, "browser-errors.txt"),
+				`${redacted(message.text())}\n`,
+			);
+	});
+}
+const browser = await launchBrowser();
+const journeys = createJourneys(browser, {
+	prepareContext: installLocalApiMocks,
+	preparePage: watchPage,
 });
+let page;
+async function openOwner(feature) {
+	page = await journeys.open(feature, {
+		route: `/${HANDLE}`,
+		storageState: STATE,
+		permissions: ["clipboard-read", "clipboard-write"],
+	});
+	await control(page, "group", "Page editor toolbar").waitFor({
+		timeout: 20000,
+	});
+}
 const authDir = path.join(runDir, "sign-in-email-otp");
 mkdirSync(authDir, { recursive: true });
-const loginContext = await browser.newContext({
-	viewport: { width: 1365, height: 900 },
-});
-await installLocalApiMocks(loginContext);
-const loginPage = await loginContext.newPage();
+const loginPage = await journeys.open("sign-in-email-otp");
 const observed = [];
 loginPage.on("response", (response) => {
 	try {
@@ -261,19 +306,17 @@ loginPage.on("requestfailed", (request) => {
 			);
 	} catch {}
 });
-await loginPage.goto(`${WEB}/sign-in`);
-await loginPage.waitForTimeout(3000);
+await gotoReady(loginPage, "/sign-in");
 await proof(loginPage, "sign-in-email-otp", "sign-in-before");
-const loginEmail = loginPage.getByRole("textbox", { name: "Email" });
+const loginEmail = control(loginPage, "textbox", "Email");
 await loginEmail.fill(ACCOUNT);
 const emailFilled = (await loginEmail.inputValue()) === ACCOUNT;
-const sendOtpButton = loginPage.getByRole("button", { name: "Send OTP" });
+const sendOtpButton = control(loginPage, "button", "Send OTP");
 const sendOtpEnabled = await sendOtpButton.isEnabled();
 await proof(loginPage, "sign-in-email-otp", "sign-in-filled");
 await sendOtpButton.click();
 const loginUserId = db(`select id from "user" where email='${ACCOUNT}'`);
-const inboxPrompt = await loginPage
-	.getByRole("heading", { name: "Check your inbox" })
+const inboxPrompt = await control(loginPage, "heading", "Check your inbox")
 	.waitFor({ timeout: 8000 })
 	.then(() => true)
 	.catch(() => false);
@@ -288,15 +331,13 @@ result(
 	inboxPrompt ? "PASS" : "FAIL",
 	inboxPrompt
 		? "Fresh context submitted the local test email and showed Check your inbox; API request status recorded."
-		: `환경 차단: email filled=${emailFilled}; Send OTP enabled=${sendOtpEnabled}; request outcomes=${observed.join("; ")}; form did not reach Check your inbox. Current screen: ${redacted((await loginPage.locator("body").innerText()).replaceAll("\n", " | ")).slice(0, 180)}.`,
+		: `환경 차단: email filled=${emailFilled}; Send OTP enabled=${sendOtpEnabled}; request outcomes=${observed.join("; ")}; form did not reach Check your inbox. Current screen: ${redacted((await body(loginPage).innerText()).replaceAll("\n", " | ")).slice(0, 180)}.`,
 );
 let sessionValid = false;
 let otpPromptAvailable = inboxPrompt;
 if (inboxPrompt) {
-	await loginPage
-		.getByRole("button", { name: "Use a different email" })
-		.click();
-	const emailBox = loginPage.getByRole("textbox", { name: "Email" });
+	await control(loginPage, "button", "Use a different email").click();
+	const emailBox = control(loginPage, "textbox", "Email");
 	const returnedToEmail = await emailBox.isVisible().catch(() => false);
 	result(
 		"sign-in-email-otp",
@@ -306,15 +347,14 @@ if (inboxPrompt) {
 	);
 	if (returnedToEmail) {
 		await emailBox.fill(ACCOUNT);
-		await loginPage.getByRole("button", { name: "Send OTP" }).click();
-		otpPromptAvailable = await loginPage
-			.getByRole("heading", { name: "Check your inbox" })
+		await control(loginPage, "button", "Send OTP").click();
+		otpPromptAvailable = await control(loginPage, "heading", "Check your inbox")
 			.waitFor({ timeout: 8000 })
 			.then(() => true)
 			.catch(() => false);
 	}
 	if (otpPromptAvailable) {
-		const codeInput = loginPage.locator('input[autocomplete="one-time-code"]');
+		const codeInput = otpInput(loginPage);
 		const freshCode = db(
 			`select split_part(value, ':', 1) from verification where identifier='sign-in-otp-${ACCOUNT}' and expires_at > now() order by created_at desc limit 1`,
 		);
@@ -326,14 +366,14 @@ if (inboxPrompt) {
 				(response) => response.url().includes("/auth/sign-in/email-otp"),
 				{ timeout: 10000 },
 			);
-			await loginPage.getByRole("button", { name: "Verify code" }).click();
+			await control(loginPage, "button", "Verify code").click();
 			const verifyResponse = await verifyPromise.catch(() => null);
-			await loginPage.waitForTimeout(900);
-			const sessionResponse = await loginContext.request.get(
-				`${API}/auth/get-session`,
-			);
+			await settled(loginPage);
+			const sessionResponse = await loginPage
+				.context()
+				.request.get(`${API}/auth/get-session`);
 			const sessionJson = await sessionResponse.json().catch(() => null);
-			const sessionCookies = await loginContext.cookies();
+			const sessionCookies = await loginPage.context().cookies();
 			sessionValid =
 				sessionResponse.ok() &&
 				Boolean(sessionJson?.user?.id) &&
@@ -388,62 +428,14 @@ result(
 	`Existing account reached ${new URL(expectedLanding).pathname}; verified session=${sessionValid}; account row read from isolated DB.`,
 );
 write("sign-in-email-otp", `API outcomes: ${observed.join("; ")}`);
-await loginContext.close();
 
 // The login probe above must not replace the separately maintained owner session.
-const context = await browser.newContext({
-	storageState: STATE,
-	viewport: { width: 1365, height: 900 },
-	permissions: ["clipboard-read", "clipboard-write"],
-});
-await installLocalApiMocks(context);
-const page = await context.newPage();
-page.setDefaultTimeout(12000);
-page.setDefaultNavigationTimeout(25000);
-const network = [];
-page.on("response", (response) => {
-	try {
-		const url = new URL(response.url());
-		if (url.origin === API)
-			network.push(
-				`${response.request().method()} ${url.pathname} ${response.status()}`,
-			);
-	} catch {}
-});
-page.on("pageerror", (error) =>
-	appendFileSync(
-		path.join(runDir, "browser-errors.txt"),
-		`${redacted(error.message)}\n`,
-	),
-);
-page.on("console", (message) => {
-	if (message.type() === "error")
-		appendFileSync(
-			path.join(runDir, "browser-errors.txt"),
-			`${redacted(message.text())}\n`,
-		);
-});
+await openOwner("owner-baseline");
 const pageId = db(
 	`select id from pages where handle='${HANDLE}' and user_id='${loginUserId}'`,
 );
 if (!pageId)
 	throw new Error("Expected page row was not found in isolated database.");
-await page.goto(`${WEB}/${HANDLE}`, {
-	waitUntil: "domcontentloaded",
-	timeout: 25000,
-});
-await page
-	.getByRole("group", { name: "Page editor toolbar" })
-	.waitFor({ timeout: 20000 });
-await page.waitForFunction(
-	() => {
-		const button = [...document.querySelectorAll("button")].find(
-			(candidate) => candidate.getAttribute("aria-label") === "Advanced",
-		);
-		return Boolean(button && !button.disabled);
-	},
-	{ timeout: 20000 },
-);
 await proof(page, "owner-baseline", "owner-page");
 const planRow = db(
 	`select product_id || ':' || status from creem_subscription where reference_id='${loginUserId}' limit 1`,
@@ -457,13 +449,13 @@ if (planRow !== "local-pro:active")
 		`Expected local Pro fixture, read back ${planRow || "no subscription"}.`,
 	);
 
+await openOwner("editor-page-sharing");
 // Sharing: visible dialog, clipboard result, and mobile entry point.
 try {
-	await page.getByRole("button", { name: "Share page" }).click();
-	const dialog = page.getByRole("dialog", { name: "Share your page" });
+	await control(page, "button", "Share page").click();
+	const dialog = control(page, "dialog", "Share your page");
 	await dialog.waitFor({ state: "visible" });
-	const qrVisible = await dialog
-		.getByRole("img", { name: "QR code for your page" })
+	const qrVisible = await control(dialog, "img", "QR code for your page")
 		.isVisible()
 		.catch(() => false);
 	await proof(page, "editor-page-sharing", "share-dialog");
@@ -479,9 +471,12 @@ try {
 		qrVisible ? "PASS" : "FAIL",
 		`QR graphic visible=${qrVisible}; QR address content is not checked.`,
 	);
-	await dialog.getByRole("button", { name: "Copy Link" }).click();
-	await page.waitForTimeout(1500);
-	const copied = (await dialog.innerText()).includes("Copied Link");
+	await control(dialog, "button", "Copy Link").click();
+	// The feedback is transient, so wait for it rather than for saves.
+	const copied = await exactText(dialog, "Copied Link")
+		.waitFor({ state: "visible", timeout: 5000 })
+		.then(() => true)
+		.catch(() => false);
 	const clipboard = await page
 		.evaluate(() => navigator.clipboard.readText())
 		.catch(() => "");
@@ -491,33 +486,23 @@ try {
 		copied && clipboard === `${WEB}/${HANDLE}` ? "PASS" : "FAIL",
 		`Copy feedback visible=${copied}; clipboard matched public page URL=${clipboard === `${WEB}/${HANDLE}`}.`,
 	);
-	await dialog
-		.getByRole("button", { name: "Close" })
+	await control(dialog, "button", "Close")
 		.click()
 		.catch(() => page.keyboard.press("Escape"));
 	await dialog.waitFor({ state: "hidden", timeout: 5000 }).catch(() => {});
 	await page.setViewportSize({ width: 390, height: 844 });
-	await reloadPage(page);
-	await page.waitForTimeout(500);
-	const mobileShare = page.getByRole("button", { name: "Share link" });
+	await reloadReady(page);
+	await settled(page);
+	const mobileShare = control(page, "button", "Share link");
 	await mobileShare.waitFor({ state: "visible" });
-	await page.waitForFunction(
-		() => {
-			const button = [...document.querySelectorAll("button")].find(
-				(candidate) => candidate.getAttribute("aria-label") === "Share link",
-			);
-			return Boolean(button && !button.disabled);
-		},
-		{ timeout: 10000 },
-	);
 	await mobileShare.click();
-	const mobileDialog = page.getByRole("dialog", { name: "Share your page" });
+	const mobileDialog = control(page, "dialog", "Share your page");
 	let mobileOpened = await mobileDialog
 		.waitFor({ state: "visible", timeout: 5000 })
 		.then(() => true)
 		.catch(() => false);
 	if (!mobileOpened) {
-		await page.waitForTimeout(500);
+		await settled(page);
 		await mobileShare.click().catch(() => {});
 		mobileOpened = await mobileDialog
 			.waitFor({ state: "visible", timeout: 3000 })
@@ -526,7 +511,7 @@ try {
 	}
 	await proof(page, "editor-page-sharing", "share-mobile");
 	const mobileScreen = redacted(
-		(await page.locator("body").innerText()).replaceAll("\n", " | "),
+		(await body(page).innerText()).replaceAll("\n", " | "),
 	).slice(0, 160);
 	result(
 		"editor-page-sharing",
@@ -546,23 +531,22 @@ try {
 		);
 }
 
+await openOwner("editor-profile-and-handle");
 // Owner profile name/bio and page handle are changed and restored through the UI.
-const originalName = await page
-	.getByRole("textbox", { name: "Name" })
+const originalName = await control(page, "textbox", "Name")
 	.inputValue()
 	.catch(() => "");
-const originalBio = await page
-	.getByRole("textbox", { name: "Bio" })
+const originalBio = await control(page, "textbox", "Bio")
 	.inputValue()
 	.catch(() => "");
 try {
-	const name = page.getByRole("textbox", { name: "Name" });
-	const bio = page.getByRole("textbox", { name: "Bio" });
+	const name = control(page, "textbox", "Name");
+	const bio = control(page, "textbox", "Bio");
 	await name.fill("Feature map local owner");
 	await name.press("Tab");
 	await bio.fill("Temporary browser verification profile.");
 	await bio.press("Tab");
-	await waitSaved(page);
+	await settled(page);
 	const profileRead = db(
 		`select coalesce(name,'') || '|' || coalesce(bio,'') from pages where id='${pageId}'`,
 	);
@@ -575,7 +559,7 @@ try {
 			: "FAIL",
 		`UI edit followed by pages-row readback: ${profileRead}.`,
 	);
-	await reloadPage(page);
+	await reloadReady(page);
 	result(
 		"editor-profile-and-handle",
 		"profile-persist",
@@ -586,14 +570,14 @@ try {
 		"Reloaded owner page and checked profile fields.",
 	);
 	await proof(page, "editor-profile-and-handle", "profile-saved");
-	await page.getByRole("button", { name: "Open page options" }).click();
-	await page.getByText("Change handle", { exact: true }).click();
-	const changeDialog = page.getByRole("dialog");
+	await control(page, "button", "Open page options").click();
+	await exactText(page, "Change handle").click();
+	const changeDialog = control(page, "dialog");
 	await changeDialog.waitFor({ state: "visible" });
-	const handleBox = changeDialog.getByRole("textbox");
+	const handleBox = control(changeDialog, "textbox");
 	await handleBox.fill("featuremap-temp-check");
-	await page.waitForTimeout(1000);
-	await changeDialog.getByRole("button", { name: "Change handle" }).click();
+	await settled(page);
+	await control(changeDialog, "button", "Change handle").click();
 	await page.waitForURL("**/featuremap-temp-check", { timeout: 10000 });
 	const changed = db(`select handle from pages where id='${pageId}'`);
 	result(
@@ -602,12 +586,12 @@ try {
 		changed === "featuremap-temp-check" ? "PASS" : "FAIL",
 		`Change handle dialog submitted; browser path=${new URL(page.url()).pathname}; DB handle=${changed}.`,
 	);
-	await page.getByRole("button", { name: "Open page options" }).click();
-	await page.getByText("Change handle", { exact: true }).click();
-	const restoreDialog = page.getByRole("dialog");
-	await restoreDialog.getByRole("textbox").fill(HANDLE);
-	await page.waitForTimeout(1000);
-	await restoreDialog.getByRole("button", { name: "Change handle" }).click();
+	await control(page, "button", "Open page options").click();
+	await exactText(page, "Change handle").click();
+	const restoreDialog = control(page, "dialog");
+	await control(restoreDialog, "textbox").fill(HANDLE);
+	await settled(page);
+	await control(restoreDialog, "button", "Change handle").click();
 	await page.waitForURL(`**/${HANDLE}`, { timeout: 10000 });
 } catch (error) {
 	for (const id of [
@@ -627,9 +611,9 @@ try {
 				`실행 실패: ${redacted(error.message)}`,
 			);
 }
-await page.getByRole("textbox", { name: "Name" }).fill(originalName);
-await page.getByRole("textbox", { name: "Bio" }).fill(originalBio);
-await waitSaved(page);
+await control(page, "textbox", "Name").fill(originalName);
+await control(page, "textbox", "Bio").fill(originalBio);
+await settled(page);
 const originalImage = db(
 	`select coalesce(image_key,'') || '|' || coalesce(image_crop::text,'') from pages where id='${pageId}'`,
 );
@@ -637,17 +621,13 @@ try {
 	const chooseProfileImage = page.waitForEvent("filechooser", {
 		timeout: 5000,
 	});
-	await page.getByRole("button", { name: "Change profile image" }).click();
+	await control(page, "button", "Change profile image").click();
 	await (await chooseProfileImage).setFiles(fixtureImage);
 	const uploadedImage = await waitForDb(
 		`select coalesce(image_key,'') from pages where id='${pageId}'`,
 		(value) => Boolean(value) && value !== originalImage.split("|")[0],
 		20000,
 	);
-	await page
-		.getByRole("img", { name: /profile/i })
-		.waitFor({ state: "visible", timeout: 5000 })
-		.catch(() => {});
 	result(
 		"editor-profile-and-handle",
 		"profile-image-upload",
@@ -656,14 +636,16 @@ try {
 	);
 	await proof(page, "editor-profile-and-handle", "profile-image-uploaded");
 	if (uploadedImage) {
-		const crop = page.getByRole("button", { name: "Crop profile image" });
+		const crop = control(page, "button", "Crop profile image");
 		await crop.hover();
 		await crop.click();
-		const cropSurface = page.locator('[data-page-image-crop-open="true"]');
+		const cropSurface = marker(page, "data-page-image-crop-open");
 		await cropSurface.waitFor({ state: "visible", timeout: 5000 });
-		const imageBox = await page
-			.getByRole("button", { name: "Change profile image" })
-			.boundingBox();
+		const imageBox = await control(
+			page,
+			"button",
+			"Change profile image",
+		).boundingBox();
 		if (imageBox) {
 			await page.mouse.move(
 				imageBox.x + imageBox.width / 2,
@@ -677,10 +659,8 @@ try {
 			);
 			await page.mouse.up();
 		}
-		await page
-			.getByRole("button", { name: "Apply profile image crop" })
-			.click();
-		await waitSaved(page);
+		await control(page, "button", "Apply profile image crop").click();
+		await settled(page);
 		const cropped = db(
 			`select coalesce(image_key,'') || '|' || coalesce(image_crop::text,'') from pages where id='${pageId}'`,
 		);
@@ -692,8 +672,8 @@ try {
 				: "FAIL",
 			`Crop controls opened and applied; page image/crop row=${cropped}.`,
 		);
-		await page.getByRole("button", { name: "Change profile image" }).hover();
-		await page.getByRole("button", { name: "Remove profile image" }).click();
+		await control(page, "button", "Change profile image").hover();
+		await control(page, "button", "Remove profile image").click();
 		const removed = await waitForDb(
 			`select coalesce(image_key,'') || '|' || coalesce(image_crop::text,'') from pages where id='${pageId}'`,
 			(value) => value.startsWith("|"),
@@ -705,11 +685,11 @@ try {
 			removed.startsWith("|") ? "PASS" : "FAIL",
 			`Remove profile image clicked; pages.image_key/image_crop readback=${removed || "not cleared"}.`,
 		);
-		await reloadPage(page);
+		await reloadReady(page);
 		result(
 			"editor-profile-and-handle",
 			"profile-image-remove-persist",
-			!(await page.locator('[data-page-image-crop-open="true"]').count()) &&
+			!(await marker(page, "data-page-image-crop-open").count()) &&
 				db(`select coalesce(image_key,'') from pages where id='${pageId}'`) ===
 					""
 				? "PASS"
@@ -740,8 +720,8 @@ const profileImageNow = db(
 );
 if (profileImageNow !== originalImage && originalImage.startsWith("|")) {
 	try {
-		await page.getByRole("button", { name: "Change profile image" }).hover();
-		await page.getByRole("button", { name: "Remove profile image" }).click();
+		await control(page, "button", "Change profile image").hover();
+		await control(page, "button", "Remove profile image").click();
 		await waitForDb(
 			`select coalesce(image_key,'') || '|' || coalesce(image_crop::text,'') from pages where id='${pageId}'`,
 			(value) => value === originalImage,
@@ -755,6 +735,7 @@ if (profileImageNow !== originalImage && originalImage.startsWith("|")) {
 	}
 }
 
+await openOwner("editor-add-item");
 // Build reversible text/link/section/map items from the toolbar, then read the DB.
 const leftovers = db(
 	`select id from page_items where page_id='${pageId}' and (data::text like '%Feature map temporary%' or data::text like '%Feature map section%' or data::text like '%featuremap-metadata%')`,
@@ -768,20 +749,20 @@ const initialItemIds = db(
 );
 const createdItemIds = [];
 // The toolbar can render before its child editor effect registers add actions after a full reload.
-await page.waitForTimeout(3000);
+await settled(page);
 try {
-	await page.getByRole("button", { name: "Add text" }).click();
+	await control(page, "button", "Add text").click();
 	await proof(page, "editor-add-item", "add-text-clicked");
-	const textInput = page.locator('textarea[aria-label="Text content"]').last();
+	const textInput = control(page, "textbox", "Text content").last();
 	write(
 		"editor-add-item",
-		`After Add text click: visible textareas=${await page.locator('textarea[aria-label="Text content"]:visible').count()}; visible page items=${await page.locator("[data-bento-item-id]:visible").count()}; DB item count=${await rowCount(pageId)}.`,
+		`After Add text click: visible textareas=${await control(page, "textbox", "Text content").filter({ visible: true }).count()}; visible page items=${await items(page).filter({ visible: true }).count()}; DB item count=${await rowCount(pageId)}.`,
 	);
 	await textInput.waitFor({ state: "visible", timeout: 10000 });
 	await textInput.fill("Feature map temporary text");
 	await proof(page, "editor-add-item", "add-text-filled");
 	await textInput.press("Tab");
-	await waitSaved(page);
+	await settled(page);
 	const textId = await waitForDb(
 		`select id from page_items where page_id='${pageId}' and type='text' and data::text like '%Feature map temporary text%' order by created_at desc limit 1`,
 	);
@@ -794,15 +775,11 @@ try {
 	);
 	await proof(page, "editor-add-item", "text-added");
 	const textCountBefore = await rowCount(pageId);
-	await page.getByRole("button", { name: "Add section" }).click();
-	const sectionInput = page
-		.locator(
-			'input[aria-label="Section title"], textarea[aria-label="Section title"]',
-		)
-		.last();
+	await control(page, "button", "Add section").click();
+	const sectionInput = control(page, "textbox", "Section title").last();
 	await sectionInput.fill("Feature map section");
 	await sectionInput.press("Tab");
-	await waitSaved(page);
+	await settled(page);
 	const sectionId = await waitForDb(
 		`select id from page_items where page_id='${pageId}' and type='section' and data::text like '%Feature map section%' order by created_at desc limit 1`,
 	);
@@ -813,11 +790,11 @@ try {
 		sectionId ? "PASS" : "FAIL",
 		`Section title entered; page_items row id=${sectionId || "missing"}.`,
 	);
-	await page.getByRole("button", { name: "Add link" }).click();
-	const linkInput = page.getByRole("textbox", { name: "Link URL" }).last();
+	await control(page, "button", "Add link").click();
+	const linkInput = control(page, "textbox", "Link URL").last();
 	await linkInput.fill("https://example.com/featuremap-metadata");
 	await linkInput.press("Enter");
-	await waitSaved(page);
+	await settled(page);
 	const linkId = await waitForDb(
 		`select id from page_items where page_id='${pageId}' and type='link' and data::text like '%featuremap-metadata%' order by created_at desc limit 1`,
 	);
@@ -828,8 +805,8 @@ try {
 		linkId ? "PASS" : "FAIL",
 		`Add link editor saved URL; page_items row id=${linkId || "missing"}.`,
 	);
-	await page.getByRole("button", { name: "Add map" }).click();
-	await waitSaved(page);
+	await control(page, "button", "Add map").click();
+	await settled(page);
 	const mapId = await waitForDb(
 		`select id from page_items where page_id='${pageId}' and type='map' order by created_at desc limit 1`,
 	);
@@ -845,7 +822,7 @@ try {
 		"text",
 		"Feature map temporary text",
 	);
-	await reloadPage(page);
+	await reloadReady(page);
 	result(
 		"editor-add-item",
 		"item-persist",
@@ -883,17 +860,21 @@ try {
 		mapAfterReload === mapId ? "PASS" : "FAIL",
 		`Reloaded and checked map row id=${mapAfterReload || "missing"}.`,
 	);
+	let deleteError = "";
 	const deleteOk = await removeItem(
 		page,
 		mapId,
 		pageId,
 		"editor-add-item",
-	).catch(() => false);
+	).catch((error) => {
+		deleteError = redacted(error.message);
+		return false;
+	});
 	result(
 		"editor-add-item",
 		"delete-item",
 		deleteOk ? "PASS" : "FAIL",
-		`Delete control removed the map item created by this journey; database row absence after save=${deleteOk}.`,
+		`Delete control removed the map item created by this journey; database row absence after save=${deleteOk}.${deleteError ? ` Error: ${deleteError}` : ""}`,
 	);
 	write(
 		"editor-add-item",
@@ -924,36 +905,33 @@ try {
 			);
 }
 
+await openOwner("editor-text-formatting");
 // Text formatting: modify text through the visible item controls, save, reload, restore by deletion.
 const textId = await pageItem(pageId, "text", "Feature map temporary text");
 if (textId) {
-	const textCard = page.locator(`[data-bento-item-id="${textId}"]`);
+	const textCard = item(page, textId);
 	try {
-		await textCard
-			.getByRole("textbox", { name: "Text content" })
-			.fill("Feature map formatted text");
+		await control(textCard, "textbox", "Text content").fill(
+			"Feature map formatted text",
+		);
 		await textCard.hover();
-		await textCard
-			.getByRole("button", { name: "Open text style options" })
-			.click();
-		const alignCenter = page.getByRole("button", { name: "Align text center" });
+		await control(textCard, "button", "Open text style options").click();
+		const alignCenter = control(page, "button", "Align text center");
 		await alignCenter.click();
 		const centerPressed = await alignCenter.getAttribute("aria-pressed");
-		const alignBottom = page.getByRole("button", {
-			name: "Align text to the bottom",
-		});
+		const alignBottom = control(page, "button", "Align text to the bottom");
 		await alignBottom.click();
 		const bottomPressed = await alignBottom.getAttribute("aria-pressed");
-		await page
-			.getByRole("button", { name: "Toggle text background color options" })
-			.click();
-		await page.getByRole("radio", { name: "Blue" }).click();
-		const customColor = page.getByRole("textbox", {
-			name: "Text background hex color",
-		});
+		await control(
+			page,
+			"button",
+			"Toggle text background color options",
+		).click();
+		await control(page, "radio", "Blue").click();
+		const customColor = control(page, "textbox", "Text background hex color");
 		await customColor.fill("#123abc");
 		await customColor.press("Enter");
-		await waitSaved(page);
+		await settled(page);
 		const textData = db(
 			`select data::text || '|' || style::text from page_items where id='${textId}'`,
 		);
@@ -981,7 +959,7 @@ if (textId) {
 			textData.toLowerCase().includes("#123abc") ? "PASS" : "FAIL",
 			`Selected Blue then committed #123abc; style/data readback ${textData.slice(0, 200)}.`,
 		);
-		await reloadPage(page);
+		await reloadReady(page);
 		const persisted = db(
 			`select data::text || '|' || style::text from page_items where id='${textId}'`,
 		);
@@ -1028,19 +1006,22 @@ if (textId) {
 		);
 }
 
+await openOwner("editor-layout");
 // Layout controls and visible selection; persistence depends on successful user interaction.
 try {
-	await page.getByRole("tab", { name: "Edit compact layout" }).click();
-	await page.waitForTimeout(500);
-	const compact = await page
-		.getByRole("tab", { name: "Edit compact layout" })
-		.getAttribute("aria-selected");
+	await control(page, "tab", "Edit compact layout").click();
+	await settled(page);
+	const compact = await control(
+		page,
+		"tab",
+		"Edit compact layout",
+	).getAttribute("aria-selected");
 	await proof(page, "editor-layout", "compact-layout-selected");
-	await page.getByRole("tab", { name: "Edit wide layout" }).click();
-	await page.waitForTimeout(500);
-	const wide = await page
-		.getByRole("tab", { name: "Edit wide layout" })
-		.getAttribute("aria-selected");
+	await control(page, "tab", "Edit wide layout").click();
+	await settled(page);
+	const wide = await control(page, "tab", "Edit wide layout").getAttribute(
+		"aria-selected",
+	);
 	await proof(page, "editor-layout", "wide-layout-selected");
 	result(
 		"editor-layout",
@@ -1057,7 +1038,7 @@ try {
 	const layoutTargetId = db(
 		`select id from page_items where page_id='${pageId}' and type='text' and data::text like '%Feature map formatted text%' order by created_at desc limit 1`,
 	);
-	const firstCard = page.locator(`[data-bento-item-id="${layoutTargetId}"]`);
+	const firstCard = item(page, layoutTargetId);
 	const boundsBefore = await firstCard.boundingBox().catch(() => null);
 	const targetLayoutsBefore = layoutTargetId
 		? db(`select layouts::text from page_items where id='${layoutTargetId}'`)
@@ -1069,7 +1050,7 @@ try {
 			steps: 16,
 		});
 		await page.mouse.up();
-		await waitSaved(page);
+		await settled(page);
 		const boundsAfter = await firstCard.boundingBox().catch(() => null);
 		const layoutAfterDrag = await waitForDb(
 			`select layouts::text from page_items where id='${layoutTargetId}'`,
@@ -1097,7 +1078,7 @@ try {
 	const layoutBeforeReload = layoutTargetId
 		? db(`select layouts::text from page_items where id='${layoutTargetId}'`)
 		: "";
-	await reloadPage(page);
+	await reloadReady(page);
 	const layoutAfterReload = layoutTargetId
 		? db(`select layouts::text from page_items where id='${layoutTargetId}'`)
 		: "";
@@ -1111,14 +1092,10 @@ try {
 			: "FAIL",
 		`Target item ${layoutTargetId || "missing"}; before drag=${targetLayoutsBefore}; saved=${layoutBeforeReload}; after reload=${layoutAfterReload}.`,
 	);
-	const reloadedLayoutCard = page.locator(
-		`[data-bento-item-id="${layoutTargetId}"]`,
-	);
+	const reloadedLayoutCard = item(page, layoutTargetId);
 	await reloadedLayoutCard.hover().catch(() => {});
 	await proof(page, "editor-layout", "layout-controls-hovered");
-	const preset = reloadedLayoutCard.getByRole("button", {
-		name: "Full square",
-	});
+	const preset = control(reloadedLayoutCard, "button", "Full square");
 	if (
 		await preset
 			.waitFor({ state: "visible", timeout: 5000 })
@@ -1126,7 +1103,7 @@ try {
 			.catch(() => false)
 	) {
 		await preset.click();
-		await waitSaved(page);
+		await settled(page);
 		const presetLayout = db(
 			`select layouts::text from page_items where id='${layoutTargetId}'`,
 		);
@@ -1163,10 +1140,11 @@ try {
 			);
 }
 
+await openOwner("editor-advanced-widgets");
 // Advanced widgets catalog, search, navigation, mobile, and placeholders.
 try {
-	await page.getByRole("button", { name: "Advanced" }).click();
-	let widgetDialog = page.getByRole("dialog", { name: "Advanced widgets" });
+	await control(page, "button", "Advanced").click();
+	let widgetDialog = control(page, "dialog", "Advanced widgets");
 	await widgetDialog.waitFor({ state: "visible" });
 	result(
 		"editor-advanced-widgets",
@@ -1174,25 +1152,22 @@ try {
 		"PASS",
 		"Advanced widgets catalog dialog appeared on the local Pro owner page.",
 	);
-	await widgetDialog
-		.getByRole("textbox", { name: "Search widgets" })
-		.fill("spotify");
-	await widgetDialog.getByRole("button", { name: "Spotify" }).click();
-	const detailDialog = page.getByRole("dialog");
+	await control(widgetDialog, "textbox", "Search widgets").fill("spotify");
+	await control(widgetDialog, "button", "Spotify").click();
+	const detailDialog = control(page, "dialog");
 	const spotifyDetail = (await detailDialog.innerText()).includes("Spotify");
-	await detailDialog.getByRole("button", { name: "Back to widgets" }).click();
-	widgetDialog = page.getByRole("dialog", { name: "Advanced widgets" });
+	await control(detailDialog, "button", "Back to widgets").click();
+	widgetDialog = control(page, "dialog", "Advanced widgets");
 	result(
 		"editor-advanced-widgets",
 		"widget-navigation",
 		spotifyDetail ? "PASS" : "FAIL",
 		`Spotify detail opened and Back to widgets returned=${spotifyDetail}.`,
 	);
-	await widgetDialog
-		.getByRole("textbox", { name: "Search widgets" })
-		.fill("featuremap-no-such-widget");
-	const empty = await widgetDialog
-		.getByText("No widgets found.")
+	await control(widgetDialog, "textbox", "Search widgets").fill(
+		"featuremap-no-such-widget",
+	);
+	const empty = await exactText(widgetDialog, "No widgets found.")
 		.isVisible()
 		.catch(() => false);
 	result(
@@ -1201,15 +1176,15 @@ try {
 		empty ? "PASS" : "FAIL",
 		`Missing-name search showed No widgets found=${empty}.`,
 	);
-	await widgetDialog.getByRole("button", { name: "Close" }).click();
+	await control(widgetDialog, "button", "Close").click();
 	const closed = await widgetDialog
 		.waitFor({ state: "hidden", timeout: 5000 })
 		.then(() => true)
 		.catch(() => false);
 	await page.setViewportSize({ width: 390, height: 844 });
-	await page.waitForTimeout(500);
-	await page.getByRole("button", { name: "Advanced" }).click();
-	const mobileDialog = page.getByRole("dialog", { name: "Advanced widgets" });
+	await settled(page);
+	await control(page, "button", "Advanced").click();
+	const mobileDialog = control(page, "dialog", "Advanced widgets");
 	const mobileOpen = await mobileDialog
 		.waitFor({ state: "visible", timeout: 5000 })
 		.then(() => true)
@@ -1228,13 +1203,13 @@ try {
 		`Close button closed desktop picker=${closed}; 390px picker opened=${mobileOpen} and was dismissed by tapping outside=${mobileDismissed}.`,
 	);
 	await page.setViewportSize({ width: 1365, height: 900 });
-	await page.waitForTimeout(500);
+	await settled(page);
 	await page.setViewportSize({ width: 1365, height: 900 });
 	for (const name of ["SoundCloud", "Apple Music", "Signature"]) {
-		await page.getByRole("button", { name: "Advanced" }).click();
-		const d = page.getByRole("dialog", { name: "Advanced widgets" });
-		await d.getByRole("textbox", { name: "Search widgets" }).fill(name);
-		const itemButton = d.getByRole("button", { name, exact: true });
+		await control(page, "button", "Advanced").click();
+		const d = control(page, "dialog", "Advanced widgets");
+		await control(d, "textbox", "Search widgets").fill(name);
+		const itemButton = control(d, "button", name);
 		if (await itemButton.isVisible().catch(() => false)) {
 			await itemButton.click();
 			await proof(
@@ -1242,25 +1217,24 @@ try {
 				"editor-advanced-widgets",
 				`placeholder-${name.toLowerCase().replaceAll(" ", "-")}`,
 			);
-			const detail = page.getByRole("dialog");
+			const detail = control(page, "dialog");
 			const text = await detail.innerText();
 			const placeholderVisible = text.includes(
 				"Sipping coffee while crafting a polished widget",
 			);
-			const addActionCount = await detail
-				.getByRole("button", { name: /^(Add|Save)/ })
-				.count();
+			const addActionCount = await control(detail, "button", "Add").count();
 			result(
 				"editor-advanced-widgets",
 				"widget-coming-soon",
 				placeholderVisible && addActionCount === 0 ? "PASS" : "FAIL",
 				`${name} placeholder visible=${placeholderVisible}; add/save actions=${addActionCount}; detail=${redacted(text).slice(0, 150)}.`,
 			);
-			await detail.getByRole("button", { name: "Back to widgets" }).click();
-			await page
-				.getByRole("dialog", { name: "Advanced widgets" })
-				.getByRole("button", { name: "Close" })
-				.click();
+			await control(detail, "button", "Back to widgets").click();
+			await control(
+				control(page, "dialog", "Advanced widgets"),
+				"button",
+				"Close",
+			).click();
 		} else
 			result(
 				"editor-advanced-widgets",
@@ -1268,10 +1242,8 @@ try {
 				"FAIL",
 				`환경 차단: ${name} was not visible in the filtered catalog.`,
 			);
-		if (await page.getByRole("dialog").count())
-			await page
-				.getByRole("dialog")
-				.getByRole("button", { name: "Close" })
+		if (await control(page, "dialog").count())
+			await control(control(page, "dialog"), "button", "Close")
 				.click()
 				.catch(() => {});
 	}
@@ -1306,29 +1278,16 @@ try {
 					gateRowBefore.id +
 					"'",
 			);
-			gateContext = await browser.newContext({
-				storageState: STATE,
-				viewport: { width: 1365, height: 900 },
+			const gatePage = await journeys.extra({ storageState: STATE });
+			gateContext = gatePage.context();
+			await gotoReady(gatePage, `/${HANDLE}`);
+			await control(gatePage, "group", "Page editor toolbar").waitFor({
+				timeout: 20000,
 			});
-			await installLocalApiMocks(gateContext);
-			const gatePage = await gateContext.newPage();
-			await gatePage.goto(`${WEB}/${HANDLE}`, {
-				waitUntil: "domcontentloaded",
-				timeout: 25000,
-			});
-			await gatePage
-				.getByRole("group", { name: "Page editor toolbar" })
-				.waitFor({ timeout: 20000 });
-			await gatePage.getByRole("button", { name: "Advanced" }).click();
-			const gateCatalog = gatePage.getByRole("dialog", {
-				name: "Advanced widgets",
-			});
-			await gateCatalog
-				.getByRole("button", { name: "Spotify", exact: true })
-				.click();
-			const gateDialog = gatePage.getByRole("dialog", {
-				name: "Upgrade to Pro",
-			});
+			await control(gatePage, "button", "Advanced").click();
+			const gateCatalog = control(gatePage, "dialog", "Advanced widgets");
+			await control(gateCatalog, "button", "Spotify").click();
+			const gateDialog = control(gatePage, "dialog", "Upgrade to Pro");
 			freeGateShown = await gateDialog
 				.waitFor({ state: "visible", timeout: 5000 })
 				.then(() => true)
@@ -1414,13 +1373,11 @@ try {
 	);
 
 	try {
-		await page.getByRole("button", { name: "Advanced" }).click();
-		const catalog = page.getByRole("dialog", { name: "Advanced widgets" });
-		await catalog
-			.getByRole("textbox", { name: "Search widgets" })
-			.fill("spotify");
-		await catalog.getByRole("button", { name: "Spotify", exact: true }).click();
-		const detail = page.getByRole("dialog");
+		await control(page, "button", "Advanced").click();
+		const catalog = control(page, "dialog", "Advanced widgets");
+		await control(catalog, "textbox", "Search widgets").fill("spotify");
+		await control(catalog, "button", "Spotify").click();
+		const detail = control(page, "dialog");
 		const spotifyResponsePromise = page
 			.waitForResponse(
 				(response) =>
@@ -1429,9 +1386,9 @@ try {
 				{ timeout: 15000 },
 			)
 			.catch(() => null);
-		await detail
-			.getByRole("textbox", { name: "Spotify URL" })
-			.fill("https://open.spotify.com/track/4uLU6hMCjMI75M1A2tKUQC");
+		await control(detail, "textbox", "Spotify URL").fill(
+			"https://open.spotify.com/track/4uLU6hMCjMI75M1A2tKUQC",
+		);
 		const spotifyResponse = await spotifyResponsePromise;
 		if (spotifyResponse?.status() !== 200) {
 			const responseBody =
@@ -1442,34 +1399,20 @@ try {
 				"FAIL",
 				`환경 차단: fake/local Spotify preview POST=${spotifyResponse?.status() ?? "no response"}; Add remained unavailable; response=${redacted(responseBody).slice(0, 180)}.`,
 			);
-			await detail
-				.getByRole("button", { name: "Back to widgets" })
+			await control(detail, "button", "Back to widgets")
 				.click()
 				.catch(() => {});
-			await page
-				.getByRole("dialog", { name: "Advanced widgets" })
-				.getByRole("button", { name: "Close" })
+			await control(
+				control(page, "dialog", "Advanced widgets"),
+				"button",
+				"Close",
+			)
 				.click()
 				.catch(() => {});
 		} else {
-			const addSpotify = detail.getByRole("button", {
-				name: "Add",
-				exact: true,
-			});
+			const addSpotify = control(detail, "button", "Add");
 			await addSpotify.waitFor({ state: "visible", timeout: 10000 });
 			await addSpotify.waitFor({ state: "attached" });
-			await page.waitForFunction(
-				() => {
-					const dialog = [...document.querySelectorAll('[role="dialog"]')].at(
-						-1,
-					);
-					const button = [...(dialog?.querySelectorAll("button") ?? [])].find(
-						(candidate) => candidate.textContent?.trim() === "Add",
-					);
-					return Boolean(button && !button.disabled);
-				},
-				{ timeout: 10000 },
-			);
 			await addSpotify.click();
 			const spotifyId = await waitForDb(
 				`select id from page_items where page_id='${pageId}' and type='spotify' order by created_at desc limit 1`,
@@ -1493,40 +1436,35 @@ try {
 			`실행 실패: ${redacted(error.message)}; server mock requests are recorded in mock-outbound.log.`,
 		);
 	}
-	const remainingWidgetDialog = page.getByRole("dialog").last();
+	const remainingWidgetDialog = control(page, "dialog").last();
 	if (await remainingWidgetDialog.count()) {
 		if (
-			await remainingWidgetDialog
-				.getByRole("button", { name: "Back to widgets" })
+			await control(remainingWidgetDialog, "button", "Back to widgets")
 				.isVisible()
 				.catch(() => false)
 		)
-			await remainingWidgetDialog
-				.getByRole("button", { name: "Back to widgets" })
+			await control(remainingWidgetDialog, "button", "Back to widgets")
 				.click()
 				.catch(() => {});
-		await page
-			.getByRole("dialog", { name: "Advanced widgets" })
-			.getByRole("button", { name: "Close" })
+		await control(
+			control(page, "dialog", "Advanced widgets"),
+			"button",
+			"Close",
+		)
 			.click()
 			.catch(() => {});
 	}
 	try {
-		await page.getByRole("button", { name: "Advanced" }).click();
-		const catalog = page.getByRole("dialog", { name: "Advanced widgets" });
-		await catalog
-			.getByRole("textbox", { name: "Search widgets" })
-			.fill("RSS Feed");
-		const rssFeedButton = catalog.getByRole("button", {
-			name: "RSS Feed",
-			exact: true,
-		});
+		await control(page, "button", "Advanced").click();
+		const catalog = control(page, "dialog", "Advanced widgets");
+		await control(catalog, "textbox", "Search widgets").fill("RSS Feed");
+		const rssFeedButton = control(catalog, "button", "RSS Feed");
 		await rssFeedButton.waitFor({ state: "visible", timeout: 5000 });
 		await rssFeedButton.click();
-		const detail = page.getByRole("dialog");
-		await detail
-			.getByRole("textbox", { name: "RSS feed URL" })
-			.fill("https://featuremap.hashnode.dev");
+		const detail = control(page, "dialog");
+		await control(detail, "textbox", "RSS feed URL").fill(
+			"https://featuremap.hashnode.dev",
+		);
 		const rssResponsePromise = page
 			.waitForResponse(
 				(response) =>
@@ -1535,7 +1473,7 @@ try {
 				{ timeout: 15000 },
 			)
 			.catch(() => null);
-		await detail.getByRole("button", { name: "Add", exact: true }).click();
+		await control(detail, "button", "Add").click();
 		const rssResponse = await rssResponsePromise;
 		const rssId = await waitForDb(
 			`select id from page_items where page_id='${pageId}' and type='rss' order by created_at desc limit 1`,
@@ -1552,13 +1490,14 @@ try {
 		);
 		if (rssId) await proof(page, "editor-advanced-widgets", "rss-added");
 		else {
-			await detail
-				.getByRole("button", { name: "Back to widgets" })
+			await control(detail, "button", "Back to widgets")
 				.click()
 				.catch(() => {});
-			await page
-				.getByRole("dialog", { name: "Advanced widgets" })
-				.getByRole("button", { name: "Close" })
+			await control(
+				control(page, "dialog", "Advanced widgets"),
+				"button",
+				"Close",
+			)
 				.click()
 				.catch(() => {});
 		}
@@ -1569,25 +1508,23 @@ try {
 			"FAIL",
 			`실행 실패: ${redacted(error.message)}; server mock requests are recorded in mock-outbound.log.`,
 		);
-		const openDialog = page.getByRole("dialog").last();
+		const openDialog = control(page, "dialog").last();
 		if (await openDialog.count()) {
-			await openDialog
-				.getByRole("button", { name: "Back to widgets" })
+			await control(openDialog, "button", "Back to widgets")
 				.click()
 				.catch(() => {});
-			await page
-				.getByRole("dialog", { name: "Advanced widgets" })
-				.getByRole("button", { name: "Close" })
+			await control(
+				control(page, "dialog", "Advanced widgets"),
+				"button",
+				"Close",
+			)
 				.click()
 				.catch(() => {});
 		}
 	}
-	const leftoverAdvancedPicker = page.getByRole("dialog", {
-		name: "Advanced widgets",
-	});
+	const leftoverAdvancedPicker = control(page, "dialog", "Advanced widgets");
 	if (await leftoverAdvancedPicker.isVisible().catch(() => false)) {
-		await leftoverAdvancedPicker
-			.getByRole("button", { name: "Close" })
+		await control(leftoverAdvancedPicker, "button", "Close")
 			.click()
 			.catch(() => {});
 		await leftoverAdvancedPicker
@@ -1618,12 +1555,13 @@ try {
 			);
 }
 
+await openOwner("editor-map-editing");
 // Map add and local search through the mocked geocoder.
 const mapExisting = await pageItem(pageId, "map", "");
 if (!mapExisting) {
 	try {
-		await page.getByRole("button", { name: "Add map" }).click();
-		await waitSaved(page);
+		await control(page, "button", "Add map").click();
+		await settled(page);
 	} catch {}
 }
 const persistedMapId = db(
@@ -1636,11 +1574,13 @@ result(
 	`Owner Add map resulted in local page_items row=${persistedMapId || "missing"}.`,
 );
 if (persistedMapId) {
-	const mapItem = page.locator(`[data-bento-item-id="${persistedMapId}"]`);
+	const mapItem = item(page, persistedMapId);
 	await mapItem.waitFor({ state: "visible", timeout: 10000 }).catch(() => {});
-	const mapRegionVisible = await page
-		.getByRole("region", { name: "Map" })
-		.isVisible()
+	// Mapbox renders its region after the map scrolls into view and loads.
+	await mapItem.scrollIntoViewIfNeeded().catch(() => {});
+	const mapRegionVisible = await control(mapItem, "region", "Map")
+		.waitFor({ state: "visible", timeout: 15000 })
+		.then(() => true)
 		.catch(() => false);
 	result(
 		"editor-map-editing",
@@ -1658,13 +1598,13 @@ if (persistedMapId) {
 		await mapItem.scrollIntoViewIfNeeded();
 		await mapItem.waitFor({ state: "visible", timeout: 10000 });
 		await mapItem.hover();
-		await mapItem.getByRole("button", { name: "Search location" }).click();
-		const search = page.getByRole("combobox", { name: "Search location" });
+		await control(mapItem, "button", "Search location").click();
+		const search = control(page, "combobox", "Search location");
 		await search.fill("Seattle");
-		const option = page.getByRole("option", { name: "Local Test Place" });
+		const option = content(page, "option", "Local Test Place");
 		await option.waitFor({ state: "visible", timeout: 8000 });
 		await option.click();
-		await waitSaved(page);
+		await settled(page);
 		selectedMap = db(
 			`select data::text from page_items where id='${persistedMapId}'`,
 		);
@@ -1698,16 +1638,17 @@ if (persistedMapId) {
 	);
 }
 
+await openOwner("editor-link-metadata");
 // Link metadata from an example.com public URL, record its actual API result.
 const linkId = await pageItem(pageId, "link", "featuremap-metadata");
 if (linkId) {
-	const linkCard = page.locator(`[data-bento-item-id="${linkId}"]`);
+	const linkCard = item(page, linkId);
 	try {
 		await linkCard.hover();
-		await linkCard.getByRole("button", { name: "Edit link URL" }).click();
-		const refresh = page.getByRole("button", { name: "Refresh link metadata" });
+		await control(linkCard, "button", "Edit link URL").click();
+		const refresh = control(page, "button", "Refresh link metadata");
 		await refresh.click();
-		await page.waitForTimeout(2000);
+		await settled(page);
 		const refreshResponse = network.filter((x) => x.includes("metadata"));
 		const metadata = db(
 			`select data::text from page_items where id='${linkId}'`,
@@ -1732,7 +1673,7 @@ if (linkId) {
 			refreshResponse.some((x) => x.endsWith("200")) ? "PASS" : "FAIL",
 			`Refresh request observations=${refreshResponse.join("; ") || "no metadata response"}; row=${metadata.slice(0, 180)}.`,
 		);
-		await reloadPage(page);
+		await reloadReady(page);
 		const after = db(`select data::text from page_items where id='${linkId}'`);
 		result(
 			"editor-link-metadata",
@@ -1774,18 +1715,19 @@ if (linkId) {
 			"환경 차단: saved link card was unavailable in the owner page.",
 		);
 
+await openOwner("editor-inline-destination-url");
 // Optional destinations on text; media destination waits for local upload support.
 if (textId) {
-	const card = page.locator(`[data-bento-item-id="${textId}"]`);
+	const card = item(page, textId);
 	try {
 		await card.hover();
-		await card.getByRole("button", { name: "Open text style options" }).click();
-		const addLink = page.getByRole("button", { name: "Add text link" });
+		await control(card, "button", "Open text style options").click();
+		const addLink = control(page, "button", "Add text link");
 		await addLink.click();
-		const destination = page.getByRole("textbox", { name: "Link URL" }).last();
+		const destination = control(page, "textbox", "Link URL").last();
 		await destination.fill("https://example.com/featuremap-text");
 		await destination.press("Enter");
-		await waitSaved(page);
+		await settled(page);
 		let data = db(`select data::text from page_items where id='${textId}'`);
 		result(
 			"editor-inline-destination-url",
@@ -1795,18 +1737,16 @@ if (textId) {
 		);
 		await destination.press("Escape").catch(() => {});
 		if (
-			(await card
-				.getByRole("button", { name: "Open text style options" })
-				.getAttribute("aria-expanded")) !== "true"
+			(await control(card, "button", "Open text style options").getAttribute(
+				"aria-expanded",
+			)) !== "true"
 		)
-			await card
-				.getByRole("button", { name: "Open text style options" })
-				.click();
-		await page.getByRole("button", { name: "Edit text link" }).click();
-		const editInput = page.getByRole("textbox", { name: "Link URL" }).last();
+			await control(card, "button", "Open text style options").click();
+		await control(page, "button", "Edit text link").click();
+		const editInput = control(page, "textbox", "Link URL").last();
 		await editInput.fill("https://example.com/featuremap-updated");
 		await editInput.press("Enter");
-		await waitSaved(page);
+		await settled(page);
 		data = db(`select data::text from page_items where id='${textId}'`);
 		result(
 			"editor-inline-destination-url",
@@ -1816,18 +1756,16 @@ if (textId) {
 		);
 		await editInput.press("Escape").catch(() => {});
 		if (
-			(await card
-				.getByRole("button", { name: "Open text style options" })
-				.getAttribute("aria-expanded")) !== "true"
+			(await control(card, "button", "Open text style options").getAttribute(
+				"aria-expanded",
+			)) !== "true"
 		)
-			await card
-				.getByRole("button", { name: "Open text style options" })
-				.click();
-		await page.getByRole("button", { name: "Edit text link" }).click();
-		const validInput = page.getByRole("textbox", { name: "Link URL" }).last();
+			await control(card, "button", "Open text style options").click();
+		await control(page, "button", "Edit text link").click();
+		const validInput = control(page, "textbox", "Link URL").last();
 		await validInput.fill("not a url");
 		await validInput.press("Enter");
-		await waitSaved(page);
+		await settled(page);
 		data = db(`select data::text from page_items where id='${textId}'`);
 		result(
 			"editor-inline-destination-url",
@@ -1835,7 +1773,7 @@ if (textId) {
 			data.includes("featuremap-updated") ? "PASS" : "FAIL",
 			`Invalid URL retained last valid URL=${data.includes("featuremap-updated")}; stored row checked.`,
 		);
-		await reloadPage(page);
+		await reloadReady(page);
 		data = db(`select data::text from page_items where id='${textId}'`);
 		result(
 			"editor-inline-destination-url",
@@ -1844,13 +1782,13 @@ if (textId) {
 			`After reload, updated destination remains=${data.includes("featuremap-updated")}.`,
 		);
 		await card.hover();
-		await card.getByRole("button", { name: "Open text style options" }).click();
-		const editAgain = page.getByRole("button", { name: "Edit text link" });
+		await control(card, "button", "Open text style options").click();
+		const editAgain = control(page, "button", "Edit text link");
 		await editAgain.click();
-		const clear = page.getByRole("textbox", { name: "Link URL" }).last();
+		const clear = control(page, "textbox", "Link URL").last();
 		await clear.fill("");
 		await clear.press("Enter");
-		await waitSaved(page);
+		await settled(page);
 		data = db(`select data::text from page_items where id='${textId}'`);
 		result(
 			"editor-inline-destination-url",
@@ -1895,13 +1833,14 @@ if (textId) {
 			"FAIL",
 			"환경 차단: no saved text card was available.",
 		);
+await openOwner("editor-media-upload");
 // Upload through the local-only object route, then use the same saved item for editing.
 let uploadedMediaId = "";
 try {
 	const chooserPromise = page
 		.waitForEvent("filechooser", { timeout: 5000 })
 		.catch(() => null);
-	await page.getByRole("button", { name: "Add media", exact: true }).click();
+	await control(page, "button", "Add media").click();
 	const chooser = await chooserPromise;
 	if (!chooser)
 		throw new Error(
@@ -1921,8 +1860,8 @@ try {
 		20000,
 	);
 	const mediaCard = uploadedMediaId
-		? page.locator(`[data-bento-item-id="${uploadedMediaId}"]`)
-		: page.locator("[data-bento-item-id]").last();
+		? item(page, uploadedMediaId)
+		: items(page).last();
 	await mediaCard.waitFor({ state: "visible", timeout: 10000 });
 	const mediaDataText = db(
 		`select data::text from page_items where id='${uploadedMediaId}'`,
@@ -1932,8 +1871,9 @@ try {
 	const mediaUrl =
 		mediaData.mediaUrl ?? (objectKey ? `${API}/media/${objectKey}` : "");
 	const localMediaStatus = mediaUrl
-		? await context.request
-				.get(mediaUrl)
+		? await page
+				.context()
+				.request.get(mediaUrl)
 				.then((response) => response.status())
 				.catch(() => 0)
 		: 0;
@@ -1951,7 +1891,7 @@ try {
 		`Local upload API observations=${uploadRequests.join("; ") || "none"}; page_items id=${uploadedMediaId || "missing"}; object key present=${Boolean(objectKey)}; local media GET status=${localMediaStatus}; no Cloudflare R2 request observed.`,
 	);
 	await proof(page, "editor-media-upload", "media-uploaded");
-	await reloadPage(page);
+	await reloadReady(page);
 	const persistedMedia = db(
 		`select id from page_items where id='${uploadedMediaId}' and page_id='${pageId}' and type='media'`,
 	);
@@ -1972,7 +1912,7 @@ try {
 		releaseUpload = resolve;
 	});
 	let putIntercepted = false;
-	await page.route("http://127.0.0.1:3001/media/**", async (route) => {
+	await page.route(`${API}/media/**`, async (route) => {
 		if (route.request().method() !== "PUT") return route.continue();
 		putIntercepted = true;
 		await uploadHeld;
@@ -1981,36 +1921,29 @@ try {
 	const cancelChooserPromise = page
 		.waitForEvent("filechooser", { timeout: 5000 })
 		.catch(() => null);
-	await page.getByRole("button", { name: "Add media", exact: true }).click();
+	await control(page, "button", "Add media").click();
 	const cancelChooser = await cancelChooserPromise;
 	if (!cancelChooser)
 		throw new Error(
 			"The exact Add media control did not open the file chooser.",
 		);
 	await cancelChooser.setFiles(replacementImage);
-	await page
-		.waitForFunction(
-			() =>
-				[...document.querySelectorAll("[data-bento-item-id]")].some((node) =>
-					node.querySelector('img[src^="blob:"]'),
-				),
-			{ timeout: 10000 },
-		)
+	await blobPreview(items(page))
+		.first()
+		.waitFor({ timeout: 10000 })
 		.catch(() => {});
-	const pendingCard = page.locator("[data-bento-item-id]").last();
+	const pendingCard = items(page).last();
 	await pendingCard.hover();
 	const pendingId = await pendingCard.getAttribute("data-bento-item-id");
 	const pendingData = JSON.parse(
 		db(`select data::text from page_items where id='${pendingId}'`) || "{}",
 	);
 	const pendingKey = pendingData.objectKey ?? "";
-	const pendingDelete = pendingCard.getByRole("button", {
-		name: "Delete item",
-	});
+	const pendingDelete = control(pendingCard, "button", "Delete item");
 	await pendingDelete.waitFor({ state: "visible", timeout: 5000 });
 	await pendingDelete.click();
 	releaseUpload();
-	await page.unroute("http://127.0.0.1:3001/media/**");
+	await page.unroute(`${API}/media/**`);
 	const pendingRowGone = pendingId
 		? (await waitForDb(
 				`select count(*) from page_items where id='${pendingId}'`,
@@ -2031,8 +1964,9 @@ try {
 			)
 		: "";
 	const pendingObjectStatus = pendingKey
-		? await context.request
-				.get(`${API}/media/${pendingKey}`)
+		? await page
+				.context()
+				.request.get(`${API}/media/${pendingKey}`)
 				.then((response) => response.status())
 				.catch(() => 0)
 		: 404;
@@ -2050,8 +1984,7 @@ try {
 	await proof(page, "editor-media-upload", "media-cancelled");
 } catch (error) {
 	await proof(page, "editor-media-upload", "media-add-failed").catch(() => {});
-	const fileInputState = await page
-		.locator('input[type="file"]')
+	const fileInputState = await fileInput(page)
 		.evaluateAll((nodes) =>
 			nodes.map((node) => ({
 				accept: node.getAttribute("accept"),
@@ -2063,8 +1996,11 @@ try {
 		.catch(() => []);
 	write(
 		"editor-media-upload",
-		`File chooser failure diagnostics: Add media buttons=${await page
-			.getByRole("button", { name: "Add media" })
+		`File chooser failure diagnostics: Add media buttons=${await control(
+			page,
+			"button",
+			"Add media",
+		)
 			.count()
 			.catch(() => 0)}; file inputs=${JSON.stringify(fileInputState)}.`,
 	);
@@ -2076,16 +2012,17 @@ try {
 			`실행 실패: media journey stopped before completion: ${redacted(error.message)}`,
 		);
 }
+await openOwner("editor-media-editing");
 if (uploadedMediaId) {
-	const mediaCard = page.locator(`[data-bento-item-id="${uploadedMediaId}"]`);
+	const mediaCard = item(page, uploadedMediaId);
 	try {
 		const mediaRowBefore = db(
 			`select data::text from page_items where id='${uploadedMediaId}'`,
 		);
-		await mediaCard
-			.getByRole("textbox", { name: "Media caption" })
-			.fill("Feature map media caption");
-		await waitSaved(page);
+		await control(mediaCard, "textbox", "Media caption").fill(
+			"Feature map media caption",
+		);
+		await settled(page);
 		const captionData = db(
 			`select data::text from page_items where id='${uploadedMediaId}'`,
 		);
@@ -2096,12 +2033,10 @@ if (uploadedMediaId) {
 			`Media caption saved in row=${captionData.includes("Feature map media caption")}; item data=${captionData.slice(0, 220)}.`,
 		);
 		await mediaCard.hover();
-		await mediaCard.getByRole("button", { name: "Crop media" }).click();
-		const cropFrame = mediaCard.locator('[data-bento-item-crop-open="true"]');
+		await control(mediaCard, "button", "Crop media").click();
+		const cropFrame = marker(mediaCard, "data-bento-item-crop-open");
 		await cropFrame.waitFor({ state: "visible", timeout: 5000 });
-		const dragCrop = mediaCard.getByRole("button", {
-			name: "Drag media to crop",
-		});
+		const dragCrop = control(mediaCard, "button", "Drag media to crop");
 		const cropBox = await dragCrop.boundingBox();
 		if (cropBox) {
 			await page.mouse.move(
@@ -2116,8 +2051,8 @@ if (uploadedMediaId) {
 			);
 			await page.mouse.up();
 		}
-		await mediaCard.getByRole("button", { name: "Apply media crop" }).click();
-		await waitSaved(page);
+		await control(mediaCard, "button", "Apply media crop").click();
+		await settled(page);
 		const croppedData = db(
 			`select data::text from page_items where id='${uploadedMediaId}'`,
 		);
@@ -2127,7 +2062,7 @@ if (uploadedMediaId) {
 			croppedData !== captionData ? "PASS" : "FAIL",
 			`Crop control applied; row changed=${croppedData !== captionData}; data=${croppedData.slice(0, 220)}.`,
 		);
-		await reloadPage(page);
+		await reloadReady(page);
 		const persistedData = db(
 			`select data::text from page_items where id='${uploadedMediaId}'`,
 		);
@@ -2157,15 +2092,13 @@ if (uploadedMediaId) {
 				);
 	}
 	try {
-		const mediaCard2 = page.locator(
-			`[data-bento-item-id="${uploadedMediaId}"]`,
-		);
+		const mediaCard2 = item(page, uploadedMediaId);
 		await mediaCard2.hover();
-		await mediaCard2.getByRole("button", { name: "Add media link" }).click();
-		const destination = page.getByRole("textbox", { name: "Link URL" }).last();
+		await control(mediaCard2, "button", "Add media link").click();
+		const destination = control(page, "textbox", "Link URL").last();
 		await destination.fill("https://example.com/featuremap-media");
 		await destination.press("Enter");
-		await waitSaved(page);
+		await settled(page);
 		const data = db(
 			`select data::text from page_items where id='${uploadedMediaId}'`,
 		);
@@ -2197,10 +2130,15 @@ if (uploadedMediaId) {
 			"환경 차단: the media upload journey did not produce a saved local media item.",
 		);
 }
+await openOwner("editor-link-card-images");
 const linkImageId = await pageItem(pageId, "link", "featuremap-metadata");
 if (linkImageId) {
-	const linkCard = page.locator(`[data-bento-item-id="${linkImageId}"]`);
+	const linkCard = item(page, linkImageId);
 	try {
+		// Image controls exist only on presets with an image area; this journey
+		// sets its own precondition instead of inheriting another journey's layout.
+		await control(linkCard, "button", "Full square").click();
+		await settled(page);
 		const before = db(
 			`select data::text from page_items where id='${linkImageId}'`,
 		);
@@ -2208,12 +2146,12 @@ if (linkImageId) {
 		const addImageChooserPromise = page
 			.waitForEvent("filechooser", { timeout: 5000 })
 			.catch(() => null);
-		const addImageAction = linkCard.getByRole("button", {
-			name: "Add link image",
-		});
-		const replaceImageAction = linkCard.getByRole("button", {
-			name: "Replace link image",
-		});
+		const addImageAction = control(linkCard, "button", "Add link image");
+		const replaceImageAction = control(
+			linkCard,
+			"button",
+			"Replace link image",
+		);
 		const initialImageAction = (await replaceImageAction
 			.isVisible()
 			.catch(() => false))
@@ -2222,10 +2160,7 @@ if (linkImageId) {
 		await initialImageAction.click();
 		const addImageChooser = await addImageChooserPromise;
 		if (addImageChooser) await addImageChooser.setFiles(fixtureImage);
-		else
-			await linkCard
-				.locator('input[type="file"][accept="image/*"]')
-				.setInputFiles(fixtureImage);
+		else await fileInput(linkCard, "image/*").setInputFiles(fixtureImage);
 		const added = await waitForDb(
 			`select data::text from page_items where id='${linkImageId}'`,
 			(value) => value !== before && value.includes("imageKey"),
@@ -2242,13 +2177,10 @@ if (linkImageId) {
 		const replaceChooserPromise = page
 			.waitForEvent("filechooser", { timeout: 5000 })
 			.catch(() => null);
-		await linkCard.getByRole("button", { name: "Replace link image" }).click();
+		await control(linkCard, "button", "Replace link image").click();
 		const replaceChooser = await replaceChooserPromise;
 		if (replaceChooser) await replaceChooser.setFiles(replacementImage);
-		else
-			await linkCard
-				.locator('input[type="file"][accept="image/*"]')
-				.setInputFiles(replacementImage);
+		else await fileInput(linkCard, "image/*").setInputFiles(replacementImage);
 		const replaced = await waitForDb(
 			`select data::text from page_items where id='${linkImageId}'`,
 			(value) => value !== added,
@@ -2263,7 +2195,7 @@ if (linkImageId) {
 				: "FAIL",
 			`Selected a second local image; link row changed=${replaced !== added}; local object GET=${replacedGet}; row=${replaced.slice(0, 180)}.`,
 		);
-		await reloadPage(page);
+		await reloadReady(page);
 		const persisted = db(
 			`select data::text from page_items where id='${linkImageId}'`,
 		);
@@ -2277,7 +2209,7 @@ if (linkImageId) {
 			`After reload image key remains=${persisted === replaced && Boolean(ownedImageKey(persisted))}; local object GET=${persistedGet}; row=${persisted.slice(0, 180)}.`,
 		);
 		await linkCard.hover();
-		await linkCard.getByRole("button", { name: "Remove link image" }).click();
+		await control(linkCard, "button", "Remove link image").click();
 		const removed = await waitForDb(
 			`select data::text from page_items where id='${linkImageId}'`,
 			(value) =>
@@ -2324,16 +2256,20 @@ if (linkImageId) {
 			"환경 차단: saved owner link card is unavailable.",
 		);
 
+await openOwner("editor-tweet");
 // Tweet preview and invalid status are served by the isolated outbound mock.
 try {
-	await page.getByRole("button", { name: "Advanced" }).click();
-	const d = page.getByRole("dialog", { name: "Advanced widgets" });
-	await d.getByRole("textbox", { name: "Search widgets" }).fill("tweet");
-	const tweetButton = d.getByRole("button", { name: "Tweet", exact: true });
+	await control(page, "button", "Advanced").click();
+	const d = control(page, "dialog", "Advanced widgets");
+	await control(d, "textbox", "Search widgets").fill("tweet");
+	const tweetButton = control(d, "button", "Tweet");
 	await tweetButton.click();
-	const tweetDialog = page.getByRole("dialog", { name: "Tweet" });
-	const tweetInputVisible = await tweetDialog
-		.getByRole("textbox", { name: "Tweet ID or URL" })
+	const tweetDialog = control(page, "dialog", "Tweet");
+	const tweetInputVisible = await control(
+		tweetDialog,
+		"textbox",
+		"Tweet ID or URL",
+	)
 		.isVisible()
 		.catch(() => false);
 	result(
@@ -2349,9 +2285,9 @@ try {
 			`select count(*) from page_items where page_id='${pageId}' and type='tweet'`,
 		),
 	);
-	await tweetDialog
-		.getByRole("textbox", { name: "Tweet ID or URL" })
-		.fill(`https://x.com/featuremap/status/${tweetId}`);
+	await control(tweetDialog, "textbox", "Tweet ID or URL").fill(
+		`https://x.com/featuremap/status/${tweetId}`,
+	);
 	const validTweetResponse = page
 		.waitForResponse(
 			(response) =>
@@ -2360,7 +2296,7 @@ try {
 			{ timeout: 15000 },
 		)
 		.catch(() => null);
-	await tweetDialog.getByRole("button", { name: "Add", exact: true }).click();
+	await control(tweetDialog, "button", "Add").click();
 	const validResponse = await validTweetResponse;
 	const savedTweetId = await waitForDb(
 		`select id from page_items where page_id='${pageId}' and type='tweet' and data::text like '%${tweetId}%' order by created_at desc limit 1`,
@@ -2373,7 +2309,7 @@ try {
 		savedTweetId && validResponse?.status() === 200 ? "PASS" : "FAIL",
 		`Submitted mock public status in the dialog; preview POST=${validResponse?.status() ?? "no response"}; tweet page_items row=${savedTweetId || "missing"}; before count=${tweetRowBefore}.`,
 	);
-	await reloadPage(page);
+	await reloadReady(page);
 	const savedTweetAfterReload = db(
 		`select id from page_items where id='${savedTweetId}' and page_id='${pageId}' and type='tweet'`,
 	);
@@ -2384,18 +2320,14 @@ try {
 		`Reloaded owner page; tweet row retained=${savedTweetAfterReload === savedTweetId}.`,
 	);
 	await proof(page, "editor-tweet", "tweet-added");
-	await page.getByRole("button", { name: "Advanced" }).click();
-	const invalidCatalog = page.getByRole("dialog", { name: "Advanced widgets" });
-	await invalidCatalog
-		.getByRole("textbox", { name: "Search widgets" })
-		.fill("tweet");
-	await invalidCatalog
-		.getByRole("button", { name: "Tweet", exact: true })
-		.click();
-	const invalidDialog = page.getByRole("dialog", { name: "Tweet" });
-	await invalidDialog
-		.getByRole("textbox", { name: "Tweet ID or URL" })
-		.fill("https://x.com/featuremap/status/0");
+	await control(page, "button", "Advanced").click();
+	const invalidCatalog = control(page, "dialog", "Advanced widgets");
+	await control(invalidCatalog, "textbox", "Search widgets").fill("tweet");
+	await control(invalidCatalog, "button", "Tweet").click();
+	const invalidDialog = control(page, "dialog", "Tweet");
+	await control(invalidDialog, "textbox", "Tweet ID or URL").fill(
+		"https://x.com/featuremap/status/0",
+	);
 	const invalidTweetResponse = page
 		.waitForResponse(
 			(response) =>
@@ -2404,10 +2336,9 @@ try {
 			{ timeout: 15000 },
 		)
 		.catch(() => null);
-	await invalidDialog.getByRole("button", { name: "Add", exact: true }).click();
+	await control(invalidDialog, "button", "Add").click();
 	const invalidResponse = await invalidTweetResponse;
-	const invalidError = await invalidDialog
-		.getByRole("alert")
+	const invalidError = await control(invalidDialog, "alert")
 		.innerText()
 		.catch(() => "");
 	const tweetRowAfterInvalid = Number(
@@ -2440,6 +2371,7 @@ try {
 			);
 }
 
+await openOwner("cleanup");
 // Restore all feature-map page changes; leave the account/page and local Pro grant intact.
 const currentRows = db(`select id from page_items where page_id='${pageId}'`);
 for (const itemId of currentRows.split("\n").filter(Boolean)) {
@@ -2453,10 +2385,7 @@ for (const itemId of currentRows.split("\n").filter(Boolean)) {
 		);
 	}
 }
-await page.goto(`${WEB}/${HANDLE}`, {
-	waitUntil: "domcontentloaded",
-	timeout: 25000,
-});
+await gotoReady(page, `/${HANDLE}`);
 const restoredProfile = db(
 	`select coalesce(name,'') || '|' || coalesce(bio,'') from pages where id='${pageId}'`,
 );
@@ -2475,6 +2404,9 @@ write(
 	`Restored handle=${db(`select handle from pages where id='${pageId}'`) === HANDLE}; profile=${restoredProfile}; temporary item rows remaining=${leftItemRows}.`,
 );
 
+const sha = execFileSync("git", ["rev-parse", "HEAD"], {
+	encoding: "utf8",
+}).trim();
 const features = [
 	"sign-in-email-otp",
 	"editor-add-item",
@@ -2501,7 +2433,7 @@ const summaries = features.map((feature) => {
 });
 writeFileSync(
 	path.join(runDir, "results.json"),
-	`${JSON.stringify({ sha: "e50a15566c789e7eca4ffd40fe188282b987d195", run: path.basename(runDir), summaries, network }, null, 2)}\n`,
+	`${JSON.stringify({ sha, run: path.basename(runDir), summaries, network }, null, 2)}\n`,
 );
 writeFileSync(
 	path.join(runDir, "mock-browser-responses.log"),
@@ -2512,7 +2444,7 @@ writeFileSync(
 	[
 		"# Feature map run results",
 		"",
-		"Checkout SHA: e50a15566c789e7eca4ffd40fe188282b987d195",
+		`Checkout SHA: ${sha}`,
 		`Run directory: ${runDir}`,
 		`Authenticated owner: ${HANDLE}; local plan readback: ${planRow}`,
 		"",
@@ -2526,7 +2458,7 @@ writeFileSync(
 		`API responses observed: ${[...observed, ...network].join("; ")}`,
 	].join("\n"),
 );
-await context.close();
+await journeys.close();
 await browser.close();
 console.log(
 	`Wrote ${summaries.length} feature summaries and ${results.length} sub-feature outcomes to ${path.join(runDir, "results.md")}`,

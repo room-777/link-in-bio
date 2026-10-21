@@ -1,14 +1,20 @@
 import { mkdirSync, writeFileSync } from "node:fs";
 import path from "node:path";
-import { chromium } from "playwright";
+import {
+	createJourneys,
+	gotoReady,
+	launchBrowser,
+	settled,
+} from "../harness/journey.mjs";
+import { body, control, labelled, otpInput } from "../harness/ui.mjs";
 import {
 	ACCOUNT,
+	API,
 	capture,
 	db,
 	HANDLE,
 	logAction,
 	STATE,
-	WEB,
 } from "./local.mjs";
 
 const evidence = process.argv[2];
@@ -16,17 +22,12 @@ if (!evidence)
 	throw new Error("Usage: node setup-account.mjs <run-evidence-dir>");
 const directory = path.resolve(evidence, "account-setup");
 mkdirSync(path.dirname(STATE), { recursive: true, mode: 0o700 });
-const browser = await chromium.launch({
-	headless: false,
-	executablePath:
-		process.env.CHROME_PATH ??
-		"/Applications/Google Chrome.app/Contents/MacOS/Google Chrome",
+const browser = await launchBrowser();
+const journeys = createJourneys(browser, {
+	prepareContext: (context) =>
+		context.route("https://**/*", (route) => route.abort()),
 });
-const context = await browser.newContext({
-	viewport: { width: 1365, height: 900 },
-});
-await context.route("https://**/*", (route) => route.abort());
-const page = await context.newPage();
+const page = await journeys.open("account-setup");
 const requests = [];
 const diagnostics = [];
 page.on("console", (message) => {
@@ -40,7 +41,7 @@ page.on("pageerror", (error) => {
 	logAction(directory, `page error: ${error.message}`);
 });
 page.on("response", (response) => {
-	if (new URL(response.url()).origin === "http://127.0.0.1:3001") {
+	if (new URL(response.url()).origin === API) {
 		const route = new URL(response.url()).pathname;
 		requests.push(
 			`${response.request().method()} ${route} ${response.status()}`,
@@ -67,13 +68,11 @@ const pageExists =
 	db(
 		`select count(*) from pages p join "user" u on u.id=p.user_id where u.email='${ACCOUNT}' and p.handle='${HANDLE}'`,
 	) === "1";
-await page.goto(`${WEB}/sign-in`);
+await gotoReady(page, "/sign-in");
 await capture(page, directory, "sign-in-before");
-await page.getByRole("textbox", { name: "Email" }).fill(ACCOUNT);
-await page.getByRole("button", { name: "Send OTP" }).click();
-await page
-	.locator('input[autocomplete="one-time-code"]')
-	.waitFor({ state: "visible", timeout: 15_000 });
+await control(page, "textbox", "Email").fill(ACCOUNT);
+await control(page, "button", "Send OTP").click();
+await otpInput(page).waitFor({ state: "visible", timeout: 15_000 });
 const code = db(
 	`select split_part(value, ':', 1) from verification where identifier='sign-in-otp-${ACCOUNT}' and expires_at > now() order by created_at desc limit 1`,
 );
@@ -84,17 +83,17 @@ logAction(
 	directory,
 	"Opened /sign-in in a fresh browser context, requested an OTP for the disposable local account, and read the unexpired code only from the isolated verifier database.",
 );
-await page.locator('input[autocomplete="one-time-code"]').fill(code);
-await page.getByRole("button", { name: "Verify code" }).click();
-await page.waitForTimeout(1_000);
+await otpInput(page).fill(code);
+await control(page, "button", "Verify code").click();
+await settled(page);
 await capture(page, directory, "otp-verified");
 
 if (!accountExists) {
-	if (!page.url().endsWith("/create")) await page.goto(`${WEB}/create`);
-	const handleInput = page.getByRole("textbox", { name: "Handle" });
+	if (!page.url().endsWith("/create")) await gotoReady(page, "/create");
+	const handleInput = control(page, "textbox", "Handle");
 	await handleInput.fill("");
 	await handleInput.pressSequentially(HANDLE, { delay: 40 });
-	await page.waitForTimeout(1_000);
+	await settled(page);
 	await capture(page, directory, "handle-entered");
 	logAction(
 		directory,
@@ -102,20 +101,19 @@ if (!accountExists) {
 	);
 	logAction(
 		directory,
-		`Handle form after entry: ${(await page.locator("body").innerText()).replaceAll("\n", " | ").slice(0, 800)}`,
+		`Handle form after entry: ${(await body(page).innerText()).replaceAll("\n", " | ").slice(0, 800)}`,
 	);
 	if (
-		!(await page
-			.locator('[aria-label="Handle available"]')
+		!(await labelled(page, "Handle available")
 			.isVisible()
 			.catch(() => false))
 	) {
-		await page.getByRole("button", { name: "Grab it" }).click();
-		await page.waitForTimeout(500);
+		await control(page, "button", "Grab it").click();
+		await settled(page);
 		await capture(page, directory, "page-create-failed");
 		logAction(
 			directory,
-			`After attempted Grab it: ${(await page.locator("body").innerText()).replaceAll("\n", " | ").slice(0, 800)}`,
+			`After attempted Grab it: ${(await body(page).innerText()).replaceAll("\n", " | ").slice(0, 800)}`,
 		);
 		writeFileSync(
 			path.join(directory, "diagnostics.txt"),
@@ -125,25 +123,21 @@ if (!accountExists) {
 			"Handle availability UI did not update; captured entered and attempted states.",
 		);
 	}
-	await page
-		.getByRole("button", { name: "Grab it" })
-		.waitFor({ state: "visible" });
-	await page.getByRole("button", { name: "Grab it" }).click();
-	await page
-		.getByRole("heading", { name: "Looking good!" })
-		.waitFor({ timeout: 20_000 });
+	await control(page, "button", "Grab it").waitFor({ state: "visible" });
+	await control(page, "button", "Grab it").click();
+	await control(page, "heading", "Looking good!").waitFor({ timeout: 20_000 });
 	await capture(page, directory, "page-created-in-ui");
 	logAction(
 		directory,
 		"Created the featuremap-test page through the product /create form; no direct page insert was used.",
 	);
-	await page.getByRole("button", { name: "Go to profile" }).click();
+	await control(page, "button", "Go to profile").click();
 } else if (!pageExists) {
-	await page.goto(`${WEB}/create`);
-	const handleInput = page.getByRole("textbox", { name: "Handle" });
+	await gotoReady(page, "/create");
+	const handleInput = control(page, "textbox", "Handle");
 	await handleInput.fill("");
 	await handleInput.pressSequentially(HANDLE, { delay: 40 });
-	await page.waitForTimeout(1_000);
+	await settled(page);
 	await capture(page, directory, "handle-entered");
 	logAction(
 		directory,
@@ -151,20 +145,19 @@ if (!accountExists) {
 	);
 	logAction(
 		directory,
-		`Handle form after entry: ${(await page.locator("body").innerText()).replaceAll("\n", " | ").slice(0, 800)}`,
+		`Handle form after entry: ${(await body(page).innerText()).replaceAll("\n", " | ").slice(0, 800)}`,
 	);
 	if (
-		!(await page
-			.locator('[aria-label="Handle available"]')
+		!(await labelled(page, "Handle available")
 			.isVisible()
 			.catch(() => false))
 	) {
-		await page.getByRole("button", { name: "Grab it" }).click();
-		await page.waitForTimeout(500);
+		await control(page, "button", "Grab it").click();
+		await settled(page);
 		await capture(page, directory, "page-create-failed");
 		logAction(
 			directory,
-			`After attempted Grab it: ${(await page.locator("body").innerText()).replaceAll("\n", " | ").slice(0, 800)}`,
+			`After attempted Grab it: ${(await body(page).innerText()).replaceAll("\n", " | ").slice(0, 800)}`,
 		);
 		writeFileSync(
 			path.join(directory, "diagnostics.txt"),
@@ -174,14 +167,14 @@ if (!accountExists) {
 			"Handle availability UI did not update; captured entered and attempted states.",
 		);
 	}
-	await page.getByRole("button", { name: "Grab it" }).click();
+	await control(page, "button", "Grab it").click();
 	await capture(page, directory, "page-create-submitted");
-	await page.getByRole("button", { name: "Go to profile" }).click();
+	await control(page, "button", "Go to profile").click();
 } else {
-	await page.goto(`${WEB}/${HANDLE}`);
+	await gotoReady(page, `/${HANDLE}`);
 }
 
-await page.waitForTimeout(1_000);
+await settled(page);
 await capture(page, directory, "owner-page");
 const userId = db(`select id from "user" where email='${ACCOUNT}'`);
 if (!userId)
@@ -195,7 +188,7 @@ if (!pageId)
 db(
 	`insert into creem_subscription (id, product_id, reference_id, creem_subscription_id, status, period_start, period_end, cancel_at_period_end) values ('feature-map-local-pro', 'local-pro', '${userId}', 'feature-map-local-pro', 'active', now(), now() + interval '1 year', false) on conflict (id) do update set product_id='local-pro', reference_id='${userId}', status='active', period_start=now(), period_end=now()+interval '1 year', cancel_at_period_end=false`,
 );
-await context.storageState({ path: STATE });
+await page.context().storageState({ path: STATE });
 writeFileSync(
 	path.join(directory, "setup-result.md"),
 	[
@@ -210,6 +203,7 @@ writeFileSync(
 		`Console/API details: ${diagnostics.join("; ")}`,
 	].join("\n"),
 );
+await journeys.close();
 await browser.close();
 console.log(
 	`setup complete; account=${ACCOUNT}; handle=${HANDLE}; state=${STATE}`,
