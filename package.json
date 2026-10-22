@@ -92,8 +92,11 @@
 			"biome check --write --unsafe --only=correctness/noUnusedImports --no-errors-on-unmatched",
 			"biome check --write --no-errors-on-unmatched"
 		],
-		"{.agents/skills/verify-editor,apps/web/src,packages/*/src}/**/*.{mjs,ts,tsx}": [
+		"{.agents/skills/verify-editor/**/*.{md,ts},{apps/web/src,packages/*/src}/**/*.{ts,tsx}}": [
 			"bun scripts/check-feature-drivers.ts --staged"
+		],
+		".agents/skills/verify-editor/**/*.ts": [
+			"bash -c 'tsc -p .agents/skills/verify-editor/tsconfig.json'"
 		]
 	},
 	"packageManager": "bun@1.4.0",

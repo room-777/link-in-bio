@@ -4,24 +4,40 @@ import type { UiContract } from "./ui-contract.ts";
 type Node = { type: string; start: number; [key: string]: unknown };
 
 export const RAW_BROWSER_CALLS: Record<string, string> = {
-	$: "use a harness locator from harness/ui.mjs",
-	$$: "use a harness locator from harness/ui.mjs",
-	getByAltText: "use control() or content() from harness/ui.mjs",
-	getByLabel: "use control() or content() from harness/ui.mjs",
-	getByPlaceholder: "use control() or content() from harness/ui.mjs",
+	$: "use a harness locator from harness/ui.ts",
+	$$: "use a harness locator from harness/ui.ts",
+	getByAltText: "use control() or content() from harness/ui.ts",
+	getByLabel: "use control() or content() from harness/ui.ts",
+	getByPlaceholder: "use control() or content() from harness/ui.ts",
 	getByRole: "use control() for app labels or content() for fixture data",
-	getByTestId: "use control() or content() from harness/ui.mjs",
-	getByText: "use exactText() from harness/ui.mjs",
-	getByTitle: "use control() or content() from harness/ui.mjs",
-	goto: "use journeys.open(feature, { route }) or gotoReady()",
-	locator: "use a named helper from harness/ui.mjs",
-	newContext: "open each feature with journeys.open() so no state leaks",
-	newPage: "open each feature with journeys.open() so no state leaks",
+	getByTestId: "use control() or content() from harness/ui.ts",
+	getByText: "use exactText() from harness/ui.ts",
+	getByTitle: "use control() or content() from harness/ui.ts",
+	goto: "use gotoReady() so the next action waits for hydration",
+	locator: "use a named helper from harness/ui.ts",
+	newContext:
+		"use the journey's fixtures (ownerPage, signedOutPage, openOwnerPage) so no state leaks",
+	newPage:
+		"use the journey's fixtures (ownerPage, signedOutPage, openOwnerPage) so no state leaks",
 	reload: "use reloadReady() so the next action waits for hydration",
-	waitForFunction: "wait on a harness locator or settled()",
-	waitForSelector: "wait on a harness locator",
-	waitForTimeout: "use settled() or wait on a harness locator",
+	waitForFunction: "use a web-first assertion or expect.poll",
+	waitForSelector: "use a web-first assertion on a harness locator",
+	waitForTimeout: "use a web-first assertion or expect.poll",
 };
+// A one-shot read inside expect() asserts on a snapshot and never retries.
+const ONE_SHOT_READS: Record<string, string> = {
+	getAttribute: "toHaveAttribute()",
+	innerText: "toHaveText() or toContainText()",
+	inputValue: "toHaveValue()",
+	isChecked: "toBeChecked()",
+	isDisabled: "toBeDisabled()",
+	isEditable: "toBeEditable()",
+	isEnabled: "toBeEnabled()",
+	isHidden: "toBeHidden()",
+	isVisible: "toBeVisible()",
+	textContent: "toHaveText() or toContainText()",
+};
+const RUNNER_IMPORTS = new Set(["@playwright/test", "playwright"]);
 const NAMED_CALLS = new Set([
 	"control",
 	"controlsExcept",
@@ -29,9 +45,36 @@ const NAMED_CALLS = new Set([
 	"labelled",
 ]);
 const ROLE_CALLS = new Set(["control", "controlsExcept"]);
-const CROSS_JOURNEY_FEATURES = new Set(["analytics-events"]);
 
 export type Violation = { line: number; message: string };
+export type JourneyFile = { journeyId: string; subFeatures: string[] };
+
+/** The `- \`id\`:` bullets under a feature map's `## Sub-features` heading. */
+export function subFeatureIds(markdown: string): string[] {
+	const section = markdown
+		.split(/^## /m)
+		.find((part) => part.startsWith("Sub-features"));
+	return [...(section ?? "").matchAll(/^- `([a-z0-9-]+)`/gm)].map(
+		(match) => match[1] as string,
+	);
+}
+
+function parseSource(source: string) {
+	return parse(source, {
+		sourceType: "module",
+		errorRecovery: false,
+		plugins: ["typescript"],
+	}) as unknown as Node;
+}
+
+function testTitle(node: unknown): string | undefined {
+	if (!isNode(node)) return;
+	if (node.type === "StringLiteral") return String(node.value);
+	if (node.type === "TemplateLiteral") {
+		const first = (node.quasis as Node[])[0]?.value as { cooked?: string };
+		return first?.cooked;
+	}
+}
 
 function isNode(value: unknown): value is Node {
 	return typeof value === "object" && value !== null && "type" in value;
@@ -119,7 +162,7 @@ function reportRevealHovers(
 }
 
 const SLEEP_MESSAGE =
-	"fixed sleep: wait on the condition itself (a harness locator, settled(), or a DB row) instead of a clock";
+	"fixed sleep: wait on the condition itself (a web-first assertion, expect.poll, or a response) instead of a clock";
 
 function resolvesOnly(node: Node) {
 	if (node.type === "Identifier") return true;
@@ -152,10 +195,7 @@ function resolvesOnly(node: Node) {
  * that rejects after a deadline is a timeout, not a sleep, and stays allowed.
  */
 export function findFixedSleeps(source: string): Violation[] {
-	const ast = parse(source, {
-		sourceType: "module",
-		errorRecovery: false,
-	}) as unknown as Node;
+	const ast = parseSource(source);
 	const violations: Violation[] = [];
 	const lineOf = (offset: number) => source.slice(0, offset).split("\n").length;
 	walk(ast, (node) => {
@@ -182,31 +222,34 @@ export function findFixedSleeps(source: string): Violation[] {
 	return violations;
 }
 
+/**
+ * Rules for a journey spec or setup file. With `journey`, the file must open
+ * that journey and its test titles must be exactly the feature map's
+ * sub-features (a title may add detail after a colon).
+ */
 export function checkDriverSource(
 	source: string,
 	contract: UiContract,
+	journey?: JourneyFile,
 ): Violation[] {
-	const ast = parse(source, {
-		sourceType: "module",
-		errorRecovery: false,
-	}) as unknown as Node;
+	const ast = parseSource(source);
 	const isKnown = knownName(contract);
 	const lineOf = (offset: number) => source.slice(0, offset).split("\n").length;
 	const violations: Violation[] = [];
 	const report = (node: Node, message: string) =>
 		violations.push({ line: lineOf(node.start), message });
-	const resultFeatures = new Map<string, Node>();
-	const journeyFeatures = new Set<string>();
+	const journeyCalls: Node[] = [];
+	const titles = new Map<string, Node>();
 
 	walk(ast, (node) => {
 		if (Array.isArray(node.body))
 			reportRevealHovers(node.body as Node[], report);
-		if (node.type === "ImportDeclaration") {
+		if (node.type === "ImportDeclaration" && node.importKind !== "type") {
 			const from = String((node.source as Node).value);
-			if (from === "playwright" || from.startsWith("playwright/"))
+			if (RUNNER_IMPORTS.has(from) || from.startsWith("playwright/"))
 				report(
 					node,
-					"import browsers through harness/journey.mjs, not playwright directly",
+					"import test and expect from harness/fixtures.ts, not the runner directly",
 				);
 		}
 		if (
@@ -231,12 +274,31 @@ export function checkDriverSource(
 					node,
 					`.${method}() is harness-only: ${RAW_BROWSER_CALLS[method]}`,
 				);
-			if (method === "open" && literalNames(args[0])[0])
-				journeyFeatures.add(literalNames(args[0])[0] as string);
 			return;
 		}
 		if (callee.type !== "Identifier") return;
 		const name = String(callee.name);
+		if (name === "expect" && args[0]?.type === "AwaitExpression") {
+			const read = args[0].argument as Node;
+			const readCallee =
+				read.type === "CallExpression" && (read.callee as Node);
+			const method =
+				readCallee &&
+				readCallee.type === "MemberExpression" &&
+				!readCallee.computed &&
+				String((readCallee.property as Node).name);
+			if (method && Object.hasOwn(ONE_SHOT_READS, method))
+				report(
+					node,
+					`expect(await ….${method}()) reads once: use await expect(locator).${ONE_SHOT_READS[method]} so it retries`,
+				);
+		}
+		if (name === "journey") journeyCalls.push(node);
+		if (name === "test") {
+			const title = testTitle(args[0]);
+			const id = title?.split(":")[0]?.trim();
+			if (id !== undefined && !titles.has(id)) titles.set(id, node);
+		}
 		if (NAMED_CALLS.has(name)) {
 			const nameArg = ROLE_CALLS.has(name) ? args[2] : args[1];
 			for (const label of literalNames(nameArg))
@@ -250,21 +312,51 @@ export function checkDriverSource(
 						node,
 						`"${label}" is an app label; use control() so the contract checks it`,
 					);
-		if (name === "openOwner" && literalNames(args[0])[0])
-			journeyFeatures.add(literalNames(args[0])[0] as string);
-		if (name === "result" && literalNames(args[0])[0]) {
-			const feature = literalNames(args[0])[0] as string;
-			if (!resultFeatures.has(feature)) resultFeatures.set(feature, node);
-		}
 	});
 
-	for (const [feature, node] of resultFeatures)
-		if (!journeyFeatures.has(feature) && !CROSS_JOURNEY_FEATURES.has(feature))
-			report(
-				node,
-				`results for "${feature}" need their own journey: open it with journeys.open("${feature}") or openOwner("${feature}")`,
-			);
 	for (const sleep of findFixedSleeps(source))
 		if (!violations.some((v) => v.line === sleep.line)) violations.push(sleep);
-	return violations.sort((a, b) => a.line - b.line);
+	violations.sort((a, b) => a.line - b.line);
+	if (journey)
+		violations.push(
+			...journeyViolations(journey, journeyCalls, titles, lineOf),
+		);
+	return violations;
+}
+
+function journeyViolations(
+	{ journeyId, subFeatures }: JourneyFile,
+	calls: Node[],
+	titles: Map<string, Node>,
+	lineOf: (offset: number) => number,
+): Violation[] {
+	const violations: Violation[] = [];
+	const named = calls.map(
+		(call) => [call, literalNames((call.arguments as Node[])[0])[0]] as const,
+	);
+	if (!named.length)
+		violations.push({
+			line: 1,
+			message: `call journey("${journeyId}") so the file runs as its own journey`,
+		});
+	for (const [call, id] of named)
+		if (id !== journeyId)
+			violations.push({
+				line: lineOf(call.start),
+				message: `journey(${id === undefined ? "…" : `"${id}"`}) does not match the file: call journey("${journeyId}")`,
+			});
+	const listed = new Set(subFeatures);
+	for (const [title, call] of titles)
+		if (!listed.has(title))
+			violations.push({
+				line: lineOf(call.start),
+				message: `"${title}" is not a sub-feature in features/${journeyId}.md`,
+			});
+	for (const id of subFeatures)
+		if (!titles.has(id))
+			violations.push({
+				line: 1,
+				message: `features/${journeyId}.md lists "${id}" but no test covers it`,
+			});
+	return violations;
 }
