@@ -23,7 +23,7 @@ finish() {
 		(cd "$RUN_DIR/groups" && find . \( -name '*.png' -o -name '*.aria.txt' \) -exec cp --parents {} "$OUT/screenshots/" \; 2>/dev/null) || true
 		(cd "$RUN_DIR/groups" && find . \( -name '*.log' -o -name 'actions.md' -o -name 'results.*' \) -exec cp --parents {} "$OUT/logs/" \; 2>/dev/null) || true
 	fi
-	bun scripts/ci/featuremap-summary.ts "$RUN_DIR/results.json" "$SKILL/drive-all.mjs" "$OUT/summary.json" "$RUN_ERROR" || code=1
+	bun scripts/ci/featuremap-summary.ts "$RUN_DIR" "$SKILL/drive-all.mjs" "$OUT/summary.json" "$RUN_ERROR" || code=1
 	[[ "$(jq -r .status "$OUT/summary.json" 2>/dev/null)" == passed ]] || code=1
 	exit "$code"
 }
@@ -61,5 +61,6 @@ if ! docker exec "$CONTAINER" psql -U postgres -d grabbin_featuremap -tAc \
 	"select 1 from \"user\" where email='${FEATUREMAP_ACCOUNT:-featuremap@example.com}'" | grep -q 1; then
 	step setup-account node "$SKILL/setup-account.mjs" "$RUN_DIR" || exit 1
 fi
+step warm node scripts/ci/featuremap-warm.ts || exit 1
 echo "▶ drive-parallel" | tee -a "$OUT/logs/featuremap.log"
 node "$SKILL/drive-parallel.mjs" "$RUN_DIR" 2>&1 | tee "$OUT/logs/drive-parallel.log"

@@ -3,7 +3,8 @@
  * featuremap-results/summary.json, the contract the CI workflow and its PR
  * comment read. A runner that writes summary.json itself can replace this.
  */
-import { readFileSync, writeFileSync } from "node:fs";
+import { existsSync, readFileSync, writeFileSync } from "node:fs";
+import path from "node:path";
 
 export type Failure = {
 	feature: string;
@@ -26,11 +27,31 @@ export type Summary = {
 type Row = { subfeature: string; status: string; evidence: string };
 type RunResults = {
 	seconds: number;
+	groups?: Array<{ index: number; features: string[] }>;
 	summaries: Array<{ feature: string; subfeatures: Row[] }>;
 	failures: string[];
 };
 
 export type Driver = { path: string; source: string };
+export type Crash = { error: string; file: string };
+
+/** The thrown error and the driver frame from a crashed group's log. */
+export function parseCrash(log: string, driverPath: string): Crash | undefined {
+	const lines = log.split("\n");
+	const caret = lines.findIndex((line) => line.trim() === "^");
+	const message =
+		lines.slice(caret + 1).find((line) => line.trim()) ??
+		lines.find((line) => /Error\b/.test(line));
+	if (!message) return undefined;
+	const name = driverPath.split("/").at(-1) ?? driverPath;
+	const frame = lines
+		.map((line) => line.split(`${name}:`)[1]?.match(/^\d+/)?.[0])
+		.find(Boolean);
+	return {
+		error: firstLine(message),
+		file: frame ? `${driverPath}:${frame}` : driverPath,
+	};
+}
 
 const firstLine = (text: string) =>
 	(text.split("\n").find((line) => line.trim()) ?? "").trim().slice(0, 300);
@@ -67,7 +88,13 @@ export function summarize(
 		commit,
 		driver,
 		runError,
-	}: { commit: string; driver: Driver; runError?: string },
+		crashes = {},
+	}: {
+		commit: string;
+		driver: Driver;
+		runError?: string;
+		crashes?: Record<string, Crash>;
+	},
 ): Summary {
 	const failures: Failure[] = [];
 	let total = 0;
@@ -78,8 +105,10 @@ export function summarize(
 			failures.push({
 				feature,
 				test: "(no sub-feature results)",
-				error: "the journey recorded no results; see its group's drive-all.log",
-				file: driver.path,
+				error:
+					crashes[feature]?.error ??
+					"the journey recorded no results; see its group's drive-all.log",
+				file: crashes[feature]?.file ?? driver.path,
 			});
 		}
 		for (const row of subfeatures) {
@@ -130,17 +159,34 @@ function readResults(file: string): RunResults | undefined {
 	}
 }
 
+function readCrashes(
+	runDir: string,
+	results: RunResults | undefined,
+	driverPath: string,
+) {
+	const crashes: Record<string, Crash> = {};
+	for (const group of results?.groups ?? []) {
+		const log = path.join(runDir, "groups", `g${group.index}`, "drive-all.log");
+		if (!existsSync(log)) continue;
+		const crash = parseCrash(readFileSync(log, "utf8"), driverPath);
+		if (crash) for (const feature of group.features) crashes[feature] = crash;
+	}
+	return crashes;
+}
+
 if (import.meta.main) {
-	const [resultsFile, driverPath, out, runError] = process.argv.slice(2);
-	if (!resultsFile || !driverPath || !out)
+	const [runDir, driverPath, out, runError] = process.argv.slice(2);
+	if (!runDir || !driverPath || !out)
 		throw new Error(
-			"Usage: bun featuremap-summary.ts <results.json> <driver.mjs> <summary.json> [run error]",
+			"Usage: bun featuremap-summary.ts <run-dir> <driver.mjs> <summary.json> [run error]",
 		);
+	const resultsFile = path.join(runDir, "results.json");
 	const results = readResults(resultsFile);
 	const summary = summarize(results, {
 		commit: process.env.FEATUREMAP_COMMIT ?? "",
 		driver: { path: driverPath, source: readFileSync(driverPath, "utf8") },
 		runError: runError || (results ? undefined : `no readable ${resultsFile}`),
+		crashes: readCrashes(runDir, results, driverPath),
 	});
 	writeFileSync(out, `${JSON.stringify(summary, null, 2)}\n`);
 	console.log(

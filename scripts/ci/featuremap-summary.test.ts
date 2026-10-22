@@ -1,5 +1,10 @@
 import { describe, expect, test } from "bun:test";
-import { locate, parseRunResults, summarize } from "./featuremap-summary.ts";
+import {
+	locate,
+	parseCrash,
+	parseRunResults,
+	summarize,
+} from "./featuremap-summary.ts";
 
 const driver = {
 	path: "drive-all.mjs",
@@ -113,5 +118,35 @@ describe("featuremap summary", () => {
 
 	test("results.json from another runner is rejected", () => {
 		expect(() => parseRunResults({ status: "passed" })).toThrow();
+	});
+
+	test("a crashed group reports its thrown error and driver frame", () => {
+		const log = [
+			"node:internal/modules/run_main:107",
+			"    triggerUncaughtException(",
+			"    ^",
+			"",
+			"page.goto: Timeout 25000ms exceeded.",
+			"Call log:",
+			"    at gotoReady (/w/.agents/skills/verify-editor/harness/journey.mjs:104:13)",
+			"    at async file:///w/.agents/skills/verify-editor/scripts/drive-all.mjs:457:1 {",
+		].join("\n");
+		const crash = parseCrash(
+			log,
+			".agents/skills/verify-editor/scripts/drive-all.mjs",
+		);
+		expect(crash).toEqual({
+			error: "page.goto: Timeout 25000ms exceeded.",
+			file: ".agents/skills/verify-editor/scripts/drive-all.mjs:457",
+		});
+		const summary = summarize(
+			results([{ feature: "editor-tweet", subfeatures: [] }]),
+			{
+				commit: "abc",
+				driver,
+				crashes: crash ? { "editor-tweet": crash } : {},
+			},
+		);
+		expect(summary.failures[0]).toMatchObject(crash ?? {});
 	});
 });
