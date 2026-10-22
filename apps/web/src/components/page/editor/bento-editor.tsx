@@ -246,6 +246,7 @@ export default function BentoEditor({
 	};
 	return (
 		<section
+			data-save-status={store.status}
 			className={`bento-editor ${editorClassName} min-h-[calc(var(--bento-grid-height)+16rem)] page-wide:min-h-0`}
 			style={{ "--bento-grid-height": `${bentoGridHeight}px` } as CSSProperties}
 		>

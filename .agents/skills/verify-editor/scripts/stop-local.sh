@@ -8,4 +8,4 @@ for name in web server mock-outbound; do
 		if kill -0 "$pid" 2>/dev/null; then pkill -TERM -P "$pid" 2>/dev/null || true; kill -TERM "$pid" 2>/dev/null || true; fi
 	fi
 done
-echo "stopped run-owned web/API/mock; persistent labeled test DB remains available for the next run"
+echo "stopped run-owned web/API/mock; persistent labeled test DB and owner state/R2 dir $(cat "$RUN_DIR/state-dir" 2>/dev/null) remain available for the next run"

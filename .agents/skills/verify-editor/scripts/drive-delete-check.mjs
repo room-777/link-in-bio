@@ -1,7 +1,14 @@
 import { mkdirSync, writeFileSync } from "node:fs";
 import path from "node:path";
-import { chromium } from "playwright";
-import { API, db, HANDLE, STATE, WEB } from "./local.mjs";
+import {
+	createJourneys,
+	gotoReady,
+	launchBrowser,
+	reloadReady,
+	settled,
+} from "../harness/journey.mjs";
+import { body, control, item } from "../harness/ui.mjs";
+import { API, db, dbAsync, HANDLE, STATE } from "./local.mjs";
 
 const runDir = path.resolve(process.argv[2] ?? "");
 if (!process.argv[2])
@@ -10,18 +17,9 @@ if (!process.argv[2])
 	);
 const outputDir = path.join(runDir, "editor-add-item", "delete-focused");
 mkdirSync(outputDir, { recursive: true });
-const browser = await chromium.launch({
-	headless: false,
-	executablePath:
-		process.env.CHROME_PATH ??
-		"/Applications/Google Chrome.app/Contents/MacOS/Google Chrome",
-});
-const context = await browser.newContext({
-	storageState: STATE,
-	viewport: { width: 1365, height: 900 },
-});
-const page = await context.newPage();
-page.setDefaultTimeout(12000);
+const browser = await launchBrowser();
+const journeys = createJourneys(browser, {});
+const page = await journeys.open("editor-add-item", { storageState: STATE });
 const pageId = db(`select id from pages where handle='${HANDLE}'`);
 const responses = [];
 page.on("response", (response) => {
@@ -33,44 +31,32 @@ page.on("response", (response) => {
 async function waitForDb(sql, expected) {
 	const until = Date.now() + 20000;
 	while (Date.now() < until) {
-		const value = db(sql);
+		const value = await dbAsync(sql);
 		if (expected(value)) return value;
-		await page.waitForTimeout(250);
 	}
 	return db(sql);
 }
-await page.goto(`${WEB}/${HANDLE}`, { waitUntil: "domcontentloaded" });
-await page
-	.getByRole("group", { name: "Page editor toolbar" })
-	.waitFor({ timeout: 20000 });
-await page.waitForFunction(
-	() => {
-		const button = [...document.querySelectorAll("button")].find(
-			(candidate) => candidate.getAttribute("aria-label") === "Advanced",
-		);
-		return Boolean(button && !button.disabled);
-	},
-	{ timeout: 20000 },
-);
+await gotoReady(page, `/${HANDLE}`);
+await control(page, "group", "Page editor toolbar").waitFor({ timeout: 20000 });
 await page.screenshot({
 	path: path.join(outputDir, "owner-page.png"),
 	fullPage: true,
 });
 writeFileSync(
 	path.join(outputDir, "owner-page.aria.txt"),
-	await page.locator("body").ariaSnapshot(),
+	await body(page).ariaSnapshot(),
 );
-await page.getByRole("button", { name: "Add text" }).click();
-await page.waitForTimeout(500);
+await control(page, "button", "Add text").click();
+await settled(page);
 await page.screenshot({
 	path: path.join(outputDir, "add-text.png"),
 	fullPage: true,
 });
 writeFileSync(
 	path.join(outputDir, "add-text.aria.txt"),
-	await page.locator("body").ariaSnapshot(),
+	await body(page).ariaSnapshot(),
 );
-const input = page.getByRole("textbox", { name: "Text content" }).last();
+const input = control(page, "textbox", "Text content").last();
 await input.fill("Feature map delete check");
 await input.press("Tab");
 const itemId = await waitForDb(
@@ -78,10 +64,9 @@ const itemId = await waitForDb(
 	Boolean,
 );
 if (!itemId) throw new Error("Text row was not created by the UI.");
-await page.reload({ waitUntil: "domcontentloaded" });
-const card = page.locator(`[data-bento-item-id="${itemId}"]`);
-await card.hover();
-const deleteButton = card.getByRole("button", { name: "Delete item" });
+await reloadReady(page);
+const card = item(page, itemId);
+const deleteButton = control(card, "button", "Delete item");
 await deleteButton.waitFor({ state: "visible" });
 await page.screenshot({
 	path: path.join(outputDir, "before-delete.png"),
@@ -108,15 +93,14 @@ writeFileSync(
 if (!testPassed) {
 	const stillVisible = await card.count();
 	if (stillVisible) {
-		await card.hover();
-		await card.getByRole("button", { name: "Delete item" }).click();
+		await control(card, "button", "Delete item").click();
 		await waitForDb(
 			`select count(*) from page_items where id='${itemId}' and page_id='${pageId}'`,
 			(value) => value === "0",
 		);
 	}
 }
-await context.close();
+await journeys.close();
 await browser.close();
 console.log(
 	`Focused delete result=${testPassed ? "PASS" : "FAIL"}; row=${db(`select count(*) from page_items where id='${itemId}' and page_id='${pageId}'`)}; evidence=${outputDir}`,

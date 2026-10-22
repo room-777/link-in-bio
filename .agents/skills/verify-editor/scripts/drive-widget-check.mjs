@@ -1,7 +1,8 @@
 import { mkdirSync, writeFileSync } from "node:fs";
 import path from "node:path";
-import { chromium } from "playwright";
-import { ACCOUNT, STATE, WEB } from "./local.mjs";
+import { createJourneys, launchBrowser } from "../harness/journey.mjs";
+import { body, control, controlsExcept } from "../harness/ui.mjs";
+import { ACCOUNT, HANDLE, STATE } from "./local.mjs";
 
 const runDir = path.resolve(process.argv[2] ?? "");
 if (!process.argv[2])
@@ -14,49 +15,35 @@ const outputDir = path.join(
 	"widget-focused",
 );
 mkdirSync(outputDir, { recursive: true });
-const browser = await chromium.launch({
-	headless: false,
-	executablePath:
-		process.env.CHROME_PATH ??
-		"/Applications/Google Chrome.app/Contents/MacOS/Google Chrome",
+const browser = await launchBrowser();
+const journeys = createJourneys(browser, {
+	prepareContext: (context) =>
+		context.route("https://**/*", (route) => route.abort()),
 });
-const context = await browser.newContext({
+const page = await journeys.open("editor-advanced-widgets", {
+	route: `/${HANDLE}`,
 	storageState: STATE,
-	viewport: { width: 1365, height: 900 },
 });
-await context.route("https://**/*", (route) => route.abort());
-const page = await context.newPage();
-await page.goto(`${WEB}/featuremap-test`, { waitUntil: "domcontentloaded" });
-await page
-	.getByRole("group", { name: "Page editor toolbar" })
-	.waitFor({ timeout: 20000 });
-await page.waitForFunction(
-	() => {
-		const button = [...document.querySelectorAll("button")].find(
-			(candidate) => candidate.getAttribute("aria-label") === "Advanced",
-		);
-		return Boolean(button && !button.disabled);
-	},
-	{ timeout: 20000 },
-);
+await control(page, "group", "Page editor toolbar").waitFor({ timeout: 20000 });
 const outcomes = [];
 for (const name of ["SoundCloud", "Apple Music", "Signature"]) {
-	await page.getByRole("button", { name: "Advanced" }).click();
-	const catalog = page.getByRole("dialog", { name: "Advanced widgets" });
+	await control(page, "button", "Advanced").click();
+	const catalog = control(page, "dialog", "Advanced widgets");
 	await catalog.waitFor({ state: "visible" });
-	await catalog.getByRole("textbox", { name: "Search widgets" }).fill(name);
-	await catalog.getByRole("button", { name, exact: true }).click();
-	const detail = page.getByRole("dialog");
+	await control(catalog, "textbox", "Search widgets").fill(name);
+	await control(catalog, "button", name).click();
+	const detail = control(page, "dialog");
 	await detail.waitFor({ state: "visible" });
 	const text = await detail.innerText();
 	const placeholderVisible = text.includes(
 		"Sipping coffee while crafting a polished widget",
 	);
-	const addActionCount = await detail
-		.getByRole("button", { name: /^(Add|Save)/ })
-		.count();
-	const status = placeholderVisible && addActionCount === 0 ? "PASS" : "FAIL";
-	const evidence = `${name}: placeholder visible=${placeholderVisible}; Add/Save buttons=${addActionCount}; observed detail=${text.replaceAll("\n", " | ").slice(0, 180)}.`;
+	const actionCount = await controlsExcept(detail, "button", [
+		"Back to widgets",
+		"Close",
+	]).count();
+	const status = placeholderVisible && actionCount === 0 ? "PASS" : "FAIL";
+	const evidence = `${name}: placeholder visible=${placeholderVisible}; buttons besides Back/Close=${actionCount}; observed detail=${text.replaceAll("\n", " | ").slice(0, 180)}.`;
 	await page.screenshot({
 		path: path.join(
 			outputDir,
@@ -66,14 +53,15 @@ for (const name of ["SoundCloud", "Apple Music", "Signature"]) {
 	});
 	writeFileSync(
 		path.join(outputDir, `${name.toLowerCase().replaceAll(" ", "-")}.aria.txt`),
-		await page.locator("body").ariaSnapshot(),
+		await body(page).ariaSnapshot(),
 	);
 	outcomes.push({ name, status, evidence });
-	await detail.getByRole("button", { name: "Back to widgets" }).click();
-	await page
-		.getByRole("dialog", { name: "Advanced widgets" })
-		.getByRole("button", { name: "Close" })
-		.click();
+	await control(detail, "button", "Back to widgets").click();
+	await control(
+		control(page, "dialog", "Advanced widgets"),
+		"button",
+		"Close",
+	).click();
 }
 writeFileSync(
 	path.join(outputDir, "results.md"),
@@ -136,7 +124,7 @@ const markdown = [
 	`API responses observed: ${(resultData.network ?? []).join("; ")}`,
 ].join("\n");
 writeFileSync(path.join(runDir, "results.md"), `${markdown}\n`);
-await context.close();
+await journeys.close();
 await browser.close();
 console.log(
 	`Widget checks: ${outcomes.map(({ name, status }) => `${name}=${status}`).join(", ")}; updated ${resultPath}`,
