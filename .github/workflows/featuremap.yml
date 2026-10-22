@@ -1,0 +1,115 @@
+name: Feature map
+
+# Runs every feature-map journey against an isolated local stack on the
+# runner: its own Postgres container, local API/web, the mock outbound
+# server and Wrangler's local R2. No repository secrets and no environment.
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: featuremap-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  featuremap:
+    name: featuremap
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version-file: .node-version
+      - uses: oven-sh/setup-bun@v2
+        with:
+          bun-version-file: package.json
+      - run: bun install --frozen-lockfile
+      - id: playwright
+        run: echo "version=$(bun -e 'console.log(require("playwright/package.json").version)')" >> "$GITHUB_OUTPUT"
+      - id: browser-cache
+        uses: actions/cache/restore@v4
+        with:
+          path: ~/.cache/ms-playwright
+          key: playwright-${{ runner.os }}-${{ steps.playwright.outputs.version }}
+      - if: steps.browser-cache.outputs.cache-hit != 'true'
+        run: bunx playwright install chromium
+      - if: steps.browser-cache.outputs.cache-hit != 'true'
+        uses: actions/cache/save@v4
+        with:
+          path: ~/.cache/ms-playwright
+          key: ${{ steps.browser-cache.outputs.cache-primary-key }}
+      - name: Feature map
+        env:
+          FEATUREMAP_HEADLESS: "1"
+        run: bun run featuremap
+      - name: Pull request number for the comment workflow
+        if: always() && github.event_name == 'pull_request'
+        env:
+          PR_NUMBER: ${{ github.event.pull_request.number }}
+        run: |
+          mkdir -p featuremap-results
+          jq -n --argjson number "$PR_NUMBER" '{number: $number}' > featuremap-results/pr.json
+      - name: Upload results
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: featuremap-results
+          path: featuremap-results/
+          retention-days: 14
+          if-no-files-found: warn
+      - name: Upload summary
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: featuremap-summary
+          path: |
+            featuremap-results/summary.json
+            featuremap-results/pr.json
+          retention-days: 14
+          if-no-files-found: ignore
+
+  # Same-repository PRs get the comment from this run. Fork PRs have a
+  # read-only token here, so featuremap-comment.yml comments for them.
+  comment:
+    name: comment
+    needs: featuremap
+    if: ${{ !cancelled() && github.event_name == 'pull_request' && github.event.pull_request.head.repo.full_name == github.repository }}
+    runs-on: ubuntu-latest
+    permissions:
+      actions: read
+      contents: read
+      pull-requests: write
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+          sparse-checkout: |
+            scripts/ci
+            package.json
+          sparse-checkout-cone-mode: false
+      - uses: oven-sh/setup-bun@v2
+        with:
+          bun-version-file: package.json
+      - uses: actions/download-artifact@v4
+        continue-on-error: true
+        with:
+          name: featuremap-summary
+          path: summary
+      - name: Post or update the feature-map comment
+        env:
+          GH_TOKEN: ${{ github.token }}
+          REPO: ${{ github.repository }}
+          RUN_ID: ${{ github.run_id }}
+          PR_NUMBER: ${{ github.event.pull_request.number }}
+          HEAD_SHA: ${{ github.event.pull_request.head.sha }}
+          HEAD_REPO: ${{ github.event.pull_request.head.repo.full_name }}
+          SUMMARY_FILE: summary/summary.json
+        run: bun scripts/ci/featuremap-comment.ts
