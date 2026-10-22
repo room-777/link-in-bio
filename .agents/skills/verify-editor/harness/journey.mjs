@@ -21,7 +21,8 @@ function ignoreResizeObserverLoop() {
 
 export async function launchBrowser() {
 	return chromium.launch({
-		headless: false,
+		// CI has no display; local runs stay visible.
+		headless: process.env.FEATUREMAP_HEADLESS === "1",
 		executablePath:
 			process.env.CHROME_PATH ||
 			(process.platform === "darwin"
