@@ -1,12 +1,12 @@
 name: Feature map comment
 
-# Comments on fork PRs after "Feature map" finishes. This runs the default
+# Comments on fork PRs after CI (which runs the feature map) finishes. This runs the default
 # branch's copy of this file with a write token, so it never checks out or
 # runs PR code: it reads only the summary artifact, treats it as untrusted
 # text, and comments only when the PR's head is the commit that run tested.
 on:
   workflow_run:
-    workflows: [Feature map]
+    workflows: [CI]
     types: [completed]
 
 permissions: {}
