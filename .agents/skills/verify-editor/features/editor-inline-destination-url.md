@@ -9,6 +9,7 @@ An owner can give a text or media card an optional destination URL. Link cards h
 - `destination-clear`: remove the optional destination.
 - `destination-validation`: reject invalid input without replacing the saved value.
 - `destination-persist`: restore the destination after reload.
+- `media-destination-add`: add a destination URL to a media item.
 
 ## How to get to it (user POV)
 

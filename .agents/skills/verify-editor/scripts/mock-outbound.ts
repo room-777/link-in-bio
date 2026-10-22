@@ -18,7 +18,7 @@ const server = createServer(async (request, response) => {
 
 	let body = "";
 	for await (const chunk of request) body += chunk;
-	let target;
+	let target: URL;
 	try {
 		target = new URL(JSON.parse(body).url);
 	} catch {

@@ -29,6 +29,9 @@ local.db-*
 *~
 .DS_Store
 
+# Feature-map run output (bun run featuremap)
+featuremap-results
+
 # Logs
 logs
 .evlog/

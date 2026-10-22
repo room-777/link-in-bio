@@ -5,6 +5,7 @@ An owner can open the share dialog, see its QR graphic, and copy the public page
 ## Sub-features
 
 - `share-open`: open the share dialog from desktop or mobile controls.
+- `share-qr`: show the QR code for the page URL.
 - `share-copy`: copy the page URL and show success feedback.
 - `share-mobile`: reach the same dialog from a compact viewport.
 
