@@ -53,7 +53,8 @@ jobs:
         env:
           FEATUREMAP_COMMIT: ${{ github.event.pull_request.head.sha || github.sha }}
           FEATUREMAP_BUDGET_S: "300"
-        run: xvfb-run -a bun run featuremap
+          FEATUREMAP_HEADLESS: "1"
+        run: bun run featuremap
       - name: Pull request number for the comment workflow
         if: always() && github.event_name == 'pull_request'
         env:

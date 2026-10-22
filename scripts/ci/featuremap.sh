@@ -19,9 +19,10 @@ finish() {
 	"$SKILL/stop-local.sh" "$RUN_DIR" >> "$OUT/logs/featuremap.log" 2>&1 || true
 	cp "$RUN_DIR"/results.{md,json} "$OUT/" 2>/dev/null || true
 	cp "$RUN_DIR"/*.log "$OUT/logs/" 2>/dev/null || true
+	cp -r "$RUN_DIR/account-setup" "$OUT/logs/" 2>/dev/null || true
 	if [[ -d "$RUN_DIR/groups" ]]; then
 		(cd "$RUN_DIR/groups" && find . \( -name '*.png' -o -name '*.aria.txt' \) -exec cp --parents {} "$OUT/screenshots/" \; 2>/dev/null) || true
-		(cd "$RUN_DIR/groups" && find . \( -name '*.log' -o -name 'actions.md' -o -name 'results.*' \) -exec cp --parents {} "$OUT/logs/" \; 2>/dev/null) || true
+		(cd "$RUN_DIR/groups" && find . \( -name '*.log' -o -name 'actions.md' -o -name 'results.*' -o -name 'browser-errors.txt' -o -name 'diagnostics.txt' \) -exec cp --parents {} "$OUT/logs/" \; 2>/dev/null) || true
 	fi
 	bun scripts/ci/featuremap-summary.ts "$RUN_DIR" "$SKILL/drive-all.mjs" "$OUT/summary.json" "$RUN_ERROR" || code=1
 	[[ "$(jq -r .status "$OUT/summary.json" 2>/dev/null)" == passed ]] || code=1
