@@ -21,7 +21,7 @@ test("share-copy", async ({ ownerPage: page, owner }) => {
 	await control(dialog, "button", "Copy Link").click();
 	await expect(exactText(dialog, "Copied Link")).toBeVisible();
 	expect(await page.evaluate(() => navigator.clipboard.readText())).toBe(
-		`${WEB}/${owner.handle}-ci-failure-probe`,
+		`${WEB}/${owner.handle}`,
 	);
 	await control(dialog, "button", "Close").click();
 	await expect(dialog).toBeHidden();
