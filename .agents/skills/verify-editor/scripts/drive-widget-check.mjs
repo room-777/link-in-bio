@@ -1,7 +1,7 @@
 import { mkdirSync, writeFileSync } from "node:fs";
 import path from "node:path";
 import { createJourneys, launchBrowser } from "../harness/journey.mjs";
-import { body, control } from "../harness/ui.mjs";
+import { body, control, controlsExcept } from "../harness/ui.mjs";
 import { ACCOUNT, HANDLE, STATE } from "./local.mjs";
 
 const runDir = path.resolve(process.argv[2] ?? "");
@@ -38,9 +38,12 @@ for (const name of ["SoundCloud", "Apple Music", "Signature"]) {
 	const placeholderVisible = text.includes(
 		"Sipping coffee while crafting a polished widget",
 	);
-	const addActionCount = await control(detail, "button", "Add").count();
-	const status = placeholderVisible && addActionCount === 0 ? "PASS" : "FAIL";
-	const evidence = `${name}: placeholder visible=${placeholderVisible}; Add/Save buttons=${addActionCount}; observed detail=${text.replaceAll("\n", " | ").slice(0, 180)}.`;
+	const actionCount = await controlsExcept(detail, "button", [
+		"Back to widgets",
+		"Close",
+	]).count();
+	const status = placeholderVisible && actionCount === 0 ? "PASS" : "FAIL";
+	const evidence = `${name}: placeholder visible=${placeholderVisible}; buttons besides Back/Close=${actionCount}; observed detail=${text.replaceAll("\n", " | ").slice(0, 180)}.`;
 	await page.screenshot({
 		path: path.join(
 			outputDir,

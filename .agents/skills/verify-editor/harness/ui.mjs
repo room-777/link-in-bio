@@ -175,6 +175,23 @@ export function control(scope, role, names, options = {}) {
 	);
 }
 
+/**
+ * Every `role` element in `scope` except the named ones, including unnamed
+ * ones. Use it to prove something is absent: a name the app must not render
+ * cannot pass the contract, so list what is allowed instead.
+ */
+export function controlsExcept(scope, role, allowed) {
+	const list = [allowed].flat();
+	for (const name of list) assertKnownName(name);
+	return wrap(
+		scope.getByRole(role, {
+			name: new RegExp(`^(?!(${list.map(escapeRegExp).join("|")})$)`),
+		}),
+		prepareFor(scope),
+		`${role} except "${list.join('" | "')}"`,
+	);
+}
+
 export function content(scope, role, name, options = {}) {
 	if (typeof name === "string" && isKnownName(name))
 		throw new Error(

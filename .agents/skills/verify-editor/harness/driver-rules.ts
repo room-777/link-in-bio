@@ -22,7 +22,13 @@ export const RAW_BROWSER_CALLS: Record<string, string> = {
 	waitForSelector: "wait on a harness locator",
 	waitForTimeout: "use settled() or wait on a harness locator",
 };
-const NAMED_CALLS = new Set(["control", "exactText", "labelled"]);
+const NAMED_CALLS = new Set([
+	"control",
+	"controlsExcept",
+	"exactText",
+	"labelled",
+]);
+const ROLE_CALLS = new Set(["control", "controlsExcept"]);
 const CROSS_JOURNEY_FEATURES = new Set(["analytics-events"]);
 
 export type Violation = { line: number; message: string };
@@ -168,7 +174,7 @@ export function checkDriverSource(
 		if (callee.type !== "Identifier") return;
 		const name = String(callee.name);
 		if (NAMED_CALLS.has(name)) {
-			const nameArg = name === "control" ? args[2] : args[1];
+			const nameArg = ROLE_CALLS.has(name) ? args[2] : args[1];
 			for (const label of literalNames(nameArg))
 				if (!isKnown(label))
 					report(node, `"${label}" is not an accessible name the app renders`);

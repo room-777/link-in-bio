@@ -18,6 +18,7 @@ import {
 	body,
 	content,
 	control,
+	controlsExcept,
 	exactText,
 	fileInput,
 	item,
@@ -1220,12 +1221,15 @@ try {
 			const placeholderVisible = text.includes(
 				"Sipping coffee while crafting a polished widget",
 			);
-			const addActionCount = await control(detail, "button", "Add").count();
+			const actionCount = await controlsExcept(detail, "button", [
+				"Back to widgets",
+				"Close",
+			]).count();
 			result(
 				"editor-advanced-widgets",
 				"widget-coming-soon",
-				placeholderVisible && addActionCount === 0 ? "PASS" : "FAIL",
-				`${name} placeholder visible=${placeholderVisible}; add/save actions=${addActionCount}; detail=${redacted(text).slice(0, 150)}.`,
+				placeholderVisible && actionCount === 0 ? "PASS" : "FAIL",
+				`${name} placeholder visible=${placeholderVisible}; buttons besides Back/Close=${actionCount}; detail=${redacted(text).slice(0, 150)}.`,
 			);
 			await control(detail, "button", "Back to widgets").click();
 			await control(
