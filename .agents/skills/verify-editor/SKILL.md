@@ -40,8 +40,12 @@ This uses a fresh visible Chrome context to sign in through `/sign-in` and creat
 Run the full feature driver in visible Chrome (macOS Google Chrome by default, or the binary in `CHROME_PATH`):
 
 ```sh
-node .agents/skills/verify-editor/scripts/drive-all.mjs "$RUN_DIR"
+node .agents/skills/verify-editor/scripts/drive-parallel.mjs "$RUN_DIR"
 ```
+
+`drive-parallel.mjs` is the default full run. It seeds one owner (user, page `featuremap-test-gN`, local Pro, signed session in `$RUN_DIR/owner-gN.json`) per journey group, runs the groups at the same time, and writes merged `results.md` / `results.json` (per-journey `timings`, per-group seconds) plus each group's evidence under `$RUN_DIR/groups/gN/`. Journeys that read data an earlier journey made stay in one group in their original order (`GROUPS` in the script). The run fails when any sub-feature fails or the wall time exceeds the budget (150 s; override with `FEATUREMAP_BUDGET_S`). Measured: about 116 s, against about 290 s for the old serial run.
+
+`drive-all.mjs` still runs every journey serially on the one owner; set `FEATUREMAP_JOURNEYS=a,b` to run only some journeys. Drivers wait on conditions, never on a clock: `settled()` waits for `data-save-status="saved"` and no in-flight API request, and `check:feature-drivers` rejects `waitForTimeout` and timer sleeps in drivers and the harness.
 
 The login map must use a fresh context with no saved browser state. Protected editor maps use the one saved owner state. `/demo` is not a substitute for account, save, Pro, upload, or public-page checks. The driver writes `results.md`, `results.json`, screenshots, ARIA snapshots, action notes, and observed local API responses under the run directory. Use the feature files in `features/` as the complete journey list. Update the driver and maps together when a mapped journey changes.
 
@@ -70,7 +74,7 @@ Drivers are regenerated often, so the harness owns every browser call and `bun r
 
 ## Helpers
 
-The runnable helpers are `scripts/start-local.sh`, `scripts/doctor.sh`, `scripts/stop-local.sh`, `scripts/mock-outbound.mjs`, `scripts/setup-account.mjs`, `scripts/drive-all.mjs`, `scripts/drive-delete-check.mjs`, and `scripts/drive-widget-check.mjs`. Shared URLs, fixture identity, database readback, and evidence capture live in `scripts/local.mjs`; browser journeys and locators live in `harness/`.
+The runnable helpers are `scripts/start-local.sh`, `scripts/doctor.sh`, `scripts/stop-local.sh`, `scripts/mock-outbound.mjs`, `scripts/setup-account.mjs`, `scripts/drive-parallel.mjs`, `scripts/drive-all.mjs`, `scripts/drive-delete-check.mjs`, and `scripts/drive-widget-check.mjs`. Shared URLs, fixture identity, database readback, and evidence capture live in `scripts/local.mjs`; browser journeys and locators live in `harness/`.
 
 For a focused follow-up after the full run, execute the delete check first, then refresh the widget placeholder evidence and summary:
 

@@ -1966,9 +1966,14 @@ if (runs("editor-media-upload")) {
 			releaseUpload = resolve;
 		});
 		let putIntercepted = false;
+		let markPutHeld;
+		const putHeld = new Promise((resolve) => {
+			markPutHeld = resolve;
+		});
 		await page.route(`${API}/media/**`, async (route) => {
 			if (route.request().method() !== "PUT") return route.continue();
 			putIntercepted = true;
+			markPutHeld();
 			await uploadHeld;
 			await route.abort("aborted").catch(() => {});
 		});
@@ -2003,7 +2008,20 @@ if (runs("editor-media-upload")) {
 				?.objectKey ?? "";
 		const pendingDelete = control(pendingCard, "button", "Delete item");
 		await pendingDelete.waitFor({ state: "visible", timeout: 5000 });
+		// Cancel while the storage PUT is provably in flight and held, then
+		// wait for the app's cancel request before letting the PUT go, so the
+		// order is upload created -> PUT held -> cancel -> PUT aborted.
+		await putHeld;
+		const cancelResponse = page
+			.waitForResponse(
+				(response) =>
+					response.url() === `${API}/pages/${HANDLE}/items/upload/cancel` &&
+					response.request().method() === "POST",
+				{ timeout: 10000 },
+			)
+			.catch(() => null);
 		await pendingDelete.click();
+		const cancelStatus = (await cancelResponse)?.status() ?? 0;
 		releaseUpload();
 		await page.unroute(`${API}/media/**`);
 		const pendingRowGone = pendingId
@@ -2034,6 +2052,7 @@ if (runs("editor-media-upload")) {
 			: 404;
 		const cancelPass =
 			putIntercepted &&
+			cancelStatus === 204 &&
 			pendingRowGone &&
 			mediaRowsAfterCancel === originalMediaRows &&
 			pendingAssetState === "pending_delete:true";
@@ -2041,7 +2060,7 @@ if (runs("editor-media-upload")) {
 			"editor-media-upload",
 			"media-cancel",
 			cancelPass ? "PASS" : "FAIL",
-			`Held local PUT intercepted=${putIntercepted}; pending item ${pendingId || "missing"} row removed=${pendingRowGone}; page media asset=${pendingAssetState || "missing"}; deleteAfter future=true; object GET=${pendingObjectStatus} (may remain available during cleanup grace); media rows before=${originalMediaRows}, after=${mediaRowsAfterCancel}.`,
+			`Held local PUT intercepted=${putIntercepted}; cancel request status=${cancelStatus}; pending item ${pendingId || "missing"} row removed=${pendingRowGone}; page media asset=${pendingAssetState || "missing"}; deleteAfter future=true; object GET=${pendingObjectStatus} (may remain available during cleanup grace); media rows before=${originalMediaRows}, after=${mediaRowsAfterCancel}.`,
 		);
 		await proof(page, "editor-media-upload", "media-cancelled");
 	} catch (error) {
