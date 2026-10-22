@@ -1,88 +1,63 @@
 ---
 name: verify-editor
-description: "Run Grabbin's mapped web journeys in an isolated local stack with visible Chrome, a persistent owner account, and saved browser evidence. Use for feature-map verification or when a real local browser flow needs proof."
+description: "Run Grabbin's mapped web journeys as @playwright/test specs against an isolated local stack, with one seeded owner per journey and saved browser evidence. Use for feature-map verification or when a real local browser flow needs proof."
 ---
 
 # Verify Grabbin features
 
-## Launch
+## Run
 
-Run from the repository root. Choose a new run id, then start the local web/API processes against the dedicated PostgreSQL container:
-
-```sh
-RUN_ID="local-$(date +%Y%m%d-%H%M%S)"
-RUN_DIR="artifacts/verify-editor/$RUN_ID"
-.agents/skills/verify-editor/scripts/start-local.sh "$RUN_DIR"
-```
-
-`start-local.sh` uses `apps/server/.env` for migrations and `apps/web/.env` for the web process. It starts the API with isolated local bindings, so provider credentials from `apps/server/.env` never reach the API. Local database, API, page, billing and storage bindings point to the dedicated stack. It starts the mock outbound server on port 3002, which never connects to the internet. Wait for its `ready web=...` line, then in another terminal run:
+From the repository root:
 
 ```sh
-.agents/skills/verify-editor/scripts/doctor.sh "$RUN_DIR"
+bun run featuremap
 ```
 
-The doctor must print `OK`. Web is `http://127.0.0.1:3000`, API is `http://127.0.0.1:3001`, the fake provider is `http://127.0.0.1:3002`, and the dedicated database is `grabbin_featuremap` on port `15432`. Set `FEATUREMAP_WEB_PORT`, `FEATUREMAP_API_PORT`, `FEATUREMAP_MOCK_PORT` and `FEATUREMAP_DB_PORT` to run a second stack beside one already on those ports. The scripts refuse occupied ports and only use their own labeled database container: `grabbin-featuremap` on port `15432`, `grabbin-featuremap-<port>` for any other `FEATUREMAP_DB_PORT`, each with its own volume. The owner browser state and the local R2 (file storage) folder follow the same rule: `~/.cache/grabbin-featuremap/` on port `15432`, `~/.cache/grabbin-featuremap/<port>/` otherwise, so a second stack never overwrites the first stack's login or uploads. Start a second stack from its own worktree, because Next.js runs only one dev server per project folder. They read but never change either `.env` file.
+This one command starts the isolated local stack, runs every journey, writes `featuremap-results/`, stops the stack, and exits nonzero when any sub-feature fails or the run exceeds its budget (150 s; override with `FEATUREMAP_BUDGET_S`). It needs no `.env` file and no production secret: the API gets local-only bindings, the web gets a fixture Mapbox token and the `local-pro` product id, and no request reaches the internet. Set `CI=1` (or `FEATUREMAP_HEADLESS=1`) for headless Chrome; `CHROME_PATH` picks the binary (macOS Google Chrome by default, Playwright's Chromium otherwise).
 
-## Doctor
-
-Run the command above before driving the browser and after any server restart. It checks that the owned database has its page-items table, the API and mock server answer, and the sign-in page is served. If it fails, inspect only this run's logs, then stop and repair this run before continuing.
-
-## Drive
-
-Create the test account and page once, only if `featuremap@example.com` and `featuremap-test` are absent from the dedicated local database:
+Extra arguments go to Playwright, so a focused run is:
 
 ```sh
-node .agents/skills/verify-editor/scripts/setup-account.mjs "$RUN_DIR"
+bun run featuremap --grep "editor-tweet"
+bun run featuremap journeys/editor-layout.journey.ts
 ```
 
-This uses a fresh visible Chrome context to sign in through `/sign-in` and create the page through `/create`. It grants the configured local-only `local-pro` product in the dedicated database and saves the owner's browser state at `owner-session.json` in the stack's state folder (`~/.cache/grabbin-featuremap/` on the default DB port, `~/.cache/grabbin-featuremap/<FEATUREMAP_DB_PORT>/` otherwise). Each stack signs in once into its own state folder. Keep that database volume and state file for later runs. Never replace them with an account or credentials from another environment.
+Ports default to web `3000`, API `3001`, mock `3002`, and database `15432`. Set `FEATUREMAP_WEB_PORT`, `FEATUREMAP_API_PORT`, `FEATUREMAP_MOCK_PORT` and `FEATUREMAP_DB_PORT` to run beside a stack already on those ports; run a second stack from its own worktree, because Next.js runs one dev server per project folder. The scripts refuse occupied ports and only use their own labeled database container (`grabbin-featuremap`, or `grabbin-featuremap-<port>` for another DB port, each with its own volume) and state folder (`~/.cache/grabbin-featuremap/[<port>/]`). `FEATUREMAP_WORKERS` sets Playwright's worker count (default 6).
 
-Run the full feature driver in visible Chrome (macOS Google Chrome by default, or the binary in `CHROME_PATH`):
+## Results
 
-```sh
-node .agents/skills/verify-editor/scripts/drive-parallel.mjs "$RUN_DIR"
-```
+`featuremap-results/` (git-ignored) is the contract CI reads:
 
-`drive-parallel.mjs` is the default full run. It seeds one owner (user, page `featuremap-test-gN`, local Pro, signed session in `$RUN_DIR/owner-gN.json`) per journey group, runs the groups at the same time, and writes merged `results.md` / `results.json` (per-journey `timings`, per-group seconds) plus each group's evidence under `$RUN_DIR/groups/gN/`. Journeys that read data an earlier journey made stay in one group in their original order (`GROUPS` in the script). The run fails when any sub-feature fails or the wall time exceeds the budget (150 s; override with `FEATUREMAP_BUDGET_S`). Measured: about 116 s, against about 290 s for the old serial run.
+- `summary.json`: `{"status":"passed"|"failed","total","passed","failed","skipped","durationMs","commit","failures":[{"feature","test","error","file"}]}`. `feature` is the journey id, `test` the sub-feature title, `error` the first line of the failure, `file` the `path:line` of the failing test. Totals count journey tests only; a failing setup test or an over-budget run is still listed under `failures`.
+- `results.md`: the same run as a table of journey, sub-feature, result and seconds.
+- `screenshots/<journey>/`: PNG and ARIA snapshot proofs, plus `FAILED-<test>.png` for any failure.
+- `logs/`: stack, server, web and mock request logs.
+- `playwright-report/` and `playwright-report.json`: Playwright's own report (`npx playwright show-report featuremap-results/playwright-report`).
 
-`drive-all.mjs` still runs every journey serially on the one owner; set `FEATUREMAP_JOURNEYS=a,b` to run only some journeys. Drivers wait on conditions, never on a clock: `settled()` waits for `data-save-status="saved"` and no in-flight API request, and `check:feature-drivers` rejects `waitForTimeout` and timer sleeps in drivers and the harness.
+## Layout
 
-The login map must use a fresh context with no saved browser state. Protected editor maps use the one saved owner state. `/demo` is not a substitute for account, save, Pro, upload, or public-page checks. The driver writes `results.md`, `results.json`, screenshots, ARIA snapshots, action notes, and observed local API responses under the run directory. Use the feature files in `features/` as the complete journey list. Update the driver and maps together when a mapped journey changes.
+- `playwright.config.ts`: fully parallel workers, no retries, 60 s per test, global budget, and the results reporter.
+- `journeys/account.setup.ts`: creates `featuremap@example.com` / `featuremap-test` through `/sign-in` and `/create` on a fresh database, grants local Pro, and opens the editor once so parallel journeys do not all wait on the first route compile. Every journey depends on it.
+- `journeys/<feature-id>.journey.ts`: one spec per feature map in `features/`. Each test title is a sub-feature id from that map's `## Sub-features` list, so every sub-feature maps to one test.
+- `harness/fixtures.ts`: `journey(id)` returns the journey's `test`. Each journey gets its own worker with its own seeded owner (user, page `featuremap-test-jN`, local Pro, signed session cookie) and fixtures: `owner`, `ownerPage`, `signedOutPage`, `openOwnerPage()`, and seeded `textItem`, `linkItem`, `mediaItem`. Journeys share no data, so they run in parallel; tests inside one journey run in order on its page.
+- `harness/ui.ts` (locators), `harness/journey.ts` (navigation and settling), `harness/editor.ts` (item helpers and DB readback), `harness/mocks.ts` (browser fixtures), `harness/local.ts` (URLs, DB access, proofs), `harness/results-reporter.ts` (`featuremap-results/`).
+- `scripts/featuremap.ts` drives the run; `scripts/start-local.sh`, `doctor.sh`, `stop-local.sh` and `mock-outbound.ts` manage the stack and can be used on their own with a run folder.
+
+## Writing journeys
+
+Journeys are regenerated often, so `bun run check:feature-drivers` (in `bun run verify` and the pre-commit hook) and `tsc -p .agents/skills/verify-editor` hold them to one shape:
+
+- Start with `const test = journey("<feature-id>")` from `harness/fixtures.ts`, matching the file name and `features/<feature-id>.md`. Import `test` and `expect` only from the fixtures; type-only imports from `@playwright/test` are fine.
+- Name each test after a sub-feature id from the map (`"tweet-add"`, or `"widget-coming-soon: Signature"` for one case of a sub-feature). Every listed sub-feature needs a test, and every test needs a listed sub-feature. Add the sub-feature to the map when you add a test.
+- Use the fixtures for pages and contexts. Need a second owner tab? `openOwnerPage()`. A signed-out page? `signedOutPage`. Need data? Seed it in a fixture so the journey owns it instead of reading what another journey made.
+- Find controls with `control(scope, role, name)` from `harness/ui.ts`. The name must be one the app renders in `apps/web/src` or a workspace package; an unknown name fails the check before any browser starts. Use `content(scope, role, name)` only for fixture data the journey created, and `exactText`, `item`, `marker`, `fileInput`, `otpInput`, `labelled` for the rest. Hover-revealed controls are hovered through their own group, so do not hover the card first.
+- Assert web-first: `await expect(locator).toBeVisible()` / `toHaveText()` / `toHaveValue()`, and `expect.poll()` (or `row()` from `harness/editor.ts`) for database readback. `expect(await locator.isVisible())` and similar one-shot reads are rejected.
+- Wait on conditions: `settled(page)` after a change (it covers the editor's 1.5 s save delay), `page.waitForResponse` / `waitForEvent` for a request or file chooser, and `gotoReady` / `reloadReady` to navigate. Raw `page.getBy*`, `locator`, `goto`, `reload`, `newContext`, `newPage`, `waitForTimeout`, `waitForFunction`, `waitForSelector`, timer sleeps and `force: true` are rejected; harness and script files are checked for fixed sleeps too.
 
 ## Evidence
 
-Use the real browser controls and routes listed in each feature map. Browser HTTPS requests are blocked by default; Playwright supplies local Mapbox, Google Analytics and asset fixtures. Server metadata, RSS and view-count requests go through the fake outbound server. Browser uploads are stored in the isolated Wrangler R2 bucket. No provider call reaches the internet. Capture visible results, verify saved changes after reload or a new context, then read the matching row from the isolated test database. A mocked integration may pass only for local UI/API behavior and saved results. It does not prove delivery to a real provider. Record mock requests at `mock-requests.log` and `mock-browser-requests.log` in the run directory.
-
-## Cleanup
-
-Stop only the local processes started by this run:
-
-```sh
-.agents/skills/verify-editor/scripts/stop-local.sh "$RUN_DIR"
-```
-
-This stops the run's web/API/mock processes. It keeps the labeled test database, its named volume, and the saved browser state for reuse. Evidence under `artifacts/verify-editor/$RUN_ID/` remains after cleanup. Never stop a process or container unless this run created and owns it.
-
-## Writing drivers
-
-Drivers are regenerated often, so the harness owns every browser call and `bun run check:feature-drivers` (in `bun run verify` and the pre-commit hook) rejects anything else:
-
-- Open each feature with `journeys.open(feature, …)` (or the driver's `openOwner(feature)`). Each feature gets a fresh browser context, so a dialog or overlay left by one journey cannot break the next.
-- Find controls with `control(scope, role, name)` from `harness/ui.mjs`. The name must be one the app renders in `apps/web/src` or a workspace package; an unknown name fails the check before any browser starts. Labels that change with state (`Add link image` / `Replace link image`) match every state. A control inside a popover is found from the page and its trigger is opened first. Controls revealed on hover are hovered through their item scope. Every action waits for React hydration.
-- Use `content(scope, role, name)` only for fixture data the driver itself created, and `item`, `marker`, `fileInput`, `otpInput`, `labelled` for the rest.
-- Wait with `settled(page)` after a change (it covers the editor's 1.5 s save delay) and navigate with `gotoReady` / `reloadReady`. Raw `page.getBy*`, `locator`, `goto`, `reload`, `waitForTimeout`, `waitForFunction`, `newContext` and `force: true` are rejected.
-
-## Helpers
-
-The runnable helpers are `scripts/start-local.sh`, `scripts/doctor.sh`, `scripts/stop-local.sh`, `scripts/mock-outbound.mjs`, `scripts/setup-account.mjs`, `scripts/drive-parallel.mjs`, `scripts/drive-all.mjs`, `scripts/drive-delete-check.mjs`, and `scripts/drive-widget-check.mjs`. Shared URLs, fixture identity, database readback, and evidence capture live in `scripts/local.mjs`; browser journeys and locators live in `harness/`.
-
-For a focused follow-up after the full run, execute the delete check first, then refresh the widget placeholder evidence and summary:
-
-```sh
-node .agents/skills/verify-editor/scripts/drive-delete-check.mjs "$RUN_DIR"
-node .agents/skills/verify-editor/scripts/drive-widget-check.mjs "$RUN_DIR"
-```
+Use the real browser controls and routes listed in each feature map. Browser HTTPS requests are blocked; Playwright serves local Mapbox, analytics and image fixtures. Server metadata, RSS and preview requests go through the fake outbound server. Uploads are stored in the isolated Wrangler R2 bucket. Capture the visible result with `proof()`, verify saved changes after reload or a new context, and read the matching row from the isolated database. A mocked integration proves local UI/API behavior and saved results, not delivery to a real provider.
 
 ## Feature map
 
-Read `features/README.md` and the linked feature files before selecting journeys. The README is the index of all currently mapped browser behavior.
+Read `features/README.md` and the linked feature files before writing or changing a journey. The README is the index of all mapped browser behavior; update a map and its journey together.
