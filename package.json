@@ -64,6 +64,7 @@
 		"check:plan-boundary": "bun scripts/check-plan-boundary.ts",
 		"check:prod-keys": "bun scripts/check-prod-keys.ts",
 		"check:feature-drivers": "bun scripts/check-feature-drivers.ts",
+		"featuremap": "bash scripts/ci/featuremap.sh",
 		"verify": "bun scripts/verify.ts"
 	},
 	"dependencies": {
