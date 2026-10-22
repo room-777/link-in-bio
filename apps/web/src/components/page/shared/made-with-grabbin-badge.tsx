@@ -1,13 +1,13 @@
 "use client";
 
-import { authClient } from "@/lib/auth-client";
+import { useSession } from "@/lib/auth-client";
 
 export default function MadeWithGrabbinBadge({
 	hasProAccess,
 }: {
 	hasProAccess?: boolean;
 }) {
-	const { data: session, isPending } = authClient.useSession();
+	const { data: session, isPending } = useSession();
 	if (hasProAccess ?? (isPending || session?.plan.hasAccess)) return null;
 
 	return (

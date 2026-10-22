@@ -26,7 +26,7 @@ import { useIsMobile } from "@grabbin/ui/components/use-mobile";
 import { cn } from "@grabbin/ui/lib/utils";
 import { Activity } from "react";
 import { CheckCircle } from "reicon-react/icons/CheckCircle";
-import { authClient } from "@/lib/auth-client";
+import { useSession } from "@/lib/auth-client";
 import { useDeleteAccount } from "../hooks/use-delete-account";
 
 type DeleteAccountDialogProps = {
@@ -41,7 +41,7 @@ export default function DeleteAccountDialog({
 	open,
 }: DeleteAccountDialogProps) {
 	const isMobile = useIsMobile();
-	const { data: session } = authClient.useSession();
+	const { data: session } = useSession();
 	const deleteAccount = useDeleteAccount(open);
 
 	const handleOpenChange = (nextOpen: boolean) => {

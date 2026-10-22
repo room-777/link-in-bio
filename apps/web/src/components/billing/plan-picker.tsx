@@ -12,7 +12,7 @@ import { toast } from "@grabbin/ui/components/toast";
 import { useRouter } from "next/navigation";
 import { overlay } from "overlay-kit";
 import { useState } from "react";
-import { authClient, getAuthErrorMessage } from "@/lib/auth-client";
+import { authClient, getAuthErrorMessage, useSession } from "@/lib/auth-client";
 import { getSignInHref } from "@/lib/auth-redirect";
 import { trackGoogleAnalyticsEvent } from "@/lib/google-analytics";
 import {
@@ -51,7 +51,7 @@ function SessionPlanPicker({
 	variant: PlanCardVariant;
 	className?: string;
 }) {
-	const { data: session, isPending } = authClient.useSession();
+	const { data: session, isPending } = useSession();
 	return (
 		<PlanPickerContent
 			variant={variant}

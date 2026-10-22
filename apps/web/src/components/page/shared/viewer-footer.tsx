@@ -13,7 +13,7 @@ import { cn } from "@grabbin/ui/lib/utils";
 import Link from "next/link";
 import { useEffect, useState } from "react";
 import { usePublicViewsTooltipControl } from "@/features/page/public-views";
-import { authClient } from "@/lib/auth-client";
+import { useSession } from "@/lib/auth-client";
 import { getSignInHref } from "@/lib/auth-redirect";
 import { openShareLinkDialog } from "../sharing/share-link-dialog";
 import {
@@ -28,7 +28,7 @@ export default function ViewerFooter({
 	handle?: string;
 	profileImageUrl: string | null;
 }) {
-	const { data: session, isPending } = authClient.useSession();
+	const { data: session, isPending } = useSession();
 	const isMobile = useIsMobile();
 	const [isHydrated, setIsHydrated] = useState(false);
 	const viewsTooltip = usePublicViewsTooltipControl(handle);
