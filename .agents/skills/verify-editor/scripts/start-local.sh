@@ -17,13 +17,16 @@ WEB_ENV="$ROOT/apps/web/.env"
 [[ -f "$SERVER_ENV" && -f "$WEB_ENV" ]] || { echo "apps/server/.env and apps/web/.env are required" >&2; exit 1; }
 mkdir -p "$RUN_DIR"
 RUN_DIR="$(cd "$RUN_DIR" && pwd)"
+# The configured host binding, read from HostConfig so it is known even while
+# the container is stopped (`docker port` only reports running containers).
+bound_port() { docker inspect --format '{{ range (index .HostConfig.PortBindings "5432/tcp") }}{{ .HostIp }}:{{ .HostPort }} {{ end }}' "$CONTAINER" 2>/dev/null | xargs; }
 for port in "$WEB_PORT" "$API_PORT" "$MOCK_PORT" "$DB_PORT"; do
-	if [[ "$port" == "$DB_PORT" ]] && docker container inspect "$CONTAINER" >/dev/null 2>&1 && [[ "$(docker inspect --format '{{ index .Config.Labels "codex.featuremap.local" }}' "$CONTAINER")" == true ]] && docker port "$CONTAINER" 5432/tcp | grep -q "127.0.0.1:$DB_PORT"; then continue; fi
+	if [[ "$port" == "$DB_PORT" ]] && docker container inspect "$CONTAINER" >/dev/null 2>&1 && [[ "$(docker inspect --format '{{ index .Config.Labels "codex.featuremap.local" }}' "$CONTAINER")" == true ]] && [[ "$(bound_port)" == "127.0.0.1:$DB_PORT" ]]; then continue; fi
 	if lsof -nP -iTCP:"$port" -sTCP:LISTEN >/dev/null 2>&1; then echo "port $port occupied" >&2; exit 1; fi
 done
 if docker container inspect "$CONTAINER" >/dev/null 2>&1; then
 	[[ "$(docker inspect --format '{{ index .Config.Labels "codex.featuremap.local" }}' "$CONTAINER")" == true ]] || { echo "unowned container exists" >&2; exit 1; }
-	docker port "$CONTAINER" 5432/tcp | grep -q "127.0.0.1:$DB_PORT$" || { echo "$CONTAINER publishes $(docker port "$CONTAINER" 5432/tcp), not $DB_PORT" >&2; exit 1; }
+	[[ "$(bound_port)" == "127.0.0.1:$DB_PORT" ]] || { echo "$CONTAINER publishes '$(bound_port)', not 127.0.0.1:$DB_PORT" >&2; exit 1; }
 	docker start "$CONTAINER" >/dev/null
 else
 	docker volume create "$VOLUME" >/dev/null
