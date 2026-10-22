@@ -36,7 +36,7 @@ Ports default to web `3000`, API `3001`, mock `3002`, and database `15432`. Set 
 
 ## Layout
 
-- `playwright.config.ts`: fully parallel workers, no retries, 60 s per test, global budget, and the results reporter.
+- `playwright.config.ts`: fully parallel workers, no retries and `failOnFlakyTests` (a test that only passes on a retry fails the run), 60 s per test, global budget, and the results reporter.
 - `journeys/account.setup.ts`: creates `featuremap@example.com` / `featuremap-test` through `/sign-in` and `/create` on a fresh database, grants local Pro, and opens the editor once so parallel journeys do not all wait on the first route compile. Every journey depends on it.
 - `journeys/<feature-id>.journey.ts`: one spec per feature map in `features/`. Each test title is a sub-feature id from that map's `## Sub-features` list, so every sub-feature maps to one test.
 - `harness/fixtures.ts`: `journey(id)` returns the journey's `test`. Each journey gets its own worker with its own seeded owner (user, page `featuremap-test-jN`, local Pro, signed session cookie) and fixtures: `owner`, `ownerPage`, `signedOutPage`, `openOwnerPage()`, and seeded `textItem`, `linkItem`, `mediaItem`. Journeys share no data, so they run in parallel; tests inside one journey run in order on its page.

@@ -9,7 +9,10 @@ export default defineConfig({
 	// steps of one flow on one owner page (journey() makes the file serial).
 	fullyParallel: true,
 	workers: Number(process.env.FEATUREMAP_WORKERS ?? 6),
+	// No retries, and a test that only passes on a retry fails the run:
+	// a flake is a failure (scripts/featuremap-no-flake.test.ts).
 	retries: 0,
+	failOnFlakyTests: true,
 	timeout: 60_000,
 	expect: { timeout: 10_000 },
 	// Hang guard only; the budget itself is checked by the results reporter.
