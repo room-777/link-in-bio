@@ -20,7 +20,7 @@ import { AccountTabContent } from "@/features/account";
 import { CustomDomainTabContent } from "@/features/page/custom-domain";
 import { useBillingPortal } from "@/hooks/use-billing-portal";
 import { useSettingsTabTransition } from "@/hooks/use-settings-tab-transition";
-import { authClient } from "@/lib/auth-client";
+import { useSession } from "@/lib/auth-client";
 import { openPlanDialog } from "../../../billing/plan-picker";
 import { BillingTabContent } from "../billing/billing-tab-content";
 import { SettingsTabs } from "./settings-tabs";
@@ -37,7 +37,7 @@ export default function SettingDialog({
 	handle?: string;
 }) {
 	const isMobile = useIsMobile();
-	const { data: session } = authClient.useSession();
+	const { data: session } = useSession();
 	const isPro = session?.plan.tier === "pro";
 	const reduceMotion = useReducedMotion() ?? false;
 	const tabsState = useSettingsTabTransition(reduceMotion);

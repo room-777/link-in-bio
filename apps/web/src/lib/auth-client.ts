@@ -8,6 +8,7 @@ import {
 	inferAdditionalFields,
 } from "better-auth/client/plugins";
 import { createAuthClient } from "better-auth/react";
+import { useSyncExternalStore } from "react";
 
 function getServerUrl(url: string) {
 	const processEnv = (
@@ -57,6 +58,38 @@ export const authClient = createAuthClient({
 		inferAdditionalFields<AuthOptions>(),
 	],
 });
+
+type SessionState = ReturnType<typeof authClient.useSession>;
+
+const sessionStore = authClient.$store.atoms.session as unknown as {
+	get(): SessionState;
+	listen(listener: () => void): () => void;
+};
+let hydrationSnapshot: SessionState | undefined;
+
+// The server always renders the session as pending. authClient.useSession()
+// hydrates with the browser's current session instead, so a component that
+// hydrates after the session loaded keeps the server's attributes (React does
+// not patch attribute mismatches): the Advanced button stayed `disabled`.
+// Hydrating from the pending state and updating after keeps them in sync.
+function pendingSession() {
+	hydrationSnapshot ??= {
+		...sessionStore.get(),
+		data: null,
+		error: null,
+		isPending: true,
+		isRefetching: false,
+	};
+	return hydrationSnapshot;
+}
+
+export function useSession(): SessionState {
+	return useSyncExternalStore(
+		(onChange) => sessionStore.listen(onChange),
+		() => sessionStore.get(),
+		pendingSession,
+	);
+}
 
 export function getAuthErrorMessage(error: unknown) {
 	if (!error || typeof error !== "object") {

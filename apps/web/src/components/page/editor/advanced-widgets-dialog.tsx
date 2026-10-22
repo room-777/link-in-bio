@@ -26,7 +26,7 @@ import { Activity, useLayoutEffect, useRef, useState } from "react";
 import { openPlanDialog } from "@/components/billing/plan-picker";
 import { advancedWidgetModules } from "@/constant/widget/advanced-widget-registry";
 import type { AdvancedWidgetActions } from "@/features/page/editor/types";
-import { authClient } from "@/lib/auth-client";
+import { useSession } from "@/lib/auth-client";
 import AdvancedWidgetActivity from "./advanced-widget-activity";
 import { AdvancedWidgetIcon } from "./advanced-widget-icon";
 import AdvancedWidgetList from "./advanced-widget-list";
@@ -37,12 +37,7 @@ export default function AdvancedWidgetsDialog({
 	actions: AdvancedWidgetActions;
 }) {
 	const isMobile = useIsMobile();
-	const {
-		data: session,
-		error,
-		isPending,
-		isRefetching,
-	} = authClient.useSession();
+	const { data: session, error, isPending, isRefetching } = useSession();
 	const isPro = session?.plan.tier === "pro";
 	const isSessionUnavailable = isPending || isRefetching || Boolean(error);
 	return (

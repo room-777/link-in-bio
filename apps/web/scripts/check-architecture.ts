@@ -7,6 +7,7 @@ import { checkFileNameRules } from "./architecture/file-name-rules";
 import { checkMutationRules } from "./architecture/mutation-rules";
 import { checkQueryRules } from "./architecture/query-rules";
 import { checkRequestBoundaryRules } from "./architecture/request-boundary-rules";
+import { checkSessionRules } from "./architecture/session-rules";
 
 type ArchitectureCheck = (context: ArchitectureContext) => string[];
 
@@ -18,6 +19,7 @@ const checks = {
 	components: checkComponentRules,
 	"file-names": checkFileNameRules,
 	callbacks: checkCallbackRules,
+	session: checkSessionRules,
 };
 const requestedCheck = process.argv[2] ?? "all";
 const selectedChecks: [string, ArchitectureCheck][] | null =
