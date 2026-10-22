@@ -89,6 +89,9 @@
 		"*.{cjs,cts,css,html,js,jsx,json,jsonc,mjs,mts,ts,tsx}": [
 			"biome check --write --unsafe --only=correctness/noUnusedImports --no-errors-on-unmatched",
 			"biome check --write --no-errors-on-unmatched"
+		],
+		"{.agents/skills/verify-editor,apps/web/src,packages/*/src}/**/*.{mjs,ts,tsx}": [
+			"bun scripts/check-feature-drivers.ts"
 		]
 	},
 	"packageManager": "bun@1.4.0",
