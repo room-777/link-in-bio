@@ -7,12 +7,15 @@ import {
 	test as base,
 	expect,
 	type Page,
+	type Request,
 } from "@playwright/test";
 import { addLink, addMedia, addText } from "./editor.ts";
+import { stateMismatch } from "./hydration.ts";
 import { gotoReady, prepareContext, track } from "./journey.ts";
 import { JOURNEYS, type JourneyId } from "./journeys.ts";
 import {
 	ACCOUNT,
+	API,
 	db,
 	HANDLE,
 	LOGS_DIR,
@@ -45,6 +48,7 @@ type WorkerFixtures = {
 type TestFixtures = {
 	openOwnerPage: () => Promise<Page>;
 	failureProof: undefined;
+	hydrationGuard: undefined;
 };
 
 export const SEED_TEXT = "Feature map seeded text";
@@ -128,6 +132,9 @@ export async function seedOwner(n: number): Promise<Owner> {
 	};
 }
 
+const hydrationMismatches: string[] = [];
+let reportedMismatches = 0;
+
 function recordBrowserErrors(page: Page, journeyId: string) {
 	const write = (text: string) => {
 		mkdirSync(LOGS_DIR, { recursive: true });
@@ -138,7 +145,49 @@ function recordBrowserErrors(page: Page, journeyId: string) {
 	};
 	page.on("pageerror", (error) => write(error.message));
 	page.on("console", (message) => {
-		if (message.type() === "error") write(message.text());
+		if (message.type() !== "error") return;
+		write(message.text());
+		const mismatch = stateMismatch(message.text());
+		if (mismatch) hydrationMismatches.push(mismatch);
+	});
+}
+
+// One line per API request (start, end, status or failure) so a control left
+// disabled by a session or save request can be traced to that request.
+function recordApiRequests(page: Page, journeyId: string) {
+	const started = new Map<Request, number>();
+	const write = (text: string) => {
+		mkdirSync(LOGS_DIR, { recursive: true });
+		appendFileSync(
+			path.join(LOGS_DIR, "api-requests.log"),
+			`${new Date().toISOString()} [${journeyId}] ${text}\n`,
+		);
+	};
+	const name = (request: Request) => {
+		const url = new URL(request.url());
+		return `${request.method()} ${url.pathname}`;
+	};
+	page.on("request", (request) => {
+		if (!request.url().startsWith(API)) return;
+		started.set(request, Date.now());
+		write(`start ${name(request)}`);
+	});
+	page.on("requestfinished", async (request) => {
+		const start = started.get(request);
+		if (start === undefined) return;
+		const response = await request.response();
+		write(`end ${name(request)} ${response?.status()} ${Date.now() - start}ms`);
+	});
+	page.on("requestfailed", (request) => {
+		const start = started.get(request);
+		if (start === undefined) return;
+		write(
+			`failed ${name(request)} ${request.failure()?.errorText} ${Date.now() - start}ms`,
+		);
+	});
+	page.on("framenavigated", (frame) => {
+		if (frame === page.mainFrame())
+			write(`navigated ${new URL(frame.url()).pathname}`);
 	});
 }
 
@@ -153,6 +202,7 @@ async function openPage(
 	const page = await context.newPage();
 	track(page);
 	recordBrowserErrors(page, journeyId);
+	recordApiRequests(page, journeyId);
 	openPages.push(page);
 	return page;
 }
@@ -241,6 +291,18 @@ export const test = base.extend<TestFixtures, WorkerFixtures>({
 					}),
 				)
 				.catch(() => {});
+		},
+		{ auto: true },
+	],
+	hydrationGuard: [
+		async ({ journeyId }, use) => {
+			await use(undefined);
+			const fresh = hydrationMismatches.slice(reportedMismatches);
+			reportedMismatches = hydrationMismatches.length;
+			if (fresh.length)
+				throw new Error(
+					`React hydration mismatch in ${journeyId}: ${fresh.join(" | ")}`,
+				);
 		},
 		{ auto: true },
 	],
