@@ -1,4 +1,4 @@
-// One feature-map run's stack: a random run id and four claimed ports. The run
+// One feature-map run's stack: a random run id and its claimed ports. The run
 // id names the run's DB container and state folder and is the nonce its
 // Postgres reports, so a run can prove DB_URL reaches its own database.
 import { createHash, randomBytes } from "node:crypto";
@@ -21,7 +21,16 @@ export const RESULTS_DIR = path.join(ROOT, "featuremap-results");
 export const LOGS_DIR = path.join(RESULTS_DIR, "logs");
 export const SCREENSHOTS_DIR = path.join(RESULTS_DIR, "screenshots");
 
-const SERVICES = ["web", "api", "mock", "db"] as const;
+// The two inspector ports are claimed too: Wrangler and the Cloudflare Vite
+// plugin otherwise both default to 9229, and two stacks collide on it.
+const SERVICES = [
+	"web",
+	"api",
+	"mock",
+	"db",
+	"webInspector",
+	"apiInspector",
+] as const;
 type Service = (typeof SERVICES)[number];
 export type Ports = Record<Service, number>;
 export type Stack = { runId: string; ports: Ports };
@@ -31,6 +40,8 @@ const PORT_ENV: Record<Service, string> = {
 	api: "FEATUREMAP_API_PORT",
 	mock: "FEATUREMAP_MOCK_PORT",
 	db: "FEATUREMAP_DB_PORT",
+	webInspector: "FEATUREMAP_WEB_INSPECTOR_PORT",
+	apiInspector: "FEATUREMAP_API_INSPECTOR_PORT",
 };
 // Below the Linux (32768+) and macOS (49152+) ephemeral ranges, so outgoing
 // connections never take a claimed port, and away from the 3000/3001 dev servers.
@@ -155,7 +166,7 @@ export function claimCheckout(): () => void {
 }
 
 /**
- * Claims a run id and four free ports for one run. Ports named in the
+ * Claims a run id and free ports for one run. Ports named in the
  * environment are used as given; the rest are picked at random. Each port is
  * locked until `release()`, so concurrent runs never share one.
  */

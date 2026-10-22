@@ -116,8 +116,8 @@ describe("feature-map stack isolation", () => {
 		const claims = await Promise.all([1, 2, 3, 4].map(claimInChild));
 		const ports = claims.flatMap((claim) => Object.values(claim.ports));
 		await Promise.all(claims.map((claim) => claim.stop()));
-		expect(ports).toHaveLength(16);
-		expect(new Set(ports).size).toBe(16);
+		expect(ports).toHaveLength(24);
+		expect(new Set(ports).size).toBe(24);
 		for (const devPort of [3000, 3001, 3002, 15432])
 			expect(ports).not.toContain(devPort);
 	});

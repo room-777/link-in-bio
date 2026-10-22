@@ -136,6 +136,11 @@ export default defineConfig(({ command }) => ({
 				name: "rsc",
 				childEnvironments: ["ssr"],
 			},
+			// The feature-map stack claims its own port; concurrent stacks
+			// would otherwise race for the default 9229.
+			inspectorPort: process.env.FEATUREMAP_WEB_INSPECTOR_PORT
+				? Number(process.env.FEATUREMAP_WEB_INSPECTOR_PORT)
+				: undefined,
 		}),
 		sourceMapUploadEnabled
 			? sentryVitePlugin({

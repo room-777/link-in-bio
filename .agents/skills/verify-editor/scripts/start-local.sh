@@ -10,6 +10,8 @@ WEB_PORT="${FEATUREMAP_WEB_PORT:?FEATUREMAP_WEB_PORT $USAGE}"
 API_PORT="${FEATUREMAP_API_PORT:?FEATUREMAP_API_PORT $USAGE}"
 MOCK_PORT="${FEATUREMAP_MOCK_PORT:?FEATUREMAP_MOCK_PORT $USAGE}"
 DB_PORT="${FEATUREMAP_DB_PORT:?FEATUREMAP_DB_PORT $USAGE}"
+WEB_INSPECTOR_PORT="${FEATUREMAP_WEB_INSPECTOR_PORT:?FEATUREMAP_WEB_INSPECTOR_PORT $USAGE}"
+API_INSPECTOR_PORT="${FEATUREMAP_API_INSPECTOR_PORT:?FEATUREMAP_API_INSPECTOR_PORT $USAGE}"
 STACK="$ROOT/.agents/skills/verify-editor/harness/stack.ts"
 CONTAINER="grabbin-featuremap-$RUN_ID"
 STATE_DIR="${TMPDIR:-/tmp}/grabbin-featuremap-$RUN_ID"
@@ -55,12 +57,13 @@ mkdir -p "$STATE_DIR/r2-state"
 env -i PATH="$PATH" HOME="$HOME" TMPDIR="${TMPDIR:-/tmp}" OUTBOUND_PROXY_PORT="$MOCK_PORT" FEATUREMAP_RUN_ID="$RUN_ID" OUTBOUND_MOCK_LOG="$RUN_DIR/mock-requests.log" nohup node "$ROOT/.agents/skills/verify-editor/scripts/mock-outbound.ts" > "$RUN_DIR/mock-outbound.log" 2>&1 < /dev/null &
 echo $! > "$RUN_DIR/mock-outbound.pid"
 cd "$SOURCE/apps/server"
-env -i PATH="$PATH" HOME="$HOME" TMPDIR="${TMPDIR:-/tmp}" NODE_ENV=development nohup "$ROOT/apps/web/node_modules/.bin/wrangler" dev --config "$RUN_DIR/server.wrangler.jsonc" --port "$API_PORT" --ip 127.0.0.1 --persist-to "$STATE_DIR/r2-state" > "$RUN_DIR/server.log" 2>&1 < /dev/null &
+env -i PATH="$PATH" HOME="$HOME" TMPDIR="${TMPDIR:-/tmp}" NODE_ENV=development nohup "$ROOT/apps/web/node_modules/.bin/wrangler" dev --config "$RUN_DIR/server.wrangler.jsonc" --port "$API_PORT" --inspector-port "$API_INSPECTOR_PORT" --ip 127.0.0.1 --persist-to "$STATE_DIR/r2-state" > "$RUN_DIR/server.log" 2>&1 < /dev/null &
 echo $! > "$RUN_DIR/server.pid"
 cd "$SOURCE/apps/web"
-env -i PATH="$PATH" HOME="$HOME" TMPDIR="${TMPDIR:-/tmp}" NODE_ENV=development SKIP_ENV_VALIDATION=1 NEXT_PUBLIC_SERVER_URL=http://127.0.0.1:$API_PORT NEXT_PUBLIC_PAGE_DOMAIN=127.0.0.1:$WEB_PORT NEXT_PUBLIC_R2_PUBLIC_URL=http://127.0.0.1:$API_PORT NEXT_PUBLIC_MAPBOX_ACCESS_TOKEN=pk.featuremap-local-fixture NEXT_PUBLIC_CREEM_PRO_MONTHLY_PRODUCT_ID=local-pro nohup bun run dev:bare -- --hostname 127.0.0.1 --port "$WEB_PORT" > "$RUN_DIR/web.log" 2>&1 < /dev/null &
+env -i PATH="$PATH" HOME="$HOME" TMPDIR="${TMPDIR:-/tmp}" NODE_ENV=development SKIP_ENV_VALIDATION=1 FEATUREMAP_WEB_INSPECTOR_PORT="$WEB_INSPECTOR_PORT" NEXT_PUBLIC_SERVER_URL=http://127.0.0.1:$API_PORT NEXT_PUBLIC_PAGE_DOMAIN=127.0.0.1:$WEB_PORT NEXT_PUBLIC_R2_PUBLIC_URL=http://127.0.0.1:$API_PORT NEXT_PUBLIC_MAPBOX_ACCESS_TOKEN=pk.featuremap-local-fixture NEXT_PUBLIC_CREEM_PRO_MONTHLY_PRODUCT_ID=local-pro nohup bun run dev:bare -- --hostname 127.0.0.1 --port "$WEB_PORT" > "$RUN_DIR/web.log" 2>&1 < /dev/null &
 echo $! > "$RUN_DIR/web.pid"
 for _ in $(seq 1 120); do
+	for name in web server mock-outbound; do kill -0 "$(cat "$RUN_DIR/$name.pid")" 2>/dev/null || { echo "$name exited before the stack was ready; see $RUN_DIR/$name.log" >&2; exit 1; }; done
 	if [[ "$(curl -sS -m 2 -o /dev/null -w '%{http_code}' http://127.0.0.1:$API_PORT/ 2>/dev/null || true)" == 200 && "$(curl -sS -m 5 -o /dev/null -w '%{http_code}' http://127.0.0.1:$WEB_PORT/sign-in 2>/dev/null || true)" == 200 ]]; then echo "ready web=http://127.0.0.1:$WEB_PORT api=http://127.0.0.1:$API_PORT db=$DB_URL"; wait "$(cat "$RUN_DIR/server.pid")"; exit 0; fi
 	sleep 2
 done
