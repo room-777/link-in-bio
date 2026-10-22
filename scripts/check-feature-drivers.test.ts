@@ -59,6 +59,14 @@ const context = await browser.newContext();
 		]);
 	});
 
+	test("controlsExcept() names are checked like control() names", () => {
+		expect(
+			messages(
+				`await controlsExcept(detail, "button", ["Advanced", "Back to widgetz"]).count();`,
+			),
+		).toEqual(['"Back to widgetz" is not an accessible name the app renders']);
+	});
+
 	test("app labels cannot hide in content()", () => {
 		expect(messages(`await content(page, "button", "Advanced");`)).toEqual([
 			'"Advanced" is an app label; use control() so the contract checks it',
