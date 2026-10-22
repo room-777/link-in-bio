@@ -135,4 +135,47 @@ describe("UI contract", () => {
 		]);
 		expect(contract.patterns).toContain("^Add .+$");
 	});
+	test("only strings in accessible-name positions become names", () => {
+		const source = mkdtempSync(path.join(tmpdir(), "ui-contract-"));
+		writeFileSync(
+			path.join(source, "save.ts"),
+			`export function save(changed) {
+	setStatus(changed ? "dirty" : "saved");
+	const endpoint = "/api/items";
+	return endpoint;
+}`,
+		);
+		writeFileSync(
+			path.join(source, "labels.tsx"),
+			`export const presetLabels = { squareLarge: "Full square" };
+export const providers = [{ id: "spotify", label: "Spotify" }];
+export function Done({ actionLabel = "Go to profile", busy, detail }) {
+	return (
+		<>
+			<Form submitLabel="Grab it" />
+			<button>{busy ? <Loading /> : "Verify code"}</button>
+			<div aria-label={detail ? undefined : "Advanced widgets"} />
+		</>
+	);
+}`,
+		);
+		const contract = buildUiContract(source);
+		for (const name of [
+			"Full square",
+			"Spotify",
+			"Go to profile",
+			"Grab it",
+			"Verify code",
+			"Advanced widgets",
+		])
+			expect(contract.names).toContain(name);
+		for (const value of ["dirty", "saved", "/api/items", "spotify"])
+			expect(contract.names).not.toContain(value);
+		expect(
+			checkDriverSource(
+				`await control(page, "button", "dirty").click();`,
+				contract,
+			).map((violation) => violation.message),
+		).toEqual(['"dirty" is not an accessible name the app renders']);
+	});
 });
