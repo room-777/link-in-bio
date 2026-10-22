@@ -21,7 +21,7 @@ RUN_DIR="artifacts/verify-editor/$RUN_ID"
 .agents/skills/verify-editor/scripts/doctor.sh "$RUN_DIR"
 ```
 
-The doctor must print `OK`. Web is `http://127.0.0.1:3000`, API is `http://127.0.0.1:3001`, the fake provider is `http://127.0.0.1:3002`, and the dedicated database is `grabbin_featuremap` on port `15432`. Set `FEATUREMAP_WEB_PORT`, `FEATUREMAP_API_PORT`, `FEATUREMAP_MOCK_PORT` and `FEATUREMAP_DB_PORT` to run a second stack beside one already on those ports. The scripts refuse occupied ports and only use their own labeled database container: `grabbin-featuremap` on port `15432`, `grabbin-featuremap-<port>` for any other `FEATUREMAP_DB_PORT`, each with its own volume. They read but never change either `.env` file.
+The doctor must print `OK`. Web is `http://127.0.0.1:3000`, API is `http://127.0.0.1:3001`, the fake provider is `http://127.0.0.1:3002`, and the dedicated database is `grabbin_featuremap` on port `15432`. Set `FEATUREMAP_WEB_PORT`, `FEATUREMAP_API_PORT`, `FEATUREMAP_MOCK_PORT` and `FEATUREMAP_DB_PORT` to run a second stack beside one already on those ports. The scripts refuse occupied ports and only use their own labeled database container: `grabbin-featuremap` on port `15432`, `grabbin-featuremap-<port>` for any other `FEATUREMAP_DB_PORT`, each with its own volume. The owner browser state and the local R2 (file storage) folder follow the same rule: `~/.cache/grabbin-featuremap/` on port `15432`, `~/.cache/grabbin-featuremap/<port>/` otherwise, so a second stack never overwrites the first stack's login or uploads. Start a second stack from its own worktree, because Next.js runs only one dev server per project folder. They read but never change either `.env` file.
 
 ## Doctor
 
@@ -35,7 +35,7 @@ Create the test account and page once, only if `featuremap@example.com` and `fea
 node .agents/skills/verify-editor/scripts/setup-account.mjs "$RUN_DIR"
 ```
 
-This uses a fresh visible Chrome context to sign in through `/sign-in` and create the page through `/create`. It grants the configured local-only `local-pro` product in the dedicated database and saves the owner's browser state at `~/.cache/grabbin-featuremap/owner-session.json`. Keep that database volume and state file for later runs. Never replace them with an account or credentials from another environment.
+This uses a fresh visible Chrome context to sign in through `/sign-in` and create the page through `/create`. It grants the configured local-only `local-pro` product in the dedicated database and saves the owner's browser state at `owner-session.json` in the stack's state folder (`~/.cache/grabbin-featuremap/` on the default DB port, `~/.cache/grabbin-featuremap/<FEATUREMAP_DB_PORT>/` otherwise). Each stack signs in once into its own state folder. Keep that database volume and state file for later runs. Never replace them with an account or credentials from another environment.
 
 Run the full feature driver in visible Chrome (macOS Google Chrome by default, or the binary in `CHROME_PATH`):
 

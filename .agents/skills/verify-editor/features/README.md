@@ -5,7 +5,7 @@ This is the full maintained list of the mapped user journeys. Use the matching f
 ## Baseline preconditions
 
 - Run only against a local stack at web `http://127.0.0.1:3000`, API `http://127.0.0.1:3001`, and the dedicated disposable PostgreSQL container on `127.0.0.1:15432`.
-- For owner journeys, use local `featuremap@example.com`, handle `featuremap-test`, and the local Pro grant. Reuse the saved owner browser state at `~/.cache/grabbin-featuremap/owner-session.json`; recreate it only if it is missing or expired. Verify the target database and storage before changing data.
+- For owner journeys, use local `featuremap@example.com`, handle `featuremap-test`, and the local Pro grant. Reuse the saved owner browser state at `~/.cache/grabbin-featuremap/owner-session.json` (`~/.cache/grabbin-featuremap/<FEATUREMAP_DB_PORT>/owner-session.json` for a non-default DB port); recreate it only if it is missing or expired. Verify the target database and storage before changing data.
 - Use a fresh browser context per journey. Load the saved owner state for protected journeys; the sign-in journey must start with an empty context. Never drive an instance you did not start or use production database/R2 credentials.
 - `/demo` is database-free and Free. It proves editor interactions only, never sign-in, saving, Pro access, uploads, or a public stored page.
 
