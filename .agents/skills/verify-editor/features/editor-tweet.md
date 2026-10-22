@@ -6,6 +6,7 @@ A Pro owner can add a public X post as an embedded page card by entering its sta
 
 - `tweet-open`: open Tweet from the Advanced widgets picker.
 - `tweet-add`: load a public status and add its card.
+- `tweet-persist`: the post card remains after reload.
 - `tweet-invalid`: show an error for a bad or unavailable status without adding an item.
 
 ## How to get to it (user POV)

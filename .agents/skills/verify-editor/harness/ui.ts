@@ -1,16 +1,22 @@
 import { fileURLToPath } from "node:url";
+import type { Locator, Page } from "@playwright/test";
 import { appSources, buildUiContract } from "./ui-contract.ts";
+
+type Scope = Page | Locator;
+type Role = Parameters<Page["getByRole"]>[0];
+type RoleOptions = NonNullable<Parameters<Page["getByRole"]>[1]>;
+type Prepare = (target: Locator) => Promise<void>;
 
 const contract = buildUiContract(
 	appSources(fileURLToPath(new URL("../../../../", import.meta.url))),
 );
 const knownNames = new Set(contract.names);
 const namePatterns = contract.patterns.map((pattern) => new RegExp(pattern));
-const isKnownName = (name) =>
+const isKnownName = (name: string) =>
 	knownNames.has(name) || namePatterns.some((pattern) => pattern.test(name));
 const knownDataAttributes = new Set(contract.dataAttributes);
 // Every label one control can show in some state, across all ternaries that name it.
-const stateGroupOf = new Map();
+const stateGroupOf = new Map<string, string[]>();
 for (const group of contract.stateGroups)
 	for (const name of group)
 		stateGroupOf.set(
@@ -35,27 +41,28 @@ const ACTIONS = new Set([
 const CHAINS = new Set(["first", "last", "nth", "filter", "and", "or"]);
 const HYDRATION_TIMEOUT = 15_000;
 
-function escapeRegExp(value) {
+function escapeRegExp(value: string) {
 	return value.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
 }
 
-function pageOf(scope) {
-	return typeof scope.page === "function" ? scope.page() : scope;
+function isLocator(scope: Scope): scope is Locator {
+	return typeof (scope as Locator).page === "function";
 }
 
-function isLocator(scope) {
-	return typeof scope.page === "function";
+function pageOf(scope: Scope): Page {
+	return isLocator(scope) ? scope.page() : scope;
 }
 
-function assertKnownName(name) {
+function assertKnownName(name: string) {
 	if (!isKnownName(name))
 		throw new Error(
 			`UI contract: "${name}" is not an accessible name the app renders. Use a name the app renders, or content() for fixture data.`,
 		);
 }
 
-function matcherFor(names) {
-	const group = names.length === 1 ? stateGroupOf.get(names[0]) : undefined;
+function matcherFor(names: string[]): RoleOptions {
+	const group =
+		names.length === 1 ? stateGroupOf.get(names[0] ?? "") : undefined;
 	const alternatives = group ?? names;
 	return alternatives.length === 1
 		? { name: alternatives[0], exact: true }
@@ -64,10 +71,10 @@ function matcherFor(names) {
 			};
 }
 
-async function waitHydrated(locator) {
+async function waitHydrated(locator: Locator) {
 	await locator.evaluate(
 		(element, timeout) =>
-			new Promise((resolve, reject) => {
+			new Promise<boolean>((resolve, reject) => {
 				const started = performance.now();
 				const tick = () => {
 					if (
@@ -84,7 +91,7 @@ async function waitHydrated(locator) {
 	);
 }
 
-async function blockerReport(locator) {
+async function blockerReport(locator: Locator): Promise<string[]> {
 	const page = pageOf(locator);
 	return page
 		.evaluate(() =>
@@ -100,19 +107,22 @@ async function blockerReport(locator) {
 		.catch(() => []);
 }
 
-function wrap(locator, prepare, label) {
+function wrap(locator: Locator, prepare: Prepare, label: string): Locator {
 	return new Proxy(locator, {
 		get(target, property) {
 			const value = Reflect.get(target, property);
-			if (typeof value !== "function") return value;
+			if (typeof value !== "function" || typeof property !== "string")
+				return value;
 			if (CHAINS.has(property))
-				return (...args) => wrap(value.apply(target, args), prepare, label);
+				return (...args: unknown[]) =>
+					wrap(value.apply(target, args), prepare, label);
 			if (!ACTIONS.has(property)) return value.bind(target);
-			return async (...args) => {
+			return async (...args: unknown[]) => {
 				try {
 					await prepare(target);
 					return await value.apply(target, args);
-				} catch (error) {
+				} catch (caught) {
+					const error = caught as Error;
 					const dialogs = await blockerReport(target);
 					error.message = `${label}: ${error.message}${dialogs.length ? `\nOpen dialogs: ${dialogs.join(", ")}` : ""}`;
 					throw error;
@@ -122,7 +132,7 @@ function wrap(locator, prepare, label) {
 	});
 }
 
-function prepareFor(scope, { opener } = {}) {
+function prepareFor(scope: Scope, opener?: string[]): Prepare {
 	return async (target) => {
 		if (isLocator(scope)) await scope.hover();
 		if (opener && !(await target.isVisible())) {
@@ -140,10 +150,10 @@ function prepareFor(scope, { opener } = {}) {
 // while the pointer is over its `group/<name>` ancestor, which can be a small
 // part of the card. Playwright checks the hit target before it moves the
 // mouse, so hovering any other element leaves the click blocked forever.
-async function revealHoverGroup(target) {
+async function revealHoverGroup(target: Locator) {
 	const group = await target.evaluate((element) => {
-		const names = new Set();
-		for (let node = element; node; node = node.parentElement)
+		const names = new Set<string>();
+		for (let node: Element | null = element; node; node = node.parentElement)
 			for (const token of node.classList) {
 				const match = /^group-hover(?:\/([\w-]+))?:/.exec(token);
 				if (match) names.add(match[1] ? `group/${match[1]}` : "group");
@@ -160,17 +170,22 @@ async function revealHoverGroup(target) {
 			.hover();
 }
 
-export function control(scope, role, names, options = {}) {
+export function control(
+	scope: Scope,
+	role: Role,
+	names?: string | string[],
+	options: RoleOptions = {},
+): Locator {
 	const list = names === undefined ? [] : [names].flat();
 	for (const name of list) assertKnownName(name);
 	const portalOpener =
-		list.length === 1 ? contract.portals[list[0]] : undefined;
+		list.length === 1 ? contract.portals[list[0] ?? ""] : undefined;
 	const root = portalOpener ? pageOf(scope) : scope;
 	const matcher = list.length ? matcherFor(list) : {};
 	const locator = root.getByRole(role, { ...matcher, ...options });
 	return wrap(
 		locator,
-		prepareFor(scope, { opener: portalOpener }),
+		prepareFor(scope, portalOpener),
 		`${role}${list.length ? ` "${list.join('" | "')}"` : ""}`,
 	);
 }
@@ -180,7 +195,11 @@ export function control(scope, role, names, options = {}) {
  * ones. Use it to prove something is absent: a name the app must not render
  * cannot pass the contract, so list what is allowed instead.
  */
-export function controlsExcept(scope, role, allowed) {
+export function controlsExcept(
+	scope: Scope,
+	role: Role,
+	allowed: string | string[],
+): Locator {
 	const list = [allowed].flat();
 	for (const name of list) assertKnownName(name);
 	return wrap(
@@ -192,7 +211,12 @@ export function controlsExcept(scope, role, allowed) {
 	);
 }
 
-export function content(scope, role, name, options = {}) {
+export function content(
+	scope: Scope,
+	role: Role,
+	name: string | RegExp,
+	options: RoleOptions = {},
+): Locator {
 	if (typeof name === "string" && isKnownName(name))
 		throw new Error(
 			`UI contract: "${name}" is an app label; use control() so the contract checks it.`,
@@ -204,7 +228,7 @@ export function content(scope, role, name, options = {}) {
 	);
 }
 
-export function exactText(scope, value) {
+export function exactText(scope: Scope, value: string): Locator {
 	assertKnownName(value);
 	return wrap(
 		scope.getByText(value, { exact: true }),
@@ -213,11 +237,11 @@ export function exactText(scope, value) {
 	);
 }
 
-function attributeLocator(scope, selector, label) {
+function attributeLocator(scope: Scope, selector: string, label: string) {
 	return wrap(scope.locator(selector), prepareFor(scope), label);
 }
 
-export function marker(scope, attribute, value = "true") {
+export function marker(scope: Scope, attribute: string, value = "true") {
 	if (!knownDataAttributes.has(attribute))
 		throw new Error(
 			`UI contract: ${attribute} is not rendered by apps/web/src.`,
@@ -229,7 +253,7 @@ export function marker(scope, attribute, value = "true") {
 	);
 }
 
-export function item(scope, id) {
+export function item(scope: Scope, id: string): Locator {
 	return wrap(
 		scope.locator(`[data-bento-item-id="${id}"]`),
 		async (target) => {
@@ -240,17 +264,17 @@ export function item(scope, id) {
 	);
 }
 
-export function items(scope) {
+export function items(scope: Scope): Locator {
 	return wrap(scope.locator("[data-bento-item-id]"), waitHydrated, "items");
 }
 
-export function fileInput(scope, accept) {
+export function fileInput(scope: Scope, accept?: string): Locator {
 	return scope.locator(
 		accept ? `input[type="file"][accept="${accept}"]` : 'input[type="file"]',
 	);
 }
 
-export function otpInput(scope) {
+export function otpInput(scope: Scope): Locator {
 	return attributeLocator(
 		scope,
 		'input[autocomplete="one-time-code"]',
@@ -258,7 +282,7 @@ export function otpInput(scope) {
 	);
 }
 
-export function labelled(scope, name) {
+export function labelled(scope: Scope, name: string): Locator {
 	assertKnownName(name);
 	return attributeLocator(
 		scope,
@@ -267,10 +291,10 @@ export function labelled(scope, name) {
 	);
 }
 
-export function blobPreview(scope) {
+export function blobPreview(scope: Scope): Locator {
 	return scope.locator('img[src^="blob:"]');
 }
 
-export function body(scope) {
+export function body(scope: Scope): Locator {
 	return scope.locator("body");
 }

@@ -52,6 +52,7 @@ const steps: Array<[name: string, command: string[]]> = [
 	],
 	["Production keys", ["bun", "run", "check:prod-keys"]],
 	["Feature-map drivers", ["bun", "run", "check:feature-drivers"]],
+	["Feature-map journey types", ["bun", "run", "check:featuremap-types"]],
 	[
 		"Tests (every package, excluding isolated billing service)",
 		[

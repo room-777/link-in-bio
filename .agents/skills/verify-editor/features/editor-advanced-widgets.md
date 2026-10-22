@@ -11,6 +11,7 @@ An owner can browse the widget catalog, search for a widget, and start its add f
 - `widget-plan-gate`: shows the upgrade dialog to a Free account.
 - `widget-coming-soon`: shows placeholders for SoundCloud, Apple Music, and Signature.
 - `widget-add-spotify`, `widget-add-rss`: add supported provider items.
+- `widget-add-rss`: add an RSS feed widget and store its feed URL.
 
 ## How to get to it (user POV)
 

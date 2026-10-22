@@ -3,7 +3,7 @@
 import { usePathname } from "next/navigation";
 import Script from "next/script";
 import { useEffect, useState } from "react";
-import { authClient } from "@/lib/auth-client";
+import { useSession } from "@/lib/auth-client";
 import {
 	GA_MEASUREMENT_ID,
 	getGoogleAnalyticsPageType,
@@ -71,7 +71,7 @@ export default function GoogleAnalyticsRouteTracker() {
 }
 
 function GoogleAnalyticsUserType() {
-	const { data: session, isPending } = authClient.useSession();
+	const { data: session, isPending } = useSession();
 	const isSignedIn = Boolean(session);
 	const userId = session?.user.id ?? null;
 

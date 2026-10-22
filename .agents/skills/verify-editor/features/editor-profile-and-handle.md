@@ -6,6 +6,9 @@ An owner changes the page name and bio, uploads or crops a profile image, and ch
 
 - `profile-name-bio`: edit the name and bio.
 - `profile-image-upload`, `profile-image-crop`, `profile-image-remove`: manage the profile image and crop.
+- `profile-image-crop`: crop the profile image.
+- `profile-image-remove`: remove the profile image.
+- `profile-image-remove-persist`: the removed profile image stays removed after reload.
 - `page-handle-change`: select an available handle and open the updated page URL.
 - `profile-persist`: confirm saved profile details after reload.
 

@@ -10,6 +10,9 @@ An owner adds text, section, link, or map items from the editor toolbar, edits t
 - `add-map`: creates a map item.
 - `delete-item`: removes an item using its hover controls.
 - `item-persist`: the owner's change remains after reload.
+- `section-persist`: the saved section title remains after reload.
+- `link-persist`: the link card and its URL remain after reload.
+- `map-persist`: the map item remains after reload.
 
 ## How to get to it (user POV)
 

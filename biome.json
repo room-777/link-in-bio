@@ -72,7 +72,7 @@
 	},
 	"overrides": [
 		{
-			"includes": [".agents/skills/verify-editor/**/*.mjs"],
+			"includes": [".agents/skills/verify-editor/**/*.ts"],
 			"linter": {
 				"rules": {
 					"correctness": {

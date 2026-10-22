@@ -5,6 +5,7 @@ An owner changes compact and wide layouts, moves cards, and selects a size prese
 ## Sub-features
 
 - `layout-compact` and `layout-wide`: edit each breakpoint layout.
+- `layout-wide`: switch an item to the wide size.
 - `layout-drag`: move an item within the active layout.
 - `layout-preset`: choose a supported item size.
 - `layout-persist`: restore both layouts after reload.

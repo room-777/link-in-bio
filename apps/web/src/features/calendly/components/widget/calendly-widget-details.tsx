@@ -13,7 +13,7 @@ import Loading from "@grabbin/ui/components/loading";
 import { ScrollArea } from "@grabbin/ui/components/scroll-area";
 import { Skeleton } from "@grabbin/ui/components/skeleton";
 import { type CSSProperties, useEffect, useState } from "react";
-import { authClient } from "@/lib/auth-client";
+import { useSession } from "@/lib/auth-client";
 import {
 	CalendlyConnectionError,
 	useCalendlyConnectionQuery,
@@ -49,7 +49,7 @@ export default function CalendlyWidgetDetails({
 }: {
 	onAdd: (event: import("@grabbin/api").CalendlyEventType) => Promise<void>;
 }) {
-	const { data: session } = authClient.useSession();
+	const { data: session } = useSession();
 	const [selectedEventUri, setSelectedEventUri] = useState<string | null>(null);
 	const [isAdding, setIsAdding] = useState(false);
 	const [timeZone, setTimeZone] = useState<string | null>(null);

@@ -64,6 +64,8 @@
 		"check:plan-boundary": "bun scripts/check-plan-boundary.ts",
 		"check:prod-keys": "bun scripts/check-prod-keys.ts",
 		"check:feature-drivers": "bun scripts/check-feature-drivers.ts",
+		"check:featuremap-types": "tsc -p .agents/skills/verify-editor/tsconfig.json",
+		"featuremap": "node .agents/skills/verify-editor/scripts/featuremap.ts",
 		"verify": "bun scripts/verify.ts"
 	},
 	"dependencies": {
@@ -75,13 +77,13 @@
 		"@biomejs/biome": "2.5.15",
 		"@cloudflare/workers-types": "catalog:cloudflare",
 		"@grabbin/config": "workspace:*",
+		"@playwright/test": "1.64.1",
 		"@semantic-release/commit-analyzer": "^13.0.1",
 		"@semantic-release/github": "^12.0.10",
 		"@semantic-release/release-notes-generator": "^14.1.1",
 		"@types/node": "^22.20.1",
 		"conventional-changelog-conventionalcommits": "^9.1.0",
 		"lint-staged": "16.2.6",
-		"playwright": "^1.64.1",
 		"semantic-release": "^25.0.9",
 		"typescript": "catalog:tooling"
 	},
@@ -90,8 +92,11 @@
 			"biome check --write --unsafe --only=correctness/noUnusedImports --no-errors-on-unmatched",
 			"biome check --write --no-errors-on-unmatched"
 		],
-		"{.agents/skills/verify-editor,apps/web/src,packages/*/src}/**/*.{mjs,ts,tsx}": [
+		"{.agents/skills/verify-editor/**/*.{md,ts},{apps/web/src,packages/*/src}/**/*.{ts,tsx}}": [
 			"bun scripts/check-feature-drivers.ts --staged"
+		],
+		".agents/skills/verify-editor/**/*.ts": [
+			"bash -c 'tsc -p .agents/skills/verify-editor/tsconfig.json'"
 		]
 	},
 	"packageManager": "bun@1.4.0",

@@ -4,18 +4,17 @@ This is the full maintained list of the mapped user journeys. Use the matching f
 
 ## Baseline preconditions
 
-- Run only against a local stack at web `http://127.0.0.1:3000`, API `http://127.0.0.1:3001`, and the dedicated disposable PostgreSQL container on `127.0.0.1:15432`.
-- For owner journeys, use local `featuremap@example.com`, handle `featuremap-test`, and the local Pro grant. Reuse the saved owner browser state at `~/.cache/grabbin-featuremap/owner-session.json` (`~/.cache/grabbin-featuremap/<FEATUREMAP_DB_PORT>/owner-session.json` for a non-default DB port); recreate it only if it is missing or expired. Verify the target database and storage before changing data.
-- Use a fresh browser context per journey. Load the saved owner state for protected journeys; the sign-in journey must start with an empty context. Never drive an instance you did not start or use production database/R2 credentials.
+- Run through `bun run featuremap`, which starts an isolated local stack (web, API, mock outbound server, and a dedicated disposable PostgreSQL container) and never touches another instance or production database/R2 credentials.
+- `journeys/account.setup.ts` creates local `featuremap@example.com` with handle `featuremap-test` and the local Pro grant. Each journey then seeds its own owner copy (`featuremap-test-jN`) with a signed session, so journeys share no data. The sign-in journey starts from an empty context.
 - `/demo` is database-free and Free. It proves editor interactions only, never sign-in, saving, Pro access, uploads, or a public stored page.
 
 ## Driving conventions
 
-- Use Playwright with Chromium, fresh context, accessible roles/names, and stable page routes. Prefer the exact names listed in each journey over coordinates.
-- Capture the action and resulting state: `actions.md`, before/after ARIA snapshots and screenshots, relevant request outcomes, and read-only database rows for persisted data.
-- Wait for the save request to finish before reload. Confirm persisted changes from a new context and a database readback.
-- Restore changed profile values, handle, items, layouts, and media after proof. Keep evidence under `artifacts/verify-editor/<RUN_ID>/<feature-id>/`; never commit it.
-- When an external service or fixture is unavailable, report the journey as blocked with the unmet precondition. Do not substitute `/demo` or a different path.
+- Use the `@playwright/test` fixtures in `harness/fixtures.ts`, accessible roles/names, and stable page routes. Prefer the exact names listed in each journey over coordinates.
+- Capture the action and resulting state with `proof()` (screenshot and ARIA snapshot under `featuremap-results/screenshots/<feature-id>/`) and read-only database rows for persisted data.
+- Wait for the save to settle before reload. Confirm persisted changes after a reload or a new context and a database readback.
+- Each run reseeds the journey owners, so a journey does not need to restore what it changed. Never commit `featuremap-results/`.
+- Every external provider is served by local fixtures; a journey that cannot reach one fails rather than reporting a block.
 
 ## Features
 

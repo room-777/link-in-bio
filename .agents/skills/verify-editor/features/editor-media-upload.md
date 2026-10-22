@@ -6,6 +6,7 @@ An owner adds an image to a media card, and can cancel while its upload is still
 
 - `media-add`: choose an image and show its local preview.
 - `media-upload`: upload the bytes and attach the object to a saved media item.
+- `media-upload-persist`: the uploaded media remains after reload.
 - `media-cancel`: abort a pending upload and leave no item or stored object.
 
 ## How to get to it (user POV)

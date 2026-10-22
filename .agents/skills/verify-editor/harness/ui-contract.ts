@@ -77,7 +77,9 @@ function literalAlternatives(expression: unknown): string[] {
 	)
 		return literalAlternatives({
 			type: "StringLiteral",
-			value: (expression.quasis as Node[])[0]?.value?.cooked ?? "",
+			value:
+				(expression.quasis as Array<{ value?: { cooked?: string } }>)[0]?.value
+					?.cooked ?? "",
 		});
 	if (expression.type === "ConditionalExpression")
 		return [

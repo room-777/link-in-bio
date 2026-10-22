@@ -5,6 +5,7 @@ An owner adds a map card and searches for a place.
 ## Sub-features
 
 - `map-add`: create a map item.
+- `map-visible`: the map renders on the owner page.
 - `map-search`: find a location by name.
 
 ## How to get to it (user POV)

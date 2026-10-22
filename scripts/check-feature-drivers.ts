@@ -1,56 +1,30 @@
 /**
- * Feature-map drivers are regenerated often. This check keeps every
- * regenerated driver on the shared harness: app labels must exist in
- * the app source, each feature runs in its own browser context, and no raw
- * selectors, fixed sleeps or forced actions slip back in.
+ * Feature-map journeys are regenerated often. This check keeps every
+ * regenerated journey on the shared fixtures: one spec per feature map with
+ * its sub-features as tests, app labels that exist in the app source, and no
+ * raw selectors, fixed sleeps or forced actions.
  */
-import { readdirSync, readFileSync, rmSync } from "node:fs";
-import {
-	checkDriverSource,
-	findFixedSleeps,
-} from "../.agents/skills/verify-editor/harness/driver-rules";
+import { rmSync } from "node:fs";
 import {
 	appSources,
 	buildUiContract,
 } from "../.agents/skills/verify-editor/harness/ui-contract";
+import { checkFeatureDrivers } from "./lib/feature-drivers";
 import { dirFromModuleUrl } from "./lib/paths";
 import { stagedSnapshot } from "./lib/staged-snapshot";
 
 // `--staged` (the pre-commit hook) checks the index snapshot, so labels from
-// untracked app files or unstaged edits cannot vouch for a committed driver.
+// untracked app files or unstaged edits cannot vouch for a committed journey.
 const repoRoot = dirFromModuleUrl(import.meta.url, "..");
 const root = process.argv.includes("--staged")
 	? stagedSnapshot(repoRoot)
 	: repoRoot;
 if (root !== repoRoot)
 	process.on("exit", () => rmSync(root, { recursive: true, force: true }));
-const scripts = ".agents/skills/verify-editor/scripts";
-const HARNESS_SUPPORT = new Set(["local.mjs", "mock-outbound.mjs"]);
 
-const contract = buildUiContract(appSources(root));
-const failures = readdirSync(`${root}${scripts}`)
-	.filter((file) => file.endsWith(".mjs") && !HARNESS_SUPPORT.has(file))
-	.flatMap((file) =>
-		checkDriverSource(
-			readFileSync(`${root}${scripts}/${file}`, "utf8"),
-			contract,
-		).map(
-			(violation) =>
-				`${scripts}/${file}:${violation.line} ${violation.message}`,
-		),
-	);
-
-const harness = ".agents/skills/verify-editor/harness";
-for (const file of readdirSync(`${root}${harness}`).filter((name) =>
-	name.endsWith(".mjs"),
-))
-	for (const sleep of findFixedSleeps(
-		readFileSync(`${root}${harness}/${file}`, "utf8"),
-	))
-		failures.push(`${harness}/${file}:${sleep.line} ${sleep.message}`);
-
+const failures = checkFeatureDrivers(root, buildUiContract(appSources(root)));
 if (failures.length) {
 	console.error(`✖ feature drivers:\n${failures.join("\n")}`);
 	process.exit(1);
 }
-console.log("✓ feature drivers use the harness and labels the app renders");
+console.log("✓ feature journeys use the fixtures and labels the app renders");

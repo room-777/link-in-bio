@@ -12,12 +12,9 @@ SUFFIX="$([[ "$DB_PORT" == 15432 ]] || echo "-$DB_PORT")"
 CONTAINER="grabbin-featuremap$SUFFIX"
 VOLUME="grabbin-featuremap-agent-data$SUFFIX"
 # Owner browser state and local R2 are per DB port too, so concurrent stacks
-# never overwrite each other's login or uploads. local.mjs uses the same rule.
+# never overwrite each other's login or uploads. harness/local.ts uses the same rule.
 STATE_DIR="$HOME/.cache/grabbin-featuremap$([[ -z "$SUFFIX" ]] || echo "/$DB_PORT")"
 DB_URL="postgres://postgres:postgres@127.0.0.1:$DB_PORT/grabbin_featuremap"
-SERVER_ENV="$ROOT/apps/server/.env"
-WEB_ENV="$ROOT/apps/web/.env"
-[[ -f "$SERVER_ENV" && -f "$WEB_ENV" ]] || { echo "apps/server/.env and apps/web/.env are required" >&2; exit 1; }
 mkdir -p "$RUN_DIR"
 RUN_DIR="$(cd "$RUN_DIR" && pwd)"
 # The configured host binding, read from HostConfig so it is known even while
@@ -37,10 +34,12 @@ else
 fi
 echo "$CONTAINER" > "$RUN_DIR/db-container"
 echo "$STATE_DIR" > "$RUN_DIR/state-dir"
-for _ in $(seq 1 60); do docker exec "$CONTAINER" pg_isready -U postgres >/dev/null 2>&1 && break; sleep 1; done
-docker exec "$CONTAINER" pg_isready -U postgres >/dev/null
+# Over TCP: a new container's init server answers on the Unix socket only,
+# then restarts, so a socket check can pass just before the server goes away.
+for _ in $(seq 1 60); do docker exec "$CONTAINER" pg_isready -h 127.0.0.1 -U postgres >/dev/null 2>&1 && break; sleep 1; done
+docker exec "$CONTAINER" pg_isready -h 127.0.0.1 -U postgres >/dev/null
 if ! docker exec "$CONTAINER" psql -U postgres -tAc "select 1 from pg_database where datname='grabbin_featuremap'" | grep -q 1; then docker exec "$CONTAINER" createdb -U postgres grabbin_featuremap; fi
-env -i PATH="$PATH" HOME="$HOME" TMPDIR="${TMPDIR:-/tmp}" NODE_ENV=development DATABASE_URL="$DB_URL" DATABASE_URL_LOCAL="$DB_URL" bun --env-file="$SERVER_ENV" run --filter @grabbin/db db:migrate:deploy
+env -i PATH="$PATH" HOME="$HOME" TMPDIR="${TMPDIR:-/tmp}" NODE_ENV=development DATABASE_URL="$DB_URL" DATABASE_URL_LOCAL="$DB_URL" bun run --filter @grabbin/db db:migrate:deploy
 SOURCE="$ROOT"
 cat > "$RUN_DIR/server.wrangler.jsonc" <<JSON
 {
@@ -63,13 +62,13 @@ cat > "$RUN_DIR/server.wrangler.jsonc" <<JSON
 }
 JSON
 mkdir -p "$STATE_DIR/r2-state"
-env -i PATH="$PATH" HOME="$HOME" TMPDIR="${TMPDIR:-/tmp}" OUTBOUND_PROXY_PORT="$MOCK_PORT" OUTBOUND_MOCK_LOG="$RUN_DIR/mock-requests.log" nohup node "$ROOT/.agents/skills/verify-editor/scripts/mock-outbound.mjs" > "$RUN_DIR/mock-outbound.log" 2>&1 < /dev/null &
+env -i PATH="$PATH" HOME="$HOME" TMPDIR="${TMPDIR:-/tmp}" OUTBOUND_PROXY_PORT="$MOCK_PORT" OUTBOUND_MOCK_LOG="$RUN_DIR/mock-requests.log" nohup node "$ROOT/.agents/skills/verify-editor/scripts/mock-outbound.ts" > "$RUN_DIR/mock-outbound.log" 2>&1 < /dev/null &
 echo $! > "$RUN_DIR/mock-outbound.pid"
 cd "$SOURCE/apps/server"
 env -i PATH="$PATH" HOME="$HOME" TMPDIR="${TMPDIR:-/tmp}" NODE_ENV=development nohup "$ROOT/apps/web/node_modules/.bin/wrangler" dev --config "$RUN_DIR/server.wrangler.jsonc" --port "$API_PORT" --ip 127.0.0.1 --persist-to "$STATE_DIR/r2-state" > "$RUN_DIR/server.log" 2>&1 < /dev/null &
 echo $! > "$RUN_DIR/server.pid"
 cd "$SOURCE/apps/web"
-env -i PATH="$PATH" HOME="$HOME" TMPDIR="${TMPDIR:-/tmp}" NODE_ENV=development SKIP_ENV_VALIDATION=1 NEXT_PUBLIC_SERVER_URL=http://127.0.0.1:$API_PORT NEXT_PUBLIC_PAGE_DOMAIN=127.0.0.1:$WEB_PORT NEXT_PUBLIC_R2_PUBLIC_URL=http://127.0.0.1:$API_PORT nohup bun --env-file="$WEB_ENV" run dev:bare -- --hostname 127.0.0.1 --port "$WEB_PORT" > "$RUN_DIR/web.log" 2>&1 < /dev/null &
+env -i PATH="$PATH" HOME="$HOME" TMPDIR="${TMPDIR:-/tmp}" NODE_ENV=development SKIP_ENV_VALIDATION=1 NEXT_PUBLIC_SERVER_URL=http://127.0.0.1:$API_PORT NEXT_PUBLIC_PAGE_DOMAIN=127.0.0.1:$WEB_PORT NEXT_PUBLIC_R2_PUBLIC_URL=http://127.0.0.1:$API_PORT NEXT_PUBLIC_MAPBOX_ACCESS_TOKEN=pk.featuremap-local-fixture NEXT_PUBLIC_CREEM_PRO_MONTHLY_PRODUCT_ID=local-pro nohup bun run dev:bare -- --hostname 127.0.0.1 --port "$WEB_PORT" > "$RUN_DIR/web.log" 2>&1 < /dev/null &
 echo $! > "$RUN_DIR/web.pid"
 for _ in $(seq 1 120); do
 	if [[ "$(curl -sS -m 2 -o /dev/null -w '%{http_code}' http://127.0.0.1:$API_PORT/ 2>/dev/null || true)" == 200 && "$(curl -sS -m 5 -o /dev/null -w '%{http_code}' http://127.0.0.1:$WEB_PORT/sign-in 2>/dev/null || true)" == 200 ]]; then echo "ready web=http://127.0.0.1:$WEB_PORT api=http://127.0.0.1:$API_PORT db=$DB_URL"; wait "$(cat "$RUN_DIR/server.pid")"; exit 0; fi
