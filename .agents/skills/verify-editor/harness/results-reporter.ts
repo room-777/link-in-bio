@@ -8,7 +8,7 @@ import type {
 	Suite,
 	TestCase,
 } from "@playwright/test/reporter";
-import { RESULTS_DIR, ROOT } from "./local.ts";
+import { RESULTS_DIR, ROOT } from "./stack.ts";
 
 type Status = "passed" | "failed" | "skipped";
 type Row = {

@@ -6,9 +6,13 @@ const html = `<!doctype html><html><head><title>Feature Map Sample</title><meta 
 
 const server = createServer(async (request, response) => {
 	if (request.method === "GET" && request.url === "/health") {
-		response
-			.writeHead(200, { "content-type": "application/json" })
-			.end('{"mode":"mock","upstreamConnections":0}');
+		response.writeHead(200, { "content-type": "application/json" }).end(
+			JSON.stringify({
+				mode: "mock",
+				upstreamConnections: 0,
+				runId: process.env.FEATUREMAP_RUN_ID,
+			}),
+		);
 		return;
 	}
 	if (request.method !== "POST" || request.url !== "/fetch") {

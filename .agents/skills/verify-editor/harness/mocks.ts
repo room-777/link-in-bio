@@ -1,7 +1,8 @@
 import { appendFileSync, mkdirSync } from "node:fs";
 import path from "node:path";
 import type { BrowserContext, Route } from "@playwright/test";
-import { API, LOGS_DIR, WEB } from "./local.ts";
+import { API, WEB } from "./local.ts";
+import { LOGS_DIR } from "./stack.ts";
 
 const PIXEL_PNG = Buffer.from(
 	"iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAwMCAO+/pZ8AAAAASUVORK5CYII=",

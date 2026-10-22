@@ -1,7 +1,8 @@
 import path from "node:path";
 import { expect, type Page } from "@playwright/test";
 import { settled } from "./journey.ts";
-import { db, ROOT, sql } from "./local.ts";
+import { db, sql } from "./local.ts";
+import { ROOT } from "./stack.ts";
 import { control, item } from "./ui.ts";
 
 export const FIXTURE_IMAGE = path.join(

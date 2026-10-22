@@ -13,17 +13,9 @@ import { addLink, addMedia, addText } from "./editor.ts";
 import { stateMismatch } from "./hydration.ts";
 import { gotoReady, prepareContext, track } from "./journey.ts";
 import { JOURNEYS, type JourneyId } from "./journeys.ts";
-import {
-	ACCOUNT,
-	API,
-	db,
-	HANDLE,
-	LOGS_DIR,
-	redacted,
-	SCREENSHOTS_DIR,
-	sql,
-} from "./local.ts";
+import { ACCOUNT, API, db, HANDLE, redacted, sql } from "./local.ts";
 import { installLocalMocks } from "./mocks.ts";
+import { LOGS_DIR, SCREENSHOTS_DIR } from "./stack.ts";
 import { control } from "./ui.ts";
 
 export type Owner = {
