@@ -2,43 +2,33 @@
 set -euo pipefail
 RUN_DIR="${1:?usage: start-local.sh <RUN_DIR>}"
 ROOT="$(git rev-parse --show-toplevel)"
-WEB_PORT="${FEATUREMAP_WEB_PORT:-3000}"
-API_PORT="${FEATUREMAP_API_PORT:-3001}"
-MOCK_PORT="${FEATUREMAP_MOCK_PORT:-3002}"
-DB_PORT="${FEATUREMAP_DB_PORT:-15432}"
-# One container and volume per DB port, so a second stack never reuses the
-# first stack's container. The default port keeps the original names.
-SUFFIX="$([[ "$DB_PORT" == 15432 ]] || echo "-$DB_PORT")"
-CONTAINER="grabbin-featuremap$SUFFIX"
-VOLUME="grabbin-featuremap-agent-data$SUFFIX"
-# Owner browser state and local R2 are per DB port too, so concurrent stacks
-# never overwrite each other's login or uploads. harness/local.ts uses the same rule.
-STATE_DIR="$HOME/.cache/grabbin-featuremap$([[ -z "$SUFFIX" ]] || echo "/$DB_PORT")"
+# `bun run featuremap` claims the run id and free ports (harness/stack.ts) and
+# passes them here; there are no default ports to collide on.
+USAGE="is unset; start the stack with bun run featuremap"
+RUN_ID="${FEATUREMAP_RUN_ID:?FEATUREMAP_RUN_ID $USAGE}"
+WEB_PORT="${FEATUREMAP_WEB_PORT:?FEATUREMAP_WEB_PORT $USAGE}"
+API_PORT="${FEATUREMAP_API_PORT:?FEATUREMAP_API_PORT $USAGE}"
+MOCK_PORT="${FEATUREMAP_MOCK_PORT:?FEATUREMAP_MOCK_PORT $USAGE}"
+DB_PORT="${FEATUREMAP_DB_PORT:?FEATUREMAP_DB_PORT $USAGE}"
+STACK="$ROOT/.agents/skills/verify-editor/harness/stack.ts"
+CONTAINER="grabbin-featuremap-$RUN_ID"
+STATE_DIR="${TMPDIR:-/tmp}/grabbin-featuremap-$RUN_ID"
 DB_URL="postgres://postgres:postgres@127.0.0.1:$DB_PORT/grabbin_featuremap"
 mkdir -p "$RUN_DIR"
 RUN_DIR="$(cd "$RUN_DIR" && pwd)"
-# The configured host binding, read from HostConfig so it is known even while
-# the container is stopped (`docker port` only reports running containers).
-bound_port() { docker inspect --format '{{ range (index .HostConfig.PortBindings "5432/tcp") }}{{ .HostIp }}:{{ .HostPort }} {{ end }}' "$CONTAINER" 2>/dev/null | xargs; }
-for port in "$WEB_PORT" "$API_PORT" "$MOCK_PORT" "$DB_PORT"; do
-	if [[ "$port" == "$DB_PORT" ]] && docker container inspect "$CONTAINER" >/dev/null 2>&1 && [[ "$(docker inspect --format '{{ index .Config.Labels "codex.featuremap.local" }}' "$CONTAINER")" == true ]] && [[ "$(bound_port)" == "127.0.0.1:$DB_PORT" ]]; then continue; fi
-	if lsof -nP -iTCP:"$port" -sTCP:LISTEN >/dev/null 2>&1; then echo "port $port occupied" >&2; exit 1; fi
-done
-if docker container inspect "$CONTAINER" >/dev/null 2>&1; then
-	[[ "$(docker inspect --format '{{ index .Config.Labels "codex.featuremap.local" }}' "$CONTAINER")" == true ]] || { echo "unowned container exists" >&2; exit 1; }
-	[[ "$(bound_port)" == "127.0.0.1:$DB_PORT" ]] || { echo "$CONTAINER publishes '$(bound_port)', not 127.0.0.1:$DB_PORT" >&2; exit 1; }
-	docker start "$CONTAINER" >/dev/null
-else
-	docker volume create "$VOLUME" >/dev/null
-	docker run -d --name "$CONTAINER" --label codex.featuremap.local=true --publish 127.0.0.1:$DB_PORT:5432 --env POSTGRES_USER=postgres --env POSTGRES_PASSWORD=postgres --env POSTGRES_DB=postgres --volume "$VOLUME:/var/lib/postgresql/data" postgres:15-alpine >/dev/null
-fi
+echo "$RUN_ID" > "$RUN_DIR/run-id"
 echo "$CONTAINER" > "$RUN_DIR/db-container"
 echo "$STATE_DIR" > "$RUN_DIR/state-dir"
-# Over TCP: a new container's init server answers on the Unix socket only,
-# then restarts, so a socket check can pass just before the server goes away.
+node "$STACK" ports
+# A fresh database per run, on tmpfs. The server reports the run id as
+# featuremap.run_id, and nothing migrates until DB_URL answers with it: the
+# address could reach another stack's or another Docker daemon's Postgres.
+docker run -d --rm --name "$CONTAINER" --label codex.featuremap.local=true --label codex.featuremap.run="$RUN_ID" --publish "127.0.0.1:$DB_PORT:5432" --tmpfs /var/lib/postgresql/data --env POSTGRES_USER=postgres --env POSTGRES_PASSWORD=postgres --env POSTGRES_DB=grabbin_featuremap postgres:15-alpine -c featuremap.run_id="$RUN_ID" >/dev/null
+# Over TCP inside the container: a new container's init server answers on the
+# Unix socket only, then restarts, so a socket check can pass too early.
 for _ in $(seq 1 60); do docker exec "$CONTAINER" pg_isready -h 127.0.0.1 -U postgres >/dev/null 2>&1 && break; sleep 1; done
 docker exec "$CONTAINER" pg_isready -h 127.0.0.1 -U postgres >/dev/null
-if ! docker exec "$CONTAINER" psql -U postgres -tAc "select 1 from pg_database where datname='grabbin_featuremap'" | grep -q 1; then docker exec "$CONTAINER" createdb -U postgres grabbin_featuremap; fi
+node "$STACK" db
 env -i PATH="$PATH" HOME="$HOME" TMPDIR="${TMPDIR:-/tmp}" NODE_ENV=development DATABASE_URL="$DB_URL" DATABASE_URL_LOCAL="$DB_URL" bun run --filter @grabbin/db db:migrate:deploy
 SOURCE="$ROOT"
 cat > "$RUN_DIR/server.wrangler.jsonc" <<JSON
@@ -62,7 +52,7 @@ cat > "$RUN_DIR/server.wrangler.jsonc" <<JSON
 }
 JSON
 mkdir -p "$STATE_DIR/r2-state"
-env -i PATH="$PATH" HOME="$HOME" TMPDIR="${TMPDIR:-/tmp}" OUTBOUND_PROXY_PORT="$MOCK_PORT" OUTBOUND_MOCK_LOG="$RUN_DIR/mock-requests.log" nohup node "$ROOT/.agents/skills/verify-editor/scripts/mock-outbound.ts" > "$RUN_DIR/mock-outbound.log" 2>&1 < /dev/null &
+env -i PATH="$PATH" HOME="$HOME" TMPDIR="${TMPDIR:-/tmp}" OUTBOUND_PROXY_PORT="$MOCK_PORT" FEATUREMAP_RUN_ID="$RUN_ID" OUTBOUND_MOCK_LOG="$RUN_DIR/mock-requests.log" nohup node "$ROOT/.agents/skills/verify-editor/scripts/mock-outbound.ts" > "$RUN_DIR/mock-outbound.log" 2>&1 < /dev/null &
 echo $! > "$RUN_DIR/mock-outbound.pid"
 cd "$SOURCE/apps/server"
 env -i PATH="$PATH" HOME="$HOME" TMPDIR="${TMPDIR:-/tmp}" NODE_ENV=development nohup "$ROOT/apps/web/node_modules/.bin/wrangler" dev --config "$RUN_DIR/server.wrangler.jsonc" --port "$API_PORT" --ip 127.0.0.1 --persist-to "$STATE_DIR/r2-state" > "$RUN_DIR/server.log" 2>&1 < /dev/null &

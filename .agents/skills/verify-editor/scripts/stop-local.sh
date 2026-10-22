@@ -8,4 +8,12 @@ for name in web server mock-outbound; do
 		if kill -0 "$pid" 2>/dev/null; then pkill -TERM -P "$pid" 2>/dev/null || true; kill -TERM "$pid" 2>/dev/null || true; fi
 	fi
 done
-echo "stopped run-owned web/API/mock; persistent labeled test DB and owner state/R2 dir $(cat "$RUN_DIR/state-dir" 2>/dev/null) remain available for the next run"
+# Only this run's container (matched by its run label) and state folder.
+RUN_ID="$(cat "$RUN_DIR/run-id" 2>/dev/null || true)"
+if [[ -n "$RUN_ID" ]]; then
+	ids="$(docker ps -aq --filter "label=codex.featuremap.run=$RUN_ID")"
+	[[ -z "$ids" ]] || docker rm -f $ids >/dev/null
+	STATE_DIR="$(cat "$RUN_DIR/state-dir")"
+	[[ "$STATE_DIR" == */grabbin-featuremap-"$RUN_ID" ]] && rm -rf "$STATE_DIR"
+fi
+echo "stopped run $RUN_ID: web/API/mock, its database container and its state folder"

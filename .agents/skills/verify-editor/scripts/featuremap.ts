@@ -1,11 +1,19 @@
-// `bun run featuremap [-- <playwright args>]`: starts the isolated local
-// stack, runs every mapped journey, writes featuremap-results/, stops the
-// stack, and exits nonzero when anything failed.
+// `bun run featuremap [-- <playwright args>]`: claims a run id and free ports,
+// starts the isolated local stack, runs every mapped journey, writes
+// featuremap-results/, stops the stack, and exits nonzero when anything failed.
 import { type ChildProcess, spawn, spawnSync } from "node:child_process";
 import { createWriteStream, mkdirSync, rmSync, writeFileSync } from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
-import { HANDLE, LOGS_DIR, RESULTS_DIR, ROOT, WEB } from "../harness/local.ts";
+import {
+	claimCheckout,
+	claimStack,
+	LOGS_DIR,
+	RESULTS_DIR,
+	ROOT,
+	type Stack,
+	stackEnv,
+} from "../harness/stack.ts";
 
 const SKILL = fileURLToPath(new URL("../", import.meta.url));
 const script = (name: string) => path.join(SKILL, "scripts", name);
@@ -66,12 +74,35 @@ function writeStackFailure(error: Error) {
 	);
 }
 
+const releaseCheckout = claimCheckout();
 rmSync(RESULTS_DIR, { recursive: true, force: true });
 mkdirSync(LOGS_DIR, { recursive: true });
-let stack: ChildProcess | undefined;
+let claim: { stack: Stack; release: () => void } | undefined;
+let server: ChildProcess | undefined;
 let code = 1;
+const stop = () => {
+	if (claim)
+		spawnSync(script("stop-local.sh"), [LOGS_DIR], {
+			cwd: ROOT,
+			stdio: "inherit",
+		});
+	server?.kill();
+	claim?.release();
+	releaseCheckout();
+};
+for (const signal of ["SIGINT", "SIGTERM"] as const)
+	process.once(signal, () => {
+		stop();
+		process.exit(130);
+	});
 try {
-	stack = await startStack();
+	claim = await claimStack(process.env);
+	Object.assign(process.env, stackEnv(claim.stack));
+	writeFileSync(
+		path.join(LOGS_DIR, "stack.json"),
+		`${JSON.stringify(claim.stack, null, 2)}\n`,
+	);
+	server = await startStack();
 	const doctor = spawnSync(script("doctor.sh"), [LOGS_DIR], {
 		cwd: ROOT,
 		encoding: "utf8",
@@ -79,6 +110,7 @@ try {
 	if (doctor.status !== 0)
 		throw new Error(`doctor.sh failed: ${doctor.stderr || doctor.stdout}`);
 	// Compile the routes every journey opens before the budget clock starts.
+	const { HANDLE, WEB } = await import("../harness/local.ts");
 	for (const route of ["/sign-in", `/${HANDLE}`])
 		await fetch(`${WEB}${route}`).then((response) => response.text());
 	const run = spawnSync(
@@ -100,10 +132,6 @@ try {
 	console.error((error as Error).message);
 	writeStackFailure(error as Error);
 } finally {
-	spawnSync(script("stop-local.sh"), [LOGS_DIR], {
-		cwd: ROOT,
-		stdio: "inherit",
-	});
-	stack?.kill();
+	stop();
 }
 process.exit(code);

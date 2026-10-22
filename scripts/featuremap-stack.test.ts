@@ -3,8 +3,8 @@ import { spawn } from "node:child_process";
 import { createServer, type Server } from "node:net";
 import path from "node:path";
 import {
+	assertOwnDatabase,
 	claimStack,
-	waitForOwnDatabase,
 } from "../.agents/skills/verify-editor/harness/stack";
 
 const STACK = path.join(
@@ -143,20 +143,18 @@ describe("feature-map stack isolation", () => {
 	test("a foreign Postgres on the DB port is rejected before migrating", async () => {
 		const port = await listen(fakePostgres("another-run"));
 		await expect(
-			waitForOwnDatabase(
+			assertOwnDatabase(
 				`postgres://postgres:postgres@127.0.0.1:${port}/grabbin_featuremap`,
 				"this-run",
-				5_000,
 			),
 		).rejects.toThrow(/answers as another database/);
 	});
 
 	test("the run's own Postgres is accepted", async () => {
 		const port = await listen(fakePostgres("this-run"));
-		await waitForOwnDatabase(
+		await assertOwnDatabase(
 			`postgres://postgres:postgres@127.0.0.1:${port}/grabbin_featuremap`,
 			"this-run",
-			5_000,
 		);
 	});
 });

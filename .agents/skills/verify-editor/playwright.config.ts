@@ -1,7 +1,7 @@
 import path from "node:path";
 import { defineConfig } from "@playwright/test";
-import { RESULTS_DIR, WEB } from "./harness/local.ts";
 import { BUDGET_MS } from "./harness/results-reporter.ts";
+import { RESULTS_DIR } from "./harness/stack.ts";
 
 export default defineConfig({
 	testDir: "./journeys",
@@ -31,7 +31,7 @@ export default defineConfig({
 		["./harness/results-reporter.ts"],
 	],
 	use: {
-		baseURL: WEB,
+		baseURL: `http://127.0.0.1:${process.env.FEATUREMAP_WEB_PORT}`,
 		headless:
 			Boolean(process.env.CI) || process.env.FEATUREMAP_HEADLESS === "1",
 		launchOptions: {
