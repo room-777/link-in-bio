@@ -105,7 +105,8 @@ if (!accountExists) {
 	);
 	if (
 		!(await labelled(page, "Handle available")
-			.isVisible()
+			.waitFor({ state: "visible" })
+			.then(() => true)
 			.catch(() => false))
 	) {
 		await control(page, "button", "Grab it").click();
@@ -149,7 +150,8 @@ if (!accountExists) {
 	);
 	if (
 		!(await labelled(page, "Handle available")
-			.isVisible()
+			.waitFor({ state: "visible" })
+			.then(() => true)
 			.catch(() => false))
 	) {
 		await control(page, "button", "Grab it").click();
