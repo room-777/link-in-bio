@@ -34,8 +34,10 @@ else
 fi
 echo "$CONTAINER" > "$RUN_DIR/db-container"
 echo "$STATE_DIR" > "$RUN_DIR/state-dir"
-for _ in $(seq 1 60); do docker exec "$CONTAINER" pg_isready -U postgres >/dev/null 2>&1 && break; sleep 1; done
-docker exec "$CONTAINER" pg_isready -U postgres >/dev/null
+# Over TCP: a new container's init server answers on the Unix socket only,
+# then restarts, so a socket check can pass just before the server goes away.
+for _ in $(seq 1 60); do docker exec "$CONTAINER" pg_isready -h 127.0.0.1 -U postgres >/dev/null 2>&1 && break; sleep 1; done
+docker exec "$CONTAINER" pg_isready -h 127.0.0.1 -U postgres >/dev/null
 if ! docker exec "$CONTAINER" psql -U postgres -tAc "select 1 from pg_database where datname='grabbin_featuremap'" | grep -q 1; then docker exec "$CONTAINER" createdb -U postgres grabbin_featuremap; fi
 env -i PATH="$PATH" HOME="$HOME" TMPDIR="${TMPDIR:-/tmp}" NODE_ENV=development DATABASE_URL="$DB_URL" DATABASE_URL_LOCAL="$DB_URL" bun run --filter @grabbin/db db:migrate:deploy
 SOURCE="$ROOT"
