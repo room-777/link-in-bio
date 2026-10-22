@@ -12,7 +12,11 @@ export type UiContract = {
 
 type Node = { type: string; [key: string]: unknown };
 
-const NAME_ATTRIBUTES = new Set(["aria-label", "title", "placeholder", "alt"]);
+// Accessible names come from these attributes and from any prop, variable or
+// property named like a label (`ariaLabel`, `submitLabel`, `presetLabels`,
+// `label:` in a catalog entry). Other string literals are implementation values
+// such as save states, so they never become names.
+const LABEL_KEY = /^(aria-label|alt)$|(label|labels|title|placeholder)$/i;
 const PORTAL_CONTENT = /(Popover|Menu|Select|Combobox)(Content|Popup)$/;
 const PORTAL_ROOT = /^(Popover|Menu|Select|Combobox)(Root)?$/;
 const PORTAL_TRIGGER = /(Popover|Menu|Select|Combobox)Trigger$/;
@@ -53,22 +57,56 @@ function tagName(node: Node): string | undefined {
 		: undefined;
 }
 
+function keyName(key: unknown): string {
+	if (!isNode(key)) return "";
+	if (key.type === "Identifier") return String(key.name);
+	if (key.type === "StringLiteral") return String(key.value);
+	return jsxName(key);
+}
+
+/** The labels an expression can evaluate to; a ternary yields one per branch. */
 function literalAlternatives(expression: unknown): string[] {
 	if (!isNode(expression)) return [];
-	if (expression.type === "StringLiteral") return [String(expression.value)];
+	if (expression.type === "StringLiteral") {
+		const text = String(expression.value).trim();
+		return text ? [text] : [];
+	}
 	if (
 		expression.type === "TemplateLiteral" &&
 		(expression.expressions as unknown[]).length === 0
 	)
-		return [String((expression.quasis as Node[])[0]?.value?.cooked ?? "")];
-	if (expression.type === "ConditionalExpression") {
-		const whenTrue = literalAlternatives(expression.consequent);
-		const whenFalse = literalAlternatives(expression.alternate);
-		return whenTrue.length && whenFalse.length
-			? [...whenTrue, ...whenFalse]
-			: [];
-	}
+		return literalAlternatives({
+			type: "StringLiteral",
+			value: (expression.quasis as Node[])[0]?.value?.cooked ?? "",
+		});
+	if (expression.type === "ConditionalExpression")
+		return [
+			...literalAlternatives(expression.consequent),
+			...literalAlternatives(expression.alternate),
+		];
+	if (expression.type === "LogicalExpression")
+		return literalAlternatives(expression.right);
+	if (
+		expression.type === "TSAsExpression" ||
+		expression.type === "TSSatisfiesExpression"
+	)
+		return literalAlternatives(expression.expression);
 	return [];
+}
+
+/** The value written into a label-named slot, or undefined when `node` is no such slot. */
+function labelSlot(node: Node): unknown {
+	if (node.type === "JSXAttribute" && LABEL_KEY.test(jsxName(node.name))) {
+		const value = node.value as Node | null;
+		return value?.type === "JSXExpressionContainer" ? value.expression : value;
+	}
+	if (node.type === "VariableDeclarator" && LABEL_KEY.test(keyName(node.id)))
+		return node.init;
+	if (node.type === "ObjectProperty" && LABEL_KEY.test(keyName(node.key)))
+		return node.value;
+	if (node.type === "AssignmentPattern" && LABEL_KEY.test(keyName(node.left)))
+		return node.right;
+	return undefined;
 }
 
 function templatePattern(expression: unknown): string | undefined {
@@ -85,7 +123,7 @@ function templatePattern(expression: unknown): string | undefined {
 }
 
 function namePattern(node: Node, parent: Node | undefined): string | undefined {
-	if (node.type === "JSXAttribute" && NAME_ATTRIBUTES.has(jsxName(node.name))) {
+	if (node.type === "JSXAttribute" && LABEL_KEY.test(jsxName(node.name))) {
 		const value = node.value as Node | null;
 		return value?.type === "JSXExpressionContainer"
 			? templatePattern(value.expression)
@@ -99,17 +137,11 @@ function namePattern(node: Node, parent: Node | undefined): string | undefined {
 	return undefined;
 }
 
+/** Names one control can show; more than one means they are states of that control. */
 function accessibleNames(node: Node, parent: Node | undefined): string[] {
-	if (node.type === "JSXAttribute") {
-		const attribute = jsxName(node.name);
-		if (!NAME_ATTRIBUTES.has(attribute)) return [];
-		const value = node.value as Node | null;
-		if (!value) return [];
-		if (value.type === "StringLiteral") return [String(value.value)];
-		return value.type === "JSXExpressionContainer"
-			? literalAlternatives(value.expression)
-			: [];
-	}
+	const slot = labelSlot(node);
+	if (isNode(slot) && slot.type !== "ObjectExpression")
+		return literalAlternatives(slot);
 	if (node.type === "JSXText") {
 		const text = String(node.value).replace(/\s+/g, " ").trim();
 		return text ? [text] : [];
@@ -180,8 +212,6 @@ export function buildUiContract(sources: string | string[]): UiContract {
 						.reverse()
 						.find((ancestor) => PORTAL_ROOT.test(tagName(ancestor) ?? "")) ??
 					node;
-			if (node.type === "StringLiteral" && String(node.value).trim())
-				names.add(String(node.value).trim());
 			if (
 				node.type === "JSXAttribute" &&
 				jsxName(node.name).startsWith("data-")
@@ -189,13 +219,12 @@ export function buildUiContract(sources: string | string[]): UiContract {
 				dataAttributes.add(jsxName(node.name));
 			const pattern = namePattern(node, parent);
 			if (pattern) patterns.add(pattern);
-			// `const label = cond ? "Edit media link" : "Add media link"` feeds an
-			// aria-label later, so a ternary of labels is a state group too.
-			const group =
-				node.type === "ConditionalExpression" &&
-				parent?.type !== "JSXExpressionContainer"
-					? literalAlternatives(node)
-					: accessibleNames(node, parent);
+			const slot = labelSlot(node);
+			if (isNode(slot) && slot.type === "ObjectExpression")
+				for (const property of slot.properties as Node[])
+					for (const name of literalAlternatives(property.value))
+						names.add(name);
+			const group = accessibleNames(node, parent);
 			for (const name of group) names.add(name);
 			if (group.length > 1) {
 				const unique = [...new Set(group)].sort();
