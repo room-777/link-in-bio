@@ -6,8 +6,11 @@ WEB_PORT="${FEATUREMAP_WEB_PORT:-3000}"
 API_PORT="${FEATUREMAP_API_PORT:-3001}"
 MOCK_PORT="${FEATUREMAP_MOCK_PORT:-3002}"
 DB_PORT="${FEATUREMAP_DB_PORT:-15432}"
-CONTAINER="grabbin-featuremap"
-VOLUME="grabbin-featuremap-agent-data"
+# One container and volume per DB port, so a second stack never reuses the
+# first stack's container. The default port keeps the original names.
+SUFFIX="$([[ "$DB_PORT" == 15432 ]] || echo "-$DB_PORT")"
+CONTAINER="grabbin-featuremap$SUFFIX"
+VOLUME="grabbin-featuremap-agent-data$SUFFIX"
 DB_URL="postgres://postgres:postgres@127.0.0.1:$DB_PORT/grabbin_featuremap"
 SERVER_ENV="$ROOT/apps/server/.env"
 WEB_ENV="$ROOT/apps/web/.env"
@@ -20,6 +23,7 @@ for port in "$WEB_PORT" "$API_PORT" "$MOCK_PORT" "$DB_PORT"; do
 done
 if docker container inspect "$CONTAINER" >/dev/null 2>&1; then
 	[[ "$(docker inspect --format '{{ index .Config.Labels "codex.featuremap.local" }}' "$CONTAINER")" == true ]] || { echo "unowned container exists" >&2; exit 1; }
+	docker port "$CONTAINER" 5432/tcp | grep -q "127.0.0.1:$DB_PORT$" || { echo "$CONTAINER publishes $(docker port "$CONTAINER" 5432/tcp), not $DB_PORT" >&2; exit 1; }
 	docker start "$CONTAINER" >/dev/null
 else
 	docker volume create "$VOLUME" >/dev/null

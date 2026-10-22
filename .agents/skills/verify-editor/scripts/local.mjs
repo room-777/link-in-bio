@@ -10,7 +10,10 @@ export const STATE = path.join(
 	process.env.HOME,
 	".cache/grabbin-featuremap/owner-session.json",
 );
-export const CONTAINER = "grabbin-featuremap";
+const DB_PORT = process.env.FEATUREMAP_DB_PORT ?? "15432";
+// Same per-port name start-local.sh gives the stack's DB container.
+export const CONTAINER =
+	DB_PORT === "15432" ? "grabbin-featuremap" : `grabbin-featuremap-${DB_PORT}`;
 export const DB_NAME = "grabbin_featuremap";
 
 export function db(sql) {

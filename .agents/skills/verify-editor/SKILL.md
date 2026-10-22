@@ -21,7 +21,7 @@ RUN_DIR="artifacts/verify-editor/$RUN_ID"
 .agents/skills/verify-editor/scripts/doctor.sh "$RUN_DIR"
 ```
 
-The doctor must print `OK`. Web is `http://127.0.0.1:3000`, API is `http://127.0.0.1:3001`, the fake provider is `http://127.0.0.1:3002`, and the dedicated database is `grabbin_featuremap` on port `15432`. Set `FEATUREMAP_WEB_PORT`, `FEATUREMAP_API_PORT`, `FEATUREMAP_MOCK_PORT` and `FEATUREMAP_DB_PORT` to run a second stack beside one already on those ports. The scripts refuse occupied ports and only use their labeled `grabbin-featuremap` container. They read but never change either `.env` file.
+The doctor must print `OK`. Web is `http://127.0.0.1:3000`, API is `http://127.0.0.1:3001`, the fake provider is `http://127.0.0.1:3002`, and the dedicated database is `grabbin_featuremap` on port `15432`. Set `FEATUREMAP_WEB_PORT`, `FEATUREMAP_API_PORT`, `FEATUREMAP_MOCK_PORT` and `FEATUREMAP_DB_PORT` to run a second stack beside one already on those ports. The scripts refuse occupied ports and only use their own labeled database container: `grabbin-featuremap` on port `15432`, `grabbin-featuremap-<port>` for any other `FEATUREMAP_DB_PORT`, each with its own volume. They read but never change either `.env` file.
 
 ## Doctor
 
