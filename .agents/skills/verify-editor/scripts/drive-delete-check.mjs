@@ -67,7 +67,6 @@ const itemId = await waitForDb(
 if (!itemId) throw new Error("Text row was not created by the UI.");
 await reloadReady(page);
 const card = item(page, itemId);
-await card.hover();
 const deleteButton = control(card, "button", "Delete item");
 await deleteButton.waitFor({ state: "visible" });
 await page.screenshot({
@@ -95,7 +94,6 @@ writeFileSync(
 if (!testPassed) {
 	const stillVisible = await card.count();
 	if (stillVisible) {
-		await card.hover();
 		await control(card, "button", "Delete item").click();
 		await waitForDb(
 			`select count(*) from page_items where id='${itemId}' and page_id='${pageId}'`,

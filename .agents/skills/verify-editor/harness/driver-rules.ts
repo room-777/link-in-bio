@@ -56,6 +56,62 @@ function literalNames(node: unknown): string[] {
 	return [];
 }
 
+const HOVER_WINDOW = 3;
+
+function hoveredScope(statement: Node): string | undefined {
+	const call =
+		statement.type === "ExpressionStatement" &&
+		isNode(statement.expression) &&
+		statement.expression.type === "AwaitExpression"
+			? (statement.expression.argument as Node)
+			: undefined;
+	const callee =
+		call?.type === "CallExpression" ? (call.callee as Node) : undefined;
+	if (
+		callee?.type === "MemberExpression" &&
+		(callee.property as Node).name === "hover" &&
+		(callee.object as Node).type === "Identifier"
+	)
+		return String((callee.object as Node).name);
+}
+
+function usesControlIn(statement: Node, scope: string) {
+	let found = false;
+	walk(statement, (node) => {
+		if (
+			node.type === "CallExpression" &&
+			(node.callee as Node).type === "Identifier" &&
+			NAMED_CALLS.has(String((node.callee as Node).name)) &&
+			(node.arguments as Node[])[0]?.type === "Identifier" &&
+			(node.arguments as Node[])[0]?.name === scope
+		)
+			found = true;
+	});
+	return found;
+}
+
+// Hovering a card to reveal a control hovers the wrong element whenever the
+// control's hover group is only part of the card; the harness hovers the
+// control's own group before every action.
+function reportRevealHovers(
+	statements: Node[],
+	report: (node: Node, message: string) => void,
+) {
+	statements.forEach((statement, index) => {
+		const scope = hoveredScope(statement);
+		if (
+			scope &&
+			statements
+				.slice(index + 1, index + 1 + HOVER_WINDOW)
+				.some((next) => usesControlIn(next, scope))
+		)
+			report(
+				statement,
+				`${scope}.hover() before acting on a control in ${scope}: drop it, the harness hovers the control's own hover group`,
+			);
+	});
+}
+
 export function checkDriverSource(
 	source: string,
 	contract: UiContract,
@@ -73,6 +129,8 @@ export function checkDriverSource(
 	const journeyFeatures = new Set<string>();
 
 	walk(ast, (node) => {
+		if (Array.isArray(node.body))
+			reportRevealHovers(node.body as Node[], report);
 		if (node.type === "ImportDeclaration") {
 			const from = String((node.source as Node).value);
 			if (from === "playwright" || from.startsWith("playwright/"))

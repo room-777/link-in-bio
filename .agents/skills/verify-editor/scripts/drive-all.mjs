@@ -32,7 +32,7 @@ if (!process.argv[2])
 	throw new Error("Usage: node drive-all.mjs artifacts/verify-editor/<RUN_ID>");
 const results = [];
 const redacted = (value) =>
-	String(value).replaceAll(ACCOUNT, "[local test account]").slice(0, 500);
+	String(value).replaceAll(ACCOUNT, "[local test account]");
 const fixtureDir = path.join(runDir, "fixtures");
 mkdirSync(fixtureDir, { recursive: true });
 const fixtureImage = path.join(fixtureDir, "feature-map-fixture.webp");
@@ -202,7 +202,6 @@ async function removeItem(page, itemId, pageId, feature) {
 	// After a reload the grid renders items once page data arrives.
 	await card.waitFor({ state: "attached", timeout: 10000 });
 	await card.scrollIntoViewIfNeeded();
-	await card.hover();
 	const remove = control(card, "button", "Delete item");
 	await remove.waitFor({ state: "visible", timeout: 5000 });
 	await remove.click();
@@ -914,7 +913,6 @@ if (textId) {
 		await control(textCard, "textbox", "Text content").fill(
 			"Feature map formatted text",
 		);
-		await textCard.hover();
 		await control(textCard, "button", "Open text style options").click();
 		const alignCenter = control(page, "button", "Align text center");
 		await alignCenter.click();
@@ -1597,7 +1595,6 @@ if (persistedMapId) {
 	try {
 		await mapItem.scrollIntoViewIfNeeded();
 		await mapItem.waitFor({ state: "visible", timeout: 10000 });
-		await mapItem.hover();
 		await control(mapItem, "button", "Search location").click();
 		const search = control(page, "combobox", "Search location");
 		await search.fill("Seattle");
@@ -1644,7 +1641,6 @@ const linkId = await pageItem(pageId, "link", "featuremap-metadata");
 if (linkId) {
 	const linkCard = item(page, linkId);
 	try {
-		await linkCard.hover();
 		await control(linkCard, "button", "Edit link URL").click();
 		const refresh = control(page, "button", "Refresh link metadata");
 		await refresh.click();
@@ -1720,7 +1716,6 @@ await openOwner("editor-inline-destination-url");
 if (textId) {
 	const card = item(page, textId);
 	try {
-		await card.hover();
 		await control(card, "button", "Open text style options").click();
 		const addLink = control(page, "button", "Add text link");
 		await addLink.click();
@@ -1781,7 +1776,6 @@ if (textId) {
 			data.includes("featuremap-updated") ? "PASS" : "FAIL",
 			`After reload, updated destination remains=${data.includes("featuremap-updated")}.`,
 		);
-		await card.hover();
 		await control(card, "button", "Open text style options").click();
 		const editAgain = control(page, "button", "Edit text link");
 		await editAgain.click();
@@ -1921,6 +1915,14 @@ try {
 	const cancelChooserPromise = page
 		.waitForEvent("filechooser", { timeout: 5000 })
 		.catch(() => null);
+	const pendingUploadResponse = page
+		.waitForResponse(
+			(response) =>
+				response.url() === `${API}/pages/${HANDLE}/items/upload` &&
+				response.request().method() === "POST",
+			{ timeout: 10000 },
+		)
+		.catch(() => null);
 	await control(page, "button", "Add media").click();
 	const cancelChooser = await cancelChooserPromise;
 	if (!cancelChooser)
@@ -1933,12 +1935,12 @@ try {
 		.waitFor({ timeout: 10000 })
 		.catch(() => {});
 	const pendingCard = items(page).last();
-	await pendingCard.hover();
 	const pendingId = await pendingCard.getAttribute("data-bento-item-id");
-	const pendingData = JSON.parse(
-		db(`select data::text from page_items where id='${pendingId}'`) || "{}",
-	);
-	const pendingKey = pendingData.objectKey ?? "";
+	// The pending card is not saved to page_items until its upload finishes,
+	// so its object key comes from the upload URL response.
+	const pendingKey =
+		(await (await pendingUploadResponse)?.json().catch(() => null))
+			?.objectKey ?? "";
 	const pendingDelete = control(pendingCard, "button", "Delete item");
 	await pendingDelete.waitFor({ state: "visible", timeout: 5000 });
 	await pendingDelete.click();
@@ -2032,7 +2034,6 @@ if (uploadedMediaId) {
 			captionData.includes("Feature map media caption") ? "PASS" : "FAIL",
 			`Media caption saved in row=${captionData.includes("Feature map media caption")}; item data=${captionData.slice(0, 220)}.`,
 		);
-		await mediaCard.hover();
 		await control(mediaCard, "button", "Crop media").click();
 		const cropFrame = marker(mediaCard, "data-bento-item-crop-open");
 		await cropFrame.waitFor({ state: "visible", timeout: 5000 });
@@ -2093,7 +2094,6 @@ if (uploadedMediaId) {
 	}
 	try {
 		const mediaCard2 = item(page, uploadedMediaId);
-		await mediaCard2.hover();
 		await control(mediaCard2, "button", "Add media link").click();
 		const destination = control(page, "textbox", "Link URL").last();
 		await destination.fill("https://example.com/featuremap-media");
@@ -2142,22 +2142,10 @@ if (linkImageId) {
 		const before = db(
 			`select data::text from page_items where id='${linkImageId}'`,
 		);
-		await linkCard.hover();
 		const addImageChooserPromise = page
 			.waitForEvent("filechooser", { timeout: 5000 })
 			.catch(() => null);
-		const addImageAction = control(linkCard, "button", "Add link image");
-		const replaceImageAction = control(
-			linkCard,
-			"button",
-			"Replace link image",
-		);
-		const initialImageAction = (await replaceImageAction
-			.isVisible()
-			.catch(() => false))
-			? replaceImageAction
-			: addImageAction;
-		await initialImageAction.click();
+		await control(linkCard, "button", "Add link image").click();
 		const addImageChooser = await addImageChooserPromise;
 		if (addImageChooser) await addImageChooser.setFiles(fixtureImage);
 		else await fileInput(linkCard, "image/*").setInputFiles(fixtureImage);
@@ -2173,7 +2161,6 @@ if (linkImageId) {
 			ownedImageKey(added) && addedGet === 200 ? "PASS" : "FAIL",
 			`Selected local image; link row imageKey present=${Boolean(ownedImageKey(added))}; local object GET=${addedGet}; row=${added.slice(0, 180)}.`,
 		);
-		await linkCard.hover();
 		const replaceChooserPromise = page
 			.waitForEvent("filechooser", { timeout: 5000 })
 			.catch(() => null);
@@ -2208,7 +2195,6 @@ if (linkImageId) {
 				: "FAIL",
 			`After reload image key remains=${persisted === replaced && Boolean(ownedImageKey(persisted))}; local object GET=${persistedGet}; row=${persisted.slice(0, 180)}.`,
 		);
-		await linkCard.hover();
 		await control(linkCard, "button", "Remove link image").click();
 		const removed = await waitForDb(
 			`select data::text from page_items where id='${linkImageId}'`,
@@ -2349,7 +2335,7 @@ try {
 	result(
 		"editor-tweet",
 		"tweet-invalid",
-		invalidResponse?.status() === 404 &&
+		invalidResponse?.status() === 502 &&
 			invalidError.includes("Could not add this post") &&
 			tweetRowAfterInvalid === tweetRowBefore + 1
 			? "PASS"

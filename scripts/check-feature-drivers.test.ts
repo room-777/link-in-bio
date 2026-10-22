@@ -65,6 +65,25 @@ const context = await browser.newContext();
 		]);
 	});
 
+	test("hovering a card to reveal its control fails; the harness reveals it", () => {
+		expect(
+			messages(`
+await linkCard.hover();
+const chooser = page.waitForEvent("filechooser");
+await control(linkCard, "button", "Replace link image").click();
+`),
+		).toEqual([
+			"linkCard.hover() before acting on a control in linkCard: drop it, the harness hovers the control's own hover group",
+		]);
+		expect(
+			messages(`
+await card.hover();
+await expectTooltip(card);
+await control(page, "button", "Advanced").click();
+`),
+		).toEqual([]);
+	});
+
 	test("each feature's results need their own journey", () => {
 		expect(
 			messages(`

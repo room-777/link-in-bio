@@ -132,7 +132,32 @@ function prepareFor(scope, { opener } = {}) {
 		}
 		await target.waitFor({ state: "attached" });
 		await waitHydrated(target);
+		await revealHoverGroup(target);
 	};
+}
+
+// A control styled `group-hover/<name>:pointer-events-auto` only takes clicks
+// while the pointer is over its `group/<name>` ancestor, which can be a small
+// part of the card. Playwright checks the hit target before it moves the
+// mouse, so hovering any other element leaves the click blocked forever.
+async function revealHoverGroup(target) {
+	const group = await target.evaluate((element) => {
+		const names = new Set();
+		for (let node = element; node; node = node.parentElement)
+			for (const token of node.classList) {
+				const match = /^group-hover(?:\/([\w-]+))?:/.exec(token);
+				if (match) names.add(match[1] ? `group/${match[1]}` : "group");
+			}
+		for (let node = element.parentElement; node; node = node.parentElement)
+			for (const name of names) if (node.classList.contains(name)) return name;
+		return null;
+	});
+	if (group)
+		await target
+			.locator(
+				`xpath=ancestor::*[contains(concat(" ", normalize-space(@class), " "), " ${group} ")][1]`,
+			)
+			.hover();
 }
 
 export function control(scope, role, names, options = {}) {
