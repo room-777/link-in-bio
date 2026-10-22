@@ -91,7 +91,7 @@
 			"biome check --write --no-errors-on-unmatched"
 		],
 		"{.agents/skills/verify-editor,apps/web/src,packages/*/src}/**/*.{mjs,ts,tsx}": [
-			"bun scripts/check-feature-drivers.ts"
+			"bun scripts/check-feature-drivers.ts --staged"
 		]
 	},
 	"packageManager": "bun@1.4.0",
