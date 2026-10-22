@@ -47,7 +47,7 @@ export default function PageProfileForm({
 	}, [profile.error]);
 
 	return (
-		<div className="w-full">
+		<div className="w-full" data-save-status={profile.status}>
 			<motion.div {...animation} className="w-full">
 				<div className="mb-4 flex flex-col gap-8">
 					<FieldGroup className="gap-8">

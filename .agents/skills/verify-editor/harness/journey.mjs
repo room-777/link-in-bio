@@ -1,8 +1,9 @@
 import { chromium } from "playwright";
 import { API, WEB } from "../scripts/local.mjs";
 
-// The editor batches saves 1500 ms after the last change (SAVE_DELAY in use-bento-store.ts).
-const SAVE_QUIET_MS = 2_000;
+// Editor autosaves report their state on data-save-status (bento-editor.tsx,
+// page-profile-form.tsx). settled() waits on that state and on in-flight API
+// requests, never on a clock.
 const inflight = new WeakMap();
 
 // Chrome reports this benign notification as a window error, and the dev
@@ -30,34 +31,61 @@ export async function launchBrowser() {
 }
 
 function track(page) {
-	const state = { pending: new Set(), last: Date.now() };
+	const state = { pending: new Set(), idle: [] };
 	inflight.set(page, state);
 	const done = (request) => {
-		if (state.pending.delete(request)) state.last = Date.now();
+		if (!state.pending.delete(request) || state.pending.size) return;
+		for (const resolve of state.idle.splice(0)) resolve();
 	};
 	page.on("request", (request) => {
-		if (request.url().startsWith(API)) {
-			state.pending.add(request);
-			state.last = Date.now();
-		}
+		if (request.url().startsWith(API)) state.pending.add(request);
 	});
 	page.on("requestfinished", done);
 	page.on("requestfailed", done);
 }
 
+function apiIdle(state, timeout) {
+	if (!state.pending.size) return Promise.resolve();
+	return new Promise((resolve, reject) => {
+		const deadline = setTimeout(
+			() =>
+				reject(new Error(`API traffic did not settle within ${timeout} ms`)),
+			timeout,
+		);
+		state.idle.push(() => {
+			clearTimeout(deadline);
+			resolve();
+		});
+	});
+}
+
+function autosavesSaved(page, timeout) {
+	return page.waitForFunction(
+		() => {
+			const statuses = [...document.querySelectorAll("[data-save-status]")].map(
+				(node) => node.dataset.saveStatus,
+			);
+			if (statuses.includes("error"))
+				throw new Error("editor autosave reported data-save-status=error");
+			return statuses.every((status) => status === "saved");
+		},
+		undefined,
+		{ timeout, polling: "raf" },
+	);
+}
+
 export async function settled(page, timeout = 20_000) {
 	const state = inflight.get(page);
 	if (!state) throw new Error("settled() needs a page opened by journey()");
-	// A change made just before this call has not sent its save yet, so the
-	// quiet window starts no earlier than now.
-	const calledAt = Date.now();
-	const until = calledAt + timeout;
-	while (Date.now() < until) {
-		const quietSince = Math.max(state.last, calledAt);
-		if (!state.pending.size && Date.now() - quietSince >= SAVE_QUIET_MS) return;
-		await new Promise((resolve) => setTimeout(resolve, 100));
+	const until = Date.now() + timeout;
+	const left = () => Math.max(1, until - Date.now());
+	// A save that finishes can schedule a follow-up save, so loop until both
+	// conditions hold at the same moment.
+	for (;;) {
+		await apiIdle(state, left());
+		await autosavesSaved(page, left());
+		if (!state.pending.size) return;
 	}
-	throw new Error(`API traffic did not settle within ${timeout} ms`);
 }
 
 async function ready(page) {
@@ -88,14 +116,23 @@ export async function setViewport(page, size) {
 
 export function createJourneys(browser, { prepareContext, preparePage }) {
 	let current;
+	const timings = [];
 	const close = async () => {
 		const context = current;
 		current = undefined;
+		const open = timings.at(-1);
+		if (open && open.endedAt === undefined) {
+			open.endedAt = new Date().toISOString();
+			open.seconds =
+				(Date.parse(open.endedAt) - Date.parse(open.startedAt)) / 1000;
+		}
 		await context?.close().catch(() => {});
 	};
 	return {
+		timings,
 		async open(feature, { route, storageState, viewport, permissions } = {}) {
 			await close();
+			timings.push({ feature, startedAt: new Date().toISOString() });
 			current = await browser.newContext({
 				storageState,
 				permissions,

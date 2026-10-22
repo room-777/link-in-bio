@@ -2,7 +2,10 @@ import { describe, expect, test } from "bun:test";
 import { mkdirSync, mkdtempSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import path from "node:path";
-import { checkDriverSource } from "../.agents/skills/verify-editor/harness/driver-rules";
+import {
+	checkDriverSource,
+	findFixedSleeps,
+} from "../.agents/skills/verify-editor/harness/driver-rules";
 import {
 	buildUiContract,
 	type UiContract,
@@ -45,6 +48,20 @@ const context = await browser.newContext();
 		expect(found.join("\n")).toContain("force: true");
 		expect(found.join("\n")).toContain(".waitForTimeout() is harness-only");
 		expect(found.join("\n")).toContain(".newContext() is harness-only");
+	});
+
+	test("timer sleeps fail in drivers and the harness; deadline timers pass", () => {
+		const sleeps = findFixedSleeps(`
+import { setTimeout as sleep } from "node:timers/promises";
+await new Promise((resolve) => setTimeout(resolve, 300));
+await new Promise((resolve) => setTimeout(() => resolve(), 2000));
+await page.waitForTimeout(500);
+const deadline = setTimeout(() => reject(new Error("late")), 20000);
+`);
+		expect(sleeps.map((sleep) => sleep.line)).toEqual([2, 3, 4, 5]);
+		expect(
+			messages("await new Promise((resolve) => setTimeout(resolve, 300));"),
+		).toEqual([expect.stringContaining("fixed sleep")]);
 	});
 
 	test("a label built from a template accepts any filled-in value", () => {

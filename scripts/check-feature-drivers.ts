@@ -5,7 +5,10 @@
  * selectors, fixed sleeps or forced actions slip back in.
  */
 import { readdirSync, readFileSync, rmSync } from "node:fs";
-import { checkDriverSource } from "../.agents/skills/verify-editor/harness/driver-rules";
+import {
+	checkDriverSource,
+	findFixedSleeps,
+} from "../.agents/skills/verify-editor/harness/driver-rules";
 import {
 	appSources,
 	buildUiContract,
@@ -36,6 +39,15 @@ const failures = readdirSync(`${root}${scripts}`)
 				`${scripts}/${file}:${violation.line} ${violation.message}`,
 		),
 	);
+
+const harness = ".agents/skills/verify-editor/harness";
+for (const file of readdirSync(`${root}${harness}`).filter((name) =>
+	name.endsWith(".mjs"),
+))
+	for (const sleep of findFixedSleeps(
+		readFileSync(`${root}${harness}/${file}`, "utf8"),
+	))
+		failures.push(`${harness}/${file}:${sleep.line} ${sleep.message}`);
 
 if (failures.length) {
 	console.error(`✖ feature drivers:\n${failures.join("\n")}`);

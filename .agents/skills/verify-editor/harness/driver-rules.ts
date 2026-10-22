@@ -118,6 +118,70 @@ function reportRevealHovers(
 	});
 }
 
+const SLEEP_MESSAGE =
+	"fixed sleep: wait on the condition itself (a harness locator, settled(), or a DB row) instead of a clock";
+
+function resolvesOnly(node: Node) {
+	if (node.type === "Identifier") return true;
+	if (
+		node.type !== "ArrowFunctionExpression" &&
+		node.type !== "FunctionExpression"
+	)
+		return false;
+	if ((node.params as Node[]).length) return false;
+	let body = node.body as Node;
+	if (body.type === "BlockStatement") {
+		const statements = body.body as Node[];
+		if (
+			statements.length !== 1 ||
+			statements[0]?.type !== "ExpressionStatement"
+		)
+			return false;
+		body = statements[0].expression as Node;
+	}
+	return (
+		body.type === "CallExpression" &&
+		(body.callee as Node).type === "Identifier" &&
+		!(body.arguments as Node[]).length
+	);
+}
+
+/**
+ * Fixed sleeps in drivers and in the harness: `waitForTimeout`, a timer whose
+ * only job is to resolve a promise later, and `node:timers/promises`. A timer
+ * that rejects after a deadline is a timeout, not a sleep, and stays allowed.
+ */
+export function findFixedSleeps(source: string): Violation[] {
+	const ast = parse(source, {
+		sourceType: "module",
+		errorRecovery: false,
+	}) as unknown as Node;
+	const violations: Violation[] = [];
+	const lineOf = (offset: number) => source.slice(0, offset).split("\n").length;
+	walk(ast, (node) => {
+		if (
+			node.type === "ImportDeclaration" &&
+			/^(node:)?timers\/promises$/.test(String((node.source as Node).value))
+		)
+			violations.push({ line: lineOf(node.start), message: SLEEP_MESSAGE });
+		if (node.type !== "CallExpression") return;
+		const callee = node.callee as Node;
+		const args = node.arguments as Node[];
+		const name =
+			callee.type === "Identifier"
+				? String(callee.name)
+				: callee.type === "MemberExpression" && !callee.computed
+					? String((callee.property as Node).name)
+					: "";
+		if (
+			name === "waitForTimeout" ||
+			(name === "setTimeout" && args[0] && resolvesOnly(args[0]))
+		)
+			violations.push({ line: lineOf(node.start), message: SLEEP_MESSAGE });
+	});
+	return violations;
+}
+
 export function checkDriverSource(
 	source: string,
 	contract: UiContract,
@@ -162,7 +226,7 @@ export function checkDriverSource(
 		const args = node.arguments as Node[];
 		if (callee.type === "MemberExpression" && !callee.computed) {
 			const method = String((callee.property as Node).name);
-			if (method in RAW_BROWSER_CALLS)
+			if (Object.hasOwn(RAW_BROWSER_CALLS, method))
 				report(
 					node,
 					`.${method}() is harness-only: ${RAW_BROWSER_CALLS[method]}`,
@@ -200,5 +264,7 @@ export function checkDriverSource(
 				node,
 				`results for "${feature}" need their own journey: open it with journeys.open("${feature}") or openOwner("${feature}")`,
 			);
+	for (const sleep of findFixedSleeps(source))
+		if (!violations.some((v) => v.line === sleep.line)) violations.push(sleep);
 	return violations.sort((a, b) => a.line - b.line);
 }

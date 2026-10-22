@@ -8,7 +8,7 @@ import {
 	settled,
 } from "../harness/journey.mjs";
 import { body, control, item } from "../harness/ui.mjs";
-import { API, db, HANDLE, STATE } from "./local.mjs";
+import { API, db, dbAsync, HANDLE, STATE } from "./local.mjs";
 
 const runDir = path.resolve(process.argv[2] ?? "");
 if (!process.argv[2])
@@ -31,9 +31,8 @@ page.on("response", (response) => {
 async function waitForDb(sql, expected) {
 	const until = Date.now() + 20000;
 	while (Date.now() < until) {
-		const value = db(sql);
+		const value = await dbAsync(sql);
 		if (expected(value)) return value;
-		await new Promise((resolve) => setTimeout(resolve, 300));
 	}
 	return db(sql);
 }
